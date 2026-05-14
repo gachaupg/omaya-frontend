@@ -36,6 +36,15 @@ import { cookieUtils } from "@/lib/utils/cookieUtils";
 
 const CROSS_TAB_LOGOUT_FLAG = "__omayaCrossTabLogout";
 const KYC_STATUS_CACHE_TTL_MS = 5 * 60 * 1000;
+/** Access cookie max-age when "Remember me" is checked (refresh still in localStorage per existing app behavior). */
+const REMEMBER_ME_ACCESS_COOKIE_MAX_AGE_SEC = 30 * 24 * 60 * 60;
+
+const accessTokenCookieOptions = (rememberMe: boolean) =>
+  ({
+    maxAge: rememberMe ? REMEMBER_ME_ACCESS_COOKIE_MAX_AGE_SEC : undefined,
+    secure: true,
+    sameSite: "strict" as const,
+  });
 
 const initialState: AuthState = {
   user: null,
@@ -50,6 +59,7 @@ const initialState: AuthState = {
   twoFAModalOpen: false,
   twoFAEmail: "",
   twoFAPassword: "",
+  twoFARememberMe: false,
 };
 
 // Helper to handle API errors
@@ -127,8 +137,9 @@ export const registerUser = createAsyncThunk<RegisterResponse, RegisterPayload>(
 export const loginUser = createAsyncThunk<AuthResponse, LoginPayload>(
   "auth/login",
   async (payload, { rejectWithValue, dispatch }) => {
+    const { remember_me, ...apiPayload } = payload;
     try {
-      const response = await post<AuthResponse>(API_ENDPOINTS.LOGIN, payload);
+      const response = await post<AuthResponse>(API_ENDPOINTS.LOGIN, apiPayload);
       const suspensionMessage = getSuspensionMessage(response.data?.user);
       if (suspensionMessage) {
         return rejectWithValue(suspensionMessage);
@@ -138,7 +149,11 @@ export const loginUser = createAsyncThunk<AuthResponse, LoginPayload>(
       if (response.data.require_2fa) {
         // Dispatch action to open 2FA modal with credentials
         dispatch(
-          open2FAModal({ email: payload.email, password: payload.password })
+          open2FAModal({
+            email: payload.email,
+            password: payload.password,
+            remember_me: Boolean(remember_me),
+          })
         );
         // Return a special response to indicate 2FA is needed
         return { ...response.data, require_2fa: true };
@@ -397,13 +412,18 @@ const authSlice = createSlice({
         email?: string;
         phone_number?: string;
         freeze?: boolean;
+        first_name?: string;
+        last_name?: string;
       }>
     ) => {
       if (!state.user) return;
-      const { email, phone_number, freeze } = action.payload;
+      const { email, phone_number, freeze, first_name, last_name } =
+        action.payload;
       if (email !== undefined) state.user.email = email;
       if (phone_number !== undefined) state.user.phone_number = phone_number;
       if (freeze !== undefined) state.user.freeze = freeze;
+      if (first_name !== undefined) state.user.first_name = first_name;
+      if (last_name !== undefined) state.user.last_name = last_name;
       if (typeof window !== "undefined" && state.user) {
         localStorage.setItem("user", JSON.stringify(state.user));
         if (state.tokens?.access) {
@@ -464,7 +484,11 @@ const authSlice = createSlice({
       state.kycStatusLoading = false;
       state.kycModalOpen = false;
       state.twoFAModalOpen = false;
+      state.twoFAEmail = "";
+      state.twoFAPassword = "";
+      state.twoFARememberMe = false;
       storage.removeProfile();
+      storage.removeUserEmail();
       // Clear access token cookie
       cookieUtils.removeCookie("access_token");
 
@@ -646,16 +670,22 @@ const authSlice = createSlice({
     },
     open2FAModal(
       state,
-      action: PayloadAction<{ email: string; password: string }>
+      action: PayloadAction<{
+        email: string;
+        password: string;
+        remember_me?: boolean;
+      }>
     ) {
       state.twoFAModalOpen = true;
       state.twoFAEmail = action.payload.email;
       state.twoFAPassword = action.payload.password;
+      state.twoFARememberMe = Boolean(action.payload.remember_me);
     },
     close2FAModal(state) {
       state.twoFAModalOpen = false;
       state.twoFAEmail = "";
       state.twoFAPassword = "";
+      state.twoFARememberMe = false;
     },
   },
   extraReducers: (builder) => {
@@ -717,12 +747,14 @@ const authSlice = createSlice({
           localStorage.setItem('user', JSON.stringify(action.payload.user));
         }
 
-        // Set access token as cookie
-        cookieUtils.setCookie("access_token", action.payload.access, {
-          maxAge: 86400,
-          secure: true,
-          sameSite: "strict",
-        });
+        const rememberMe = Boolean(
+          (action as { meta?: { arg?: LoginPayload } }).meta?.arg?.remember_me
+        );
+        cookieUtils.setCookie(
+          "access_token",
+          action.payload.access,
+          accessTokenCookieOptions(rememberMe)
+        );
       }
     );
     builder.addCase(loginUser.rejected, (state, action) => {
@@ -881,8 +913,10 @@ const authSlice = createSlice({
         state.isAuthenticated = true;
         state.profile = action.payload.profile;
         state.twoFAModalOpen = false;
+        const rememberMe = state.twoFARememberMe;
         state.twoFAEmail = "";
         state.twoFAPassword = "";
+        state.twoFARememberMe = false;
 
         // Store in localStorage
         storage.setProfile({
@@ -902,11 +936,11 @@ const authSlice = createSlice({
         }
 
         // Set access token as cookie
-        cookieUtils.setCookie("access_token", action.payload.access, {
-          maxAge: 86400,
-          secure: true,
-          sameSite: "strict",
-        });
+        cookieUtils.setCookie(
+          "access_token",
+          action.payload.access,
+          accessTokenCookieOptions(rememberMe)
+        );
       }
     );
     builder.addCase(loginWith2FA.rejected, (state, action) => {

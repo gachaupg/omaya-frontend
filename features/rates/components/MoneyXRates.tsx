@@ -247,9 +247,7 @@ const MoneyXRates = ({
   useEffect(() => {
     if (typeof window === "undefined") return;
     try {
-      const saved =
-        window.localStorage.getItem(RATES_MONEYX_FORM_STATE_KEY) ||
-        window.localStorage.getItem("moneyx_form_state");
+      const saved = window.localStorage.getItem(RATES_MONEYX_FORM_STATE_KEY);
       if (!saved) {
         setIsStateHydrated(true);
         return;
@@ -290,7 +288,6 @@ const MoneyXRates = ({
       if (state?.toPaymentDetail) setSelectedToPaymentDetail(state.toPaymentDetail);
     } catch {
       window.localStorage.removeItem(RATES_MONEYX_FORM_STATE_KEY);
-      window.localStorage.removeItem("moneyx_form_state");
     } finally {
       setIsStateHydrated(true);
     }
@@ -311,7 +308,6 @@ const MoneyXRates = ({
       toPaymentDetail: selectedToPaymentDetail ? { ...selectedToPaymentDetail } : null,
     };
     window.localStorage.setItem(RATES_MONEYX_FORM_STATE_KEY, JSON.stringify(state));
-    window.localStorage.setItem("moneyx_form_state", JSON.stringify(state));
   }, [
     payAmountInput,
     payAmount,
@@ -776,8 +772,7 @@ const MoneyXRates = ({
           : null,
       };
 
-      // Save to localStorage
-      localStorage.setItem("moneyx_form_state", JSON.stringify(state));
+      // Persist only on rates-scoped key so home MoneyX does not pick up this draft.
       localStorage.setItem(RATES_MONEYX_FORM_STATE_KEY, JSON.stringify(state));
 
       // Set redirect path - return to public rates page
@@ -1013,7 +1008,6 @@ const MoneyXRates = ({
     // Clear persisted moneyx form state once transaction flow starts,
     // so old form progress is not replayed after completion.
     if (showExchanging && transactionData) {
-      localStorage.removeItem("moneyx_form_state");
       localStorage.removeItem(RATES_MONEYX_FORM_STATE_KEY);
     }
     return () => {
@@ -1038,7 +1032,6 @@ const MoneyXRates = ({
             // Clear localStorage when going back
             localStorage.removeItem("moneyx_transaction_data");
             localStorage.removeItem("express_transaction_data");
-            localStorage.removeItem("moneyx_form_state");
             localStorage.removeItem(RATES_MONEYX_FORM_STATE_KEY);
           }}
         />

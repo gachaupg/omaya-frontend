@@ -55,6 +55,8 @@ export interface PasswordChangeRequest {
 export interface ProfileUpdateRequest {
   first_name?: string;
   last_name?: string;
+  /** Included on the second PATCH to `/api/update/profile/` after OTP is received. */
+  otp?: string;
   phone_number?: string;
   date_of_birth?: string;
   country?: string;
@@ -62,6 +64,15 @@ export interface ProfileUpdateRequest {
   address?: string;
   postal_code?: string;
 }
+
+/** Response from PATCH `/api/update/profile/` (name change flow). */
+export type ProfilePatchUpdateResponse =
+  | { otp_required: true; message: string }
+  | { user: Record<string, unknown> };
+
+export type UpdateProfileThunkResult =
+  | { outcome: "otp_required"; message: string }
+  | { outcome: "success"; user?: Record<string, unknown>; profilePayload?: unknown };
 
 export interface SettingsState {
   profile: UserProfile | null;
@@ -133,6 +144,8 @@ export interface DeviceSession {
   browser: string;
   sign_in_time: string;
   is_active: boolean;
+  /** e.g. "Windows - Chrome" from backend / WebSocket */
+  description?: string;
   // Optional fields that might be present in some responses
   last_activity?: string;
   is_current?: boolean;

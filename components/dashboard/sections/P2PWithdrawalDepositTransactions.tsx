@@ -11,6 +11,7 @@ import { SortArrowsIcon } from "@/components/ui/SortArrowsIcon";
 import { getHighResAssetIcon, getDefaultAssetIcon } from "@/features/express/utils/imageHelpers";
 import CopyButton from "@/components/ui/CopyButton";
 import { StatusBadge } from "@/components/ui/StatusBadge";
+import { isPendingAddressDashboardStatus } from "@/lib/utils/dashboardTransactionFilters";
 
 interface RootState {
   p2pWithdrawalDeposit: {
@@ -161,7 +162,9 @@ const P2PWithdrawalDepositTransactions = ({ filterByType = "all" }: P2PWithdrawa
         const results = resp?.results || [];
         if (results.length === 0) break;
         const filtered = results.filter(
-          (tx: any) => (tx.transaction_type || "").toLowerCase() === filterByType
+          (tx: any) =>
+            (tx.transaction_type || "").toLowerCase() === filterByType &&
+            !isPendingAddressDashboardStatus(tx.status ?? tx.stages)
         );
         all.push(...filtered);
         hasMore = !!resp?.next;
@@ -223,9 +226,12 @@ const P2PWithdrawalDepositTransactions = ({ filterByType = "all" }: P2PWithdrawa
     );
   }
 
-  const baseResults = useFilteredMode
-    ? allFilteredData
-    : (transactions?.results || []);
+  const baseResults = (
+    useFilteredMode ? allFilteredData : transactions?.results || []
+  ).filter(
+    (tx: any) =>
+      !isPendingAddressDashboardStatus(tx.status ?? tx.stages)
+  );
 
   const sortedResults = [...baseResults].sort((a: any, b: any) => {
     const dateA = new Date(a.timestamp).getTime();

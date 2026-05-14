@@ -8,7 +8,11 @@ import { useRouter } from "next/navigation";
 import { fetchMatchedTrades } from "@/features/p2p/slices/matchedTradesSlice";
 import { MatchedTradesResponse } from "@/features/p2p/types";
 import { useMatchedTradesWebSocket } from "@/features/p2p/hooks/useMatchedTradesWebSocket";
-import { div } from "framer-motion/client";
+import { respondToP2PTrade } from "@/features/p2p/api";
+import { showToast } from "@/lib/utils/toast";
+import { getMessageFromApiError } from "@/lib/utils/errorHandler";
+import { waitForTradeConfirmStatus } from "@/features/p2p/utils/waitTradeConfirmSocketStatus";
+import { isPendingAcceptanceStatus } from "@/features/p2p/utils/tradeWsAcceptanceGate";
 
 /** When owner === logged user: show order_type as-is (Buy/Sell). When not owner: show counterparty action (buy ad → Sell, sell ad → Buy). */
 const getOrderType = (order_type: string, isOwner: boolean) => {
@@ -36,6 +40,22 @@ const getStatus = (trade: any, userEmail: string) => {
 const truncate = (str: string, n: number) =>
   str.length > n ? str.slice(0, n - 3) + "..." : str;
 
+const normalizeEmail = (e: string | null | undefined) =>
+  String(e ?? "").trim().toLowerCase();
+
+/** Only the advertiser (ad owner) may call trade respond; API uses advertiser email / owner. */
+const isLoggedInUserAdvertiserOnTrade = (
+  trade: { owner?: string; advertiser_email?: string },
+  userEmail: string | null | undefined
+): boolean => {
+  const advertiser =
+    trade.advertiser_email != null && String(trade.advertiser_email).trim() !== ""
+      ? trade.advertiser_email
+      : trade.owner;
+  if (!userEmail || !advertiser) return false;
+  return normalizeEmail(userEmail) === normalizeEmail(advertiser);
+};
+
 const Notifications = () => {
   const router = useRouter();
   const dispatch = useDispatch<AppDispatch>();
@@ -53,6 +73,7 @@ const Notifications = () => {
 
   const [currentPage, setCurrentPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
+  const [respondingTradeId, setRespondingTradeId] = useState<string | null>(null);
 
   useEffect(() => {
     if (isAuthenticated) {
@@ -93,7 +114,31 @@ const Notifications = () => {
   };
   // console.log(user?.email);
   // console.log(matchedTrades?.results);
-  const handleViewOrder = (trade: any) => {
+  const handleViewOrder = async (trade: any) => {
+    const tradeId = String(trade?.id ?? "");
+    if (!tradeId) return;
+
+    if (isLoggedInUserAdvertiserOnTrade(trade, user?.email)) {
+      setRespondingTradeId(tradeId);
+      try {
+        const liveStatus = await waitForTradeConfirmStatus(tradeId, {
+          timeoutMs: 10_000,
+        });
+        if (liveStatus && isPendingAcceptanceStatus(liveStatus)) {
+          await respondToP2PTrade(tradeId, "accept");
+          dispatch(fetchMatchedTrades(currentPage)).catch(() => {});
+        }
+      } catch (error: unknown) {
+        const detail = getMessageFromApiError(error);
+        showToast.error("Trade could not be accepted", detail, {
+          position: "top-center",
+        });
+        return;
+      } finally {
+        setRespondingTradeId(null);
+      }
+    }
+
     try {
       const fullOrderData = {
         ...trade,
@@ -327,10 +372,12 @@ const Notifications = () => {
 
               {/* View Button */}
               <button
-                onClick={() => handleViewOrder(trade)}
-                className="bg-[#1D8751] hover:bg-[#16663d] text-white py-1.5 px-4 sm:py-2 sm:px-5 rounded-lg font-medium text-xs sm:text-sm transition-colors shadow-sm whitespace-nowrap active:scale-95"
+                type="button"
+                onClick={() => void handleViewOrder(trade)}
+                disabled={respondingTradeId === trade.id}
+                className="bg-[#1D8751] hover:bg-[#16663d] disabled:opacity-60 disabled:cursor-not-allowed text-white py-1.5 px-4 sm:py-2 sm:px-5 rounded-lg font-medium text-xs sm:text-sm transition-colors shadow-sm whitespace-nowrap active:scale-95"
               >
-                View
+                {respondingTradeId === trade.id ? "Opening…" : "View"}
               </button>
             </div>
           </div>

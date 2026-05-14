@@ -853,6 +853,22 @@ export const getMatchedTrades = async (
   });
 };
 
+export type P2PTradeRespondAction = "accept" | "decline";
+
+/** POST `/trading_engine/p2p/trades/{trade_id}/respond/` — advertiser accepts or declines a pending match */
+export const respondToP2PTrade = async (
+  tradeId: string,
+  action: P2PTradeRespondAction
+): Promise<{ message?: string; trade_id?: string }> => {
+  return withRetry(async () => {
+    const response = await post<{ message?: string; trade_id?: string }>(
+      API_CONFIG.P2P.TRADE_RESPOND(tradeId),
+      { action }
+    );
+    return response.data;
+  });
+};
+
 export const confirmTrade = async (id: string): Promise<P2PResponse> => {
   return withRetry(async () => {
     const response = await post<P2PResponse>(

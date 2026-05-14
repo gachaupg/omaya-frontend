@@ -57,6 +57,8 @@ export interface RegisterPayload {
 export interface LoginPayload {
   email: string;
   password: string;
+  /** When true, access cookie uses a longer max-age; when false, session cookie (no max-age). */
+  remember_me?: boolean;
 }
 
 // 2FA Login payload
@@ -92,6 +94,8 @@ export interface AuthState {
   twoFAModalOpen: boolean;
   twoFAEmail: string;
   twoFAPassword: string;
+  /** Carries "Remember me" through the 2FA flow for cookie/session persistence only (never credentials). */
+  twoFARememberMe: boolean;
 }
 
 // Successful auth response

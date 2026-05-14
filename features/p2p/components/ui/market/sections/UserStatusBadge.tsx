@@ -6,6 +6,11 @@ interface UserStatusBadgeProps {
   isLive: boolean;
   lastSeenMinutes?: number | null;
   className?: string;
+  /**
+   * `live` — WebSocket / session “Live” (default).
+   * `presence` — API advertiser flag: “Online” / “Offline”.
+   */
+  variant?: "live" | "presence";
 }
 
 /**
@@ -15,7 +20,31 @@ export const UserStatusBadge: React.FC<UserStatusBadgeProps> = ({
   isLive,
   lastSeenMinutes,
   className = "",
+  variant = "live",
 }) => {
+  if (variant === "presence") {
+    if (isLive) {
+      return (
+        <span
+          className={`inline-flex items-center gap-1.5 text-xs text-[#1D8751] font-medium whitespace-nowrap ${className}`}
+        >
+          <span className="relative flex h-2 w-2">
+            <span className="relative inline-flex rounded-full h-2 w-2 bg-[#1D8751]" />
+          </span>
+          Online
+        </span>
+      );
+    }
+    return (
+      <span
+        className={`inline-flex items-center gap-1.5 text-xs text-gray-500 dark:text-[#788099] font-medium whitespace-nowrap ${className}`}
+      >
+        <span className="w-2 h-2 rounded-full bg-gray-400 dark:bg-[#788099]" />
+        Offline
+      </span>
+    );
+  }
+
   if (isLive) {
     return (
       <span

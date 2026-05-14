@@ -63,5 +63,7 @@
   "rates.cancel": "Cancel",
   "rates.crypto": "Crypto",
   "rates.money": "Money",
-  "rates.liveTransactions": "Live Transactions"
+  "rates.liveTransactions": "Live Transactions",
+  "rates.amountTooLargeInput": "This amount is too large to calculate accurately. Enter a smaller amount.",
+  "rates.swapEstimateUnavailable": "We could not get a rate for this amount. Try a smaller amount or try again shortly."
 }

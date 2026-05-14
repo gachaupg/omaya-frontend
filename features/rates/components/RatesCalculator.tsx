@@ -101,11 +101,37 @@ interface UserPaymentDetail {
   status?: string;
 }
 
+const isAxiosGenericStatusMessage = (msg: string): boolean =>
+  /^request failed with status code \d{3}$/i.test(String(msg || "").trim());
+
+/** True when integer part exceeds JS safe integer range or fractional part is extremely long (avoids pointless API calls and opaque 500s). */
+const isAmountStringTooLargeForSafeCalculation = (input: string): boolean => {
+  const s = String(input ?? "")
+    .replace(/,/g, "")
+    .trim();
+  if (!s) return false;
+  const unsigned = s.replace(/^[-+]+/, "");
+  if (!unsigned || unsigned === ".") return false;
+  const noExponent = unsigned.split(/e/i)[0];
+  const [intPartRaw, frac = ""] = noExponent.split(".");
+  const intPart = (intPartRaw || "0").replace(/^0+/, "") || "0";
+  if (frac.length > 24) return true;
+  if (intPart.length > 16) return true;
+  if (intPart.length === 16) {
+    try {
+      return BigInt(intPart) > BigInt(Number.MAX_SAFE_INTEGER);
+    } catch {
+      return true;
+    }
+  }
+  return false;
+};
+
 const extractApiErrorMessage = (error: any, fallback: string): string => {
   const cleanMessage = (msg: string): string => {
     const v = String(msg || "").trim();
     if (!v) return "";
-    if (/request failed with status code 400/i.test(v)) return "";
+    if (isAxiosGenericStatusMessage(v)) return "";
     return v;
   };
   const responseData = error?.response?.data;
@@ -234,6 +260,40 @@ interface RatesCalculatorProps {
 
 const RatesCalculator = ({ activeTab = 'crypto' }: RatesCalculatorProps) => {
   const { t } = useRatesI18n();
+  const swapEstimateUnavailable = () =>
+    t(
+      "rates.swapEstimateUnavailable",
+      "We could not get a rate for this amount. Try a smaller amount or try again shortly."
+    );
+  const amountTooLargeInput = () =>
+    t(
+      "rates.amountTooLargeInput",
+      "This amount is too large to calculate accurately. Enter a smaller amount."
+    );
+  const mapSwapEstimateFailureText = (
+    error: any,
+    preferredDetail: string,
+    preferredError: string
+  ): string => {
+    const data = error?.response?.data;
+    let fromApi = "";
+    if (typeof data === "string" && data.trim()) {
+      fromApi = data.trim();
+    } else if (data && typeof data === "object") {
+      fromApi = String(data.message || data.error || data.detail || "").trim();
+    }
+    if (fromApi && !isAxiosGenericStatusMessage(fromApi)) return fromApi;
+
+    const primary = String(preferredDetail || preferredError || "").trim();
+    if (
+      primary &&
+      !isAxiosGenericStatusMessage(primary) &&
+      !/^request timeout$/i.test(primary)
+    ) {
+      return primary;
+    }
+    return swapEstimateUnavailable();
+  };
   const { isDark } = useTheme();
   const router = useRouter();
   const [internalActiveTab, setInternalActiveTab] = useState("deposit");
@@ -1014,6 +1074,12 @@ const getPaymentRestrictionMessage = (status?: string) =>
 
           setApiCommission(null);
           setApiCommissionDetails(null);
+          if (
+            typeof backendMessage === "string" &&
+            isAxiosGenericStatusMessage(backendMessage)
+          ) {
+            setApiValidationError(swapEstimateUnavailable());
+          }
         });
     }, 300);
     return () => {
@@ -1042,6 +1108,17 @@ const getPaymentRestrictionMessage = (status?: string) =>
     const amt = isCalculatingFromPay ? (parseFloat(amount) || 0) : (parseFloat(receiveAmount) || 0);
     if (!params || amt <= 0) {
       setExchangeLookupResponse(null);
+      return;
+    }
+
+    const lookupAmountRaw = isCalculatingFromPay ? amount : receiveAmount;
+    if (isAmountStringTooLargeForSafeCalculation(lookupAmountRaw)) {
+      setExchangeLookupResponse(null);
+      setApiCommission(null);
+      setApiValidationError(amountTooLargeInput());
+      setReceiveAmount("0");
+      setIsCalculating(false);
+      setIsCalculatingReceive(false);
       return;
     }
 
@@ -1119,7 +1196,13 @@ const getPaymentRestrictionMessage = (status?: string) =>
             return;
           }
 
-          setApiValidationError(errorMessage || "Failed to fetch exchange rate");
+          setApiValidationError(
+            (() => {
+              const trimmed = (errorMessage || "").trim();
+              if (trimmed && !isAxiosGenericStatusMessage(trimmed)) return trimmed;
+              return swapEstimateUnavailable();
+            })()
+          );
           setIsCalculating(false);
           setIsCalculatingReceive(false);
         });
@@ -1232,6 +1315,16 @@ const getPaymentRestrictionMessage = (status?: string) =>
       parseFloat(amount) > 0 &&
       isCalculatingFromPay
     ) {
+      if (isAmountStringTooLargeForSafeCalculation(amount)) {
+        setEstimate(null);
+        setEstimateError(null);
+        setEstimateLoading(false);
+        setIsCalculating(false);
+        setIsCalculatingReceive(false);
+        setApiValidationError(amountTooLargeInput());
+        setReceiveAmount("0");
+        return;
+      }
       const isWithdrawal = !isDepositMode;
       const cacheKey = `fwd_${selectedAsset.ticker}_${getAssetNetwork(selectedAsset)}_${amount}_${isWithdrawal}`;
       const cached = estimateCache.get(cacheKey);
@@ -1279,14 +1372,16 @@ const getPaymentRestrictionMessage = (status?: string) =>
                 p?.response_data ??
                 p?.response?.data?.response_data ??
                 p?.response?.data;
-              const message =
+              let raw =
                 (typeof rd?.message === "string" && rd.message.trim())
                   ? rd.message.trim()
                   : (typeof p?.message === "string" && p.message.trim())
                     ? p.message.trim()
                     : (typeof rd?.error === "string" && rd.error.trim())
                       ? rd.error.trim()
-                      : "Could not calculate estimate for this pair.";
+                      : "";
+              if (isAxiosGenericStatusMessage(raw)) raw = "";
+              const message = raw || swapEstimateUnavailable();
               setApiValidationError(message);
               setEstimateError(null);
               setReceiveAmount("0");
@@ -1380,12 +1475,7 @@ const getPaymentRestrictionMessage = (status?: string) =>
             }
 
             // Any other backend error (e.g. not_valid_params): show message and stop.
-            const genericText =
-              (typeof errorDetails === "string" && errorDetails.trim())
-                ? errorDetails.trim()
-                : (typeof errorMessage === "string" && errorMessage.trim())
-                  ? errorMessage.trim()
-                  : "Could not calculate estimate for this pair.";
+            const genericText = mapSwapEstimateFailureText(error, errorDetails, errorMessage);
             setApiValidationError(genericText);
             setEstimateError(null);
             setReceiveAmount("0");
@@ -1450,6 +1540,16 @@ const getPaymentRestrictionMessage = (status?: string) =>
       parseFloat(receiveAmount) > 0 &&
       !isCalculatingFromPay
     ) {
+      if (isAmountStringTooLargeForSafeCalculation(receiveAmount)) {
+        setEstimate(null);
+        setEstimateError(null);
+        setEstimateLoading(false);
+        setIsCalculating(false);
+        setIsCalculatingReceive(false);
+        setApiValidationError(amountTooLargeInput());
+        setAmount("0");
+        return;
+      }
       const isWithdrawal = !isDepositMode;
       const cacheKey = `rev_${selectedAsset.ticker}_${getAssetNetwork(selectedAsset)}_${receiveAmount}_${isWithdrawal}`;
       const cached = estimateCache.get(cacheKey);
@@ -1499,14 +1599,16 @@ const getPaymentRestrictionMessage = (status?: string) =>
                 p?.response_data ??
                 p?.response?.data?.response_data ??
                 p?.response?.data;
-              const message =
+              let raw =
                 (typeof rd?.message === "string" && rd.message.trim())
                   ? rd.message.trim()
                   : (typeof p?.message === "string" && p.message.trim())
                     ? p.message.trim()
                     : (typeof rd?.error === "string" && rd.error.trim())
                       ? rd.error.trim()
-                      : "Could not calculate estimate for this pair.";
+                      : "";
+              if (isAxiosGenericStatusMessage(raw)) raw = "";
+              const message = raw || swapEstimateUnavailable();
               setApiValidationError(message);
               setEstimateError(null);
               setAmount("0");
@@ -1570,20 +1672,6 @@ const getPaymentRestrictionMessage = (status?: string) =>
               return;
             }
 
-            const genericText =
-              (typeof errorDetails === "string" && errorDetails.trim())
-                ? errorDetails.trim()
-                : (typeof errorMessage === "string" && errorMessage.trim())
-                  ? errorMessage.trim()
-                  : "Could not calculate estimate for this pair.";
-            setApiValidationError(genericText);
-            setEstimateError(null);
-            setAmount("0");
-            setIsCalculating(false);
-            setIsCalculatingReceive(false);
-            setEstimateLoading(false);
-            return;
-
             if (
               errorMessage.includes("deposit_too_small") ||
               errorDetails.includes("Out of min amount")
@@ -1619,6 +1707,15 @@ const getPaymentRestrictionMessage = (status?: string) =>
               setEstimateLoading(false);
               return;
             }
+
+            const genericText = mapSwapEstimateFailureText(error, errorDetails, errorMessage);
+            setApiValidationError(genericText);
+            setEstimateError(null);
+            setAmount("0");
+            setIsCalculating(false);
+            setIsCalculatingReceive(false);
+            setEstimateLoading(false);
+            return;
 
             setEstimateError("Using fallback calculation");
             const recv = parseFloat(receiveAmount);

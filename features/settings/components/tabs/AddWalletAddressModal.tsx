@@ -1144,7 +1144,7 @@ const AddWalletAddressModal = ({
                     Email verification
                   </div>
                   <div className="text-xs text-gray-600 dark:text-[#8B90A5]">
-                    We&apos;ll send a 6-digit OTP to your email.
+                    We have send a 6-digit OTP to your email.
                   </div>
                 </div>
                 <button

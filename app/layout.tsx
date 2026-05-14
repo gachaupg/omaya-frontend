@@ -7,7 +7,6 @@ import Navbar from "@/components/layout/Navbar";
 import Footer from "@/components/layout/Footer";
 import Providers from "./providers";
 import { Toaster } from "@/components/ui/Toast";
-import GlobalSessionManager from "@/components/GlobalSessionManager";
 import FloatingChatButton from "@/components/ui/FloatingChatButton";
 import P2PRejectionModalRoot from "@/components/P2PRejectionModalRoot";
 import NetworkOfflineRedirect from "@/components/NetworkOfflineRedirect";
@@ -112,7 +111,6 @@ export default function RootLayout({
         <Providers>
           <NetworkOfflineRedirect />
           <P2PRejectionModalRoot />
-          <GlobalSessionManager />
           <Navbar />
           {children}
           <Footer />

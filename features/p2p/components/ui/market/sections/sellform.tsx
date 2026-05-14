@@ -26,6 +26,15 @@ import { useTradeStatusWebSocket } from "@/features/p2p/hooks/useTradeStatusWebS
 import { handleCopyToClipboard, parseDurationToSeconds, formatDurationForDisplay } from "@/features/p2p/components/Common/utils";
 
 import { logger } from '@/lib/utils/logger';
+import {
+  PENDING_ACCEPTANCE_AUTO_CANCEL_MS,
+  type TradeLifecycleBanner,
+  wsPayloadToSnapshot,
+  isPendingAcceptanceStatus,
+  isDeclinedLikeStatus,
+  formatCountdownSeconds,
+  wsStatusPayloadMatchesTrade,
+} from "@/features/p2p/utils/tradeWsAcceptanceGate";
 
 interface FinalSellProps {
   orderData?: P2POrder;
@@ -61,11 +70,66 @@ const FinalSell: React.FC<FinalSellProps> = ({ orderData }) => {
   const [showChat, setShowChat] = useState(false);
   const { user } = useSelector((state: RootState) => state.auth);
   const { isAuthenticated } = useSelector((state: RootState) => state.auth);
+  const [tradeLifecycleBanner, setTradeLifecycleBanner] = useState<TradeLifecycleBanner | null>(null);
+  const [wsTradeSnapshot, setWsTradeSnapshot] = useState<{
+    rawStatus: string;
+    can_confirm_receipt?: boolean;
+    can_confirm_payment?: boolean;
+  }>({ rawStatus: "" });
+  const [pendingAcceptanceStartedAt, setPendingAcceptanceStartedAt] = useState<number | null>(null);
+  const [pendingAcceptanceTick, setPendingAcceptanceTick] = useState(0);
+  const wsSnapshotRef = useRef(wsTradeSnapshot);
+  const confirmOrderIdRef = useRef<string | null>(null);
+  const exitingToP2pRef = useRef(false);
+  const [isExitingToP2p, setIsExitingToP2p] = useState(false);
+
   // Use limit_duration from order only (e.g. "00:00:05" = 5 min) - never use trade's limit (30 min default)
   const displaySeconds = parseDurationToSeconds(singleOrder?.limit_duration);
+  const inPendingAcceptanceSeller =
+    isPendingAcceptanceStatus(wsTradeSnapshot.rawStatus) ||
+    isPendingAcceptanceStatus(String(confirmOrder?.status || ""));
+  /** Payment window timer arms only after trade-confirm WS has sent a status (REST flags alone must not start the clock). */
+  const tradeConfirmStatusFromWs =
+    String(wsTradeSnapshot.rawStatus || "").trim() !== "";
+  /** Matched-phase transaction timer counts down only after acceptance (never during pending_acceptance). */
+  const sellerMatchedTimerActive =
+    confirmOrder?.status === "matched" &&
+    tradeConfirmStatusFromWs &&
+    !inPendingAcceptanceSeller;
 
   const [countdown, setCountdown] = useState(displaySeconds);
   const initialFetchDone = useRef(false);
+
+  useEffect(() => {
+    confirmOrderIdRef.current = confirmOrder?.id ?? null;
+  }, [confirmOrder?.id]);
+
+  const performExitToP2p = React.useCallback(
+    async (banner?: TradeLifecycleBanner) => {
+      if (exitingToP2pRef.current) return;
+      exitingToP2pRef.current = true;
+      setIsExitingToP2p(true);
+      if (banner) setTradeLifecycleBanner(banner);
+      const id = confirmOrderIdRef.current;
+      try {
+        if (isAuthenticated && id) {
+          try {
+            await dispatch(cancelP2POrderThunk(id)).unwrap();
+          } catch {
+            /* trade may already be cancelled */
+          }
+        }
+      } finally {
+        try {
+          localStorage.removeItem("p2p_trade_id");
+        } catch {
+          /* no-op */
+        }
+        setTimeout(() => router.push("/dashboard/p2p"), 900);
+      }
+    },
+    [dispatch, isAuthenticated, router]
+  );
 
   // WebSocket status update callback - use useCallback to prevent reconnections
   const handleStatusUpdate = React.useCallback((status: any) => {
@@ -74,6 +138,59 @@ const FinalSell: React.FC<FinalSellProps> = ({ orderData }) => {
     logger.debug('p2p', "📊 Current confirmOrder.id:", confirmOrder?.id);
     logger.debug('p2p', "📊 Current confirmOrder.status:", confirmOrder?.status);
     logger.debug('p2p', "📊 New status:", status.status);
+
+    const payload = status as Record<string, unknown>;
+    const pageTradeId = String(confirmOrder?.id ?? confirmOrderIdRef.current ?? "").trim();
+    if (pageTradeId && !wsStatusPayloadMatchesTrade(payload, pageTradeId)) {
+      logger.debug("p2p", "sellform: skip WS status (different trade than current page)", {
+        pageTradeId,
+      });
+      return;
+    }
+
+    const snap = wsPayloadToSnapshot(payload);
+    const sellerSnap = {
+      rawStatus: snap.rawStatus,
+      can_confirm_receipt: snap.can_confirm_receipt ?? snap.can_confirm_payment,
+      can_confirm_payment: snap.can_confirm_payment,
+    };
+    setWsTradeSnapshot(sellerSnap);
+    wsSnapshotRef.current = sellerSnap;
+
+    const lowered = snap.rawStatus.toLowerCase();
+    if (lowered === "cancelled" || lowered === "canceled") {
+      setTradeLifecycleBanner({
+        tone: "warning",
+        message: "This trade was cancelled. Returning you to P2P.",
+      });
+      void performExitToP2p();
+      return;
+    }
+
+    if (isDeclinedLikeStatus(payload)) {
+      setTradeLifecycleBanner({
+        tone: "danger",
+        message: "The other party declined this trade. Cancelling and returning you to P2P.",
+      });
+      void performExitToP2p();
+      return;
+    }
+
+    if (isPendingAcceptanceStatus(sellerSnap.rawStatus)) {
+      setPendingAcceptanceStartedAt((prev) => prev ?? Date.now());
+      setTradeLifecycleBanner((prev) =>
+        prev?.tone === "danger"
+          ? prev
+          : {
+              tone: "info",
+              message:
+                "Waiting for the trade owner to accept this trade before you can confirm payment as received.",
+            }
+      );
+    } else {
+      setPendingAcceptanceStartedAt(null);
+      setTradeLifecycleBanner((prev) => (prev?.tone === "info" ? null : prev));
+    }
 
     const oldStatus = confirmOrder?.status;
     const newStatus = status.status;
@@ -88,7 +205,6 @@ const FinalSell: React.FC<FinalSellProps> = ({ orderData }) => {
         if (oldStatus === "matched" && newStatus === "half-matched") {
         } else if (oldStatus === "half-matched" && newStatus === "completed") {
         } else if (newStatus === "cancelled") {
-          showToast.error("Trade Cancelled", "The trade has been cancelled");
         } else {
         }
       } else {
@@ -113,7 +229,7 @@ const FinalSell: React.FC<FinalSellProps> = ({ orderData }) => {
         newStatus: newStatus
       });
     }
-  }, [confirmOrder, dispatch]);
+  }, [confirmOrder, dispatch, performExitToP2p]);
 
   // WebSocket for real-time trade status updates
   logger.debug('p2p', "🔌 WebSocket Config (sellform):", {
@@ -196,11 +312,80 @@ const FinalSell: React.FC<FinalSellProps> = ({ orderData }) => {
       // Reset lastActionTradeIdRef when viewing a different trade
       // This prevents showing loading state for actions on different trades
       lastActionTradeIdRef.current = null;
+      exitingToP2pRef.current = false;
+      setIsExitingToP2p(false);
+      setWsTradeSnapshot({ rawStatus: "" });
+      wsSnapshotRef.current = { rawStatus: "" };
+      setPendingAcceptanceStartedAt(null);
+      setTradeLifecycleBanner(null);
     } else if (confirmOrder?.id && !prevTradeIdRef.current) {
       // Reset on initial load when confirmOrder is first set
       lastActionTradeIdRef.current = null;
     }
   }, [confirmOrder?.id]);
+
+  // REST may expose pending_acceptance / flags before WebSocket fires
+  useEffect(() => {
+    if (!confirmOrder?.id) return;
+    const st = String(confirmOrder.status || "");
+    if (isPendingAcceptanceStatus(st)) {
+      setPendingAcceptanceStartedAt((prev) => prev ?? Date.now());
+      setWsTradeSnapshot((prev) => ({
+        rawStatus: "pending_acceptance",
+        can_confirm_receipt:
+          confirmOrder.can_confirm_receipt ?? prev.can_confirm_receipt,
+        can_confirm_payment:
+          confirmOrder.can_confirm_payment ?? prev.can_confirm_payment,
+      }));
+      wsSnapshotRef.current = {
+        rawStatus: "pending_acceptance",
+        can_confirm_receipt:
+          confirmOrder.can_confirm_receipt ?? wsSnapshotRef.current.can_confirm_receipt,
+        can_confirm_payment:
+          confirmOrder.can_confirm_payment ?? wsSnapshotRef.current.can_confirm_payment,
+      };
+    }
+    if (typeof confirmOrder.can_confirm_receipt === "boolean") {
+      setWsTradeSnapshot((prev) => ({
+        ...prev,
+        can_confirm_receipt: confirmOrder.can_confirm_receipt,
+      }));
+      wsSnapshotRef.current = {
+        ...wsSnapshotRef.current,
+        can_confirm_receipt: confirmOrder.can_confirm_receipt,
+      };
+    }
+    if (typeof confirmOrder.can_confirm_payment === "boolean") {
+      setWsTradeSnapshot((prev) => ({
+        ...prev,
+        can_confirm_payment: confirmOrder.can_confirm_payment,
+      }));
+      wsSnapshotRef.current = {
+        ...wsSnapshotRef.current,
+        can_confirm_payment: confirmOrder.can_confirm_payment,
+      };
+    }
+  }, [confirmOrder?.id, confirmOrder?.status, confirmOrder?.can_confirm_receipt, confirmOrder?.can_confirm_payment]);
+
+  useEffect(() => {
+    if (pendingAcceptanceStartedAt == null) return;
+    const id = window.setInterval(() => setPendingAcceptanceTick((t) => t + 1), 1000);
+    return () => window.clearInterval(id);
+  }, [pendingAcceptanceStartedAt]);
+
+  useEffect(() => {
+    if (pendingAcceptanceStartedAt == null || exitingToP2pRef.current) return;
+    const snap = wsSnapshotRef.current;
+    if (!isPendingAcceptanceStatus(snap.rawStatus)) return;
+    const elapsed = Date.now() - pendingAcceptanceStartedAt;
+    if (elapsed >= PENDING_ACCEPTANCE_AUTO_CANCEL_MS) {
+      void performExitToP2p({
+        tone: "warning",
+        message:
+          "This trade was not accepted in time and will be cancelled. Returning you to P2P.",
+      });
+    }
+  }, [pendingAcceptanceStartedAt, pendingAcceptanceTick, performExitToP2p]);
 
   // Show success modal only on transition to completed for the current trade
   useEffect(() => {
@@ -248,43 +433,44 @@ const FinalSell: React.FC<FinalSellProps> = ({ orderData }) => {
     };
   }, [dispatch]);
 
-  // Handle countdown
+  // Handle countdown — only after trade acceptance (past pending_acceptance)
   useEffect(() => {
-    if (confirmOrder?.status === "matched") {
+    if (sellerMatchedTimerActive) {
       setCountdown(displaySeconds);
     }
-  }, [displaySeconds, confirmOrder?.status]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [displaySeconds, sellerMatchedTimerActive]);
 
   useEffect(() => {
-    if (confirmOrder?.status !== "matched") return;
+    if (!sellerMatchedTimerActive) return;
     if (countdown <= 0) return;
     const timer = setInterval(() => {
       setCountdown((prev) => (prev > 0 ? prev - 1 : 0));
     }, 1000);
     return () => clearInterval(timer);
-  }, [confirmOrder?.status, countdown]);
+  }, [sellerMatchedTimerActive, countdown]);
 
-  // Auto-cancel when countdown reaches 0 - DISABLED
+  // Auto-cancel when countdown reaches 0
   useEffect(() => {
-    if (confirmOrder?.status === "matched" && countdown === 0) {
+    if (sellerMatchedTimerActive && countdown === 0) {
       handleCancelTransaction();
-      logger.debug('p2p', "Countdown reached 0, auto-cancel is disabled");
+      logger.debug('p2p', "Countdown reached 0, auto-cancelling transaction");
       return;
     }
   }, [
-    confirmOrder?.status,
+    sellerMatchedTimerActive,
     countdown,
     confirmOrder?.id,
     dispatch,
     isAuthenticated,
   ]);
 
-  // Reset countdown when status changes
+  // Reset countdown when matched payment timer is not active
   useEffect(() => {
-    if (confirmOrder?.status !== "matched") {
+    if (!sellerMatchedTimerActive) {
       setCountdown(displaySeconds);
     }
-  }, [confirmOrder?.status, displaySeconds]);
+  }, [sellerMatchedTimerActive, displaySeconds]);
 
   // Use payment_details from singleOrder, confirmOrder, or URL - prefer source with most methods
   const fromSingle = Array.isArray(singleOrder?.payment_details) ? singleOrder.payment_details : [];
@@ -411,6 +597,31 @@ const FinalSell: React.FC<FinalSellProps> = ({ orderData }) => {
     }
   };
 
+  const sellerMayMarkReceived =
+    confirmOrder?.status === "half-matched" &&
+    confirmOrder?.can_confirm_receipt !== false &&
+    wsTradeSnapshot.can_confirm_receipt !== false &&
+    (!inPendingAcceptanceSeller ||
+      confirmOrder?.can_confirm_receipt === true ||
+      wsTradeSnapshot.can_confirm_receipt === true);
+
+  const pendingAcceptanceSecondsLeft =
+    pendingAcceptanceStartedAt != null
+      ? Math.max(
+          0,
+          Math.ceil(
+            (PENDING_ACCEPTANCE_AUTO_CANCEL_MS - (Date.now() - pendingAcceptanceStartedAt)) / 1000
+          )
+        )
+      : null;
+
+  const lifecycleBannerText =
+    tradeLifecycleBanner &&
+    tradeLifecycleBanner.tone === "info" &&
+    pendingAcceptanceSecondsLeft != null
+      ? `${tradeLifecycleBanner.message} Auto-cancel in ${formatCountdownSeconds(pendingAcceptanceSecondsLeft)} if not accepted.`
+      : tradeLifecycleBanner?.message ?? null;
+
   return (
     <div className="md:mt-20">
       {/* Breadcrumb */}
@@ -423,6 +634,20 @@ const FinalSell: React.FC<FinalSellProps> = ({ orderData }) => {
       />
       <div className="final-buy-container grid grid-cols-1 lg:grid-cols-3 gap-2 sm:gap-3 lg:gap-6 p-1 sm:p-2 lg:p-6 min-h-screen bg-[#EEF1F4] dark:bg-(--bg-color)">
         <div className="lg:col-span-2 flex flex-col gap-4 lg:gap-6">
+          {lifecycleBannerText && tradeLifecycleBanner && (
+            <div
+              role="status"
+              className={`rounded-xl px-4 py-2.5 text-sm font-medium border ${
+                tradeLifecycleBanner.tone === "danger"
+                  ? "border-red-300 bg-red-50 text-red-900 dark:border-red-900/50 dark:bg-red-950/40 dark:text-red-100"
+                  : tradeLifecycleBanner.tone === "warning"
+                    ? "border-amber-300 bg-amber-50 text-amber-950 dark:border-amber-800 dark:bg-amber-950/40 dark:text-amber-100"
+                    : "border-[#1D8751]/40 bg-[#1D8751]/10 text-gray-900 dark:text-white dark:bg-[#1D8751]/20"
+              }`}
+            >
+              {lifecycleBannerText}
+            </div>
+          )}
           <div className="flex items-center justify-between gap-2 flex-wrap">
             <div className="flex items-center gap-3 flex-wrap min-w-0">
               <p className="text-gray-900 dark:text-white text-[13px] shrink-0">
@@ -433,9 +658,7 @@ const FinalSell: React.FC<FinalSellProps> = ({ orderData }) => {
                 {isAuthenticated ? (
                   <TimeDisplay
                     seconds={
-                      confirmOrder?.status === "matched"
-                        ? countdown
-                        : displaySeconds
+                      sellerMatchedTimerActive ? countdown : displaySeconds
                     }
                   />
                 ) : (
@@ -640,7 +863,7 @@ const FinalSell: React.FC<FinalSellProps> = ({ orderData }) => {
                 <span className="text-[#1D8751]">Transaction time:</span>
                 {isAuthenticated ? (
                   <TimeDisplay
-                    seconds={confirmOrder?.status === "matched" ? countdown : displaySeconds}
+                    seconds={sellerMatchedTimerActive ? countdown : displaySeconds}
                   />
                 ) : (
                   <span>--:--</span>
@@ -815,13 +1038,13 @@ const FinalSell: React.FC<FinalSellProps> = ({ orderData }) => {
                           }`}
                         onClick={handleCancelTransaction}
                         disabled={
-                          cancelLoading || confirmOrder?.status === "half-matched"
+                          cancelLoading || confirmOrder?.status === "half-matched" || isExitingToP2p
                         }
                       >
                         {cancelLoading ? "Cancelling..." : "Cancel Transaction"}
                       </button>
                       <button
-                        className={`w-full md:w-auto flex-1 py-2 rounded-2xl text-lg ${confirmOrder?.status === "matched"
+                        className={`w-full md:w-auto flex-1 py-2 rounded-2xl text-lg ${confirmOrder?.status === "matched" || !sellerMayMarkReceived
                           ? "bg-gray-100 dark:bg-[var(--card-color)] text-gray-400 dark:text-[#888]"
                           : "bg-[#F79330] text-white"
                           } ${(() => {
@@ -841,7 +1064,9 @@ const FinalSell: React.FC<FinalSellProps> = ({ orderData }) => {
                             return (
                               isThisTradeLoading ||
                               !confirmOrder?.id ||
-                              confirmOrder?.status === "matched"
+                              confirmOrder?.status === "matched" ||
+                              !sellerMayMarkReceived ||
+                              isExitingToP2p
                             );
                           })()
                         }
@@ -851,7 +1076,7 @@ const FinalSell: React.FC<FinalSellProps> = ({ orderData }) => {
                             confirmTradeLoading &&
                             !!confirmOrder?.id &&
                             lastActionTradeIdRef.current === confirmOrder.id;
-                          return isThisTradeLoading ? "Notifying seller..." : "Payments Received";
+                          return isThisTradeLoading ? "Notifying buyer..." : "Payments Received";
                         })()}
                       </button>
                     </div>

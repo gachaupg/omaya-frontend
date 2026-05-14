@@ -13,14 +13,13 @@ import {
   resetPassword,
 } from "@/features/auth/slices/authSlice";
 import { AppDispatch } from "@/features/auth/store";
-import { storage } from "../utils/storage";
 import { useI18n } from "@/lib/useI18n";
 
 const ForgetPassword = () => {
   const { t } = useI18n("auth");
   const dispatch = useDispatch<AppDispatch>();
   const router = useRouter();
-  const [email, setEmail] = useState(() => storage.getUserEmail());
+  const [email, setEmail] = useState("");
   const [emailError, setEmailError] = useState("");
   const [isLoading, setIsLoading] = useState(false);
   const [formMessage, setFormMessage] = useState<{
@@ -44,7 +43,6 @@ const ForgetPassword = () => {
     setIsLoading(true);
     try {
       const message = await dispatch(forgotPassword({ email })).unwrap();
-      storage.setUserEmail(email);
       setFormMessage({
         type: "success",
         text: "Password resent email sent to your your email. redirect in 7 seconds...",

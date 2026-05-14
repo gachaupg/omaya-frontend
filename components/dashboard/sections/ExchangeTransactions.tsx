@@ -10,6 +10,10 @@ import { useDashboardI18n } from "@/lib/useDashboardI18n";
 import { SortArrowsIcon } from "@/components/ui/SortArrowsIcon";
 import { getHighResAssetIcon } from "@/features/express/utils/imageHelpers";
 import { StatusBadge } from "@/components/ui/StatusBadge";
+import {
+  isPendingAddressDashboardStatus,
+  shouldOmitExchangeWithoutDepositOrWithdrawal,
+} from "@/lib/utils/dashboardTransactionFilters";
 
 interface RootState {
   p2pTransactions: {
@@ -339,11 +343,16 @@ const ExchangeTransactions = ({ itemsPerPage = 10 }) => {
       </div>
     );
   }
-  if (
-    !transactions ||
-    !transactions.results ||
-    transactions.results.length === 0
-  ) {
+  const resultsArrayRaw = Array.isArray(transactions?.results)
+    ? transactions.results
+    : [];
+  const resultsArray = resultsArrayRaw.filter(
+    (tx: any) =>
+      !isPendingAddressDashboardStatus(tx?.status ?? tx?.stages) &&
+      !shouldOmitExchangeWithoutDepositOrWithdrawal(tx)
+  );
+
+  if (!transactions || resultsArray.length === 0) {
     return (
       <NoDataFound
         title={t(
@@ -359,8 +368,6 @@ const ExchangeTransactions = ({ itemsPerPage = 10 }) => {
   }
 
   // Show all transactions without filtering by user, sorted by created_at (newest first)
-  // Ensure transactions.results is an array before spreading
-  const resultsArray = Array.isArray(transactions.results) ? transactions.results : [];
   const allResults = [...resultsArray].sort((a: any, b: any) => {
     const dateA = new Date(a.created_at).getTime();
     const dateB = new Date(b.created_at).getTime();

@@ -38,6 +38,12 @@ export const API_CONFIG = {
     /** Account freeze/unfreeze pushes `{ type: "freeze_status_update", data: { freeze, message } }` */
     FREEZE_STATUS_WS: (token: string) =>
       `${getWebSocketBaseUrl()}/ws/freeze-status/?token=${encodeURIComponent(token)}`,
+    /** Live device session list: `{ type: "devices_update", devices: [...] }` */
+    DEVICE_SESSIONS_WS: (token: string) =>
+      `${getWebSocketBaseUrl()}/ws/session/?token=${encodeURIComponent(token)}`,
+    /** User presence: connect while tab visible + authenticated → online; disconnect → offline */
+    PRESENCE_WS: (token: string) =>
+      `${getWebSocketBaseUrl()}/ws/presence/?token=${encodeURIComponent(token)}`,
   },
   BLOG: {
     BLOGS: "/administration/blogs/blog/",
@@ -84,6 +90,9 @@ export const API_CONFIG = {
     TRANSACTION_SUMMARY: "/trading_engine/transactionsummaryview/",
     ORDER_MATCH: "/trading_engine/p2p/orders/",
     GET_CONFIRM_ORDER: "/trading_engine/p2p/trades/",
+    /** POST body `{ action: "accept" | "decline" }` — advertiser responds to a pending match */
+    TRADE_RESPOND: (tradeId: string) =>
+      `/trading_engine/p2p/trades/${encodeURIComponent(tradeId)}/respond/`,
     SINGLE_ORDER: "/trading_engine/p2porders/",
     CANCEL_ORDER: "/trading_engine/p2p/trades/",
     APPEALS: "/trading_engine/appeals/create/",

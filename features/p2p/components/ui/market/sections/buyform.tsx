@@ -26,6 +26,15 @@ import { useTradeStatusWebSocket } from "@/features/p2p/hooks/useTradeStatusWebS
 
 import { logger } from '@/lib/utils/logger';
 import { parseDurationToSeconds, formatDurationForDisplay } from "@/features/p2p/components/Common/utils";
+import {
+  PENDING_ACCEPTANCE_AUTO_CANCEL_MS,
+  type TradeLifecycleBanner,
+  wsPayloadToSnapshot,
+  isPendingAcceptanceStatus,
+  isDeclinedLikeStatus,
+  formatCountdownSeconds,
+  wsStatusPayloadMatchesTrade,
+} from "@/features/p2p/utils/tradeWsAcceptanceGate";
 
 interface FinalBuyProps {
   orderData?: P2POrder;
@@ -60,10 +69,51 @@ function FinalBuy({ orderData }: FinalBuyProps) {
   const [showFeedbackModal, setShowFeedbackModal] = useState(false);
   const [feedbackRating, setFeedbackRating] = useState<boolean | null>(null);
   const [feedbackComment, setFeedbackComment] = useState("");
+  const [tradeLifecycleBanner, setTradeLifecycleBanner] = useState<TradeLifecycleBanner | null>(null);
+  const [wsTradeSnapshot, setWsTradeSnapshot] = useState<{ rawStatus: string; can_confirm_payment?: boolean }>({
+    rawStatus: "",
+  });
+  const [pendingAcceptanceStartedAt, setPendingAcceptanceStartedAt] = useState<number | null>(null);
+  const [pendingAcceptanceTick, setPendingAcceptanceTick] = useState(0);
+  const wsSnapshotRef = useRef(wsTradeSnapshot);
+  const confirmOrderIdRef = useRef<string | null>(null);
+  const exitingToP2pRef = useRef(false);
+  const [isExitingToP2p, setIsExitingToP2p] = useState(false);
   const router = useRouter();
 
   const { loading: feedbackLoading } = useSelector(
     (state: RootState) => state.feedbackSubmission
+  );
+
+  useEffect(() => {
+    confirmOrderIdRef.current = confirmOrder?.id ?? null;
+  }, [confirmOrder?.id]);
+
+  const performExitToP2p = React.useCallback(
+    async (banner?: TradeLifecycleBanner) => {
+      if (exitingToP2pRef.current) return;
+      exitingToP2pRef.current = true;
+      setIsExitingToP2p(true);
+      if (banner) setTradeLifecycleBanner(banner);
+      const id = confirmOrderIdRef.current;
+      try {
+        if (isAuthenticated && id) {
+          try {
+            await dispatch(cancelP2POrderThunk(id)).unwrap();
+          } catch {
+            /* trade may already be cancelled */
+          }
+        }
+      } finally {
+        try {
+          localStorage.removeItem("p2p_trade_id");
+        } catch {
+          /* no-op */
+        }
+        setTimeout(() => router.push("/dashboard/p2p"), 900);
+      }
+    },
+    [dispatch, isAuthenticated, router]
   );
 
   // WebSocket status update callback - use useCallback to prevent reconnections
@@ -73,6 +123,54 @@ function FinalBuy({ orderData }: FinalBuyProps) {
     logger.debug('p2p', "📊 Current confirmOrder.id:", confirmOrder?.id);
     logger.debug('p2p', "📊 Current confirmOrder.status:", confirmOrder?.status);
     logger.debug('p2p', "📊 New status:", status.status);
+
+    const payload = status as Record<string, unknown>;
+    const pageTradeId = String(confirmOrder?.id ?? confirmOrderIdRef.current ?? "").trim();
+    if (pageTradeId && !wsStatusPayloadMatchesTrade(payload, pageTradeId)) {
+      logger.debug("p2p", "buyform: skip WS status (different trade than current page)", {
+        pageTradeId,
+      });
+      return;
+    }
+
+    const snap = wsPayloadToSnapshot(payload);
+    setWsTradeSnapshot(snap);
+    wsSnapshotRef.current = snap;
+
+    const lowered = snap.rawStatus.toLowerCase();
+    if (lowered === "cancelled" || lowered === "canceled") {
+      setTradeLifecycleBanner({
+        tone: "warning",
+        message: "This trade was cancelled. Returning you to P2P.",
+      });
+      void performExitToP2p();
+      return;
+    }
+
+    if (isDeclinedLikeStatus(payload)) {
+      setTradeLifecycleBanner({
+        tone: "danger",
+        message: "The other party declined this trade. Cancelling and returning you to P2P.",
+      });
+      void performExitToP2p();
+      return;
+    }
+
+    if (isPendingAcceptanceStatus(snap.rawStatus)) {
+      setPendingAcceptanceStartedAt((prev) => prev ?? Date.now());
+      setTradeLifecycleBanner((prev) =>
+        prev?.tone === "danger"
+          ? prev
+          : {
+              tone: "info",
+              message:
+                "Waiting for the trade owner to accept this trade before you can mark payment as sent.",
+            }
+      );
+    } else {
+      setPendingAcceptanceStartedAt(null);
+      setTradeLifecycleBanner((prev) => (prev?.tone === "info" ? null : prev));
+    }
 
     const oldStatus = confirmOrder?.status;
     const newStatus = status.status;
@@ -111,7 +209,7 @@ function FinalBuy({ orderData }: FinalBuyProps) {
         newStatus: newStatus
       });
     }
-  }, [confirmOrder, dispatch]);
+  }, [confirmOrder, dispatch, performExitToP2p]);
 
   // WebSocket for real-time trade status updates
   const { isConnected: statusWsConnected } = useTradeStatusWebSocket({
@@ -127,23 +225,42 @@ function FinalBuy({ orderData }: FinalBuyProps) {
 
   // Use limit_duration from order only (e.g. "00:00:05" = 5 min) - never use trade's limit (30 min default)
   const displaySeconds = parseDurationToSeconds(singleOrder?.limit_duration);
+  const inPendingAcceptanceBuyer =
+    isPendingAcceptanceStatus(wsTradeSnapshot.rawStatus) ||
+    isPendingAcceptanceStatus(String(confirmOrder?.status || ""));
+  const buyerMayMarkMoneySent =
+    confirmOrder?.status === "matched" &&
+    confirmOrder?.can_confirm_payment !== false &&
+    wsTradeSnapshot.can_confirm_payment !== false &&
+    (!inPendingAcceptanceBuyer ||
+      confirmOrder?.can_confirm_payment === true ||
+      wsTradeSnapshot.can_confirm_payment === true);
+  /** Payment window timer arms only after trade-confirm WS has sent a status (REST flags alone must not start the clock). */
+  const tradeConfirmStatusFromWs =
+    String(wsTradeSnapshot.rawStatus || "").trim() !== "";
+  /** Matched-phase payment window counts down only after seller acceptance (past pending_acceptance). */
+  const buyerPaymentTimerActive =
+    confirmOrder?.status === "matched" &&
+    tradeConfirmStatusFromWs &&
+    !inPendingAcceptanceBuyer &&
+    buyerMayMarkMoneySent;
+
   // Remove this line - we'll get tradeId from localStorage inside useEffect
   // Local countdown state for auto-cancel logic
   const [countdown, setCountdown] = useState(displaySeconds);
   const prevStatus = useRef(confirmOrder?.status);
 
-  // Sync countdown ONLY when status becomes 'matched'
+  // When the payment window is active, (re)start from full limit_duration
   useEffect(() => {
-    if (confirmOrder?.status === "matched") {
+    if (buyerPaymentTimerActive) {
       setCountdown(displaySeconds);
     }
-    // Do not reset countdown if status is not matched
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [displaySeconds, confirmOrder?.status]);
+  }, [displaySeconds, buyerPaymentTimerActive]);
 
-  // Countdown effect
+  // Countdown effect — only while payment timer is active (after acceptance)
   useEffect(() => {
-    if (confirmOrder?.status !== "matched") return;
+    if (!buyerPaymentTimerActive) return;
     if (countdown <= 0) return;
     const timer = setInterval(() => {
       setCountdown((prev) => {
@@ -157,7 +274,7 @@ function FinalBuy({ orderData }: FinalBuyProps) {
       });
     }, 1000);
     return () => clearInterval(timer);
-  }, [confirmOrder?.status, countdown]);
+  }, [buyerPaymentTimerActive, countdown]);
 
   useEffect(() => {
     // Use trade_id from localStorage first, then fallback to params
@@ -209,12 +326,12 @@ function FinalBuy({ orderData }: FinalBuyProps) {
     setIsClient(true);
   }, []);
 
-  // Reset countdown to displaySeconds when status is not 'matched'
+  // Reset countdown to displaySeconds when payment timer is not active
   useEffect(() => {
-    if (confirmOrder?.status !== "matched") {
+    if (!buyerPaymentTimerActive) {
       setCountdown(displaySeconds);
     }
-  }, [confirmOrder?.status, displaySeconds]);
+  }, [buyerPaymentTimerActive, displaySeconds]);
 
   // Reset modal and previous status when switching to a different trade
   useEffect(() => {
@@ -225,11 +342,64 @@ function FinalBuy({ orderData }: FinalBuyProps) {
       // Reset lastActionTradeIdRef when viewing a different trade
       // This prevents showing loading state for actions on different trades
       lastActionTradeIdRef.current = null;
+      exitingToP2pRef.current = false;
+      setIsExitingToP2p(false);
+      setWsTradeSnapshot({ rawStatus: "" });
+      wsSnapshotRef.current = { rawStatus: "" };
+      setPendingAcceptanceStartedAt(null);
+      setTradeLifecycleBanner(null);
     } else if (confirmOrder?.id && !prevTradeIdRef.current) {
       // Reset on initial load when confirmOrder is first set
       lastActionTradeIdRef.current = null;
     }
   }, [confirmOrder?.id]);
+
+  // REST may expose pending_acceptance / flags before WebSocket fires
+  useEffect(() => {
+    if (!confirmOrder?.id) return;
+    const st = String(confirmOrder.status || "");
+    if (isPendingAcceptanceStatus(st)) {
+      setPendingAcceptanceStartedAt((prev) => prev ?? Date.now());
+      setWsTradeSnapshot((prev) => ({
+        rawStatus: "pending_acceptance",
+        can_confirm_payment: confirmOrder.can_confirm_payment ?? prev.can_confirm_payment,
+      }));
+      wsSnapshotRef.current = {
+        rawStatus: "pending_acceptance",
+        can_confirm_payment: confirmOrder.can_confirm_payment ?? wsSnapshotRef.current.can_confirm_payment,
+      };
+    }
+    if (typeof confirmOrder.can_confirm_payment === "boolean") {
+      setWsTradeSnapshot((prev) => ({
+        ...prev,
+        can_confirm_payment: confirmOrder.can_confirm_payment,
+      }));
+      wsSnapshotRef.current = {
+        ...wsSnapshotRef.current,
+        can_confirm_payment: confirmOrder.can_confirm_payment,
+      };
+    }
+  }, [confirmOrder?.id, confirmOrder?.status, confirmOrder?.can_confirm_payment]);
+
+  useEffect(() => {
+    if (pendingAcceptanceStartedAt == null) return;
+    const id = window.setInterval(() => setPendingAcceptanceTick((t) => t + 1), 1000);
+    return () => window.clearInterval(id);
+  }, [pendingAcceptanceStartedAt]);
+
+  useEffect(() => {
+    if (pendingAcceptanceStartedAt == null || exitingToP2pRef.current) return;
+    const snap = wsSnapshotRef.current;
+    if (!isPendingAcceptanceStatus(snap.rawStatus)) return;
+    const elapsed = Date.now() - pendingAcceptanceStartedAt;
+    if (elapsed >= PENDING_ACCEPTANCE_AUTO_CANCEL_MS) {
+      void performExitToP2p({
+        tone: "warning",
+        message:
+          "This trade was not accepted in time and will be cancelled. Returning you to P2P.",
+      });
+    }
+  }, [pendingAcceptanceStartedAt, pendingAcceptanceTick, performExitToP2p]);
 
   // Show success modal only on transition to completed for the current trade
   useEffect(() => {
@@ -402,6 +572,23 @@ function FinalBuy({ orderData }: FinalBuyProps) {
     }
   };
 
+  const pendingAcceptanceSecondsLeft =
+    pendingAcceptanceStartedAt != null
+      ? Math.max(
+          0,
+          Math.ceil(
+            (PENDING_ACCEPTANCE_AUTO_CANCEL_MS - (Date.now() - pendingAcceptanceStartedAt)) / 1000
+          )
+        )
+      : null;
+
+  const lifecycleBannerText =
+    tradeLifecycleBanner &&
+    tradeLifecycleBanner.tone === "info" &&
+    pendingAcceptanceSecondsLeft != null
+      ? `${tradeLifecycleBanner.message} Auto-cancel in ${formatCountdownSeconds(pendingAcceptanceSecondsLeft)} if not accepted.`
+      : tradeLifecycleBanner?.message ?? null;
+
   // Custom copy handler that shows "Copied" in button
   const handleCopyToClipboard = (value: string | undefined, buttonId: string) => {
     if (!value) return;
@@ -433,6 +620,20 @@ function FinalBuy({ orderData }: FinalBuyProps) {
               {singleOrderError}
             </div>
           )}
+          {lifecycleBannerText && tradeLifecycleBanner && (
+            <div
+              role="status"
+              className={`mb-3 rounded-xl px-4 py-2.5 text-sm font-medium border ${
+                tradeLifecycleBanner.tone === "danger"
+                  ? "border-red-300 bg-red-50 text-red-900 dark:border-red-900/50 dark:bg-red-950/40 dark:text-red-100"
+                  : tradeLifecycleBanner.tone === "warning"
+                    ? "border-amber-300 bg-amber-50 text-amber-950 dark:border-amber-800 dark:bg-amber-950/40 dark:text-amber-100"
+                    : "border-[#1D8751]/40 bg-[#1D8751]/10 text-gray-900 dark:text-white dark:bg-[#1D8751]/20"
+              }`}
+            >
+              {lifecycleBannerText}
+            </div>
+          )}
           <div className="flex items-center justify-between gap-2 flex-wrap mb-2">
             <div className="flex items-center gap-3 flex-wrap min-w-0">
               <p
@@ -446,9 +647,7 @@ function FinalBuy({ orderData }: FinalBuyProps) {
                 {isClient ? (
                   <TimeDisplay
                     seconds={
-                      confirmOrder?.status === "matched"
-                        ? countdown
-                        : displaySeconds
+                      buyerPaymentTimerActive ? countdown : displaySeconds
                     }
                   />
                 ) : (
@@ -656,7 +855,7 @@ function FinalBuy({ orderData }: FinalBuyProps) {
                 <span className="text-[#1D8751]">Transaction time:</span>
                 {isClient ? (
                   <TimeDisplay
-                    seconds={confirmOrder?.status === "matched" ? countdown : displaySeconds}
+                    seconds={buyerPaymentTimerActive ? countdown : displaySeconds}
                   />
                 ) : (
                   <span>--:--</span>
@@ -761,7 +960,7 @@ function FinalBuy({ orderData }: FinalBuyProps) {
                     </div>
                   </div>
                   <div className="flex-1">
-                    {(confirmOrder?.status !== "matched" || countdown === 0) && (
+                    {(!buyerPaymentTimerActive || countdown === 0) && (
                       <div className="mt-4 mb-2 text-lg">
                         <span className="text-gray-900 dark:text-white">
                           I have an issue with transaction.{" "}
@@ -782,13 +981,13 @@ function FinalBuy({ orderData }: FinalBuyProps) {
                           }`}
                         onClick={handleCancelTransaction}
                         disabled={
-                          cancelLoading || confirmOrder?.status === "half-matched"
+                          cancelLoading || confirmOrder?.status === "half-matched" || isExitingToP2p
                         }
                       >
                         {cancelLoading ? "Cancelling..." : "Cancel Transaction"}
                       </button>
                       <button
-                        className={`w-full md:w-auto flex-1 py-2 rounded-2xl text-lg  ${confirmOrder?.status === "half-matched"
+                        className={`w-full md:w-auto flex-1 py-2 rounded-2xl text-lg  ${confirmOrder?.status === "half-matched" || !buyerMayMarkMoneySent
                           ? "bg-white dark:bg-[var(--card-color)] text-gray-400 dark:text-[#888]"
                           : "bg-[#1D8751] text-white"
                           } ${(() => {
@@ -808,7 +1007,9 @@ function FinalBuy({ orderData }: FinalBuyProps) {
                             return (
                               isThisTradeLoading ||
                               !confirmOrder?.id ||
-                              confirmOrder?.status === "half-matched"
+                              confirmOrder?.status === "half-matched" ||
+                              !buyerMayMarkMoneySent ||
+                              isExitingToP2p
                             );
                           })()
                         }

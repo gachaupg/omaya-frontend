@@ -72,13 +72,24 @@ const KYCVerificationModal: React.FC = () => {
     "Your KYC was rejected. Please resubmit with correct documents.";
   const reviewMessageRaw = String(kycStatus?.message || "").trim();
   const sanitizedReviewMessage = reviewMessageRaw.replace(/^message:\s*/i, "").trim();
+  const isGenericWaitingCopy = (msg: string) => {
+    const m = msg.toLowerCase();
+    return (
+      !msg ||
+      m === "unknown status." ||
+      m === "unknown status" ||
+      m === "your kyc is waiting approval." ||
+      m === "your kyc is waiting approval" ||
+      m === "verification waiting approval" ||
+      (m.includes("waiting approval") && msg.length < 90) ||
+      (m.includes("under review") && m.includes("please wait") && msg.length < 120)
+    );
+  };
   const reviewMessage =
-    !sanitizedReviewMessage ||
-    sanitizedReviewMessage.toLowerCase() === "unknown status." ||
-    sanitizedReviewMessage.toLowerCase() === "unknown status"
+    !sanitizedReviewMessage || isGenericWaitingCopy(sanitizedReviewMessage)
       ? normalizedKycStatus === "waiting_approval"
-        ? "Your KYC is waiting approval."
-        : "Your KYC is under review. Please wait for admin approval."
+        ? "Your documents were received and are with our compliance team for review. You do not need to resubmit unless we contact you."
+        : "Your documents are being reviewed. You do not need to resubmit unless we contact you."
       : sanitizedReviewMessage;
 
   useEffect(() => {
@@ -725,10 +736,16 @@ const KYCVerificationModal: React.FC = () => {
             </div>
             
             <h2 className="text-xl font-semibold text-gray-900 dark:text-white mb-2">Verification Pending</h2>
-            <p className="text-gray-600 dark:text-gray-300 text-sm mb-6">
-              Your verification documents have been submitted successfully and are currently under review by our team. 
-              We'll notify you once the verification is complete.
+            <p className="text-gray-600 dark:text-gray-300 text-sm mb-4">
+              Your verification documents were submitted successfully. Our team is reviewing them now.
             </p>
+            <div className="bg-[#1D8751]/10 dark:bg-[#1D8751]/15 border border-[#1D8751]/30 dark:border-[#1D8751]/40 rounded-lg p-4 mb-6 w-full text-left">
+              <p className="text-sm font-semibold text-gray-900 dark:text-white mb-1">Typical processing time</p>
+              <p className="text-sm text-gray-700 dark:text-gray-300">
+                Most reviews are completed within <span className="font-semibold text-[#1D8751]">1–3 business days</span>.
+                During peak periods it may take a little longer. We will email you as soon as there is an update.
+              </p>
+            </div>
             
             {/* <div className="bg-gray-100 dark:bg-[#2A2A2A] border border-gray-200 dark:border-[#35353E] rounded-lg p-4 mb-6 w-full">
               <div className="flex items-start gap-3 text-left">
@@ -1258,7 +1275,16 @@ const KYCVerificationModal: React.FC = () => {
           
             <div className="text-gray-700 dark:text-gray-300 space-y-4">
               {isWaitingApproval ? (
-                <p>{reviewMessage}</p>
+                <>
+                  <p className="text-gray-700 dark:text-gray-300">{reviewMessage}</p>
+                  <div className="bg-green-50 dark:bg-green-900/20 border border-green-400 dark:border-green-500 text-green-800 dark:text-green-200 p-3 rounded-lg text-sm space-y-1">
+                    <p className="font-semibold">Typical processing time</p>
+                    <p>
+                      Most verifications finish within <span className="font-semibold">1–3 business days</span>.
+                      Busy periods can extend this slightly. We will email you as soon as a decision is ready—you do not need to take further action unless we ask.
+                    </p>
+                  </div>
+                </>
               ) : isRejectedKyc ? (
                 <>
                   <p>
@@ -1280,12 +1306,6 @@ const KYCVerificationModal: React.FC = () => {
                   </p>
                 </>
               )}
-
-            {isWaitingApproval && (
-              <div className="bg-green-50 dark:bg-green-900/20 border border-green-400 dark:border-green-500 text-green-700 dark:text-green-300 p-3 rounded-lg text-sm">
-                <p>{reviewMessage}</p>
-              </div>
-            )}
 
             {isRejectedKyc && (
               <div className="bg-red-50 dark:bg-red-900/20 border border-red-400 dark:border-red-500 text-red-700 dark:text-red-300 p-3 rounded-lg text-sm space-y-2">

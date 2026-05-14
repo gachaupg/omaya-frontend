@@ -684,8 +684,8 @@ const PaymentMethodsModal: React.FC<PaymentMethodsModalProps> = ({
           <div className="flex flex-col gap-3">
             <p className="text-sm text-gray-600 dark:text-[#788099]">
               {maskedUserEmail
-                ? `We&apos;ve sent a verification code to ${maskedUserEmail}. Enter it below to continue.`
-                : "We&apos;ve sent a verification code to your email address. Enter it below to continue."}
+                ? `We have sent a verification code to ${maskedUserEmail}. Enter it below to continue.`
+                : "We have sent a verification code to your email address. Enter it below to continue."}
             </p>
             <input
               type="text"

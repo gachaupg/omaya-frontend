@@ -927,7 +927,7 @@ const PaymentMethods = () => {
             {addStep === "otp" ? (
               <>
                 <p className="text-sm text-gray-600 dark:text-[#788099]">
-                  We&apos;ve sent a verification code to your email address. Enter it below to continue.
+                  We have sent a verification code to your email address. Enter it below to continue.
                 </p>
                 <input
                   type="text"
