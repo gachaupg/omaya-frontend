@@ -71,6 +71,7 @@ import {
   AssetDropdownVirtualized,
   buildAssetDropdownRows,
 } from "@/features/express/components/forms/AssetDropdownVirtualized";
+import { assetMatchesSearchTerm } from "@/lib/utils/assetSearch";
 import { ExpressP2PWithdrawalTermsPanel } from "@/features/express/components/legal/ExpressP2PWithdrawalTermsPanel";
 import { EXPRESS_P2P_WITHDRAWAL_TERMS_OF_SERVICE_MODAL } from "@/features/express/constants/expressP2PWithdrawalTerms";
 
@@ -2712,21 +2713,13 @@ export default function WithdrawalForm({
     }
   }, [selectedAsset, getAmount, isCalculatingFromPay, apiValidationError, isSubmitting]);
 
-  // Filter swap assets based on search term and filter tab - search by ticker and name
+  // Filter swap assets based on search term and filter tab - search by ticker, name, symbol, and network
   const filteredSwapAssets = useMemo(() => {
     let filtered = assetsDisplay.displayData?.filter((asset: SupportedAsset) => {
-      const ticker = asset?.ticker?.toUpperCase() || "";
-      const name = asset?.name?.toUpperCase() || "";
-      const symbol = asset?.symbol?.toUpperCase() || "";
       const searchTerm = assetSearchTerm.toUpperCase();
 
       // Apply search filter
-      const matchesSearch = !searchTerm ||
-        ticker.includes(searchTerm) ||
-        name.includes(searchTerm) ||
-        symbol.includes(searchTerm);
-
-      if (!matchesSearch) return false;
+      if (searchTerm && !assetMatchesSearchTerm(asset, searchTerm)) return false;
 
       // Apply filter tab (only for home page)
       // Important: while the user is searching, do not apply tab filtering
