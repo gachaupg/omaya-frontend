@@ -60,7 +60,7 @@ const MyAdsTable: React.FC<Props> = ({ trades, loading }) => {
 
   /** Utils */
   const getActionOptions = (trade: any) => {
-    const baseOptions = ["Edit", "Delete"];
+    const baseOptions = ["Edit", "Cancel"];
     const statusOption = trade.status === "published" ? "Put Offline" : "Publish";
     const options = [...baseOptions];
     if (trade.status === "completed") options.unshift("Duplicate");
@@ -135,7 +135,7 @@ const MyAdsTable: React.FC<Props> = ({ trades, loading }) => {
     try {
       let result: any;
       switch (action) {
-        case "Delete":
+        case "Cancel":
           result = await dispatch(deleteP2POrderThunk(trade.id) as any);
           break;
         case "Put Offline":
@@ -165,14 +165,27 @@ const MyAdsTable: React.FC<Props> = ({ trades, loading }) => {
           return;
       }
       // Only show success toast if the action was not rejected
+      const actionPastTense =
+        action === "Cancel"
+          ? "cancelled"
+          : `${action.toLowerCase()}d`;
       if (result?.error) {
-        toast.error(result.payload || `Failed to ${action.toLowerCase()} trade`);
+        toast.error(
+          result.payload ||
+            (action === "Cancel"
+              ? "Failed to cancel trade"
+              : `Failed to ${action.toLowerCase()} trade`)
+        );
       } else {
         dispatch(fetchMyOrders(1) as any);
-        toast.success(`Trade ${action.toLowerCase()}d successfully`);
+        toast.success(`Trade ${actionPastTense} successfully`);
       }
     } catch {
-      toast.error(`Failed to ${action.toLowerCase()} trade`);
+      toast.error(
+        action === "Cancel"
+          ? "Failed to cancel trade"
+          : `Failed to ${action.toLowerCase()} trade`
+      );
     }
   };
 
@@ -227,7 +240,7 @@ const MyAdsTable: React.FC<Props> = ({ trades, loading }) => {
                   {option === "Edit" && (
                     <Pencil size={20} className="text-[#1D8751]" />
                   )}
-                  {option === "Delete" && (
+                  {option === "Cancel" && (
                     <XCircle size={20} className="text-[#1D8751]" />
                   )}
                   {option === "Duplicate" && (
