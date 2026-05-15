@@ -24,6 +24,7 @@ import { showToast } from "@/lib/utils/toast";
 import { handleCopyToClipboard, parseDurationToSeconds, formatDurationForDisplay } from "@/features/p2p/components/Common/utils";
 import { Dialog } from "@headlessui/react";
 import { useTradeStatusWebSocket } from "@/features/p2p/hooks/useTradeStatusWebSocket";
+import { useP2pTradeCanceledRedirect } from "@/features/p2p/hooks/useP2pTradeCanceledRedirect";
 
 import { logger } from '@/lib/utils/logger';
 
@@ -56,6 +57,12 @@ const FinalSell: React.FC<FinalSellProps> = ({ orderData }) => {
     (state: RootState) => state.auth
   );
 
+  const { handleWsStatusPayload } = useP2pTradeCanceledRedirect({
+    tradeId: confirmOrder?.id,
+    confirmOrderStatus: confirmOrder?.status,
+    enabled: isAuthenticated && !!confirmOrder?.id,
+  });
+
   // WebSocket status update callback - use useCallback to prevent reconnections
   const handleStatusUpdate = React.useCallback((status: any) => {
     logger.debug('p2p', "🔔 Trade status update received in TradeSellerOwner:", status);
@@ -63,6 +70,11 @@ const FinalSell: React.FC<FinalSellProps> = ({ orderData }) => {
     logger.debug('p2p', "📊 Current confirmOrder.id:", confirmOrder?.id);
     logger.debug('p2p', "📊 Current confirmOrder.status:", confirmOrder?.status);
     logger.debug('p2p', "📊 New status:", status.status);
+
+    const payload = status as Record<string, unknown>;
+    if (handleWsStatusPayload(payload)) {
+      return;
+    }
 
     const oldStatus = confirmOrder?.status;
     const newStatus = status.status;
@@ -104,7 +116,7 @@ const FinalSell: React.FC<FinalSellProps> = ({ orderData }) => {
         newStatus: newStatus
       });
     }
-  }, [confirmOrder, dispatch]);
+  }, [confirmOrder, dispatch, handleWsStatusPayload]);
 
   // WebSocket for real-time trade status updates
   const { isConnected: statusWsConnected } = useTradeStatusWebSocket({

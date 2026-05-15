@@ -33,6 +33,10 @@ import { API_ENDPOINTS } from "../api";
 import { post, get, AxiosError } from "../../../lib/apiClient";
 import { storage } from "../utils/storage";
 import { cookieUtils } from "@/lib/utils/cookieUtils";
+import {
+  clearPersistedDeviceSessionId,
+  resetDeviceSessionTrackingForLogin,
+} from "@/features/settings/utils/deviceSessionStorage";
 
 const CROSS_TAB_LOGOUT_FLAG = "__omayaCrossTabLogout";
 const KYC_STATUS_CACHE_TTL_MS = 5 * 60 * 1000;
@@ -498,6 +502,7 @@ const authSlice = createSlice({
         localStorage.removeItem("user");
         // Don't clear p2p_terms_accepted on logout - it should persist across sessions
         // Terms acceptance is user-specific and should remain accepted
+        clearPersistedDeviceSessionId();
       }
 
       // Clear all cached data on logout
@@ -755,6 +760,10 @@ const authSlice = createSlice({
           action.payload.access,
           accessTokenCookieOptions(rememberMe)
         );
+
+        if (typeof window !== "undefined") {
+          resetDeviceSessionTrackingForLogin();
+        }
       }
     );
     builder.addCase(loginUser.rejected, (state, action) => {
@@ -941,6 +950,10 @@ const authSlice = createSlice({
           action.payload.access,
           accessTokenCookieOptions(rememberMe)
         );
+
+        if (typeof window !== "undefined") {
+          resetDeviceSessionTrackingForLogin();
+        }
       }
     );
     builder.addCase(loginWith2FA.rejected, (state, action) => {
