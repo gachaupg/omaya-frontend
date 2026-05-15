@@ -147,7 +147,6 @@ const PrivacySecurity = () => {
   const [sessionToDelete, setSessionToDelete] = useState<DeviceSession | null>(null);
   const [showDeleteConfirmModal, setShowDeleteConfirmModal] = useState(false);
   const isRedirectingAfterLogoutAllRef = useRef(false);
-  const hasForcedLogoutForNoSessionsRef = useRef(false);
 
   // Track session creation to prevent premature auto-logout
   const [isCreatingSession, setIsCreatingSession] = useState(false);
@@ -635,33 +634,8 @@ const PrivacySecurity = () => {
     }
   }, [deviceSessionsLoading, deviceSessionsError, isAuthenticated]);
 
-  // Product requirement: in Privacy & Security, force logout when there are no active
-  // device sessions at all (after loading completes and we are not in session-creation flow).
-  useEffect(() => {
-    if (
-      hasForcedLogoutForNoSessionsRef.current ||
-      isRedirectingAfterLogoutAllRef.current
-    ) {
-      return;
-    }
-    const noSessionRows = allSessions.length === 0;
-    if (
-      isAuthenticated &&
-      !deviceSessionsLoading &&
-      !isCreatingSession &&
-      noSessionRows
-    ) {
-      hasForcedLogoutForNoSessionsRef.current = true;
-      showToast.info("No active devices found. Please log in again.");
-      performLogoutAndRedirect();
-    }
-  }, [
-    isAuthenticated,
-    deviceSessionsLoading,
-    isCreatingSession,
-    allSessions.length,
-    performLogoutAndRedirect,
-  ]);
+  // Do not force-logout on an empty session list right after login — global hooks create
+  // the device session and remote revocation handles sign-out from other devices.
 
   // Scroll to top when page changes (but not on initial load)
   useEffect(() => {

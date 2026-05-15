@@ -31,6 +31,7 @@ import { showToast } from "@/lib/utils/toast";
 import { handleCopy, parseDurationToSeconds } from "../../../Common/utils";
 import Image from "next/image";
 import { useTradeStatusWebSocket } from "@/features/p2p/hooks/useTradeStatusWebSocket";
+import { useP2pTradeCanceledRedirect } from "@/features/p2p/hooks/useP2pTradeCanceledRedirect";
 
 import { logger } from "@/lib/utils/logger";
 
@@ -67,6 +68,12 @@ const FinalSell: React.FC<FinalSellProps> = ({ orderData }) => {
     (state: RootState) => state.auth
   );
 
+  const { handleWsStatusPayload } = useP2pTradeCanceledRedirect({
+    tradeId: confirmOrder?.id,
+    confirmOrderStatus: confirmOrder?.status,
+    enabled: isAuthenticated && !!confirmOrder?.id,
+  });
+
   // WebSocket status update callback - use useCallback to prevent reconnections
   const handleStatusUpdate = React.useCallback(
     (status: any) => {
@@ -83,6 +90,11 @@ const FinalSell: React.FC<FinalSellProps> = ({ orderData }) => {
         confirmOrder?.status
       );
       logger.debug("p2p", "📊 New status:", status.status);
+
+      const payload = status as Record<string, unknown>;
+      if (handleWsStatusPayload(payload)) {
+        return;
+      }
 
       const oldStatus = confirmOrder?.status;
       const newStatus = status.status;
@@ -102,7 +114,7 @@ const FinalSell: React.FC<FinalSellProps> = ({ orderData }) => {
           ) {
 
           } else if (newStatus === "cancelled") {
-            showToast.error("Trade Cancelled", "The trade has been cancelled");
+            /* redirect handled by useP2pTradeCanceledRedirect */
           } else {
 
           }
@@ -133,7 +145,7 @@ const FinalSell: React.FC<FinalSellProps> = ({ orderData }) => {
         });
       }
     },
-    [confirmOrder, dispatch]
+    [confirmOrder, dispatch, handleWsStatusPayload]
   );
 
   // WebSocket for real-time trade status updates

@@ -1,0 +1,120 @@
+import type { DeviceSession } from "../types";
+import {
+  getPersistedDeviceSessionId,
+  persistCurrentDeviceSessionId,
+} from "./deviceSessionStorage";
+
+export function pickCurrentDeviceSession(
+  sessions: DeviceSession[]
+): DeviceSession | undefined {
+  const active = sessions.filter((s) => s.is_active !== false);
+  const explicit = active.find((s) => s.is_current === true);
+  if (explicit) return explicit;
+
+  const persisted = getPersistedDeviceSessionId();
+  if (persisted) {
+    return active.find((s) => s.session_id === persisted);
+  }
+
+  if (active.length === 1) {
+    return active[0];
+  }
+
+  return undefined;
+}
+
+export function isDeviceSessionStillActive(
+  sessionId: string,
+  sessions: DeviceSession[]
+): boolean {
+  const row = sessions.find((s) => s.session_id === sessionId);
+  if (!row) return false;
+  return row.is_active !== false;
+}
+
+export type SessionRevocationCheck = {
+  shouldLogout: boolean;
+  message?: string;
+  /** Call after a successful check to remember the current session id */
+  trackCurrent?: DeviceSession;
+};
+
+/**
+ * Returns whether this browser should sign out based on the latest device list.
+ */
+export function evaluateDeviceSessionRevocation(
+  sessions: DeviceSession[],
+  hadKnownCurrentSession: boolean
+): SessionRevocationCheck {
+  const current = pickCurrentDeviceSession(sessions);
+  if (current?.session_id) {
+    return { shouldLogout: false, trackCurrent: current };
+  }
+
+  const persisted = getPersistedDeviceSessionId();
+  if (hadKnownCurrentSession && persisted) {
+    if (!isDeviceSessionStillActive(persisted, sessions)) {
+      return {
+        shouldLogout: true,
+        message: "This device was signed out from another device.",
+      };
+    }
+  }
+
+  if (hadKnownCurrentSession && sessions.length === 0) {
+    return {
+      shouldLogout: true,
+      message: "Your session ended. Please sign in again.",
+    };
+  }
+
+  return { shouldLogout: false };
+}
+
+export function extractLoggedOutSessionId(
+  parsed: Record<string, unknown>
+): string | null {
+  const direct = parsed.logged_out_session_id;
+  if (typeof direct === "string" && direct.trim()) return direct.trim();
+
+  const data = parsed.data;
+  if (data && typeof data === "object") {
+    const nested = (data as Record<string, unknown>).logged_out_session_id;
+    if (typeof nested === "string" && nested.trim()) return nested.trim();
+  }
+
+  const sessionId = parsed.session_id;
+  if (
+    typeof sessionId === "string" &&
+    sessionId.trim() &&
+    (parsed.type === "session_logout" ||
+      parsed.type === "device_logged_out" ||
+      parsed.type === "session_revoked")
+  ) {
+    return sessionId.trim();
+  }
+
+  return null;
+}
+
+export function isRemoteLogoutForThisDevice(
+  loggedOutSessionId: string,
+  sessions: DeviceSession[]
+): boolean {
+  const persisted = getPersistedDeviceSessionId();
+  if (persisted && persisted === loggedOutSessionId) return true;
+
+  const current = pickCurrentDeviceSession(sessions);
+  if (current?.session_id === loggedOutSessionId) return true;
+
+  return false;
+}
+
+export function trackDeviceSessionList(sessions: DeviceSession[]): boolean {
+  const current = pickCurrentDeviceSession(sessions);
+  if (current?.session_id) {
+    persistCurrentDeviceSessionId(current.session_id);
+    return true;
+  }
+  return false;
+}
