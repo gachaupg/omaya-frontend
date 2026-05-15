@@ -1,5 +1,6 @@
 import React from "react";
 import { SupportedAsset } from "../types";
+import { assetMatchesSearchTerm } from "@/lib/utils/assetSearch";
 
 interface AssetDropdownProps {
   assets: SupportedAsset[];
@@ -107,12 +108,7 @@ const AssetDropdown: React.FC<AssetDropdownProps> = ({
           </div>
           <div className="py-2">
             {assets
-              .filter(
-                (asset) =>
-                  (asset.ticker?.toUpperCase() || "").includes(
-                    searchTerm.toUpperCase()
-                  )
-              )
+              .filter((asset) => assetMatchesSearchTerm(asset, searchTerm))
               .map((asset, index) => (
                 <div
                   key={asset.asset_id || `asset-${index}`}

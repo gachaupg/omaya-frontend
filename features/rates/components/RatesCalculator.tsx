@@ -53,6 +53,7 @@ import CopyButton from "@/components/ui/CopyButton";
 import { API_CONFIG } from "@/lib/appConfig";
 import { useValidateAddress } from "@/hooks/useValidateAddress";
 import { resolveForexDepositAdminPaymentDetailId } from "../../express/utils/forexDepositResolution";
+import { assetMatchesSearchTerm } from "@/lib/utils/assetSearch";
 import { ExpressP2PWithdrawalTermsPanel } from "@/features/express/components/legal/ExpressP2PWithdrawalTermsPanel";
 import { EXPRESS_P2P_WITHDRAWAL_TERMS_OF_SERVICE_MODAL } from "@/features/express/constants/expressP2PWithdrawalTerms";
 import ForexWithdrawal from "../../express/components/forms/ForexWithdrawal";
@@ -2578,21 +2579,11 @@ const getPaymentRestrictionMessage = (status?: string) =>
   // selectedPaymentDetail is now a state variable
 
   const hasAssetSearch = assetSearchTerm.trim().length > 0;
-  // Filter assets based on search term - search by ticker and name
+  // Filter assets based on search term - search by ticker, name, symbol, and network
   const filteredAssets =
-    assetsDisplay.displayData?.filter((asset: any) => {
-      const ticker = asset?.ticker?.toUpperCase() || "";
-      const name = asset?.name?.toUpperCase() || "";
-      const symbol = asset?.symbol?.toUpperCase() || "";
-      const searchTerm = assetSearchTerm.trim().toUpperCase();
-
-      if (!searchTerm) return true;
-      return (
-        ticker.includes(searchTerm) ||
-        name.includes(searchTerm) ||
-        symbol.includes(searchTerm)
-      );
-    }) || [];
+    assetsDisplay.displayData?.filter((asset: any) =>
+      assetMatchesSearchTerm(asset, assetSearchTerm)
+    ) || [];
 
   // Sort assets: USDT on BSC, then rest in original order
   const sortedAssets = [...filteredAssets].sort((a, b) => {

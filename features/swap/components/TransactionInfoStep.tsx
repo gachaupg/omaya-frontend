@@ -5,6 +5,7 @@ import { useTheme } from "@/context/theme";
 import { FaSearch } from "react-icons/fa";
 import { useSwapI18n } from "@/lib/useSwapI18n";
 import { isNonEmptyInvalidZeroSwapAmount } from "@/lib/utils/swapAmountInput";
+import { assetMatchesSearchTerm } from "@/lib/utils/assetSearch";
 
 interface TransactionInfoStepProps {
   fromAsset: SupportedAsset | null;
@@ -288,21 +289,15 @@ const TransactionInfoStep: React.FC<TransactionInfoStepProps> = (props) => {
   // Memoize filtered assets to prevent recalculation on every render
   const filteredFromAssets = useMemo(() => {
     if (!searchTerm) return supportedAssets;
-    const term = searchTerm.toLowerCase();
     return supportedAssets.filter((option) =>
-      option.ticker?.toLowerCase().includes(term) ||
-      option.name?.toLowerCase().includes(term) ||
-      option.network?.toLowerCase().includes(term)
+      assetMatchesSearchTerm(option, searchTerm)
     );
   }, [supportedAssets, searchTerm]);
 
   const filteredToAssets = useMemo(() => {
     if (!toSearchTerm) return supportedAssets;
-    const term = toSearchTerm.toLowerCase();
     return supportedAssets.filter((option) =>
-      option.ticker?.toLowerCase().includes(term) ||
-      option.name?.toLowerCase().includes(term) ||
-      option.network?.toLowerCase().includes(term)
+      assetMatchesSearchTerm(option, toSearchTerm)
     );
   }, [supportedAssets, toSearchTerm]);
 
