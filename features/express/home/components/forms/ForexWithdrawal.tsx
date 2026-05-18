@@ -151,11 +151,11 @@ export default function ForexWithdrawal({
             <div className="mb-4 p-4 border-2 border-[#1D8751] rounded-lg">
               <div className="space-y-2">
                 <div className="flex items-center justify-between">
-                  <span className="text-sm font-medium text-[#7e7e8f] dark:text-[#788099]">You Send:</span>
+                  <span className="text-sm font-medium text-[#7e7e8f] dark:text-[#788099]">From:</span>
                   <span className="text-base font-bold text-[#1D8751]">{payAmount.toFixed(2)} FXP</span>
                 </div>
                 <div className="flex items-center justify-between">
-                  <span className="text-sm font-medium text-[#7e7e8f] dark:text-[#788099]">You Receive:</span>
+                  <span className="text-sm font-medium text-[#7e7e8f] dark:text-[#788099]">To:</span>
                   <span className="text-base font-bold text-[#1D8751]">{getAmount.toFixed(2)} USD</span>
                 </div>
                 <div className="flex items-center justify-between pt-2 border-t border-[#1D8751] border-opacity-30">

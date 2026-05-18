@@ -1,9 +1,10 @@
 {
   "swap.title": "Swap Crypto",
   "swap.transactionInfo": "Transaction Info",
-  "swap.youSend": "You Send",
-  "swap.youReceive": "You Receive",
+  "swap.youSend": "From",
+  "swap.youReceive": "To",
   "swap.asset": "Asset",
+  "swap.amount": "Amount",
   "swap.enterAmount": "Enter amount",
   "swap.selectAsset": "Select Asset",
   "swap.searchAssets": "Search assets...",

@@ -4,7 +4,7 @@ import { useSimpleMarkets } from "../hooks/useSimpleMarkets";
 import { MarketData } from "../types";
 import { tokens } from "../../../styles/tokens";
 import {
-  fetchCoinDetailsPublic,
+  fetchCoinDetails,
   fetchCoinMarketChartPublic,
   debugChartAPI,
   debugDetailsAPI,
@@ -216,7 +216,10 @@ const MarketTable = ({ showFullLayout = true }: MarketTableProps) => {
   const [activeFilter, setActiveFilter] = useState<string>("Hot");
   const [selectedCoinId, setSelectedCoinId] = useState<string | null>(null);
   const [coinDetails, setCoinDetails] = useState<any>(null);
+  const [detailsForCoinId, setDetailsForCoinId] = useState<string | null>(null);
   const [loadingDetails, setLoadingDetails] = useState(false);
+  const coinDetailsCacheRef = useRef<Map<string, unknown>>(new Map());
+  const detailsFetchGenerationRef = useRef(0);
   const [showConfirmModal, setShowConfirmModal] = useState(false);
   const [pendingRemoveAsset, setPendingRemoveAsset] =
     useState<FavoriteAsset | null>(null);
@@ -548,50 +551,68 @@ const MarketTable = ({ showFullLayout = true }: MarketTableProps) => {
     dispatch(getFavoriteAssets());
   }, [dispatch]);
 
+  const isCoinDetailsReady = useCallback(
+    (marketId: string) =>
+      detailsForCoinId === marketId &&
+      coinDetails != null &&
+      !coinDetails?.error &&
+      !coinDetails?.status?.error_code,
+    [coinDetails, detailsForCoinId]
+  );
+
   // Handle row click to fetch and show details
-  const handleRowClick = async (id: string) => {
+  const handleRowClick = useCallback(async (id: string) => {
     if (selectedCoinId === id) {
       setSelectedCoinId(null);
       setCoinDetails(null);
+      setDetailsForCoinId(null);
       return;
     }
+
     setSelectedCoinId(id);
+
+    const cached = coinDetailsCacheRef.current.get(id);
+    if (cached) {
+      setCoinDetails(cached);
+      setDetailsForCoinId(id);
+      setLoadingDetails(false);
+      return;
+    }
+
+    setCoinDetails(null);
+    setDetailsForCoinId(null);
     setLoadingDetails(true);
+    const generation = ++detailsFetchGenerationRef.current;
 
     try {
-      const detailsResponse = await fetch(
-        `https://api.coingecko.com/api/v3/coins/${id}`
-      ).then(async (res) => {
-        if (!res.ok) {
-          throw new Error(`Details API error: ${res.status}`);
-        }
-        const text = await res.text();
-        try {
-          return JSON.parse(text);
-        } catch (e) {
-          console.warn("Invalid JSON in details response");
-          return { error: "Invalid JSON" };
-        }
-      });
+      const detailsResponse = await fetchCoinDetails(id);
 
-      // Set coin details with error checking
+      if (generation !== detailsFetchGenerationRef.current) return;
+
       if (
         detailsResponse &&
         !detailsResponse.error &&
         !detailsResponse.status?.error_code
       ) {
+        coinDetailsCacheRef.current.set(id, detailsResponse);
         setCoinDetails(detailsResponse);
+        setDetailsForCoinId(id);
       } else {
         console.warn("Coin details API error:", detailsResponse);
         setCoinDetails(null);
+        setDetailsForCoinId(null);
       }
     } catch (error) {
+      if (generation !== detailsFetchGenerationRef.current) return;
       console.warn("Network error fetching coin data:", error);
       setCoinDetails(null);
+      setDetailsForCoinId(null);
     } finally {
-      setLoadingDetails(false);
+      if (generation === detailsFetchGenerationRef.current) {
+        setLoadingDetails(false);
+      }
     }
-  };
+  }, [selectedCoinId]);
 
   if (error) {
     return (
@@ -933,7 +954,7 @@ const MarketTable = ({ showFullLayout = true }: MarketTableProps) => {
                             <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-[#13B562]"></div>
                             Loading details...
                           </div>
-                        ) : coinDetails ? (
+                        ) : isCoinDetailsReady(market.id) ? (
                           <div className="flex flex-col gap-3">
                             <Link
                               href={{
@@ -1117,7 +1138,7 @@ const MarketTable = ({ showFullLayout = true }: MarketTableProps) => {
                                     <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-[#13B562]"></div>
                                     Loading details...
                                   </div>
-                                ) : coinDetails ? (
+                                ) : isCoinDetailsReady(market.id) ? (
                                   <div className="">
                                     {/* Action Buttons */}
                                     <div className="flex flex-col sm:flex-row justify-center gap-3 sm:gap-4 lg:gap-4">

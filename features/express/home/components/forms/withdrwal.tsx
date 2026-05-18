@@ -25,6 +25,7 @@ import {
 } from "../../../../swap/slices/swapSlice";
 import { validateWalletAddress } from "../../../../../lib/addressValidaion";
 import { showToast } from "../../../../../lib/utils/toast";
+import { useExpressI18n } from "@/lib/useExpressI18n";
 import { DepositResponse } from "../../../../exchange/types";
 import { SupportedAsset } from "../../../../swap/types";
 import { FaSearch } from "react-icons/fa";
@@ -46,6 +47,7 @@ import {
 import PaymentMethodsModal from "../../../../p2p/components/ui/p2pdashboard/sections/PaymentMethodsModal";
 import InfoModal from "./info";
 import { debugAssetFetching } from "../../../../../lib/utils/debugAssets";
+import { stripLeadingZerosFromDecimalInput } from "@/lib/utils/decimalAmountInput";
 import {
   useAssetsDisplay,
   usePaymentMethodsDisplay,
@@ -391,6 +393,7 @@ export default function WithdrawalForm({
 }: DepositFormProps) {
   const dispatch = useDispatch<AppDispatch>();
   const router = useRouter();
+  const { t } = useExpressI18n();
   const [transactionMode, setTransactionMode] = useState<"crypto" | "forex">("crypto");
 
   // Declare all refs early to avoid initialization errors
@@ -4102,7 +4105,7 @@ export default function WithdrawalForm({
                 {/* You Send Section */}
                 <div className="flex-1 min-w-0">
                   <label className="block text-[15px] text-[#475569] dark:text-[#9CA3AF] mb-2 font-semibold flex items-center gap-2">
-                    You Send
+                    {t("express.youSend", "From")}
                     {isCalculatingFromPay &&
                       (isCalculating || isCalculatingReceive) && (
                         <div className="w-2 h-2 bg-[#1D8751] rounded-full animate-pulse"></div>
@@ -4110,7 +4113,7 @@ export default function WithdrawalForm({
                   </label>
                   <div className={`text-xs mb-1 ${isDark ? "text-[#788099]" : "text-[#64748B]"
                     }`}>
-                    Amount
+                    {t("express.amount", "Amount")}
                   </div>
                   <div className="relative">
                     <input
@@ -4118,7 +4121,9 @@ export default function WithdrawalForm({
                       inputMode="decimal"
                       value={payAmountInput}
                       onChange={(e) => {
-                        const inputValue = e.target.value;
+                        const inputValue = stripLeadingZerosFromDecimalInput(
+                          e.target.value
+                        );
 
                         // Allow any numeric input including negative numbers and 0
                         if (inputValue === "" || /^-?\d*\.?\d*$/.test(inputValue)) {
@@ -4340,7 +4345,7 @@ export default function WithdrawalForm({
                 <div className="flex-1 min-w-0">
                   <div className={`text-xs mb-1 mt-[30px] ${isDark ? "text-[#788099]" : "text-[#64748B]"
                     }`}>
-                    Asset
+                    {t("express.asset", "Asset")}
                   </div>
                   <div className="relative" ref={assetDropdownRef}>
                     <div
@@ -4463,7 +4468,7 @@ export default function WithdrawalForm({
                 {/* You Receive Section */}
                 <div className="flex-1 min-w-0">
                   <label className="block text-[15px] text-[#475569] dark:text-[#9CA3AF] mb-2 font-semibold flex items-center gap-2">
-                    You Receive
+                    {t("express.youReceive", "To")}
                     {!isCalculatingFromPay &&
                       (isCalculating || isCalculatingReceive) && (
                         <div className="w-2 h-2 bg-[#1D8751] rounded-full animate-pulse"></div>
@@ -4471,7 +4476,7 @@ export default function WithdrawalForm({
                   </label>
                   <div className={`text-xs mb-1 ${isDark ? "text-[#788099]" : "text-[#64748B]"
                     }`}>
-                    Amount
+                    {t("express.amount", "Amount")}
                   </div>
                   <div className="relative">
                     <input
@@ -4695,7 +4700,7 @@ export default function WithdrawalForm({
                 <div className="flex-1 min-w-0 relative z-0">
                   <div className={`text-xs mb-1 mt-[30px] ${isDark ? "text-[#788099]" : "text-[#64748B]"
                     }`}>
-                    Payment Method
+                    {t("express.paymentMethod", "Payment Method")}
                   </div>
                   <div className="relative z-0">
                     {(() => {

@@ -46,6 +46,7 @@ import {
 import PaymentMethodsModal from "../../../p2p/components/ui/p2pdashboard/sections/PaymentMethodsModal";
 import InfoModal from "./info";
 import { debugAssetFetching } from "@/lib/utils/debugAssets";
+import { stripLeadingZerosFromDecimalInput } from "@/lib/utils/decimalAmountInput";
 import {
   useAssetsDisplay,
   usePaymentMethodsDisplay,
@@ -3946,7 +3947,7 @@ export default function WithdrawalForm({
                 {/* You Send Section */}
                 <div className="flex-1 min-w-0">
                   <label className="block text-sm sm:text-[17px] text-[#7e7e8f] dark:text-[#ffffff] mb-2 font-semibold flex items-center gap-2">
-                    You Send
+                    From
                     <div className="w-2 h-2 bg-[#1D8751] rounded-full animate-pulse"></div>
                     {isCalculatingFromPay &&
                       (isCalculating || isCalculatingReceive) && (
@@ -3959,7 +3960,21 @@ export default function WithdrawalForm({
                       inputMode="decimal"
                       value={payAmountInput}
                       onChange={(e) => {
-                        const inputValue = e.target.value;
+                        const rawInput = e.target.value;
+                        let inputValue = rawInput;
+                        if (rawInput === "" || /^-?\d*[.,]?\d*$/.test(rawInput)) {
+                          const usesCommaDecimal =
+                            rawInput.includes(",") && !rawInput.includes(".");
+                          const forStrip = usesCommaDecimal
+                            ? rawInput.replace(",", ".")
+                            : rawInput;
+                          let stripped =
+                            stripLeadingZerosFromDecimalInput(forStrip);
+                          if (usesCommaDecimal) {
+                            stripped = stripped.replace(".", ",");
+                          }
+                          inputValue = stripped;
+                        }
 
                         // Allow digits with . or , as decimal separator (e.g. 0,1)
                         if (inputValue === "" || /^-?\d*[.,]?\d*$/.test(inputValue)) {
@@ -4316,7 +4331,7 @@ export default function WithdrawalForm({
                 {/* You Receive Section */}
                 <div className="flex-1 min-w-0">
                   <label className="block text-sm sm:text-[17px] text-[#7e7e8f] dark:text-[#ffffff] mb-2 font-semibold flex items-center gap-2">
-                    You Receive
+                    To
                     <div className="w-2 h-2 bg-[#1D8751] rounded-full animate-pulse"></div>
                     {!isCalculatingFromPay &&
                       (isCalculating || isCalculatingReceive) && (

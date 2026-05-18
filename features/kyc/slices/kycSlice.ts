@@ -25,9 +25,40 @@ const initialState: KYCState = {
   lastChecked: null,
 };
 
+/** Multipart KYC submit (documents + selfie) needs longer than default 20s. */
+const KYC_SUBMIT_TIMEOUT_MS = 120_000;
+const KYC_CONTEXT_COLLECT_TIMEOUT_MS = 8_000;
+
+const defaultKycContextFields = (): Record<string, string> => ({
+  device_type: "Unknown",
+  device_model: "Unknown",
+  browser_type: "Unknown",
+  screen_resolution: "Unknown",
+  device_timezone: "Unknown",
+  ip_address: "Unknown",
+  ip_country: "Unknown",
+  ip_region: "Unknown",
+  ip_city: "Unknown",
+  is_vpn: "false",
+  isp: "Unknown",
+  device_fingerprint: "unknown",
+  unique_device_id: "unknown",
+  login_patterns: "{}",
+  session_duration: "0",
+  failed_login_attempts: "0",
+  suspicious_behavior_detected: "false",
+});
+
 // Helper to handle API errors
 const handleApiError = (error: unknown): string => {
   if (error instanceof AxiosError) {
+    const isTimeout =
+      error.code === "ECONNABORTED" ||
+      /timeout.*exceeded/i.test(String(error.message || ""));
+    if (isTimeout) {
+      return "Upload timed out. Your face verification is still saved — please check your internet connection and tap Submit Verification again. If the problem continues, try smaller photos or contact support.";
+    }
+
     const data = error.response?.data;
     if (data && typeof data === "object") {
       const messages: string[] = [];
@@ -85,10 +116,25 @@ export const verifyKYCStatus = createAsyncThunk<KYCVerificationResponse, KYCVeri
         formData.append("document_number", payload.document_number);
       }
 
-      // Map kyc_images to specific fields expected by the API
-      // 0: document front, 1: document back (optional extra), 2: selfie
-      const images = payload.kyc_images || [];
-      const [frontImage, backImage, selfieImage] = images;
+      // Map kyc_images to API fields: [front, back?, selfie] for card IDs; [front, selfie] for passport
+      const images = (payload.kyc_images || []).filter(
+        (img): img is File => img instanceof File
+      );
+      const isPassport =
+        String(payload.document_type || "").trim().toLowerCase() === "passport";
+
+      let frontImage: File | undefined;
+      let backImage: File | undefined;
+      let selfieImage: File | undefined;
+
+      if (isPassport && images.length === 2) {
+        frontImage = images[0];
+        selfieImage = images[1];
+      } else {
+        frontImage = images[0];
+        backImage = images[1];
+        selfieImage = images[2];
+      }
 
       if (frontImage instanceof File) {
         formData.append("document_image", frontImage);
@@ -122,9 +168,33 @@ export const verifyKYCStatus = createAsyncThunk<KYCVerificationResponse, KYCVeri
         imageTypes.forEach((type) => formData.append("image_types", type));
       }
 
-      // Append device/context data for KYC
+      // Append device/context data for KYC (cap wait so IP lookup cannot block submit indefinitely)
       try {
-        const kycContext = await getKYCContextData();
+        const kycContextFallback = {
+          device_type: "Unknown",
+          device_model: "Unknown",
+          browser_type: "Unknown",
+          screen_resolution: "Unknown",
+          device_timezone: "Unknown",
+          ip_address: "Unknown",
+          ip_country: "Unknown",
+          ip_region: "Unknown",
+          ip_city: "Unknown",
+          is_vpn: false,
+          isp: "Unknown",
+          device_fingerprint: "unknown",
+          unique_device_id: "unknown",
+          login_patterns: {},
+          session_duration: 0,
+          failed_login_attempts: 0,
+          suspicious_behavior_detected: false,
+        };
+        const kycContext = await Promise.race([
+          getKYCContextData().catch(() => kycContextFallback),
+          new Promise<typeof kycContextFallback>((resolve) =>
+            setTimeout(() => resolve(kycContextFallback), KYC_CONTEXT_COLLECT_TIMEOUT_MS)
+          ),
+        ]);
         formData.append("device_type", String(kycContext.device_type ?? "Unknown"));
         formData.append("device_model", String(kycContext.device_model ?? "Unknown"));
         formData.append("browser_type", String(kycContext.browser_type ?? "Unknown"));
@@ -144,12 +214,17 @@ export const verifyKYCStatus = createAsyncThunk<KYCVerificationResponse, KYCVeri
         formData.append("suspicious_behavior_detected", String(kycContext.suspicious_behavior_detected ?? false));
       } catch (err) {
         logger.warn('kyc', "Failed to collect KYC context data:", err);
+        const fallback = defaultKycContextFields();
+        Object.entries(fallback).forEach(([key, value]) => {
+          formData.append(key, value);
+        });
       }
 
       const response = await put<any>(API_CONFIG.AUTH.KYC_SUBMIT, formData, {
         headers: {
           "Content-Type": "multipart/form-data",
         },
+        timeout: KYC_SUBMIT_TIMEOUT_MS,
       });
 
       // Normalise backend response into KYCVerificationResponse shape

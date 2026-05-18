@@ -3,11 +3,14 @@
 
 import React, { useEffect, useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { RootState, AppDispatch } from "@/store/rootReducer";
 
 import { fetchReferredUsers } from "../../slices/referralSlice";
-import { fetchReferralWallet } from "../../slices/referralWalletSlice";
+import {
+  fetchReferralWallet,
+  resumeOtpVerification,
+} from "../../slices/referralWalletSlice";
 
 import ReferralTabs from "./sections/ReferralTabs";
 import ReferralMainCard from "./sections/ReferralMainCard";
@@ -84,6 +87,7 @@ const Referral: React.FC<ReferralProps> = ({ onWithdrawStateChange }) => {
 
   const dispatch = useDispatch<AppDispatch>();
   const router = useRouter();
+  const searchParams = useSearchParams();
 
   const { isAuthenticated, user } = useSelector((s: RootState) => s.auth);
   const { referredUsers, loading: usersLoading } = useSelector(
@@ -118,6 +122,13 @@ const Referral: React.FC<ReferralProps> = ({ onWithdrawStateChange }) => {
       onWithdrawStateChange?.(false);
     };
   }, [showWithdraw, onWithdrawStateChange]);
+
+  useEffect(() => {
+    const resumeId = searchParams?.get("resumeWithdrawal")?.trim();
+    if (!resumeId) return;
+    setShowWithdraw(true);
+    dispatch(resumeOtpVerification({ withdrawalId: resumeId }));
+  }, [searchParams, dispatch]);
 
   /* ───────────────────────────── handlers ─────────────────────────── */
   const handleSuccessModalClose = () => {

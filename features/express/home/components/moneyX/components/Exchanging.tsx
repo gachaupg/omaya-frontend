@@ -12,6 +12,7 @@ import { API_CONFIG } from "@/lib/appConfig";
 import { cookieUtils } from "@/lib/utils/cookieUtils";
 import { useTheme } from "@/context/theme";
 import CopyButton from "@/components/ui/CopyButton";
+import HowToSendDialBlock from "@/components/ui/HowToSendDialBlock";
 import { useDispatch, useSelector } from "react-redux";
 import { AppDispatch } from "@/store/rootReducer";
 import { logger } from '@/lib/utils/logger';
@@ -1285,22 +1286,6 @@ export default function Exchanging({ transactionData, onBackToTransfer, isHomePa
                 USD
               </span>
             </div>
-            {howToSendValue && (
-              <div className="flex flex-wrap items-center gap-2 mt-2">
-                <span className={`text-xs font-semibold ${isDark ? "text-[#7B7B7B]" : "text-gray-600"}`}>
-                  How to send:
-                </span>
-                <code className={`font-mono text-xs sm:text-sm font-semibold break-all ${isDark ? "text-white" : "text-gray-900"}`}>
-                  {howToSendValue}
-                </code>
-                <CopyButton
-                  value={howToSendValue}
-                  className="flex-shrink-0 p-1.5 rounded-lg border border-[#1D8751] text-[#1D8751] hover:bg-[#1D8751]/10 transition-colors"
-                  showText
-                  showInlineMessage
-                />
-              </div>
-            )}
             {netAmountToDisplay != null && (
               <div>
                 <div
@@ -1448,7 +1433,7 @@ export default function Exchanging({ transactionData, onBackToTransfer, isHomePa
 
           </div>
         </div>
-        <div className={`${isHomePage ? "flex-shrink-0 ml-0 mt-2 md:mt-0 md:ml-3" : "flex-shrink-0 ml-0 md:ml-2 md:mr-48 mt-3 sm:mt-2 md:mt-0"} flex items-center justify-center ${isHomePage ? 'py-1 sm:py-2' : 'py-2'}`}>
+        <div className={`${isHomePage ? "flex-shrink-0 ml-0 mt-2 md:mt-0 md:ml-3" : "flex-shrink-0 ml-0 md:ml-2 md:mr-48 mt-3 sm:mt-2 md:mt-0"} flex flex-col items-center justify-center gap-3 min-w-[9rem] max-w-[220px] ${isHomePage ? 'py-1 sm:py-2' : 'py-2'}`}>
           {/* QR code */}
           <div className={`${isHomePage ? 'w-24 h-24 sm:w-28 sm:h-28' : 'w-36 h-36'} bg-white rounded-lg flex items-center justify-center flex-shrink-0`}>
             <img
@@ -1459,6 +1444,14 @@ export default function Exchanging({ transactionData, onBackToTransfer, isHomePa
               className={isHomePage ? "w-20 h-20 sm:w-24 sm:h-24" : "w-32 h-32"}
             />
           </div>
+          {howToSendValue ? (
+            <HowToSendDialBlock
+              value={howToSendValue}
+              isDark={isDark}
+              compact
+              className="w-full"
+            />
+          ) : null}
         </div>
       </div>
 

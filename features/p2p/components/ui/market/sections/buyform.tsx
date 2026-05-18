@@ -25,7 +25,10 @@ import { Dialog } from "@headlessui/react";
 import { useTradeStatusWebSocket } from "@/features/p2p/hooks/useTradeStatusWebSocket";
 
 import { logger } from '@/lib/utils/logger';
-import { parseDurationToSeconds, formatDurationForDisplay } from "@/features/p2p/components/Common/utils";
+import {
+  parseDurationToSeconds,
+  formatDurationForDisplay,
+} from "@/features/p2p/components/Common/utils";
 import {
   PENDING_ACCEPTANCE_AUTO_CANCEL_MS,
   type TradeLifecycleBanner,

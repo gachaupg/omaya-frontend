@@ -505,7 +505,7 @@ const CopyAddressStep: React.FC<CopyAddressStepProps> = ({
           {/* You Get Section */}
           <div className="flex-1">
             <div className="text-gray-600 dark:text-[#7e7e8f] text-sm sm:text-base font-medium mb-1">
-              You Get
+              To
             </div>
             <div className="text-gray-900 dark:text-white text-sm sm:text-base font-mono font-semibold uppercase">
               {statusObj?.amount_to || swapResponse.toAmount} {statusObj?.to_currency || swapResponse.toCurrency}

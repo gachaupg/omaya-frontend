@@ -1,3 +1,5 @@
+import { stripLeadingZerosFromDecimalInput } from "@/lib/utils/decimalAmountInput";
+
 /**
  * MoneyX "You Send" / amount hard limits — caps input digit count and parsed value
  * to avoid oversized payloads and database overflow.
@@ -27,7 +29,9 @@ export function prepareMoneyXAmountFieldValue(
   | { ok: false; error?: string; invalidPattern?: true } {
   if (value === "") return { ok: true, v: "" };
   if (!/^\d*\.?\d*$/.test(value)) return { ok: false, invalidPattern: true };
-  const v = enforceMoneyXAmountDigitLimit(value);
+  const v = enforceMoneyXAmountDigitLimit(
+    stripLeadingZerosFromDecimalInput(value)
+  );
   if (v.includes(".")) {
     const decimalPart = v.split(".")[1];
     if (decimalPart && decimalPart.length > maxDecimalPlaces) {

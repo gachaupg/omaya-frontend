@@ -10,6 +10,7 @@ import { Toaster } from "@/components/ui/Toast";
 import FloatingChatButton from "@/components/ui/FloatingChatButton";
 import P2PRejectionModalRoot from "@/components/P2PRejectionModalRoot";
 import NetworkOfflineRedirect from "@/components/NetworkOfflineRedirect";
+import { getServerLocale } from "@/lib/localePersistence.server";
 
 // Load all three fonts from local assets for offline-friendly builds
 const geistSans = localFont({
@@ -74,14 +75,21 @@ export const metadata: Metadata = {
   },
 };
 
-export default function RootLayout({
+export default async function RootLayout({
   children,
 }: {
   children: React.ReactNode;
 }) {
+  const initialLocale = await getServerLocale();
+
   return (
-    <html lang="en">
+    <html lang={initialLocale} suppressHydrationWarning>
       <head>
+        <script
+          dangerouslySetInnerHTML={{
+            __html: `(function(){try{var m=document.cookie.match(/(?:^|; )NEXT_LOCALE=([^;]*)/);var l=m?decodeURIComponent(m[1]):localStorage.getItem("omaya_locale");if(l==="so"||l==="en")document.documentElement.lang=l;}catch(e){}})();`,
+          }}
+        />
         {/* Facebook SDK */}
         <script
           async
@@ -108,7 +116,7 @@ export default function RootLayout({
         className={`${geistSans.variable} ${geistMono.variable} ${mulish.variable} antialiased`}
         suppressHydrationWarning
       >
-        <Providers>
+        <Providers initialLocale={initialLocale}>
           <NetworkOfflineRedirect />
           <P2PRejectionModalRoot />
           <Navbar />

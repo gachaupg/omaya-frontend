@@ -236,24 +236,34 @@ export default function MarketingPage() {
     );
 
   // Transform API statistics to achievements format
-  const achievements = statistics ? [
-    {
-      value: statistics.total_transactions_usdt,
-      label: "USD Total Transactions",
-    },
-    {
-      value: statistics.satisfied_clients,
-      label: "Satisfied Clients",
-    },
-    {
-      value: statistics.successful_transactions,
-      label: "Successful Transactions",
-    },
-    {
-      value: statistics.years_of_experience,
-      label: "Years Of Experience",
-    },
-  ] : fallbackAchievements;
+  const achievements = statistics
+    ? [
+        {
+          value: statistics.total_transactions_usdt,
+          label: t("marketing.achievements.usdTotal", "USD Total Transactions"),
+        },
+        {
+          value: statistics.satisfied_clients,
+          label: t("marketing.achievements.clients", "Satisfied Clients"),
+        },
+        {
+          value: statistics.successful_transactions,
+          label: t("marketing.achievements.transactions", "Successful Transactions"),
+        },
+        {
+          value: statistics.years_of_experience,
+          label: t("marketing.achievements.years", "Years Of Experience"),
+        },
+      ]
+    : fallbackAchievements.map((item, index) => ({
+        ...item,
+        label: [
+          t("marketing.achievements.usdTotal", "USD Total Transactions"),
+          t("marketing.achievements.clients", "Satisfied Clients"),
+          t("marketing.achievements.transactions", "Successful Transactions"),
+          t("marketing.achievements.years", "Years Of Experience"),
+        ][index] ?? item.label,
+      }));
 
   const tags = [
     { id: 1, name: "Crypto" },
@@ -373,26 +383,29 @@ export default function MarketingPage() {
   const articles = getArticles();
   const filteredArticles = articles;
 
-  const heroStats = [
-    {
-      label: "Trading Volume",
-      value: "100M+",
-      icon: BarChart3,
-      gradient: "from-[#2B7FFF] to-[#00B8DB]",
-    },
-    {
-      label: "Countries",
-      value: "150+",
-      icon: Globe,
-      gradient: "from-[#AD46FF] to-[#F6339A]",
-    },
-    {
-      label: "Uptime",
-      value: "99.9%",
-      icon: Lock,
-      gradient: "from-[#1D8751] to-[#309A64]",
-    },
-  ];
+  const heroStats = useMemo(
+    () => [
+      {
+        label: t("marketing.hero.stat.volume", "Trading Volume"),
+        value: "100M+",
+        icon: BarChart3,
+        gradient: "from-[#2B7FFF] to-[#00B8DB]",
+      },
+      {
+        label: t("marketing.hero.stat.countries", "Countries"),
+        value: "150+",
+        icon: Globe,
+        gradient: "from-[#AD46FF] to-[#F6339A]",
+      },
+      {
+        label: t("marketing.hero.stat.uptime", "Uptime"),
+        value: "99.9%",
+        icon: Lock,
+        gradient: "from-[#1D8751] to-[#309A64]",
+      },
+    ],
+    [t]
+  );
 
   const toggleFAQ = (id: number) => {
     setOpenFAQ(openFAQ === id ? null : id);
@@ -490,16 +503,17 @@ export default function MarketingPage() {
               {/* Green pill banner */}
               <div className="inline-flex items-center justify-center md:justify-start">
                 <span className="bg-[#1D8751]/10 border border-[#1D8751] text-[#1D8751] px-3 py-1 rounded-full text-xs sm:text-sm font-medium">
-                  East Africa #1 Crypto Exchange.
+                  {t("marketing.hero.badge", "East Africa #1 Crypto Exchange.")}
                 </span>
               </div>
 
               {/* Main heading */}
               <h1 className="text-[1.5rem] sm:text-[1.75rem] md:text-[2.5rem] lg:text-[3rem] xl:text-[3.5rem] font-bold text-gray-900 dark:text-white tracking-tight leading-tight sm:leading-tight md:leading-tight lg:leading-tight">
-                <span className="block">Trade Crypto</span>
-                <span className="block text-[#1D8751]">Instantly</span>
+                <span className="block">{t("marketing.hero.line1", "Trade Crypto")}</span>
+                <span className="block text-[#1D8751]">{t("marketing.hero.line2", "Instantly")}</span>
                 <span className="block">
-                  With <span className="text-[#1D8751]">OMAYA</span>
+                  {t("marketing.hero.line3Prefix", "With")}{" "}
+                  <span className="text-[#1D8751]">OMAYA</span>
                 </span>
               </h1>
 
@@ -513,9 +527,9 @@ export default function MarketingPage() {
                 <span className="absolute -left-4 sm:-left-6 md:-left-8 top-1/2 -translate-y-1/2 w-24 sm:w-32 md:w-40 h-3/4 -z-10 bg-gradient-to-br from-purple-600/15 via-purple-500/10 to-transparent dark:from-purple-600/25 dark:via-purple-500/15 dark:to-transparent rounded-full blur-2xl"></span>
                 <span className="absolute -left-2 sm:-left-3 md:-left-4 top-1/2 -translate-y-1/2 w-16 sm:w-20 md:w-24 h-1/2 -z-10 bg-gradient-to-r from-purple-400/12 to-transparent dark:from-purple-400/20 dark:to-transparent rounded-full blur-xl"></span> */}
                 <span className="relative">
-                  <span className="text-gray-900 dark:text-[#788099]">Experience lightning-fast trades, ultra-low fees and bank grade security</span>
+                  <span className="text-gray-900 dark:text-[#788099]">{t("marketing.hero.desc1", "Experience lightning-fast trades, ultra-low fees and bank grade security")}</span>
                   <br />
-                  <span className="text-[#1D8751] dark:text-secondary">Join 50,000+ traders worldwide.</span>
+                  <span className="text-[#1D8751] dark:text-secondary">{t("marketing.hero.desc2", "Join 50,000+ traders worldwide.")}</span>
                 </span>
               </p>
 
@@ -528,11 +542,11 @@ export default function MarketingPage() {
                   }
                   className="cursor-pointer rounded-xl px-5 sm:px-6 py-2.5 sm:py-2.5 text-white bg-linear-to-br from-[#1D8751] to-[#309A64] text-sm sm:text-base font-medium hover:bg-[#167a47] transition-colors min-h-[44px] flex items-center justify-center gap-2 shadow-xl"
                 >
-                  Start Trading Now
+                  {t("marketing.hero.cta.start", "Start Trading Now")}
                   <span className="text-lg">→</span>
                 </button>
                 <button className="rounded-xl px-5 sm:px-6 py-2.5 sm:py-2.5 text-gray-900 dark:text-white bg-gray-100 dark:bg-[#1D1D23] border-2 border-gray-300 dark:border-[#35353E] text-sm sm:text-base font-medium hover:bg-gray-200 dark:hover:bg-[#23232B] transition-colors min-h-[44px] flex items-center justify-center gap-2">
-                  Watch Demo
+                  {t("marketing.hero.cta.demo", "Watch Demo")}
                   <Play size={16} className="text-[#1D8751]" />
                 </button>
               </div>
@@ -598,7 +612,7 @@ export default function MarketingPage() {
           <div className="flex justify-center mb-4 sm:mb-6">
             <span className=" flex justify-center items-center gap-1 bg-[#1D8751]/10 border-2 border-secondary/20 text-secondary/60 px-4 py-1.5 sm:px-5 sm:py-3 rounded-full text-xs sm:text-sm font-semibold">
               <GoDotFill className="text-secondary text-lg" />
-              Trusted by Thousands
+              {t("marketing.trusted.badge", "Trusted by Thousands")}
             </span>
           </div>
 
@@ -628,7 +642,7 @@ export default function MarketingPage() {
 
             {/* Subtitle */}
             <p className="text-center text-[#99A1AF] text-sm sm:text-base md:text-lg px-4">
-              Join the fastest-growing crypto exchange platform in Somalia.
+              {t("marketing.achievements.subtitle", "Join the fastest-growing crypto exchange platform in Somalia.")}
             </p>
           </div>
 
@@ -643,17 +657,17 @@ export default function MarketingPage() {
               ];
 
               const titles = [
-                "USD Fiat Transactions",
-                "Satisfied Users",
-                "Successful Transactions",
-                "Years Of Experience",
+                t("marketing.achievements.card1.title", "USD Fiat Transactions"),
+                t("marketing.achievements.card2.title", "Satisfied Users"),
+                t("marketing.achievements.card3.title", "Successful Transactions"),
+                t("marketing.achievements.card4.title", "Years Of Experience"),
               ];
 
               const descriptions = [
-                "Total trading volume.",
-                "Active traders worldwide.",
-                "Completed daily trades.",
-                "Industry leadership.",
+                t("marketing.achievements.card1.desc", "Total trading volume."),
+                t("marketing.achievements.card2.desc", "Active traders worldwide."),
+                t("marketing.achievements.card3.desc", "Completed daily trades."),
+                t("marketing.achievements.card4.desc", "Industry leadership."),
               ];
 
               return (

@@ -48,6 +48,7 @@ const ENDPOINT_SPECIFIC_CONFIG: Record<string, Partial<ApiClientConfig>> = {
   "/api/auth/register/": { timeout: 10000, retries: 1 }, // Faster registration
   "/api/kyc/status/": { timeout: 10000, retries: 1 }, // KYC status – fail fast so UI doesn’t hang
   "/api/kyc/verify/": { timeout: 30000, retries: 1 }, // KYC verification
+  "/api/kyc/submit/": { timeout: 120000, retries: 0 }, // Multipart: document + selfie uploads
   // Device session endpoints – keep under 15s overall to align with GlobalSession creation window
   "/api/devices/create/": { timeout: 12000, retries: 0 },
   "/api/device-sessions/": { timeout: 12000, retries: 0 },

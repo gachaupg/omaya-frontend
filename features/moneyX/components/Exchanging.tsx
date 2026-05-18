@@ -12,6 +12,7 @@ import { API_CONFIG } from "@/lib/appConfig";
 import { cookieUtils } from "@/lib/utils/cookieUtils";
 import { useTheme } from "@/context/theme";
 import CopyButton from "@/components/ui/CopyButton";
+import HowToSendDialBlock from "@/components/ui/HowToSendDialBlock";
 import { useDispatch, useSelector } from "react-redux";
 import { AppDispatch } from "@/store/rootReducer";
 import { logger } from '@/lib/utils/logger';
@@ -1150,24 +1151,6 @@ export default function Exchanging({ transactionData, onBackToTransfer }: Exchan
                 </div>
               </>
             )}
-            {/* How to send, Copy - in one row */}
-            {ussdCode && (
-              <div className="flex flex-wrap items-center gap-2 sm:gap-3 mt-2">
-                <span className={`text-[10px] sm:text-xs font-semibold ${isDark ? "text-[#7B7B7B]" : "text-gray-600"}`}>
-                  How to send:
-                </span>
-                <code className={`font-mono text-xs sm:text-sm font-semibold break-all ${isDark ? "text-white" : "text-gray-900"}`}>
-                  {ussdCode}
-                </code>
-                <CopyButton
-                  value={ussdCode}
-                  className="flex-shrink-0 p-1.5 sm:p-2 rounded-lg border border-[#1D8751] text-[#1D8751] hover:bg-[#1D8751]/10 transition-colors"
-                  showText
-                  showInlineMessage
-                />
-              </div>
-            )}
-
             {/* MoneyX specific: Show From and To payment methods */}
             {effectiveTransactionData?.fromPaymentMethod && (
               <>
@@ -1283,7 +1266,7 @@ export default function Exchanging({ transactionData, onBackToTransfer }: Exchan
 
           </div>
         </div>
-        <div className="flex-shrink-0 ml-0 md:ml-2 md:mr-48 mt-3 sm:mt-2 md:mt-0 flex items-center justify-center py-2">
+        <div className="flex-shrink-0 ml-0 md:ml-2 md:mr-48 mt-3 sm:mt-2 md:mt-0 flex flex-col items-center justify-center py-2 gap-3 min-w-[9rem] max-w-[220px]">
           {/* QR code */}
           <div className="w-28 h-28 sm:w-36 sm:h-36 bg-white rounded-lg flex items-center justify-center">
             <img
@@ -1294,6 +1277,9 @@ export default function Exchanging({ transactionData, onBackToTransfer }: Exchan
               className="w-24 h-24 sm:w-32 sm:h-32"
             />
           </div>
+          {ussdCode ? (
+            <HowToSendDialBlock value={ussdCode} isDark={isDark} compact className="w-full" />
+          ) : null}
         </div>
       </div>
 

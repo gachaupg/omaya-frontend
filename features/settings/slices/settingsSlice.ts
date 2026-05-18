@@ -467,7 +467,6 @@ export const createDeviceSession = createAsyncThunk(
       return response.data;
     } catch (error: any) {
       const msg = normalizeApiErrorMessage(error, "Failed to create device session");
-      showToast.error(msg);
       return rejectWithValue(msg);
     }
   }

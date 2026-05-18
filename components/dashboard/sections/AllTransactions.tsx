@@ -11,11 +11,20 @@ import { FaUniversity } from "react-icons/fa";
 import { getHighResAssetIcon } from "@/features/express/utils/imageHelpers";
 import type { AllTransactionItem } from "@/features/transactions/api";
 import { getMyTransactions as getMyP2PTransactions } from "@/features/p2p/api";
-import { StatusBadge } from "@/components/ui/StatusBadge";
+import { TransactionFromToCell } from "@/components/dashboard/ui/TransactionFromToCell";
+import { TransactionStatusCell } from "@/components/dashboard/ui/TransactionStatusCell";
 import {
   isPendingAddressDashboardStatus,
   shouldOmitExchangeWithoutDepositOrWithdrawal,
 } from "@/lib/utils/dashboardTransactionFilters";
+import {
+  type FromToCellModel,
+  buildExchangeFromTo,
+  buildP2pWithdrawalDepositFromTo,
+  formatP2pCryptoLabel,
+  textFromToCell,
+  withFromToLogos,
+} from "@/lib/utils/transactionFromTo";
 
 const formatAmount = (amount: string | number | undefined | null): string => {
   if (amount === undefined || amount === null || amount === "") return "0.0000";
@@ -65,18 +74,6 @@ const getTypeLabel = (type: string, subType: string) => {
   if (type === "p2p") return "P2P";
   if (type === "swap") return "Swap";
   return type;
-};
-
-/** USDT (BSC) style label for unified “all” feed when API omits from_/to_ currency fields */
-const formatP2pCryptoLabel = (tx: AllTransactionItem): string => {
-  const sym = (tx.currency || tx.asset || "USDT").toUpperCase();
-  const net = tx.network || tx.from_network || tx.to_network;
-  return net ? `${sym} (${net})` : sym;
-};
-
-const truncateAddress = (addr: string, lead = 6, tail = 4): string => {
-  if (!addr || addr.length <= lead + tail + 2) return addr;
-  return `${addr.slice(0, lead)}...${addr.slice(-tail)}`;
 };
 
 // Format status for user-friendly display
@@ -282,68 +279,55 @@ const AllTransactions = () => {
     // Use wallet_type + transaction_type as a strong hint when present.
     const walletType = (clean((tx as any)?.wallet_type) || "").toLowerCase();
     const txTypeHint = (clean((tx as any)?.transaction_type) || "").toLowerCase();
-    if (walletType === "crypto" && txTypeHint.includes("withdraw")) {
-      return {
-        from: formatP2pCryptoLabel(tx) || (clean(tx.currency || tx.asset) || "USDT"),
-        to:
-          clean((tx as any)?.to_address) ||
-          clean(tx.withdrawal_address) ||
-          clean((tx as any)?.receiver_wallet) ||
-          "Wallet",
-      };
-    }
-    if (walletType === "p2p" && txTypeHint.includes("deposit")) {
-      return {
-        from:
-          clean((tx as any)?.from_address)
-            ? truncateAddress(String((tx as any).from_address))
-            : clean(tx.deposit_address)
-              ? truncateAddress(String(tx.deposit_address))
-              : "Source",
-        to:
-          clean((tx as any)?.to_address)
-            ? truncateAddress(String((tx as any).to_address))
-            : clean((tx as any)?.receiver_wallet)
-              ? truncateAddress(String((tx as any).receiver_wallet))
-              : formatP2pCryptoLabel(tx),
-      };
+    if (
+      (walletType === "crypto" && txTypeHint.includes("withdraw")) ||
+      (walletType === "p2p" && txTypeHint.includes("deposit"))
+    ) {
+      return buildP2pWithdrawalDepositFromTo({
+        ...tx,
+        transaction_type: txTypeHint || tx.sub_type,
+      } as Record<string, unknown>);
     }
 
     if (tx.type === "swap") {
       return {
-        from: `${tx.from_currency || tx.currency} (${tx.from_network || tx.network || "-"})`,
-        to: `${tx.to_currency || "-"} (${tx.to_network || "-"})`,
+        from: textFromToCell(
+          `${tx.from_currency || tx.currency} (${tx.from_network || tx.network || "-"})`
+        ),
+        to: textFromToCell(
+          `${tx.to_currency || "-"} (${tx.to_network || "-"})`
+        ),
       };
     }
     if (tx.type === "exchange") {
-      const isDeposit = tx.sub_type === "deposit";
-      return {
-        from: isDeposit
-          ? paymentProvider || senderProvider || "Bank / Payment"
-          : `${tx.currency || "USDT"} (${tx.network || "-"})`,
-        to: isDeposit
-          ? `${tx.currency || "USDT"} (${tx.network || "-"})`
-          : paymentProvider || receiverProvider || recipientName || "Bank / Wallet",
-      };
+      return buildExchangeFromTo(tx as unknown as Record<string, unknown>);
     }
     if ((tx as any)?.type === "forex") {
       const fromCurrency = clean((tx as any)?.from_currency);
       const toCurrency = clean((tx as any)?.to_currency);
       return {
-        from: fromCurrency || fallbackAsset,
-        to: paymentProvider || receiverProvider || recipientName || toCurrency || "Bank / Wallet",
+        from: textFromToCell(fromCurrency || fallbackAsset),
+        to: textFromToCell(
+          paymentProvider || receiverProvider || recipientName || toCurrency || "Bank / Wallet"
+        ),
       };
     }
     if (tx.type === "moneyx") {
       return {
-        from: senderProvider || paymentProvider || "Sender Provider",
-        to: receiverProvider || recipientName || paymentProvider || "Receiver Provider",
+        from: textFromToCell(senderProvider || paymentProvider || "Sender Provider"),
+        to: textFromToCell(
+          receiverProvider || recipientName || paymentProvider || "Receiver Provider"
+        ),
       };
     }
     if (tx.type === "p2p" && (tx.from_currency || tx.to_currency)) {
       return {
-        from: `${tx.from_currency || tx.currency} (${tx.from_network || tx.network || "-"})`,
-        to: `${tx.to_currency || "-"} (${tx.to_network || "-"})`,
+        from: textFromToCell(
+          `${tx.from_currency || tx.currency} (${tx.from_network || tx.network || "-"})`
+        ),
+        to: textFromToCell(
+          `${tx.to_currency || "-"} (${tx.to_network || "-"})`
+        ),
       };
     }
     const p2pSub = (tx.sub_type || "").toLowerCase();
@@ -381,206 +365,41 @@ const AllTransactions = () => {
     };
     const p2pKind = inferP2PKind(); // "deposit"/"withdrawal"/"buy"/"sell"
 
-    if (tx.type === "p2p" && p2pKind === "withdrawal") {
-      const fromLabel = formatP2pCryptoLabel(tx) || "USDT";
-      return {
-        // P2P Withdrawal: "From" is the crypto wallet asset label (currency + network),
-        // NOT an on-chain address. (Addresses belong in "To".)
-        from: fromLabel,
-        to:
-          enrich?.to
-            ? truncateAddress(enrich.to)
-            : (tx as any).to_address
-              ? truncateAddress(String((tx as any).to_address))
-            : tx.withdrawal_address
-              ? truncateAddress(tx.withdrawal_address)
-              : enrich?.receiver
-                ? truncateAddress(enrich.receiver)
-                : (tx as any).receiver_wallet
-                  ? truncateAddress(String((tx as any).receiver_wallet))
-                  : "Wallet",
-      };
-    }
-
-    if (tx.type === "p2p" && p2pKind === "deposit") {
-      return {
-        from:
-          enrich?.from
-            ? truncateAddress(enrich.from)
-            : (tx as any).from_address
-              ? truncateAddress(String((tx as any).from_address))
-            : tx.deposit_address
-              ? truncateAddress(tx.deposit_address)
-              : "Source",
-        to:
-          enrich?.to
-            ? truncateAddress(enrich.to)
-            : (tx as any).to_address
-              ? truncateAddress(String((tx as any).to_address))
-              : enrich?.receiver
-                ? truncateAddress(enrich.receiver)
-                : (tx as any).receiver_wallet
-                  ? truncateAddress(String((tx as any).receiver_wallet))
-                  : formatP2pCryptoLabel(tx),
-      };
+    if (tx.type === "p2p" && (p2pKind === "withdrawal" || p2pKind === "deposit")) {
+      return buildP2pWithdrawalDepositFromTo(
+        {
+          ...tx,
+          transaction_type: p2pKind,
+        } as Record<string, unknown>,
+        enrich
+      );
     }
     if (tx.type === "p2p" && p2pSub === "buy") {
       const fromAsset = String((tx as any)?.from_asset || "USD").trim() || "USD";
-      const toAsset = String((tx as any)?.to_asset || formatP2pCryptoLabel(tx) || "USDT").trim() || "USDT";
-      return {
-        from: fromAsset,
-        to: toAsset,
-      };
+      const toAsset =
+        String((tx as any)?.to_asset || formatP2pCryptoLabel(tx) || "USDT").trim() || "USDT";
+      return { from: textFromToCell(fromAsset), to: textFromToCell(toAsset) };
     }
     if (tx.type === "p2p" && p2pSub === "sell") {
-      const fromAsset = String((tx as any)?.from_asset || formatP2pCryptoLabel(tx) || "USDT").trim() || "USDT";
+      const fromAsset =
+        String((tx as any)?.from_asset || formatP2pCryptoLabel(tx) || "USDT").trim() || "USDT";
       const toAsset = String((tx as any)?.to_asset || "USD").trim() || "USD";
-      return {
-        from: fromAsset,
-        to: toAsset,
-      };
+      return { from: textFromToCell(fromAsset), to: textFromToCell(toAsset) };
     }
     if (tx.type === "p2p") {
       const cryptoLabel = formatP2pCryptoLabel(tx);
       return {
-        from: "P2P",
-        to: `${cryptoLabel} · Wallet`,
+        from: textFromToCell("P2P"),
+        to: textFromToCell(`${cryptoLabel} · Wallet`),
       };
     }
     return {
-      from: senderProvider || paymentProvider || fallbackAsset,
-      to: receiverProvider || recipientName || paymentProvider || "Bank / Wallet",
+      from: textFromToCell(senderProvider || paymentProvider || fallbackAsset),
+      to: textFromToCell(
+        receiverProvider || recipientName || paymentProvider || "Bank / Wallet"
+      ),
     };
   };
-
-const extractAssetSymbolFromLabel = (label: string): string | null => {
-  const raw = String(label || "").trim();
-  if (!raw) return null;
-  // Common non-asset labels in From/To columns
-  const lower = raw.toLowerCase();
-  if (
-    lower.includes("bank") ||
-    lower.includes("wallet") ||
-    lower.includes("provider") ||
-    lower.includes("payment")
-  ) {
-    return null;
-  }
-  // Matches "USDT (bep20)" or "USDT" at start of label
-  const m = raw.match(/^([A-Za-z0-9]{2,12})\s*(?:\(|$)/);
-  if (!m) return null;
-  const symbol = String(m[1] || "").toUpperCase();
-  // Avoid accidentally treating addresses/ids as symbols
-  if (symbol.length > 8) return null;
-  return symbol;
-};
-
-const getFromToLogos = (tx: AllTransactionItem, fromLabel: string, toLabel: string): { fromLogo: string | null; toLogo: string | null } => {
-  // P2P buy/sell (new unified endpoint) may provide explicit from/to asset logos.
-  const p2pFromLogo = String((tx as any)?.from_asset_logo || "").trim() || null;
-  const p2pToLogo = String((tx as any)?.to_asset_logo || "").trim() || null;
-  const paymentMethodLogo = String((tx as any)?.payment_method?.logo_url || "").trim() || null;
-  const senderLogo = String((tx as any)?.sender_provider_logo || "").trim() || null;
-  const receiverLogo = String((tx as any)?.receiver_provider_logo || "").trim() || null;
-  const providerLogo = String((tx as any)?.provider_logo || "").trim() || null;
-  const paymentDetailLogo =
-    (Array.isArray((tx as any)?.payment_details)
-      ? ((tx as any).payment_details.find(
-          (detail: any) => detail?.provider_logo || detail?.logo || detail?.logo_url
-        )?.provider_logo ||
-        (tx as any).payment_details.find(
-          (detail: any) => detail?.provider_logo || detail?.logo || detail?.logo_url
-        )?.logo ||
-        (tx as any).payment_details.find(
-          (detail: any) => detail?.provider_logo || detail?.logo || detail?.logo_url
-        )?.logo_url)
-      : null) || null;
-  const genericLogo = paymentMethodLogo || paymentDetailLogo || providerLogo;
-
-  const fromAssetSymbol = tx.from_currency || extractAssetSymbolFromLabel(fromLabel);
-  const toAssetSymbol = tx.to_currency || extractAssetSymbolFromLabel(toLabel);
-  const fromAssetLogo = fromAssetSymbol ? getHighResAssetIcon({ ticker: fromAssetSymbol }) : null;
-  const toAssetLogo = toAssetSymbol ? getHighResAssetIcon({ ticker: toAssetSymbol }) : null;
-
-  if (tx.type === "exchange") {
-    const isDeposit = tx.sub_type === "deposit";
-    return {
-      // Exchange deposit: From is bank/provider, To is asset
-      // Exchange withdrawal: From is asset, To is bank/provider
-      fromLogo: isDeposit ? (genericLogo || fromAssetLogo) : (fromAssetLogo || genericLogo),
-      toLogo: isDeposit ? (toAssetLogo || genericLogo) : (genericLogo || toAssetLogo),
-    };
-  }
-
-  if (tx.type === "moneyx") {
-    return {
-      // MoneyX is provider-based; still prefer asset logo when label looks like a currency.
-      fromLogo: fromAssetLogo || senderLogo || genericLogo,
-      toLogo: toAssetLogo || receiverLogo || genericLogo,
-    };
-  }
-
-  if (tx.type === "swap") {
-    return {
-      fromLogo: fromAssetLogo,
-      toLogo: toAssetLogo,
-    };
-  }
-
-  if (tx.type === "p2p" && (p2pFromLogo || p2pToLogo)) {
-    return {
-      fromLogo: p2pFromLogo || fromAssetLogo,
-      toLogo: p2pToLogo || toAssetLogo,
-    };
-  }
-
-  if (tx.type === "p2p" && (fromAssetLogo || toAssetLogo)) {
-    return {
-      fromLogo: fromAssetLogo,
-      toLogo: toAssetLogo,
-    };
-  }
-
-  // For "all" feed rows where backend provides payment details on other types,
-  // prefer showing at least one provider logo in the payment side.
-  if ((tx as any)?.sub_type === "withdrawal") {
-    return { fromLogo: fromAssetLogo, toLogo: toAssetLogo || genericLogo };
-  }
-  if ((tx as any)?.sub_type === "deposit") {
-    return { fromLogo: fromAssetLogo || genericLogo, toLogo: toAssetLogo };
-  }
-
-  return {
-    fromLogo: fromAssetLogo || genericLogo,
-    toLogo: toAssetLogo || genericLogo,
-  };
-};
-
-const renderFromToValue = (label: string, logoUrl?: string | null) => {
-  if (!logoUrl) {
-    return (
-      <span className="font-medium text-sm text-gray-900 dark:text-white truncate block">
-        {label}
-      </span>
-    );
-  }
-
-  return (
-    <div className="flex items-center gap-2 min-w-0">
-      <img
-        src={logoUrl}
-        alt={label}
-        className="w-5 h-5 rounded-full object-cover flex-shrink-0"
-        onError={(e) => {
-          e.currentTarget.style.display = "none";
-        }}
-      />
-      <span className="font-medium text-sm text-gray-900 dark:text-white truncate block">
-        {label}
-      </span>
-    </div>
-  );
-};
 
   const renderAssetIcon = (tx: AllTransactionItem) => {
     if (tx.type === "moneyx" && !tx.currency && !tx.asset) {
@@ -616,8 +435,12 @@ const renderFromToValue = (label: string, logoUrl?: string | null) => {
   const renderRow = (tx: AllTransactionItem, index: number) => {
     const isExchange = tx.type === "exchange";
     const isDeposit = tx.sub_type === "deposit";
-    const { from: fromDisplay, to: toDisplay } = getFromToDisplay(tx);
-    const { fromLogo, toLogo } = getFromToLogos(tx, fromDisplay, toDisplay);
+    const display = getFromToDisplay(tx);
+    const { from: fromCell, to: toCell } = withFromToLogos(
+      tx as unknown as Record<string, unknown>,
+      display.from,
+      display.to
+    );
 
     const assetName = getAssetName(tx.currency || tx.asset || "USDT");
     return (
@@ -641,10 +464,18 @@ const renderFromToValue = (label: string, logoUrl?: string | null) => {
           </div>
         </td>
         <td className="px-3 sm:px-4 lg:px-6 py-4 border-b border-gray-200 dark:border-[#35353E]">
-          {renderFromToValue(fromDisplay, fromLogo)}
+          <TransactionFromToCell
+            label={fromCell.label}
+            copyValue={fromCell.copyValue}
+            iconUrl={fromCell.iconUrl}
+          />
         </td>
         <td className="px-3 sm:px-4 lg:px-6 py-4 border-b border-gray-200 dark:border-[#35353E]">
-          {renderFromToValue(toDisplay, toLogo)}
+          <TransactionFromToCell
+            label={toCell.label}
+            copyValue={toCell.copyValue}
+            iconUrl={toCell.iconUrl}
+          />
         </td>
         <td
           className={`px-3 sm:px-4 lg:px-6 py-4 border-b border-gray-200 dark:border-[#35353E] text-sm sm:text-base font-semibold ${isExchange && isDeposit ? "text-[#1D8751]" : "text-red-500 dark:text-red-400"
@@ -653,7 +484,14 @@ const renderFromToValue = (label: string, logoUrl?: string | null) => {
           {formatAmount(tx.amount)}
         </td>
         <td className="px-3 sm:px-4 lg:px-6 py-4 border-b border-gray-200 dark:border-[#35353E]">
-          <StatusBadge status={normalizeStatusForBadge(tx.status)} />
+          <TransactionStatusCell
+            status={tx.status}
+            transactionId={
+              (tx as any)?.referral_withdrawal_id ||
+              (tx as any)?.withdrawal_id ||
+              tx.id
+            }
+          />
         </td>
         <td className="px-3 sm:px-4 lg:px-6 py-4 border-b border-gray-200 dark:border-[#35353E] text-sm sm:text-base text-gray-500 dark:text-[#A0A3BC]">
           {formatRecentTime(tx.created_at)}
@@ -665,8 +503,12 @@ const renderFromToValue = (label: string, logoUrl?: string | null) => {
   const renderMobileCard = (tx: AllTransactionItem, index: number) => {
     const isExchange = tx.type === "exchange";
     const isDeposit = tx.sub_type === "deposit";
-    const { from: fromDisplay, to: toDisplay } = getFromToDisplay(tx);
-    const { fromLogo, toLogo } = getFromToLogos(tx, fromDisplay, toDisplay);
+    const display = getFromToDisplay(tx);
+    const { from: fromCell, to: toCell } = withFromToLogos(
+      tx as unknown as Record<string, unknown>,
+      display.from,
+      display.to
+    );
 
     const renderMobileAssetIcon = () => {
       if (tx.type === "moneyx" && !tx.asset_image) {
@@ -714,16 +556,31 @@ const renderFromToValue = (label: string, logoUrl?: string | null) => {
               </span>
             </div>
           </div>
-          <StatusBadge status={normalizeStatusForBadge(tx.status)} />
+          <TransactionStatusCell
+            status={tx.status}
+            transactionId={
+              (tx as any)?.referral_withdrawal_id ||
+              (tx as any)?.withdrawal_id ||
+              tx.id
+            }
+          />
         </div>
         <div className="grid grid-cols-2 gap-3 text-sm">
           <div>
             <div className="text-xs text-gray-500 dark:text-[#A0A3BC] mb-1">From</div>
-            {renderFromToValue(fromDisplay, fromLogo)}
+            <TransactionFromToCell
+              label={fromCell.label}
+              copyValue={fromCell.copyValue}
+              iconUrl={fromCell.iconUrl}
+            />
           </div>
           <div>
             <div className="text-xs text-gray-500 dark:text-[#A0A3BC] mb-1">To</div>
-            {renderFromToValue(toDisplay, toLogo)}
+            <TransactionFromToCell
+              label={toCell.label}
+              copyValue={toCell.copyValue}
+              iconUrl={toCell.iconUrl}
+            />
           </div>
           <div>
             <div className="text-xs text-gray-500 dark:text-[#A0A3BC] mb-1">Amount</div>

@@ -17,6 +17,7 @@ import { fetchMoneyXCommission } from "@/features/moneyX/slices/moneyXSlice";
 import { useTheme } from "@/context/theme";
 import CustomSelect from "@/components/ui/HomeCommonSelect";
 import { showToast } from "@/lib/utils/toast";
+import { useExpressI18n } from "@/lib/useExpressI18n";
 import { useBookmarkedAddresses } from "@/features/express/hooks/useBookmarkedAddresses";
 import { BookmarkDropdown } from "@/features/express/components/forms/BookmarkDropdown";
 import { usePaymentMethodsDisplay } from "@/features/express/hooks/useDataDisplay";
@@ -53,6 +54,7 @@ interface TransferFormProps {
 }
 
 export default function TransferForm({ isHomePage = false, onTransfer, commissionType = "deposit" }: TransferFormProps) {
+  const { t } = useExpressI18n();
   const dispatch = useDispatch<AppDispatch>();
   const router = useRouter();
   const { isDark } = useTheme();
@@ -1041,12 +1043,12 @@ export default function TransferForm({ isHomePage = false, onTransfer, commissio
             {/* Amount Section */}
             <div className="flex-1 min-w-0">
               <label className="block text-sm sm:text-[17px] text-[#7e7e8f] dark:text-[#ffffff] mb-2 font-semibold flex items-center gap-2">
-                You Send
+                {t("express.youSend", "From")}
                 <div className="w-2 h-2 bg-[#1D8751] rounded-full animate-pulse"></div>
               </label>
               <div className={`text-xs mb-1 ${isDark ? "text-[#788099]" : "text-[#64748B]"
                 }`}>
-                Amount
+                {t("express.amount", "Amount")}
               </div>
               <div className="relative">
                 <input
@@ -1057,7 +1059,7 @@ export default function TransferForm({ isHomePage = false, onTransfer, commissio
                   onChange={(e) => {
                     handleAmountChange(e.target.value, true);
                   }}
-                  placeholder="Enter amount"
+                  placeholder={t("express.enterAmount", "Enter amount")}
                   className={`w-full rounded-2xl px-4 py-2 pr-16 text-lg focus:outline-none border appearance-none bg-transparent ${isDark ? "border-white/10 text-white" : "border-gray-200 text-[#111827]"
                     }`}
                 />
@@ -1067,7 +1069,7 @@ export default function TransferForm({ isHomePage = false, onTransfer, commissio
             {/* Payment Method Section */}
             <div className="flex-1 min-w-0">
               <label className="block text-sm sm:text-[17px] text-[#7e7e8f] dark:text-[#ffffff] mb-2 font-semibold flex items-center gap-2">
-                From Payment Method
+                {t("express.fromPaymentMethod", "From Payment Method")}
                 <div className="w-2 h-2 opacity-0" aria-hidden />
               </label>
               <div
@@ -1158,7 +1160,7 @@ export default function TransferForm({ isHomePage = false, onTransfer, commissio
             {/* You Receive Section */}
             <div className="flex-1 min-w-0">
               <label className="block text-sm sm:text-[17px] text-[#7e7e8f] dark:text-[#ffffff] mb-2 font-semibold flex items-center gap-2">
-                You Receive
+                {t("express.youReceive", "To")}
                 <div className="w-2 h-2 bg-[#1D8751] rounded-full animate-pulse"></div>
               </label>
               <div className={`text-xs mb-1 ${isDark ? "text-[#788099]" : "text-[#64748B]"
@@ -1183,7 +1185,7 @@ export default function TransferForm({ isHomePage = false, onTransfer, commissio
             {/* Payment Method Section */}
             <div className="flex-1 min-w-0">
               <label className="block text-sm sm:text-[17px] text-[#7e7e8f] dark:text-[#ffffff] mb-2 font-semibold flex items-center gap-2">
-                To Payment Method
+                {t("express.toPaymentMethod", "To Payment Method")}
                 <div className="w-2 h-2 opacity-0" aria-hidden />
               </label>
               <div
@@ -1480,17 +1482,19 @@ export default function TransferForm({ isHomePage = false, onTransfer, commissio
                     setBankAccountAddress(addr);
                     setBankAddressError(null);
                   }}
-                  onSaveCurrent={async () => {
+                  onSaveCurrent={async (label) => {
                     try {
                       if (!bankAccountAddress.trim() || !currentBankAsset) return;
                       await saveBookmark({
                         address: bankAccountAddress.trim(),
-                        label: `My ${currentBankAsset} account`,
+                        label,
                         network: "BANK",
                         asset: currentBankAsset,
                       });
                     } catch { /* handled by hook */ }
                   }}
+                  labelKind="account"
+                  saveError={saveBookmarkError}
                   anchorRef={bookmarkAnchorRef}
                   isDark={isDark}
                   saveDisabled={!!bankAddressError}

@@ -17,18 +17,105 @@ export interface CreateBookmarkPayload {
   asset: string;
 }
 
-/** DRF-style `{ "detail": "..." }` or string detail */
+export function getDefaultBookmarkLabel(
+  asset?: string,
+  kind: "wallet" | "account" = "wallet"
+): string {
+  const ticker = String(asset || "").trim().toUpperCase();
+  if (!ticker) return kind === "account" ? "My account" : "My wallet";
+  return kind === "account" ? `My ${ticker} account` : `My ${ticker} wallet`;
+}
+
+const BOOKMARK_FIELD_LABELS: Record<string, string> = {
+  address: "Address",
+  label: "Label",
+  network: "Network",
+  asset: "Asset",
+  non_field_errors: "Error",
+  __all__: "Error",
+};
+
+function collectErrorStrings(value: unknown): string[] {
+  if (value == null) return [];
+  if (typeof value === "string") {
+    const trimmed = value.trim();
+    return trimmed ? [trimmed] : [];
+  }
+  if (Array.isArray(value)) {
+    return value.flatMap(collectErrorStrings);
+  }
+  if (typeof value === "object") {
+    return Object.values(value as Record<string, unknown>).flatMap(
+      collectErrorStrings
+    );
+  }
+  return [];
+}
+
+/** Parse API body like `{ "address": ["Invalid USDT/BSC address checksum."] }`. */
+export function formatBookmarkApiErrors(data: unknown): string | null {
+  if (data == null) return null;
+  if (typeof data === "string") {
+    const trimmed = data.trim();
+    return trimmed || null;
+  }
+  if (Array.isArray(data)) {
+    const msgs = collectErrorStrings(data);
+    return msgs.length ? msgs.join(" ") : null;
+  }
+  if (typeof data !== "object") return null;
+
+  const obj = data as Record<string, unknown>;
+  const parts: string[] = [];
+
+  const detail = collectErrorStrings(obj.detail);
+  if (detail.length) parts.push(...detail);
+
+  const message = collectErrorStrings(obj.message);
+  if (message.length) parts.push(...message);
+
+  if (obj.error != null) {
+    parts.push(...collectErrorStrings(obj.error));
+  }
+
+  const fieldKeys = Object.keys(obj).filter(
+    (key) => !["detail", "message", "error"].includes(key)
+  );
+  const fieldMessages: string[] = [];
+  for (const key of fieldKeys) {
+    fieldMessages.push(...collectErrorStrings(obj[key]));
+  }
+
+  if (fieldMessages.length === 1 && parts.length === 0) {
+    return fieldMessages[0];
+  }
+
+  for (const key of fieldKeys) {
+    const msgs = collectErrorStrings(obj[key]);
+    if (!msgs.length) continue;
+    const label =
+      BOOKMARK_FIELD_LABELS[key] ||
+      key.replace(/_/g, " ").replace(/^\w/, (c) => c.toUpperCase());
+    for (const msg of msgs) {
+      parts.push(`${label}: ${msg}`);
+    }
+  }
+
+  const unique = [...new Set(parts.filter(Boolean))];
+  return unique.length ? unique.join(" · ") : null;
+}
+
+/** DRF / axios error → human-readable message */
 export function getBookmarkApiErrorMessage(err: unknown): string | null {
   const e = err as { response?: { data?: unknown }; message?: string };
-  const data = e?.response?.data as Record<string, unknown> | string | undefined;
-  if (data && typeof data === "object" && !Array.isArray(data)) {
-    const d = data.detail;
-    if (typeof d === "string" && d.trim()) return d.trim();
-    if (Array.isArray(d) && typeof d[0] === "string") return d[0].trim();
-    const msg = data.message;
-    if (typeof msg === "string" && msg.trim()) return msg.trim();
+  const fromBody = formatBookmarkApiErrors(e?.response?.data);
+  if (fromBody) return fromBody;
+  if (typeof e?.message === "string" && e.message.trim()) {
+    const trimmed = e.message.trim();
+    if (!/^request failed with status code \d+$/i.test(trimmed)) {
+      return trimmed;
+    }
   }
-  if (typeof e?.message === "string" && e.message.trim()) return e.message.trim();
   return null;
 }
 

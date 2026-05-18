@@ -68,14 +68,14 @@ export default function ForexSuccessModal({
           <div className="bg-[#F5F6F7] dark:bg-[#18181D] rounded-xl p-4 mb-5">
             <div className="space-y-3">
               <div className="flex justify-between items-center">
-                <span className="text-sm text-[#788099]">You Send</span>
+                <span className="text-sm text-[#788099]">From</span>
                 <span className="text-sm text-[#35353e] dark:text-[#ffffff] font-semibold">
                   {fromAmount} {fromCurrency}
                 </span>
               </div>
               <div className="h-px bg-[#D1D2D4FF] dark:bg-[#35353E]"></div>
               <div className="flex justify-between items-center">
-                <span className="text-sm text-[#788099]">You Receive</span>
+                <span className="text-sm text-[#788099]">To</span>
                 <span className="text-sm text-[#1D8751] font-bold">
                   {toAmount} {toCurrency}
                 </span>

@@ -6,6 +6,10 @@ import { FaSearch } from "react-icons/fa";
 import { useSwapI18n } from "@/lib/useSwapI18n";
 import { isNonEmptyInvalidZeroSwapAmount } from "@/lib/utils/swapAmountInput";
 import { assetMatchesSearchTerm } from "@/lib/utils/assetSearch";
+import {
+  handleSwapAssetIconError,
+  resolveSwapAssetIconSrc,
+} from "../utils/swapAssetIcon";
 
 interface TransactionInfoStepProps {
   fromAsset: SupportedAsset | null;
@@ -372,19 +376,11 @@ const TransactionInfoStep: React.FC<TransactionInfoStepProps> = (props) => {
                     }}
                   >
                     <img
-                      src={
-                        option.image ||
-                        option.image_url ||
-                        option.asset_image ||
-                        "/images/tether.svg"
-                      }
+                      src={resolveSwapAssetIconSrc(option)}
                       alt={option.name || "Asset"}
                       className="w-6 h-6 rounded-full object-cover"
                       loading="lazy"
-                      onError={(e) => {
-                        e.currentTarget.src =
-                          "/images/tether.svg";
-                      }}
+                      onError={(e) => handleSwapAssetIconError(e, option)}
                     />
                     <div className="flex-1 min-w-0">
                       <div className={`font-medium flex items-center gap-2 ${isDark ? "text-white" : "text-[#111827]"
@@ -437,19 +433,11 @@ const TransactionInfoStep: React.FC<TransactionInfoStepProps> = (props) => {
         >
           <div className="flex items-center gap-2 sm:gap-3 text-left min-w-0">
             <img
-              src={
-                asset?.image ||
-                asset?.image_url ||
-                asset?.asset_image ||
-                "/images/tether.svg"
-              }
+              src={resolveSwapAssetIconSrc(asset)}
               alt={asset?.name || "asset icon"}
               className="w-5 h-5 sm:w-6 sm:h-6 rounded-full object-cover flex-shrink-0"
               loading="lazy"
-              onError={(e) => {
-                e.currentTarget.src =
-                  "/images/tether.svg";
-              }}
+              onError={(e) => handleSwapAssetIconError(e, asset)}
             />
             <p className="text-base sm:text-lg dark:text-white text-[#35353e] font-semibold truncate">
               {asset
@@ -531,7 +519,7 @@ const TransactionInfoStep: React.FC<TransactionInfoStepProps> = (props) => {
         <div className={`${baseCard} p-4 sm:p-5 md:p-6 lg:p-6 space-y-3 sm:space-y-3 md:space-y-4`} data-swap-card="true">
           <div className="flex flex-col sm:flex-row sm:items-end gap-3 sm:gap-3 md:gap-4">
             <div className="space-y-1 sm:flex-1">
-              <p className={headerCopy}>{t("swap.youSend", "You Send")}</p>
+              <p className={headerCopy}>{t("swap.youSend", "From")}</p>
             </div>
             <p className={`${headerCopy} ml-0 sm:ml-0 sm:flex-1`}>
               {t("swap.asset", "Asset")}
@@ -589,7 +577,7 @@ const TransactionInfoStep: React.FC<TransactionInfoStepProps> = (props) => {
         <div className={`${baseCard} p-3 sm:p-4 md:p-5 lg:p-6 space-y-2 sm:space-y-3 md:space-y-4`} data-swap-card="true">
           <div className="flex flex-col sm:flex-row sm:items-end gap-2 sm:gap-3 md:gap-4">
             <div className="space-y-1 sm:flex-1">
-              <p className={headerCopy}>{t("swap.youReceive", "You Receive")}</p>
+              <p className={headerCopy}>{t("swap.youReceive", "To")}</p>
             </div>
             <p className={`${headerCopy}  ml-4 sm:ml-0 sm:flex-1`}>
               {t("swap.asset", "Asset")}

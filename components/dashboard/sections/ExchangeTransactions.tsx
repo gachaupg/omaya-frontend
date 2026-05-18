@@ -10,10 +10,20 @@ import { useDashboardI18n } from "@/lib/useDashboardI18n";
 import { SortArrowsIcon } from "@/components/ui/SortArrowsIcon";
 import { getHighResAssetIcon } from "@/features/express/utils/imageHelpers";
 import { StatusBadge } from "@/components/ui/StatusBadge";
+import { TransactionFromToCell } from "@/components/dashboard/ui/TransactionFromToCell";
 import {
   isPendingAddressDashboardStatus,
   shouldOmitExchangeWithoutDepositOrWithdrawal,
 } from "@/lib/utils/dashboardTransactionFilters";
+import {
+  extractExchangePaymentInfo,
+  normalizeExchangeSubType,
+} from "@/lib/utils/exchangeTransactionDisplay";
+import {
+  buildExchangeFromTo,
+  buildP2pWithdrawalDepositFromTo,
+  withFromToLogos,
+} from "@/lib/utils/transactionFromTo";
 
 interface RootState {
   p2pTransactions: {
@@ -57,233 +67,13 @@ const getAssetName = (symbol: string) => {
   }
 };
 
-const normalizeSubType = (value: unknown): string => {
-  const v = String(value ?? "").trim().toLowerCase();
-  if (v === "withdraw" || v === "withdrwal") return "withdrawal";
-  return v;
-};
-
-const extractPaymentInfo = (tx: any) => {
-  const paymentDetails = Array.isArray(tx?.payment_details)
-    ? tx.payment_details
-    : [];
-
-  const detailWithLogo =
-    paymentDetails.find(
-      (detail: any) => detail?.provider_logo || detail?.logo
-    ) || paymentDetails[0];
-
-  // Prefer explicit provider logos for payment method visuals, then fall back to asset image
-  const providerLogoFromDetails =
-    detailWithLogo?.provider_logo || detailWithLogo?.logo || null;
-  const providerLogoFromTransaction = tx?.provider_logo || null;
-  const displayImage =
-    providerLogoFromDetails ||
-    providerLogoFromTransaction ||
-    null; // Don't fall back to asset_image - it might be a profile photo
-
-  // Helper function to check if a value is a UUID
-  const isUUID = (value: string | null | undefined): boolean => {
-    if (!value) return false;
-    // UUIDs have format: xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx
-    return /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(value);
-  };
-
-  // Reject values that look like technical IDs (uuid/hash/id tokens), not user-facing addresses.
-  const isLikelyTechnicalId = (value: string | null | undefined): boolean => {
-    if (!value) return false;
-    const v = String(value).trim();
-    if (!v) return false;
-    if (isUUID(v)) return true;
-    if (/^(tx_|trade_|order_|msg_)/i.test(v)) return true;
-    // Pure long hex strings are often hashes/ids rather than wallet/account addresses.
-    if (/^[a-f0-9]{24,}$/i.test(v)) return true;
-    // Numeric-only long identifiers are likely DB/system IDs.
-    if (/^\d{8,}$/.test(v)) return true;
-    return false;
-  };
-
-  // Helper to filter out invalid values (undefined string, empty, technical IDs)
-  const sanitizeValue = (
-    value: string | null | undefined,
-    txContext?: any
-  ): string | null => {
-    if (!value) return null;
-    const v = String(value).trim();
-    if (!v || v === "undefined" || v === "null") return null;
-    if (isLikelyTechnicalId(v)) return null;
-    // If value equals known transaction identifiers, reject it.
-    const knownIds = [
-      txContext?.transaction_id,
-      txContext?.id,
-      txContext?.trade_id,
-      txContext?.order_id,
-    ]
-      .map((x: any) => String(x ?? "").trim())
-      .filter(Boolean);
-    if (knownIds.includes(v)) return null;
-    return v;
-  };
-
-  // Get provider name with proper fallbacks, filter out 'undefined' string and UUIDs
-  const rawProviderName =
-    detailWithLogo?.provider_name ||
-    detailWithLogo?.provider ||
-    tx?.payment_provider ||
-    tx?.payment_provider_display ||
-    tx?.sender_provider ||
-    tx?.receiver_provider ||
-    null;
-  
-  const providerName = sanitizeValue(rawProviderName, tx);
-
-  const rawMethodLabel =
-    tx?.payment_method ||
-    tx?.payment_method_display ||
-    detailWithLogo?.payment_method_name ||
-    detailWithLogo?.payment_method ||
-    detailWithLogo?.method ||
-    null;
-  
-  const methodLabel = sanitizeValue(rawMethodLabel, tx);
-
-  // Extract asset info for To column
-  const assetSymbol = tx?.currency || tx?.asset_symbol || "USDT";
-  // Prefer human-readable network label (network_name) over UUID-like network IDs.
-  const assetNetwork =
-    sanitizeValue(tx?.network_name, tx) ||
-    sanitizeValue(tx?.asset_network, tx) ||
-    sanitizeValue(tx?.network, tx) ||
-    "BSC";
-  
-  // Exchange rows should prefer address by subtype:
-  // - deposit -> deposit_address
-  // - withdrawal -> withdrawal_address
-  const txSubType = normalizeSubType(tx?.sub_type || tx?.transaction_type || "");
-
-  const parseAdditionalInfo = (raw: unknown): Record<string, any> | null => {
-    if (!raw) return null;
-    if (typeof raw === "object") return raw as Record<string, any>;
-    if (typeof raw !== "string") return null;
-    const text = raw.trim();
-    if (!text) return null;
-    try {
-      return JSON.parse(text);
-    } catch {
-      // Backend sometimes sends python-style single quotes.
-      try {
-        const normalized = text
-          .replace(/([{,]\s*)'([^']+?)'\s*:/g, '$1"$2":')
-          .replace(/:\s*'([^']*?)'(\s*[,}])/g, ': "$1"$2');
-        return JSON.parse(normalized);
-      } catch {
-        return null;
-      }
-    }
-  };
-  const additionalInfo = parseAdditionalInfo(tx?.additional_info);
-  const prioritizedAddressCandidates =
-    txSubType === "deposit"
-      ? [tx?.deposit_address, tx?.wallet_address, tx?.destination_address]
-      : txSubType === "withdrawal"
-      ? [tx?.withdrawal_address, tx?.wallet_address, tx?.destination_address]
-      : [tx?.wallet_address, tx?.destination_address, tx?.deposit_address, tx?.withdrawal_address];
-
-  // Fallback candidates if primary subtype address is empty.
-  const walletAddressCandidates = [
-    ...prioritizedAddressCandidates,
-    tx?.changenow_payin_address,
-    tx?.sent_from,
-    additionalInfo?.wallet_address,
-    additionalInfo?.deposit_address,
-    additionalInfo?.withdrawal_address,
-    additionalInfo?.address,
-    tx?.payout_address,
-    tx?.address,
-    tx?.to_address,
-    tx?.from_address,
-    tx?.payment_details?.[0]?.wallet_address,
-    tx?.payment_details?.[0]?.account_number,
-    tx?.payment_details?.[0]?.mobile_number,
-  ];
-  const walletAddress =
-    walletAddressCandidates
-      .map((candidate) => sanitizeValue(candidate, tx))
-      .find((candidate) => !!candidate) || null;
-  // For the badge fallback, show a transaction identifier when address is missing.
-  // Keep this independent from sanitizeValue's "knownIds" rejection.
-  const transactionIdentifier =
-    String(tx?.id || tx?.exchange_transaction_id || tx?.transaction_id || "").trim() || null;
-
-  return {
-    displayImage,
-    providerName,
-    methodLabel,
-    assetSymbol,
-    assetNetwork,
-    assetImage: null, // Don't expose asset_image as it might be a profile photo
-    walletAddress,
-    transactionIdentifier,
-  };
-};
-
-const getFromToDisplay = (tx: any, paymentInfo: any) => {
-  // P2P (unified recent transactions): direction must follow sub_type and use from_asset/to_asset when present.
+const getFromToCells = (tx: Record<string, unknown>) => {
   if (String(tx?.type || "").toLowerCase() === "p2p") {
-    const sub = normalizeSubType(tx?.sub_type || tx?.transaction_type || "");
-    const fromAsset = String(tx?.from_asset || "").trim();
-    const toAsset = String(tx?.to_asset || "").trim();
-    const fromLogo =
-      String(tx?.from_asset_logo || "").trim() ||
-      (fromAsset ? getHighResAssetIcon({ ticker: fromAsset }) : null) ||
-      null;
-    const toLogo =
-      String(tx?.to_asset_logo || "").trim() ||
-      (toAsset ? getHighResAssetIcon({ ticker: toAsset }) : null) ||
-      null;
-
-    // If backend provides explicit from/to, always use them.
-    if (fromAsset && toAsset) {
-      return {
-        from: { label: fromAsset, logo: fromLogo || getHighResAssetIcon({ ticker: fromAsset }) },
-        to: { label: toAsset, logo: toLogo || getHighResAssetIcon({ ticker: toAsset }) },
-      };
-    }
-
-    // Fallback mapping based on buy/sell when from/to missing.
-    if (sub === "buy") {
-      return {
-        from: { label: "USD", logo: getHighResAssetIcon({ ticker: "USD" }) },
-        to: { label: "USDT", logo: getHighResAssetIcon({ ticker: "USDT" }) },
-      };
-    }
-    if (sub === "sell") {
-      return {
-        from: { label: "USDT", logo: getHighResAssetIcon({ ticker: "USDT" }) },
-        to: { label: "USD", logo: getHighResAssetIcon({ ticker: "USD" }) },
-      };
-    }
+    const built = buildP2pWithdrawalDepositFromTo(tx);
+    return withFromToLogos(tx, built.from, built.to);
   }
-
-  const fromSymbol = tx?.currency || paymentInfo?.assetSymbol || "USDT";
-  const fromLogo = tx?.asset_image || getHighResAssetIcon({ ticker: fromSymbol });
-
-  const toLabel =
-    paymentInfo?.providerName ||
-    paymentInfo?.methodLabel ||
-    tx?.payment_provider_display ||
-    tx?.payment_provider ||
-    tx?.payment_method_display ||
-    tx?.payment_method ||
-    "Bank / Wallet";
-
-  // Keep logo visible even when provider logo is missing.
-  const toLogo = paymentInfo?.displayImage || fromLogo;
-
-  return {
-    from: { label: fromSymbol, logo: fromLogo },
-    to: { label: toLabel, logo: toLogo },
-  };
+  const built = buildExchangeFromTo(tx);
+  return withFromToLogos(tx, built.from, built.to);
 };
 
 const swapToFallbackImage = (
@@ -314,19 +104,6 @@ const ExchangeTransactions = ({ itemsPerPage = 10 }) => {
     // Load all transactions immediately
     dispatch(loadAllP2PTransactions());
   }, [dispatch]);
-
-  // Debug: print exchange tab data as JSON when this tab is opened/rendered.
-  useEffect(() => {
-    if (!transactions?.results) return;
-    try {
-      console.log(
-        "[Dashboard Exchange Tab] transactions JSON:",
-        JSON.stringify(transactions.results, null, 2)
-      );
-    } catch {
-      console.log("[Dashboard Exchange Tab] transactions:", transactions.results);
-    }
-  }, [transactions?.results]);
 
   /* --------------------------- loading / error ----------------------- */
   if (loading) {
@@ -469,9 +246,11 @@ const ExchangeTransactions = ({ itemsPerPage = 10 }) => {
       {/* Mobile Card Layout */}
       <div className="block sm:hidden space-y-3">
         {filteredResults.map((tx: any, index: number) => {
-          const transactionType = normalizeSubType(tx.transaction_type || tx.sub_type || "");
-          const paymentInfo = extractPaymentInfo(tx);
-          const fromTo = getFromToDisplay(tx, paymentInfo);
+          const transactionType = normalizeExchangeSubType(
+            tx.transaction_type || tx.sub_type || ""
+          );
+          const paymentInfo = extractExchangePaymentInfo(tx);
+          const { from: fromCell, to: toCell } = getFromToCells(tx);
 
           return (
             <div
@@ -506,41 +285,19 @@ const ExchangeTransactions = ({ itemsPerPage = 10 }) => {
               <div className="grid grid-cols-2 gap-3 text-sm">
                 <div>
                   <div className="text-xs text-gray-500 dark:text-[#A0A3BC] mb-1">From</div>
-                  <div className="flex items-center gap-2">
-                    <img
-                      src={fromTo.from.logo}
-                      alt={fromTo.from.label || "Asset"}
-                    className="w-6 h-6 rounded-full object-cover"
-                      onError={(e) => {
-                        swapToFallbackImage(
-                          e,
-                          getHighResAssetIcon({ ticker: tx.currency || "USDT" })
-                        );
-                      }}
-                    />
-                    <span className="font-medium text-sm text-gray-900 dark:text-white">
-                      {fromTo.from.label}
-                    </span>
-                  </div>
+                  <TransactionFromToCell
+                    label={fromCell.label}
+                    copyValue={fromCell.copyValue}
+                    iconUrl={fromCell.iconUrl}
+                  />
                 </div>
                 <div>
                   <div className="text-xs text-gray-500 dark:text-[#A0A3BC] mb-1">To</div>
-                  <div className="flex items-center gap-2">
-                    <img
-                      src={fromTo.to.logo}
-                      alt={fromTo.to.label || "Payment"}
-                    className="w-6 h-6 rounded-full object-cover"
-                      onError={(e) => {
-                        swapToFallbackImage(
-                          e,
-                          tx?.asset_image || getHighResAssetIcon({ ticker: tx.currency || "USDT" })
-                        );
-                      }}
-                    />
-                    <span className="font-medium text-sm text-gray-900 dark:text-white truncate">
-                      {fromTo.to.label}
-                    </span>
-                  </div>
+                  <TransactionFromToCell
+                    label={toCell.label}
+                    copyValue={toCell.copyValue}
+                    iconUrl={toCell.iconUrl}
+                  />
                 </div>
                 <div>
                   <div className="text-xs text-gray-500 dark:text-[#A0A3BC] mb-1">Amount</div>
@@ -624,9 +381,11 @@ const ExchangeTransactions = ({ itemsPerPage = 10 }) => {
 
           <tbody className="divide-y divide-[#d1d5db] dark:divide-accent">
             {filteredResults.map((tx: any, index: number) => {
-              const transactionType = normalizeSubType(tx.transaction_type || tx.sub_type || "");
-              const paymentInfo = extractPaymentInfo(tx);
-              const fromTo = getFromToDisplay(tx, paymentInfo);
+              const transactionType = normalizeExchangeSubType(
+                tx.transaction_type || tx.sub_type || ""
+              );
+              const paymentInfo = extractExchangePaymentInfo(tx);
+              const { from: fromCell, to: toCell } = getFromToCells(tx);
 
               return (
                 <tr
@@ -658,48 +417,22 @@ const ExchangeTransactions = ({ itemsPerPage = 10 }) => {
                     </div>
                   </td>
 
-                  {/* From - Bank/Mobile or Asset based on transaction type */}
+                  {/* From */}
                   <td className="px-3 sm:px-4 lg:px-6 py-4 border-b border-gray-200 dark:border-accent">
-                    <div className="flex items-center gap-2 min-w-0">
-                      <img
-                        src={fromTo.from.logo}
-                        alt={fromTo.from.label || "Asset"}
-                        className="w-7 h-7 rounded-full shadow-sm shrink-0"
-                        onError={(e) => {
-                          swapToFallbackImage(
-                            e,
-                            getHighResAssetIcon({ ticker: tx.currency || "USDT" })
-                          );
-                        }}
-                      />
-                      <div className="flex flex-col min-w-0">
-                        <div className="flex items-center gap-1">
-                          <span className="font-medium text-sm text-gray-900 dark:text-white">
-                            {fromTo.from.label}
-                          </span>
-                        </div>
-                      </div>
-                    </div>
+                    <TransactionFromToCell
+                      label={fromCell.label}
+                      copyValue={fromCell.copyValue}
+                      iconUrl={fromCell.iconUrl}
+                    />
                   </td>
 
-                  {/* To - Asset or Bank based on transaction type */}
+                  {/* To */}
                   <td className="px-3 sm:px-4 lg:px-6 py-4 border-b border-gray-200 dark:border-accent">
-                    <div className="flex items-center gap-2 min-w-0">
-                      <img
-                        src={fromTo.to.logo}
-                        alt={fromTo.to.label || "Payment method"}
-                        className="w-7 h-7 rounded-full border border-[#E8EFF5] dark:border-accent bg-white dark:bg-[#1D1D23] shrink-0"
-                        onError={(e) => {
-                          swapToFallbackImage(
-                            e,
-                            tx?.asset_image || getHighResAssetIcon({ ticker: tx.currency || "USDT" })
-                          );
-                        }}
-                      />
-                      <span className="font-medium text-sm text-gray-900 dark:text-white truncate">
-                        {fromTo.to.label}
-                      </span>
-                    </div>
+                    <TransactionFromToCell
+                      label={toCell.label}
+                      copyValue={toCell.copyValue}
+                      iconUrl={toCell.iconUrl}
+                    />
                   </td>
 
                   {/* Amount */}

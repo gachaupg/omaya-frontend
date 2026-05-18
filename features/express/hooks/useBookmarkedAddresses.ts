@@ -16,21 +16,11 @@ const LOGIN_TO_SAVE_BOOKMARK_INLINE =
   "Log in to save this address to your bookmarks.";
 
 function extractBookmarkListError(err: unknown): string {
-  const e = err as any;
-  const data = e?.response?.data;
-  if (
-    typeof data?.error === "object" &&
-    Array.isArray(data?.error?.__all__) &&
-    typeof data.error.__all__[0] === "string"
-  ) {
-    return data.error.__all__[0];
-  }
-  const detail = getBookmarkApiErrorMessage(err);
-  if (detail) return detail;
-  if (typeof data?.error === "string") return data.error;
-  if (typeof data?.message === "string") return data.message;
-  if (typeof e?.message === "string") return e.message;
-  return "Failed to load bookmarks";
+  return getBookmarkApiErrorMessage(err) || "Failed to load bookmarks";
+}
+
+function extractBookmarkSaveError(err: unknown): string {
+  return getBookmarkApiErrorMessage(err) || "Failed to save address to bookmarks";
 }
 
 export function useBookmarkedAddresses(asset?: string, network?: string) {
@@ -79,17 +69,8 @@ export function useBookmarkedAddresses(asset?: string, network?: string) {
         setSaveBookmarkError(LOGIN_TO_SAVE_BOOKMARK_INLINE);
         showToast.error(LOGIN_TO_SAVE_BOOKMARK_TOAST);
       } else {
-        const e = err as any;
-        const data = e?.response?.data;
-        const msg =
-          (typeof data?.error === "object" &&
-            Array.isArray(data?.error?.__all__) &&
-            data.error.__all__[0]) ||
-          getBookmarkApiErrorMessage(err) ||
-          (typeof data?.error === "string" ? data.error : null) ||
-          data?.message ||
-          e?.message ||
-          "Failed to save bookmark";
+        const msg = extractBookmarkSaveError(err);
+        setSaveBookmarkError(msg);
         showToast.error(msg);
       }
       throw err;
@@ -107,17 +88,8 @@ export function useBookmarkedAddresses(asset?: string, network?: string) {
       if (isBookmarkAuthError(err)) {
         return;
       }
-      const e = err as { response?: { data?: unknown }; message?: string };
-      const data = e?.response?.data as Record<string, unknown> | undefined;
       const msg =
-        (typeof data?.error === "object" &&
-          Array.isArray((data?.error as { __all__?: string[] })?.__all__) &&
-          (data?.error as { __all__: string[] }).__all__[0]) ||
-        (typeof data?.error === "string" ? data.error : null) ||
-        (typeof data?.message === "string" ? data.message : null) ||
-        getBookmarkApiErrorMessage(err) ||
-        e?.message ||
-        "Failed to remove bookmark";
+        getBookmarkApiErrorMessage(err) || "Failed to remove bookmark";
       showToast.error(msg);
     }
   }, []);

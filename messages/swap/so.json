@@ -1,9 +1,10 @@
 {
   "swap.title": "Beddel Crypto",
   "swap.transactionInfo": "Macluumaadka Macaamilka",
-  "swap.youSend": "Waxaad Diraysaa",
-  "swap.youReceive": "Waxaad Helaysaa",
+  "swap.youSend": "Ka",
+  "swap.youReceive": "Ku",
   "swap.asset": "Hanti",
+  "swap.amount": "Qadarka",
   "swap.enterAmount": "Geli qadarka",
   "swap.selectAsset": "Dooro Hanti",
   "swap.searchAssets": "Raadi hantida...",

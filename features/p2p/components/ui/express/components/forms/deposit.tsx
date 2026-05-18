@@ -2591,7 +2591,7 @@ export default function DepositForm({
                       if (addr.trim().length < 10) setWalletError("Address seems too short");
                       else setWalletError(null);
                     }}
-                    onSaveCurrent={async () => {
+                    onSaveCurrent={async (label) => {
                       try {
                         if (!walletAddress.trim() || !currentCurrency || !currentNetwork) {
                           showToast.error("Enter address and select asset/network first");
@@ -2599,12 +2599,13 @@ export default function DepositForm({
                         }
                         await saveBookmark({
                           address: walletAddress.trim(),
-                          label: `My ${currentCurrency} wallet`,
+                          label,
                           network: currentNetwork,
                           asset: currentCurrency,
                         });
                       } catch { /* handled by hook */ }
                     }}
+                    saveError={saveBookmarkError}
                     anchorRef={bookmarkAnchorRef}
                     isDark={isDark}
                     saveDisabled={isAddressValidating || !(addressValidationResult?.isValid)}

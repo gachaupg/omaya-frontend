@@ -18,6 +18,10 @@ import { selectAllP2POrders } from "@/features/p2p/selectors";
 import { P2PMarketTableSkeleton } from "@/components/ui/Skeletons";
 
 import { logger } from "@/lib/utils/logger";
+import {
+  formatDurationForDisplay,
+  formatMarketTimeLimit,
+} from "@/features/p2p/components/Common/utils";
 
 interface Option {
   label: string;
@@ -27,37 +31,6 @@ interface Option {
 const formatCurrencyLabel = (currency?: string | null) => {
   if (!currency) return "USDT";
   return currency.toUpperCase();
-};
-
-const formatLimitDuration = (duration: string): string => {
-  if (!duration) return "10 Minutes";
-
-  try {
-    const parts = duration.split(":");
-    const hours = parseInt(parts[0] || "0");
-    const minutes = parseInt(parts[1] || "0");
-    const seconds = parseInt(parts[2] || "0");
-
-    // If there are hours, convert to minutes
-    if (hours > 0) {
-      const totalMinutes = hours * 60 + minutes;
-      return `${totalMinutes} Minutes`;
-    }
-
-    // If there are minutes, show minutes
-    if (minutes > 0) {
-      return `${minutes} ${minutes === 1 ? "Minute" : "Minutes"}`;
-    }
-
-    // Otherwise show seconds as minutes (keeping the number, changing the word)
-    if (seconds > 0) {
-      return `${seconds} ${seconds === 1 ? "Minute" : "Minutes"}`;
-    }
-
-    return "0 Minutes";
-  } catch (error) {
-    return "10 Minutes";
-  }
 };
 
 const getCurrencyOptions = (orders: any): Option[] => {
@@ -427,7 +400,7 @@ const MarketTransactions = memo(({ activeTab }: { activeTab: string }) => {
           advertiser_photo: order.advertiser_photo || "",
           completion: `${(order.completion_rate || 0) * 100}%`,
           exchange_rate: `${(parseFloat(order.exchange_rate || 0) * 100).toFixed(0)}`,
-          completion_time: formatLimitDuration(
+          completion_time: formatDurationForDisplay(
             order.completion_time || "00:00:00"
           ),
           // Advertiser online flag from API; fall back for older payloads that only sent order.status
@@ -457,8 +430,8 @@ const MarketTransactions = memo(({ activeTab }: { activeTab: string }) => {
           maxAmount,
           currency: orderCurrency,
           range_currency: rangeCurrency,
-          timeLimit: formatLimitDuration(order.limit_duration),
-          avgRealiseTime: formatLimitDuration(
+          timeLimit: formatMarketTimeLimit(order),
+          avgRealiseTime: formatDurationForDisplay(
             order.completion_time || "00:02:00"
           ),
           terms_and_conditions: order.terms_and_conditions || "",
