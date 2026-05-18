@@ -63,6 +63,7 @@ import { BookmarkDropdown } from "../../express/components/forms/BookmarkDropdow
 import FrozenAccountModal from "@/components/ui/FrozenAccountModal";
 
 import { logger } from '@/lib/utils/logger';
+import { stripLeadingZerosFromDecimalInput } from "@/lib/utils/decimalAmountInput";
 import { useChangeNowAssets } from "@/features/express/home/hooks/useChangeNowAssets";
 import {
   RatesAssetImage,
@@ -476,10 +477,14 @@ const getPaymentRestrictionMessage = (status?: string) =>
       .replace(/[^\d.]/g, "");
     if (!compact) return "";
     const firstDot = compact.indexOf(".");
-    if (firstDot === -1) return compact;
-    const intPart = compact.slice(0, firstDot + 1);
-    const fracPart = compact.slice(firstDot + 1).replace(/\./g, "");
-    return `${intPart}${fracPart}`;
+    let result: string;
+    if (firstDot === -1) result = compact;
+    else {
+      const intPart = compact.slice(0, firstDot + 1);
+      const fracPart = compact.slice(firstDot + 1).replace(/\./g, "");
+      result = `${intPart}${fracPart}`;
+    }
+    return stripLeadingZerosFromDecimalInput(result);
   };
 
   const applyReceiveAmountInput = (rawValue: string) => {
@@ -3638,7 +3643,7 @@ const getPaymentRestrictionMessage = (status?: string) =>
               } bg-transparent`}
           >
             <div className="text-sm sm:text-[17px] text-[#7e7e8f] dark:text-[#ffffff] mb-2 font-semibold flex items-center gap-2">
-              {t("rates.youSend", "You Send")}
+              {t("rates.youSend", "From")}
               <div className="w-2 h-2 bg-[#1D8751] rounded-full animate-pulse"></div>
             </div>
 
@@ -3653,7 +3658,9 @@ const getPaymentRestrictionMessage = (status?: string) =>
                     value={amount}
                     onChange={(e) => {
                       const value = e.target.value;
-                      const normalizedValue = value.replace(/,/g, "").trim();
+                      const normalizedValue = stripLeadingZerosFromDecimalInput(
+                        sanitizeNumericInput(value)
+                      );
                       logger.debug('general', "You Send input changed:", {
                         value,
                         normalizedValue,
@@ -4125,7 +4132,7 @@ const getPaymentRestrictionMessage = (status?: string) =>
               } bg-transparent`}
           >
             <div className="text-sm sm:text-[17px] text-[#7e7e8f] dark:text-[#ffffff] mb-2 font-semibold flex items-center gap-2">
-              {t("rates.youGet", "You Get")}
+              {t("rates.youGet", "To")}
               <div className="w-2 h-2 bg-[#1D8751] rounded-full animate-pulse"></div>
             </div>
 
@@ -4932,12 +4939,12 @@ const getPaymentRestrictionMessage = (status?: string) =>
                           void validateAddress(addr.trim(), validationCurrency, validationNetwork);
                         }
                       }}
-                      onSaveCurrent={async () => {
+                      onSaveCurrent={async (label) => {
                         try {
                           if (!walletAddress.trim()) return;
                           await saveBookmark({
                             address: walletAddress.trim(),
-                            label: `My ${bookmarkAsset} wallet`,
+                            label,
                             network: bookmarkNetwork,
                             asset: bookmarkAsset,
                           });
@@ -4945,6 +4952,7 @@ const getPaymentRestrictionMessage = (status?: string) =>
                           // handled by hook
                         }
                       }}
+                      saveError={saveBookmarkError}
                       anchorRef={bookmarkAnchorRef}
                       isDark={isDark}
                       saveDisabled={!!walletError}

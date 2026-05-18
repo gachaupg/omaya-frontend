@@ -9,6 +9,7 @@ import { API_CONFIG } from "@/lib/appConfig";
 import { cookieUtils } from "@/lib/utils/cookieUtils";
 import { useTheme } from "@/context/theme";
 import CopyButton from "@/components/ui/CopyButton";
+import HowToSendDialBlock from "@/components/ui/HowToSendDialBlock";
 import { useDispatch, useSelector } from "react-redux";
 import { AppDispatch } from "@/store/rootReducer";
 import { logger } from '@/lib/utils/logger';
@@ -1401,7 +1402,7 @@ export default function Exchanging({ transactionData, isHomePage = false }: Exch
               </>
             )}
           </div>
-        <div className="flex-shrink-0 ml-0 md:ml-6 flex items-center justify-center py-2">
+        <div className="flex-shrink-0 ml-0 md:ml-6 flex flex-col items-center justify-center py-2 gap-3 min-w-[9rem] max-w-[220px]">
           {/* QR code */}
           {(() => {
             // For deposits: use selected payment method "How to send" (bank/mobile/crypto). For withdrawals: wallet address.
@@ -1457,47 +1458,28 @@ export default function Exchanging({ transactionData, isHomePage = false }: Exch
               </div>
             );
           })()}
+          {effectiveTransactionData?.type === "deposit" &&
+            (() => {
+              const rawHowToSend = resolveHowToSendFromTx(effectiveTransactionData);
+              const amountForHowToSend =
+                liveAmount ?? (effectiveTransactionData as any)?.amount ?? null;
+              const formatted = formatHowToSend(rawHowToSend, amountForHowToSend);
+              const isEvmAddress = /^0x[a-fA-F0-9]{40}$/i.test(
+                String(formatted || "").trim()
+              );
+              if (!formatted || isEvmAddress) return null;
+              return (
+                <HowToSendDialBlock
+                  value={formatted}
+                  isDark={isDark}
+                  compact
+                  className="w-full"
+                />
+              );
+            })()}
         </div>
       </div>
 
-      {effectiveTransactionData?.type === "deposit" &&
-        (() => {
-          const rawHowToSend = resolveHowToSendFromTx(effectiveTransactionData);
-          const amountForHowToSend =
-            liveAmount ?? (effectiveTransactionData as any)?.amount ?? null;
-          const formatted = formatHowToSend(rawHowToSend, amountForHowToSend);
-          // Don't show crypto wallet addresses inside "How to send" (this row is for USSD/bank instructions).
-          const isEvmAddress = /^0x[a-fA-F0-9]{40}$/.test(String(formatted || "").trim());
-          return Boolean(formatted) && !isEvmAddress;
-        })() && (
-        <div className="w-full max-w-4xl mb-2 sm:mb-3">
-          <div
-            className={`w-full flex items-center gap-2 px-3 py-2 rounded-xl border border-[#1D8751] ${
-              isDark ? "bg-[#1f1f25]" : "bg-gray-50"
-            }`}
-          >
-            <span className={`${isDark ? "text-[#1D8751]" : "text-[#1D8751]"} text-xs font-semibold whitespace-nowrap`}>
-              How to send:
-            </span>
-            {(() => {
-              const howToSend = resolveHowToSendFromTx(effectiveTransactionData);
-              const amountForHowToSend =
-                liveAmount ??
-                (effectiveTransactionData as any)?.amount ??
-                null;
-              const value = formatHowToSend(howToSend, amountForHowToSend);
-              return (
-                <>
-                  <code className={`${isDark ? "text-white" : "text-gray-900"} text-xs sm:text-sm font-mono break-all`}>
-                    {value}
-                  </code>
-                  <CopyButton value={value} className="shrink-0" />
-                </>
-              );
-            })()}
-          </div>
-        </div>
-      )}
 
       <div className="flex items-center justify-between w-full max-w-4xl mb-2 sm:mb-4 relative px-2 sm:px-0 overflow-x-auto">
         {/* Connecting Lines */}

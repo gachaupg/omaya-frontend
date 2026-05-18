@@ -7,10 +7,16 @@ import { useTheme } from "@/context/theme";
 import SuccessPage from "./success";
 import { FaSearch } from "react-icons/fa";
 import { isNonEmptyInvalidZeroSwapAmount } from "@/lib/utils/swapAmountInput";
+import { useSwapI18n } from "@/lib/useSwapI18n";
+import {
+  handleSwapAssetIconError,
+  resolveSwapAssetIconSrc,
+  SWAP_ASSET_ICON_FALLBACK,
+} from "@/features/swap/utils/swapAssetIcon";
 
 const ZERO_AMOUNT_INVALID_MSG =
   "0 is not a valid amount input. Enter an amount greater than zero.";
-const ASSET_ICON_FALLBACK_URL = "/assets/image_7_jijlik.png";
+const ASSET_ICON_FALLBACK_URL = SWAP_ASSET_ICON_FALLBACK;
 
 interface TransactionInfoStepProps {
   fromAsset: SupportedAsset | null;
@@ -76,6 +82,7 @@ const TransactionInfoStep: React.FC<TransactionInfoStepProps> = ({
   activeInputField,
 }) => {
   const { isDark } = useTheme();
+  const { t } = useSwapI18n();
 
   const estimateErrorBlocksSubmit =
     typeof estimateError === "string" &&
@@ -338,17 +345,10 @@ const TransactionInfoStep: React.FC<TransactionInfoStepProps> = ({
                   }}
                 >
                   <img
-                    src={
-                      assetItem.image ||
-                      assetItem.image_url ||
-                      assetItem.asset_image ||
-                      ASSET_ICON_FALLBACK_URL
-                    }
+                    src={resolveSwapAssetIconSrc(assetItem)}
                     alt={assetItem.name || "Asset"}
                     className="w-6 h-6 rounded-full object-cover"
-                    onError={(e) => {
-                      e.currentTarget.src = ASSET_ICON_FALLBACK_URL;
-                    }}
+                    onError={(e) => handleSwapAssetIconError(e, assetItem)}
                   />
                   <div className="flex-1">
                     <div className={`font-normal text-sm flex items-center gap-2 ${isDark ? "text-white" : "text-[#1F2937]"
@@ -396,12 +396,12 @@ const TransactionInfoStep: React.FC<TransactionInfoStepProps> = ({
                 className={`block text-[15px] mb-2 font-semibold flex items-center gap-2 ${isDark ? "text-[#9CA3AF]" : "text-[#475569]"
                   }`}
               >
-                You Send
+                {t("swap.youSend", "From")}
                 <div className="w-2 h-2 bg-[#1D8751] rounded-full animate-pulse"></div>
               </label>
               <div className={`text-xs mb-1 ${isDark ? "text-[#788099]" : "text-[#64748B]"
                 }`}>
-                Amount
+                {t("swap.amount", "Amount")}
               </div>
               <div className="relative">
                 <input
@@ -409,7 +409,7 @@ const TransactionInfoStep: React.FC<TransactionInfoStepProps> = ({
                   inputMode="decimal"
                   value={fromAmount}
                   onChange={onFromAmountChange}
-                  placeholder="Enter amount"
+                  placeholder={t("swap.enterAmount", "Enter amount")}
                   className={`w-full rounded-2xl px-4 py-2 pr-16 text-lg focus:outline-none border appearance-none bg-transparent ${isDark ? "border-[#35353E] text-white" : "border-[#CBD5F5] text-[#111827]"
                     }`}
                 />
@@ -444,7 +444,7 @@ const TransactionInfoStep: React.FC<TransactionInfoStepProps> = ({
             <div className="flex-1 min-w-0">
               <div className={`text-xs mb-1 mt-[30px] ${isDark ? "text-[#788099]" : "text-[#64748B]"
                 }`}>
-                Asset
+                {t("swap.asset", "Asset")}
               </div>
               <div className="relative" ref={fromAssetDropdownRef}>
                 <div
@@ -456,17 +456,10 @@ const TransactionInfoStep: React.FC<TransactionInfoStepProps> = ({
                     {fromAsset ? (
                       <>
                         <img
-                          src={
-                            fromAsset.image ||
-                            fromAsset.image_url ||
-                            fromAsset.asset_image ||
-                            ASSET_ICON_FALLBACK_URL
-                          }
+                          src={resolveSwapAssetIconSrc(fromAsset)}
                           alt={fromAsset.name}
-                          className="w-6 h-6 rounded-full"
-                          onError={(e) => {
-                            e.currentTarget.src = ASSET_ICON_FALLBACK_URL;
-                          }}
+                          className="w-6 h-6 rounded-full object-cover"
+                          onError={(e) => handleSwapAssetIconError(e, fromAsset)}
                         />
                         <div className="flex items-center gap-2 min-w-0 flex-1">
                           <span className={`font-normal text-sm truncate ${isDark ? "text-white" : "text-[#1F2937]"}`}>
@@ -489,7 +482,7 @@ const TransactionInfoStep: React.FC<TransactionInfoStepProps> = ({
                           className="w-6 h-6"
                         />
                         <span className={isDark ? "text-[#788099]" : "text-[#64748B]"}>
-                          {supportedAssets.length === 0 ? "Loading assets..." : "Select Asset"}
+                          {supportedAssets.length === 0 ? t("swap.loading", "Loading...") : t("swap.selectAsset", "Select Asset")}
                         </span>
                       </>
                     )}
@@ -550,12 +543,12 @@ const TransactionInfoStep: React.FC<TransactionInfoStepProps> = ({
                 className={`block text-[15px] mb-2 font-semibold flex items-center gap-2 ${isDark ? "text-[#9CA3AF]" : "text-[#475569]"
                   }`}
               >
-                You Receive
+                {t("swap.youReceive", "To")}
                 <div className="w-2 h-2 bg-[#1D8751] rounded-full animate-pulse"></div>
               </label>
               <div className={`text-xs mb-1 ${isDark ? "text-[#788099]" : "text-[#64748B]"
                 }`}>
-                Amount
+                {t("swap.amount", "Amount")}
               </div>
               <div className="relative">
                 <input
@@ -563,7 +556,7 @@ const TransactionInfoStep: React.FC<TransactionInfoStepProps> = ({
                   inputMode="decimal"
                   value={toAmount}
                   onChange={onToAmountChange}
-                  placeholder="Enter amount"
+                  placeholder={t("swap.enterAmount", "Enter amount")}
                   className={`w-full rounded-2xl px-4 py-2 pr-16 text-lg focus:outline-none border appearance-none bg-transparent ${activeInputField === "to"
                       ? "border-[#1D8751]"
                       : isDark
@@ -619,17 +612,10 @@ const TransactionInfoStep: React.FC<TransactionInfoStepProps> = ({
                     {toAsset ? (
                       <>
                         <img
-                          src={
-                            toAsset.image ||
-                            toAsset.image_url ||
-                            toAsset.asset_image ||
-                            ASSET_ICON_FALLBACK_URL
-                          }
+                          src={resolveSwapAssetIconSrc(toAsset)}
                           alt={toAsset.name}
-                          className="w-6 h-6 rounded-full"
-                          onError={(e) => {
-                            e.currentTarget.src = ASSET_ICON_FALLBACK_URL;
-                          }}
+                          className="w-6 h-6 rounded-full object-cover"
+                          onError={(e) => handleSwapAssetIconError(e, toAsset)}
                         />
                         <div className="flex items-center gap-2 min-w-0 flex-1">
                           <span className={`font-normal text-sm truncate ${isDark ? "text-white" : "text-[#1F2937]"}`}>
@@ -652,7 +638,7 @@ const TransactionInfoStep: React.FC<TransactionInfoStepProps> = ({
                           className="w-6 h-6"
                         />
                         <span className={isDark ? "text-[#788099]" : "text-[#64748B]"}>
-                          {supportedAssets.length === 0 ? "Loading assets..." : "Select Asset"}
+                          {supportedAssets.length === 0 ? t("swap.loading", "Loading...") : t("swap.selectAsset", "Select Asset")}
                         </span>
                       </>
                     )}

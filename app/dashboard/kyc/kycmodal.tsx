@@ -14,6 +14,10 @@ import {
 import { checkKYCStatus, verifyKYCStatus } from "@/features/kyc/slices/kycSlice";
 import { showToast } from "@/lib/utils/toast";
 import { FaceDetectionKYC } from "@/features/kyc/components";
+import {
+  isPassportDocumentType,
+  requiresDocumentBackSide,
+} from "@/features/kyc/utils/kycDocumentUtils";
 
 const KYCVerificationModal: React.FC = () => {
   const dispatch = useDispatch<AppDispatch>();
@@ -34,6 +38,7 @@ const KYCVerificationModal: React.FC = () => {
   const [sendingOTP, setSendingOTP] = useState(false);
   const [verifyingOTP, setVerifyingOTP] = useState(false);
   const [otpSent, setOtpSent] = useState(false);
+  const [otpSuccessMessage, setOtpSuccessMessage] = useState<string | null>(null);
   const [phoneVerified, setPhoneVerified] = useState(false);
   const [resendTimer, setResendTimer] = useState(0);
   const [kycStatus, setKycStatus] = useState<any>(null);
@@ -248,18 +253,15 @@ const KYCVerificationModal: React.FC = () => {
   const handleSendOTP = async () => {
     setSendingOTP(true);
     setError(null);
+    setOtpSuccessMessage(null);
     try {
       const result = await dispatch(sendPhoneOTP({})).unwrap();
       setOtpSent(true);
       setResendTimer(result?.cooldown_seconds ?? 60);
-      showToast.success(
-        "OTP Sent",
-        "OTP sent to your registered email address."
-      );
+      setOtpSuccessMessage("OTP sent to your registered email address.");
     } catch (error: any) {
       const errorMsg = typeof error === "string" ? error : "Failed to send OTP. Please try again.";
       setError(errorMsg);
-      showToast.error("Error", errorMsg);
     } finally {
       setSendingOTP(false);
     }
@@ -278,6 +280,7 @@ const KYCVerificationModal: React.FC = () => {
       const result = await dispatch(verifyPhoneOTP({ otp })).unwrap();
       if (result.email_verified) {
         setPhoneVerified(true);
+        setOtpSuccessMessage(null);
         showToast.success("Success", "Email verified successfully");
         
         // Refresh KYC status
@@ -291,7 +294,6 @@ const KYCVerificationModal: React.FC = () => {
     } catch (error: any) {
       const errorMsg = typeof error === "string" ? error : "Invalid or expired OTP. Please try again.";
       setError(errorMsg);
-      showToast.error("Error", errorMsg);
     } finally {
       setVerifyingOTP(false);
     }
@@ -315,6 +317,17 @@ const KYCVerificationModal: React.FC = () => {
     }));
   };
 
+  const handleDocumentTypeChange = (value: string) => {
+    handleInputChange("documentType", value);
+    if (isPassportDocumentType(value)) {
+      setDocumentBackImage(null);
+      setDocumentBackPreview(null);
+    }
+  };
+
+  const documentRequiresBack = requiresDocumentBackSide(verificationData.documentType);
+  const isPassportDoc = isPassportDocumentType(verificationData.documentType);
+
   const validateStep = (step: number) => {
     switch (step) {
       case 0:
@@ -332,11 +345,14 @@ const KYCVerificationModal: React.FC = () => {
         return true;
       case 2:
         if (!documentFrontImage) {
-          setError("Please upload the front side of your document");
-          showToast.error("Please upload the front side of your document");
+          const frontMsg = isPassportDoc
+            ? "Please upload a clear photo of your passport"
+            : "Please upload the front side of your document";
+          setError(frontMsg);
+          showToast.error(frontMsg);
           return false;
         }
-        if (!documentBackImage) {
+        if (documentRequiresBack && !documentBackImage) {
           setError("Please upload the back side of your document");
           showToast.error("Please upload the back side of your document");
           return false;
@@ -369,11 +385,23 @@ const KYCVerificationModal: React.FC = () => {
       try {
         const response = await fetch(base64Image);
         const blob = await response.blob();
-        const file = new File([blob], "face-verification.jpg", { type: "image/jpeg" });
+        const file = new File([blob], "face-verification.jpg", {
+          type: blob.type || "image/jpeg",
+        });
         setFaceImage(file);
         setFacePreview(base64Image);
       } catch (error) {
         console.error("Error converting face image:", error);
+        try {
+          const byteString = atob(base64Image.split(",")[1] || "");
+          const mime = base64Image.match(/data:([^;]+);/)?.[1] || "image/jpeg";
+          const ab = new ArrayBuffer(byteString.length);
+          const ia = new Uint8Array(ab);
+          for (let i = 0; i < byteString.length; i++) ia[i] = byteString.charCodeAt(i);
+          setFaceImage(new File([ab], "face-verification.jpg", { type: mime }));
+        } catch {
+          setFaceImage(null);
+        }
         setFacePreview(base64Image);
       }
     }
@@ -509,12 +537,20 @@ const KYCVerificationModal: React.FC = () => {
       
       // Call the KYC verification API using the thunk
       // Only include images that are valid File objects
-      const kycImages = [documentFrontImage, documentBackImage, faceImage].filter(
-        (img): img is File => img instanceof File
-      );
-      if (kycImages.length < 3) {
-        setError("Please provide all required images: front, back, and face");
-        showToast.error("Please provide all required images: front, back, and face");
+      const kycImages = isPassportDoc
+        ? [documentFrontImage, faceImage].filter(
+            (img): img is File => img instanceof File
+          )
+        : [documentFrontImage, documentBackImage, faceImage].filter(
+            (img): img is File => img instanceof File
+          );
+      const requiredImageCount = isPassportDoc ? 2 : 3;
+      if (kycImages.length < requiredImageCount) {
+        const missingMsg = isPassportDoc
+          ? "Please provide your passport photo and face verification image"
+          : "Please provide all required images: front, back, and face";
+        setError(missingMsg);
+        showToast.error(missingMsg);
         return;
       }
       
@@ -552,9 +588,19 @@ const KYCVerificationModal: React.FC = () => {
       dispatch(checkKYCStatus());
     } catch (error) {
       console.error("KYC Verification Error:", error);
-      const errorMessage = typeof error === 'string' ? error : "An error occurred during verification submission";
+      const raw =
+        typeof error === "string"
+          ? error
+          : "An error occurred during verification submission";
+      const isTimeout = /timeout|timed out/i.test(raw);
+      const errorMessage = isTimeout
+        ? "Upload timed out. Your face verification is still saved — please check your connection and tap Submit Verification again."
+        : raw;
       setError(errorMessage);
-      showToast.error("Verification Error", errorMessage);
+      showToast.error(
+        isTimeout ? "Upload timed out" : "Verification Error",
+        errorMessage
+      );
     } finally {
       setIsSubmitting(false);
     }
@@ -666,6 +712,7 @@ const KYCVerificationModal: React.FC = () => {
     setFacePreview(null);
     setOtp("");
     setOtpSent(false);
+    setOtpSuccessMessage(null);
     setResendTimer(0);
     setVerificationData({
       country: defaultCountry,
@@ -884,6 +931,19 @@ const KYCVerificationModal: React.FC = () => {
               {/* OTP Input */}
               {otpSent && !phoneVerified && (
                 <div className="space-y-3">
+                  {otpSuccessMessage && (
+                    <div className="bg-green-50 dark:bg-green-900/20 border border-green-500 text-green-700 dark:text-green-400 p-3 rounded-lg flex items-start gap-2">
+                      <svg className="w-5 h-5 flex-shrink-0 mt-0.5" fill="currentColor" viewBox="0 0 20 20">
+                        <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
+                      </svg>
+                      <div className="flex-1">
+                        <p className="font-semibold text-sm">OTP Sent</p>
+                        <p className="text-xs text-green-600 dark:text-green-300 mt-0.5">
+                          {otpSuccessMessage}
+                        </p>
+                      </div>
+                    </div>
+                  )}
                   <div>
                     <label className="block text-xs font-medium text-gray-900 dark:text-white mb-1.5">Enter OTP *</label>
                     <input
@@ -975,7 +1035,7 @@ const KYCVerificationModal: React.FC = () => {
                   <label className="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1.5">Document Type *</label>
                   <select
                     value={verificationData.documentType}
-                    onChange={(e) => handleInputChange('documentType', e.target.value)}
+                    onChange={(e) => handleDocumentTypeChange(e.target.value)}
                     className="w-full px-3 py-1.5 text-sm bg-gray-50 dark:bg-[#2A2A2A] border border-[#35353E] rounded-lg text-gray-900 dark:text-white focus:outline-none focus:border-[#1D8751]"
                   >
                     <option value="">Select document type</option>
@@ -1009,16 +1069,18 @@ const KYCVerificationModal: React.FC = () => {
                   </svg>
                 </div>
                 <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-1">Document Photos</h3>
-                <p className="text-gray-500 dark:text-gray-400 text-xs">Upload clear photos of both sides</p>
+                <p className="text-gray-500 dark:text-gray-400 text-xs">
+                  {isPassportDoc
+                    ? "Upload a clear photo of your passport photo page"
+                    : "Upload clear photos of both sides of your document"}
+                </p>
               </div>
 
-              {/* Document Upload Grid - Two columns */}
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-              {/* Front Side Upload */}
+              <div className={`grid gap-3 ${documentRequiresBack ? "grid-cols-1 md:grid-cols-2" : "grid-cols-1 max-w-md mx-auto"}`}>
               <div>
                 <h4 className="text-gray-900 dark:text-white text-sm font-medium mb-2 flex items-center gap-1">
                   <span className="bg-[#1D8751] text-white rounded-full w-5 h-5 flex items-center justify-center text-xs">1</span>
-                  Front Side *
+                  {isPassportDoc ? "Passport Photo Page *" : "Front Side *"}
                 </h4>
                 <div className="border-2 border-dashed border-[#35353E] rounded-lg p-3 text-center">
                   {documentFrontImage && documentFrontPreview ? (
@@ -1065,7 +1127,7 @@ const KYCVerificationModal: React.FC = () => {
                 </div>
               </div>
 
-              {/* Back Side Upload */}
+              {documentRequiresBack && (
               <div>
                 <h4 className="text-gray-900 dark:text-white text-sm font-medium mb-2 flex items-center gap-1">
                   <span className="bg-[#1D8751] text-white rounded-full w-5 h-5 flex items-center justify-center text-xs">2</span>
@@ -1115,6 +1177,7 @@ const KYCVerificationModal: React.FC = () => {
                  )}
                 </div>
                </div>
+              )}
                </div>
             </div>
           )}
@@ -1157,6 +1220,11 @@ const KYCVerificationModal: React.FC = () => {
           )}
 
           {/* Navigation Buttons */}
+          {currentStep === 0 && !phoneVerified && otpSuccessMessage && (
+            <p className="text-xs text-green-600 dark:text-green-400 text-center mb-2">
+              {otpSuccessMessage}
+            </p>
+          )}
           <div className="flex gap-2 mt-4">
             {currentStep > (phoneVerified ? 1 : 0) && (
               <button
@@ -1226,7 +1294,7 @@ const KYCVerificationModal: React.FC = () => {
                 {isSubmitting ? (
                   <>
                     <div className="animate-spin rounded-full h-3 w-3 border-b-2 border-white"></div>
-                    <span>Submitting...</span>
+                    <span>Uploading documents…</span>
                   </>
                 ) : (
                   "Submit Verification"

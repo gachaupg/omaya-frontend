@@ -304,17 +304,18 @@ const WalletAddressStep: React.FC<WalletAddressStepProps> = ({
                             resetAddressValidation();
                           }
                         }}
-                        onSaveCurrent={async () => {
+                        onSaveCurrent={async (label) => {
                           try {
                             if (!walletAddress.trim() || !currentCurrency) return;
                             await saveBookmark({
                               address: walletAddress.trim(),
-                              label: `My ${currentCurrency} wallet`,
+                              label,
                               network: currentNetwork || "",
                               asset: currentCurrency,
                             });
                           } catch { /* handled by hook */ }
                         }}
+                        saveError={saveBookmarkError}
                         anchorRef={bookmarkAnchorRef}
                         isDark={isDark}
                         saveDisabled={isAddressValidating || !(addressValidationResult?.isValid)}
@@ -401,33 +402,6 @@ const WalletAddressStep: React.FC<WalletAddressStepProps> = ({
             </div>
 
             {/* Save to bookmarks - visible under wallet input */}
-            {walletAddress.trim() &&
-              !isAddressValidating &&
-              addressValidationResult?.isValid && (
-              <button
-                type="button"
-                onClick={async () => {
-                  if (!walletAddress.trim() || !currentCurrency) return;
-                  await saveBookmark({
-                    address: walletAddress.trim(),
-                    label: `My ${currentCurrency} wallet`,
-                    network: currentNetwork || "",
-                    asset: currentCurrency,
-                  });
-                }}
-                disabled={bookmarkSaving}
-                className="flex items-center gap-2 text-[#1D8751] hover:text-[#166b3e] font-medium text-xs sm:text-sm transition-colors disabled:opacity-70"
-              >
-                {bookmarkSaving ? (
-                  <span className="w-4 h-4 border-2 border-[#1D8751] border-t-transparent rounded-full animate-spin" />
-                ) : (
-                  <svg width="14" height="14" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
-                    <path d="M5 5a2 2 0 012-2h10a2 2 0 012 2v16l-7-3.5L5 21V5z" strokeLinecap="round" strokeLinejoin="round" />
-                  </svg>
-                )}
-                {bookmarkSaving ? "Saving to bookmarks..." : "Save to bookmarks"}
-              </button>
-            )}
 
             {/* Important Crypto Warning Banner */}
             <div className="bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800/50 rounded-xl p-2 sm:p-3">

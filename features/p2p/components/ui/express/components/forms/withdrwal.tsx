@@ -2860,7 +2860,7 @@ export default function WithdrawalForm({
             <div className="flex-1">
               <div className="flex items-center justify-between gap-2 mb-2">
                 <label className="text-sm sm:text-[17px] text-[#7e7e8f] dark:text-[#ffffff] font-semibold flex items-center gap-2">
-                  You Receive
+                  To
                   <div className="w-2 h-2 bg-[#1D8751] rounded-full animate-pulse"></div>
                 </label>
                 {(p2pCommissionRate > 0 || p2pFixedCommissionFee > 0) && (

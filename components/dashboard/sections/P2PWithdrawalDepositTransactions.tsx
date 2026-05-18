@@ -9,8 +9,9 @@ import { NoDataFound } from "../ui/Transactions";
 import { useDashboardI18n } from "@/lib/useDashboardI18n";
 import { SortArrowsIcon } from "@/components/ui/SortArrowsIcon";
 import { getHighResAssetIcon, getDefaultAssetIcon } from "@/features/express/utils/imageHelpers";
-import CopyButton from "@/components/ui/CopyButton";
-import { StatusBadge } from "@/components/ui/StatusBadge";
+import { TransactionFromToCell } from "@/components/dashboard/ui/TransactionFromToCell";
+import { TransactionStatusCell } from "@/components/dashboard/ui/TransactionStatusCell";
+import { buildP2pWithdrawalDepositFromTo } from "@/lib/utils/transactionFromTo";
 import { isPendingAddressDashboardStatus } from "@/lib/utils/dashboardTransactionFilters";
 
 interface RootState {
@@ -61,13 +62,6 @@ const getBaseTickerForIcon = (raw: unknown): string => {
   return (base.split(/[-_\s]+/)[0] || base).toUpperCase();
 };
 
-const isAssetNetworkLabel = (value: unknown): boolean => {
-  const s = String(value ?? "").trim();
-  if (!s) return false;
-  // Matches: "USDT (BSC)", "BTC (TRC20)", etc.
-  return /^[A-Za-z0-9]+\s*\([A-Za-z0-9]+\)$/.test(s);
-};
-
 /** Display first 5 chars ... last 5 chars (full id in title for copy/hover) */
 const formatTransactionId = (id: string | null | undefined): string => {
   if (!id) return "";
@@ -86,51 +80,6 @@ const formatRecentTime = (dateValue: string) => {
   const v = formatDistanceToNow(new Date(dateValue), { addSuffix: true });
   if (/less than (a|1) minute ago/i.test(v)) return "now";
   return v.replace(/^about\s+/i, "");
-};
-
-const formatAddress = (addr: string | null | undefined, start = 6, end = 4): string => {
-  if (!addr) return "—";
-  const s = String(addr).trim();
-  if (!s) return "—";
-  if (s.length <= start + end + 3) return s;
-  return `${s.slice(0, start)}...${s.slice(-end)}`;
-};
-
-const getTxFromTo = (tx: any): { from: string | null; to: string | null } => {
-  const txType = String(tx?.transaction_type || "").toLowerCase();
-  const symbol = String(tx?.currency || tx?.asset_symbol || "USDT").toUpperCase();
-  const network = String(tx?.network || "").toUpperCase();
-  const cryptoLabel = network ? `${symbol} (${network})` : symbol;
-
-  const fromRaw =
-    // Withdrawal: "From" should be the asset/network label (not an address)
-    (txType === "withdrawal" ? cryptoLabel : null) ||
-    tx?.from_address ||
-    tx?.sender_wallet ||
-    tx?.sender_address ||
-    // Legacy: some responses store "from" in a single address field
-    (txType === "withdrawal" ? tx?.deposit_address : null) ||
-    // Some endpoints omit `from_address` for deposits; use receiver_wallet as best available fallback.
-    (txType === "deposit" ? tx?.receiver_wallet : null) ||
-    // Some legacy rows may expose a single wallet field.
-    tx?.wallet_address ||
-    null;
-
-  const toRaw =
-    tx?.to_address ||
-    tx?.receiver_wallet ||
-    tx?.receiver_address ||
-    // Legacy: deposit/withdrawal address fields
-    (txType === "deposit" ? tx?.deposit_address : null) ||
-    (txType === "withdrawal" ? tx?.withdrawal_address : null) ||
-    // Legacy single-field fallback
-    tx?.wallet_address ||
-    null;
-
-  return {
-    from: fromRaw ? String(fromRaw) : null,
-    to: toRaw ? String(toRaw) : null,
-  };
 };
 
 const P2PWithdrawalDepositTransactions = ({ filterByType = "all" }: P2PWithdrawalDepositTransactionsProps) => {
@@ -357,7 +306,7 @@ const P2PWithdrawalDepositTransactions = ({ filterByType = "all" }: P2PWithdrawa
       {/* Mobile Card Layout */}
       <div className="block sm:hidden space-y-3 px-4 pt-4 pb-2">
         {paginatedResults.map((tx: any, index: number) => {
-          const { from, to } = getTxFromTo(tx);
+          const { from: fromCell, to: toCell } = buildP2pWithdrawalDepositFromTo(tx);
           const displaySymbol = tx.currency || tx.asset_symbol || "USDT";
           const iconTicker = getBaseTickerForIcon(displaySymbol);
           return (
@@ -388,7 +337,10 @@ const P2PWithdrawalDepositTransactions = ({ filterByType = "all" }: P2PWithdrawa
                     </div>
                   </div>
                 </div>
-                <StatusBadge status={tx.status || tx.stages || "N/A"} />
+                <TransactionStatusCell
+                  status={tx.status || tx.stages || "N/A"}
+                  transactionId={tx.transaction_id || tx.id}
+                />
               </div>
 
               <div className="grid grid-cols-2 gap-3 text-sm">
@@ -406,67 +358,19 @@ const P2PWithdrawalDepositTransactions = ({ filterByType = "all" }: P2PWithdrawa
                 </div>
                 <div className="col-span-2">
                   <div className="text-xs text-gray-500 dark:text-[#A0A3BC] mb-1">From</div>
-                  <div className="flex items-center justify-between gap-2">
-                    {isAssetNetworkLabel(from) ? (
-                      <div className="flex items-center gap-2 min-w-0" title={from || ""}>
-                        <img
-                          src={getHighResAssetIcon({ ticker: getBaseTickerForIcon(from) })}
-                          alt={String(from || "Asset")}
-                          className="w-5 h-5 rounded-full shadow-sm flex-shrink-0"
-                          onError={(e) => {
-                            const img = e.currentTarget;
-                            if (img.dataset.fallbackApplied === "1") return;
-                            img.dataset.fallbackApplied = "1";
-                            img.src = getDefaultAssetIcon();
-                          }}
-                        />
-                        <div className="font-medium text-xs text-gray-900 dark:text-white truncate">
-                          {String(from)}
-                        </div>
-                      </div>
-                    ) : (
-                      <>
-                        <div className="font-mono font-medium text-xs text-gray-900 dark:text-white break-all" title={from || ""}>
-                          {formatAddress(from)}
-                        </div>
-                        {!!from && (
-                          <CopyButton value={from} className="text-gray-500 hover:text-gray-900 dark:text-[#A0A3BC] dark:hover:text-white" showInlineMessage={false} />
-                        )}
-                      </>
-                    )}
-                  </div>
+                  <TransactionFromToCell
+                    label={fromCell.label}
+                    copyValue={fromCell.copyValue}
+                    iconUrl={fromCell.iconUrl}
+                  />
                 </div>
                 <div className="col-span-2">
                   <div className="text-xs text-gray-500 dark:text-[#A0A3BC] mb-1">To</div>
-                  <div className="flex items-center justify-between gap-2">
-                    {isAssetNetworkLabel(to) ? (
-                      <div className="flex items-center gap-2 min-w-0" title={to || ""}>
-                        <img
-                          src={getHighResAssetIcon({ ticker: getBaseTickerForIcon(to) })}
-                          alt={String(to || "Asset")}
-                          className="w-5 h-5 rounded-full shadow-sm flex-shrink-0"
-                          onError={(e) => {
-                            const img = e.currentTarget;
-                            if (img.dataset.fallbackApplied === "1") return;
-                            img.dataset.fallbackApplied = "1";
-                            img.src = getDefaultAssetIcon();
-                          }}
-                        />
-                        <div className="font-medium text-xs text-gray-900 dark:text-white truncate">
-                          {String(to)}
-                        </div>
-                      </div>
-                    ) : (
-                      <>
-                        <div className="font-mono font-medium text-xs text-gray-900 dark:text-white break-all" title={to || ""}>
-                          {formatAddress(to)}
-                        </div>
-                        {!!to && (
-                          <CopyButton value={to} className="text-gray-500 hover:text-gray-900 dark:text-[#A0A3BC] dark:hover:text-white" showInlineMessage={false} />
-                        )}
-                      </>
-                    )}
-                  </div>
+                  <TransactionFromToCell
+                    label={toCell.label}
+                    copyValue={toCell.copyValue}
+                    iconUrl={toCell.iconUrl}
+                  />
                 </div>
                 <div>
                   <div className="text-xs text-gray-500 dark:text-gray-400 mb-1">Amount</div>
@@ -521,8 +425,7 @@ const P2PWithdrawalDepositTransactions = ({ filterByType = "all" }: P2PWithdrawa
             {paginatedResults.map((tx: any, index: number) => {
               const displaySymbol = tx.currency || tx.asset_symbol || "USDT";
               const iconTicker = getBaseTickerForIcon(displaySymbol);
-              const symbol = String(displaySymbol).toUpperCase();
-              const { from, to } = getTxFromTo(tx);
+              const { from: fromCell, to: toCell } = buildP2pWithdrawalDepositFromTo(tx);
               return (
                 <tr
                   key={tx.transaction_id || `tx-${index}`}
@@ -555,64 +458,20 @@ const P2PWithdrawalDepositTransactions = ({ filterByType = "all" }: P2PWithdrawa
 
                   {/* From */}
                   <td className="px-3 sm:px-4 py-2 whitespace-normal break-words text-xs sm:text-sm text-gray-700 dark:text-gray-200">
-                    <div className="flex items-center justify-between gap-2">
-                      {isAssetNetworkLabel(from) ? (
-                        <span className="inline-flex items-center gap-2 min-w-0" title={from || ""}>
-                          <img
-                            src={getHighResAssetIcon({ ticker: getBaseTickerForIcon(from) })}
-                            alt={String(from || "Asset")}
-                            className="w-5 h-5 rounded-full shadow-sm flex-shrink-0"
-                            onError={(e) => {
-                              const img = e.currentTarget;
-                              if (img.dataset.fallbackApplied === "1") return;
-                              img.dataset.fallbackApplied = "1";
-                              img.src = getDefaultAssetIcon();
-                            }}
-                          />
-                          <span className="font-medium truncate">{String(from)}</span>
-                        </span>
-                      ) : (
-                        <>
-                          <span className="font-mono text-xs sm:text-sm truncate" title={from || ""}>
-                            {formatAddress(from)}
-                          </span>
-                          {!!from && (
-                            <CopyButton value={from} className="text-gray-500 hover:text-gray-900 dark:text-[#A0A3BC] dark:hover:text-white" showInlineMessage={false} />
-                          )}
-                        </>
-                      )}
-                    </div>
+                    <TransactionFromToCell
+                      label={fromCell.label}
+                      copyValue={fromCell.copyValue}
+                      iconUrl={fromCell.iconUrl}
+                    />
                   </td>
 
                   {/* To */}
                   <td className="px-3 sm:px-4 py-2 whitespace-normal break-words text-xs sm:text-sm text-gray-700 dark:text-gray-200">
-                    <div className="flex items-center justify-between gap-2">
-                      {isAssetNetworkLabel(to) ? (
-                        <span className="inline-flex items-center gap-2 min-w-0" title={to || ""}>
-                          <img
-                            src={getHighResAssetIcon({ ticker: getBaseTickerForIcon(to) })}
-                            alt={String(to || "Asset")}
-                            className="w-5 h-5 rounded-full shadow-sm flex-shrink-0"
-                            onError={(e) => {
-                              const img = e.currentTarget;
-                              if (img.dataset.fallbackApplied === "1") return;
-                              img.dataset.fallbackApplied = "1";
-                              img.src = getDefaultAssetIcon();
-                            }}
-                          />
-                          <span className="font-medium truncate">{String(to)}</span>
-                        </span>
-                      ) : (
-                        <>
-                          <span className="font-mono text-xs sm:text-sm truncate" title={to || ""}>
-                            {formatAddress(to)}
-                          </span>
-                          {!!to && (
-                            <CopyButton value={to} className="text-gray-500 hover:text-gray-900 dark:text-[#A0A3BC] dark:hover:text-white" showInlineMessage={false} />
-                          )}
-                        </>
-                      )}
-                    </div>
+                    <TransactionFromToCell
+                      label={toCell.label}
+                      copyValue={toCell.copyValue}
+                      iconUrl={toCell.iconUrl}
+                    />
                   </td>
 
                   {/* Amount */}
@@ -627,7 +486,10 @@ const P2PWithdrawalDepositTransactions = ({ filterByType = "all" }: P2PWithdrawa
 
                   {/* Status */}
                   <td className="px-3 sm:px-4 py-2 whitespace-normal break-words">
-                    <StatusBadge status={tx.status || tx.stages || "N/A"} />
+                    <TransactionStatusCell
+                      status={tx.status || tx.stages || "N/A"}
+                      transactionId={tx.transaction_id || tx.id}
+                    />
                   </td>
 
                   {/* When */}
@@ -648,4 +510,3 @@ const P2PWithdrawalDepositTransactions = ({ filterByType = "all" }: P2PWithdrawa
 };
 
 export default P2PWithdrawalDepositTransactions;
-

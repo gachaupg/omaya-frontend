@@ -118,7 +118,7 @@ export default function ForexDeposit() {
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
               <div>
                 <label className="block text-sm text-[#7e7e8f] dark:text-[#A2A4A9] mb-1.5 font-medium">
-                  From Currency (You Send)
+                  From
                 </label>
                 <select
                   value={fromCurrency}
@@ -136,7 +136,7 @@ export default function ForexDeposit() {
 
               <div>
                 <label className="block text-sm text-[#7e7e8f] dark:text-[#A2A4A9] mb-1.5 font-medium">
-                  To Currency (You Receive)
+                  To
                 </label>
                 <select
                   value={toCurrency}
@@ -157,7 +157,7 @@ export default function ForexDeposit() {
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
               <div>
                 <label className="block text-sm text-[#7e7e8f] dark:text-[#A2A4A9] mb-1.5 font-medium">
-                  You Send
+                  From
                 </label>
                 <input
                   type="text"
@@ -170,7 +170,7 @@ export default function ForexDeposit() {
 
               <div>
                 <label className="block text-sm text-[#7e7e8f] dark:text-[#A2A4A9] mb-1.5 font-medium">
-                  You Receive
+                  To
                 </label>
                 <div className="flex items-center bg-white dark:bg-[#1D1D23] border border-[#D1D2D4FF] dark:border-[#35353E] rounded-xl px-3 py-2.5">
                   <span className="text-[#1D8751] text-lg font-bold">

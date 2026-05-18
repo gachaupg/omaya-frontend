@@ -37,10 +37,12 @@ import { useRouter } from "next/navigation";
 import { useSelector } from "react-redux";
 import { RootState } from "@/store/rootReducer";
 import { setAuthRedirectPath } from "@/lib/utils/authRedirect";
+import { useMarketingI18n } from "@/lib/useMarketingI18n";
 
 const PRIVACY_PATH = "/dashboard/account/?tab=privacy";
 
 const AboutPage = () => {
+  const { t } = useMarketingI18n();
   const router = useRouter();
   const { isAuthenticated } = useSelector((state: RootState) => state.auth);
 
@@ -56,22 +58,22 @@ const AboutPage = () => {
     {
       icon: Users,
       value: "50,000+",
-      label: "Active Users",
+      label: t("marketing.aboutPage.stat.users", "Active Users"),
     },
     {
       icon: DollarSign,
       value: "$10M+",
-      label: "Daily Transactions",
+      label: t("marketing.aboutPage.stat.dailyTx", "Daily Transactions"),
     },
     {
       icon: Globe,
       value: "150+",
-      label: "Countries Served",
+      label: t("marketing.aboutPage.stat.countries", "Countries Served"),
     },
     {
       icon: Shield,
       value: "99.9%",
-      label: "Security Rate",
+      label: t("marketing.aboutPage.stat.uptime", "Uptime SLA"),
     },
   ];
 
@@ -252,20 +254,20 @@ const AboutPage = () => {
             <div className="inline-block mb-8">
               <div className="px-4 py-1.5 rounded-3xl bg-[#1D87511A] border border-[#1D87514D] dark:bg-[#1D8751]/10 dark:border-[#1D8751]/30">
                 <p className="text-sm md:text-sm text-white dark:text-[#1D8751] font-medium">
-                  Welcome to OMAYA Exchange
+                  {t("marketing.aboutPage.welcome", "Welcome to OMAYA Exchange")}
                 </p>
               </div>
             </div>
 
             {/* Main Heading */}
             <h1 className="text-5xl md:text-6xl lg:text-7xl font-bold mb-6">
-              <div className="text-white">About</div>
-              <div className="text-white dark:text-[#1D8751]">OMAYA Exchange</div>
+              <div className="text-white">{t("marketing.aboutPage.titleAbout", "About")}</div>
+              <div className="text-white dark:text-[#1D8751]">{t("marketing.aboutPage.titleBrand", "OMAYA Exchange")}</div>
             </h1>
 
             {/* Tagline */}
             <p className="text-xl dark:text-muted-foreground text-muted max-w-3xl mx-auto mb-10">
-              Leading the future of digital asset exchange with innovation, security, and trust
+              {t("marketing.aboutPage.tagline", "Leading the future of digital asset exchange with innovation, security, and trust")}
             </p>
 
             {/* CTA Buttons */}
@@ -275,14 +277,14 @@ const AboutPage = () => {
                 className="relative px-8 py-3 bg-[#1D8751] text-white hover:bg-white/90 transition-all duration-300 shadow-lg dark:bg-[#1D8751] dark:text-white dark:hover:bg-[#166b3e]"
                 style={{ borderRadius: '2rem' }}
               >
-                Explore Our Journey
+                {t("marketing.aboutPage.exploreJourney", "Explore Our Journey")}
               </a>
               <a
                 href="/contactUs"
                 className="px-8 py-3 bg-transparent border-1 border-white text-white font-semibold hover:bg-white/10 transition-all duration-300 dark:border-[#1D8751] dark:text-[#1D8751] dark:hover:bg-[#1D8751]/10"
                 style={{ borderRadius: '2rem' }}
               >
-                Contact Us
+                {t("marketing.aboutPage.contactUs", "Contact Us")}
               </a>
             </div>
           </div>
@@ -294,10 +296,10 @@ const AboutPage = () => {
         <div className="max-w-6xl mx-auto">
           <div className="text-center mb-12">
             <h2 className="text-3xl md:text-4xl font-bold text-gray-900 dark:text-white mb-3">
-              Trusted by Millions Worldwide
+              {t("marketing.aboutPage.trustedTitle", "Trusted by Millions Worldwide")}
             </h2>
             <p className="text-gray-600 dark:text-[#788099] text-base md:text-lg">
-              Leading the digital asset revolution with proven results
+              {t("marketing.aboutPage.trustedSubtitle", "Leading the digital asset revolution with proven results")}
             </p>
           </div>
 
@@ -310,7 +312,7 @@ const AboutPage = () => {
                 50,000+
               </div>
               <div className="text-sm text-gray-600 dark:text-gray-400">
-                Active Users
+                {stats[0].label}
               </div>
             </div>
 
@@ -322,7 +324,7 @@ const AboutPage = () => {
                 $10M+
               </div>
               <div className="text-sm text-gray-600 dark:text-gray-400">
-                Daily Transactions
+                {stats[1].label}
               </div>
             </div>
 
@@ -334,7 +336,7 @@ const AboutPage = () => {
                 150+
               </div>
               <div className="text-sm text-gray-600 dark:text-gray-400">
-                Countries Served
+                {stats[2].label}
               </div>
             </div>
 
@@ -346,7 +348,7 @@ const AboutPage = () => {
                 99.9%
               </div>
               <div className="text-sm text-gray-600 dark:text-gray-400">
-                Uptime SLA
+                {stats[3].label}
               </div>
             </div>
           </div>

@@ -1,6 +1,6 @@
 {
   "navigation": {
-    "dashboard": "DASHBOARD",
+    "dashboard": "Dashboard",
     "express": "Express",
     "expressChange": "Bedel",
     "exchange": "MoneyX",
@@ -24,16 +24,23 @@
     "title": "Ganacsiga Dhowaan",
     "viewAll": "Dhammaan Eeg",
     "noTransactions": "Lama helin ganacsi",
+    "noTransactionsDescription": "Hadda ma jiraan macaamillo la soo bandhigo. Fadlan dib u hubi mar dambe.",
     "loading": "Ganacsiga la soo dejinayaa...",
+    "type": "Nooca",
+    "from": "Ka",
+    "to": "Ku",
     "asset": "Hantida",
     "transactionType": "Nooca Ganacsiga",
     "amount": "Qadarka",
     "paymentMethod": "Habka Lacag Bixinta",
     "when": "Marka",
     "types": {
+      "all": "Dhammaan",
       "deposit": "Gelinta",
       "withdrawal": "Ka bixinta",
       "p2pBuy": "Iibka P2P",
+      "moneyx": "MoneyX",
+      "p2pWithdrawalDeposit": "P2P Ka bixid/Gelin",
       "p2pSell": "Iibka P2P",
       "swap": "Bedel",
       "exchange": "Bedel"
@@ -56,7 +63,13 @@
       "weeks": "{{count}} usbuuc ka hor",
       "month": "{{count}} bil ka hor",
       "months": "{{count}} bil ka hor"
-    }
+    },
+    "showing": "Muujinaya",
+    "of": "ka mid ah",
+    "transactions": "macaamillo",
+    "showingAll": "Muujinaya dhammaan",
+    "loadAll": "Soo rar dhammaan macaamillada",
+    "backToPages": "Dib ugu noqo Bogagga"
   },
   "volume": {
     "myTotalVolume": "Wadarta Dhammaan",

@@ -6,6 +6,10 @@ import React, { useState, useCallback, useEffect } from "react";
 import { validateWalletAddress } from "@/lib/addressValidaion";
 
 import { logger } from '@/lib/utils/logger';
+import {
+  handleSwapAssetIconError,
+  resolveSwapAssetIconSrc,
+} from "@/features/swap/utils/swapAssetIcon";
 
 interface SupportedAsset {
   asset_id?: string;
@@ -209,9 +213,10 @@ const WalletValidationPage: React.FC<WalletValidationPageProps> = ({
             </div>
             <div className="flex items-center">
               <img
-                src={selectedAsset.asset_image || selectedAsset.image_url || undefined}
+                src={resolveSwapAssetIconSrc(selectedAsset)}
                 alt={selectedAsset.name || "Asset"}
-                className="w-8 h-8 mr-3"
+                className="w-8 h-8 mr-3 rounded-full object-cover"
+                onError={(e) => handleSwapAssetIconError(e, selectedAsset)}
               />
               <div className="flex flex-col">
                 <span className="text-white font-medium">

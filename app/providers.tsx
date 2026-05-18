@@ -6,6 +6,7 @@ import { store, persistor } from "@/store/index";
 import { PersistGate } from "redux-persist/integration/react";
 import { ThemeProvider } from "@/context/theme";
 import { LanguageProvider } from "@/context/language";
+import type { Locale } from "@/i18n.config";
 import { setAuthCallback } from "@/lib/utils/errorHandler";
 import { logout, setCredentials, updateTokens } from "@/features/auth/slices/authSlice";
 import { useEffect } from "react";
@@ -28,7 +29,13 @@ if (typeof window !== "undefined") {
   initializeTokenRefresh(store.dispatch, updateTokens);
 }
 
-export default function Providers({ children }: { children: React.ReactNode }) {
+export default function Providers({
+  children,
+  initialLocale,
+}: {
+  children: React.ReactNode;
+  initialLocale: Locale;
+}) {
   // Handle auth state changes (for Google OAuth and other external auth)
   useEffect(() => {
     const handleAuthStateChange = (event: CustomEvent) => {
@@ -260,7 +267,7 @@ export default function Providers({ children }: { children: React.ReactNode }) {
         persistor={persistor}
       >
           <ThemeProvider>
-            <LanguageProvider>
+            <LanguageProvider initialLocale={initialLocale}>
               <GoogleOAuthProvider
                 clientId={
                   process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID ||

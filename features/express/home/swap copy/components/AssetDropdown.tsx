@@ -1,6 +1,10 @@
 import React from "react";
 import { SupportedAsset } from "../types";
 import { assetMatchesSearchTerm } from "@/lib/utils/assetSearch";
+import {
+  handleSwapAssetIconError,
+  resolveSwapAssetIconSrc,
+} from "@/features/swap/utils/swapAssetIcon";
 
 interface AssetDropdownProps {
   assets: SupportedAsset[];
@@ -55,9 +59,10 @@ const AssetDropdown: React.FC<AssetDropdownProps> = ({
         {selectedAsset ? (
           <div className="flex items-center">
             <img
-              src={selectedAsset.image_url || selectedAsset.asset_image || undefined}
+              src={resolveSwapAssetIconSrc(selectedAsset)}
               alt={selectedAsset.name || "Asset"}
-              className="w-6 h-6 mr-3"
+              className="w-6 h-6 mr-3 rounded-full object-cover"
+              onError={(e) => handleSwapAssetIconError(e, selectedAsset)}
             />
             <div className="flex flex-col">
               <span className="dark:text-white text-[#1F2937] text-xs font-normal">
@@ -123,9 +128,10 @@ const AssetDropdown: React.FC<AssetDropdownProps> = ({
                   className="flex items-center px-3 py-2 hover:bg-[#35353E] cursor-pointer"
                 >
                   <img
-                    src={asset.image_url || asset.asset_image || undefined}
+                    src={resolveSwapAssetIconSrc(asset)}
                     alt={asset.name || "Asset"}
-                    className="w-6 h-6 mr-3"
+                    className="w-6 h-6 mr-3 rounded-full object-cover"
+                    onError={(e) => handleSwapAssetIconError(e, asset)}
                   />
                   <div className="flex flex-col">
                     <span className="dark:text-white text-[#1F2937] text-xs font-normal">

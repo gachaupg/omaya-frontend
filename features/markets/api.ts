@@ -258,34 +258,10 @@ export const testApiConnection = async (): Promise<boolean> => {
 
 export const fetchCoinDetails = async (id: string) => {
   try {
-    const COINGECKO_API_KEY =
-      process.env.NEXT_PUBLIC_COINGECKO_API_KEY ||
-      "CG-fw2rF4aBSmvBwYnc9Jw4bKBo";
-
-    // Try with API key first
-    let response;
-    try {
-      response = await axios.get(
-        `https://api.coingecko.com/api/v3/coins/${id}`,
-        {
-          headers: {
-            "x-cg-demo-api-key": COINGECKO_API_KEY,
-            Accept: "application/json",
-          },
-          timeout: 30000,
-        }
-      );
-    } catch (apiKeyError) {
-      // If API key fails, try without it (public endpoint)
-      response = await axios.get(
-        `https://api.coingecko.com/api/v3/coins/${id}`,
-        {
-          headers: { Accept: "application/json" },
-          timeout: 30000,
-        }
-      );
-    }
-
+    await delayIfNeeded();
+    const response = await coingeckoClient.get(`/coins/${id}`, {
+      timeout: 30000,
+    });
     return response.data;
   } catch (error) {
     logger.error("markets", "Failed to fetch coin details", { id, error });
@@ -504,12 +480,9 @@ export const fetchCoinDetailsPublic = async (id: string) => {
     try {
       await delayIfNeeded();
 
-      const response = await axios.get(
-        `https://api.coingecko.com/api/v3/coins/${id}`,
-        {
-          timeout: 15000,
-        }
-      );
+      const response = await coingeckoClient.get(`/coins/${id}`, {
+        timeout: 15000,
+      });
 
       return response.data;
     } catch (error) {

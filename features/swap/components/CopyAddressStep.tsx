@@ -488,7 +488,7 @@ const CopyAddressStep: React.FC<CopyAddressStepProps> = ({
         {/* You Get and Recipient Wallet */}
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 sm:gap-0 mb-2">
           <div className="text-gray-600 dark:text-[#7e7e8f] text-sm sm:text-base font-medium">
-            You Get
+            To
           </div>
           <div className="text-gray-600 dark:text-[#7e7e8f] text-sm sm:text-base font-medium">
             Recipient Wallet

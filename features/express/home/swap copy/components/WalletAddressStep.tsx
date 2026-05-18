@@ -270,17 +270,18 @@ const WalletAddressStep: React.FC<WalletAddressStepProps> = ({
                           resetAddressValidation();
                         }
                       }}
-                      onSaveCurrent={async () => {
+                      onSaveCurrent={async (label) => {
                         try {
                           if (!walletAddress.trim() || !currentCurrency) return;
                           await saveBookmark({
                             address: walletAddress.trim(),
-                            label: `My ${currentCurrency} wallet`,
+                            label,
                             network: currentNetwork || "",
                             asset: currentCurrency,
                           });
                         } catch { /* handled by hook */ }
                       }}
+                      saveError={saveBookmarkError}
                       anchorRef={bookmarkAnchorRef}
                       isDark={isDark}
                       saveDisabled={isAddressValidating || !(addressValidationResult?.isValid)}

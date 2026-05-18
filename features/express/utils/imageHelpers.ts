@@ -8,6 +8,7 @@ const CLOUDINARY_TRANSFORM = (size: number) =>
 const LOCAL_ASSET_ICON_MAP: Record<string, string> = {
   usdt: "/images/tether.svg",
   tether: "/images/tether.svg",
+  bnb: "/images/bnb.png",
   btc: "/images/Bitcoin.svg",
   bitcoin: "/images/Bitcoin.svg",
   eth: "/images/eth.svg",

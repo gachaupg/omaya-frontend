@@ -22,6 +22,7 @@ import {
 } from "../../../../swap/slices/swapSlice";
 
 import { showToast } from "../../../../../lib/utils/toast";
+import { useExpressI18n } from "@/lib/useExpressI18n";
 import { DepositResponse } from "../../../../exchange/types";
 import { SupportedAsset } from "../../../../swap/types";
 import { FaSearch } from "react-icons/fa";
@@ -56,6 +57,7 @@ import {
   type ExchangeCommissionLookupResponse,
 } from "@/features/express/api";
 import { withTimeout } from "@/features/express/utils/fetchWithTimeout";
+import { stripLeadingZerosFromDecimalInput } from "@/lib/utils/decimalAmountInput";
 import { resolveForexDepositAdminPaymentDetailId } from "@/features/express/utils/forexDepositResolution";
 import {
   ASSET_ICON_BASE_CLASS,
@@ -431,6 +433,7 @@ export default function DepositForm({
 }: DepositFormProps) {
   const dispatch = useDispatch<AppDispatch>();
   const router = useRouter();
+  const { t } = useExpressI18n();
   const {
     adminMethods,
     loading: adminMethodsLoading,
@@ -3783,7 +3786,7 @@ export default function DepositForm({
                 className={`block text-[15px] mb-2 font-semibold flex items-center gap-2 ${isDark ? "text-[#9CA3AF]" : "text-[#475569]"
                   }`}
               >
-                You Send
+                {t("express.youSend", "From")}
                 <div className="w-2 h-2 bg-[#1D8751] rounded-full animate-pulse"></div>
                 {/* {isCalculatingFromPay && (
                   <span className="text-xs text-[#1D8751] font-medium">(Active)</span>
@@ -3791,7 +3794,7 @@ export default function DepositForm({
               </label>
               <div className={`text-xs mb-1 ${isDark ? "text-[#788099]" : "text-[#64748B]"
                 }`}>
-                Amount
+                {t("express.amount", "Amount")}
               </div>
               <div className="relative">
                 <input
@@ -3806,10 +3809,12 @@ export default function DepositForm({
                       return;
                     }
 
-                    const normalizedValue = normalizeToFiveDecimals(value);
+                    const truncatedDecimals = normalizeToFiveDecimals(value);
+                    const normalizedValue =
+                      stripLeadingZerosFromDecimalInput(truncatedDecimals);
                     // Only allow numbers and decimals (including 0.006 format)
                     if (normalizedValue === "" || /^\d*\.?\d*$/.test(normalizedValue)) {
-                      if (value !== normalizedValue) {
+                      if (truncatedDecimals !== value) {
                         setApiValidationError("Number cannot have more than 5 decimal places.");
                       }
                       // Check for decimal places validation
@@ -3882,7 +3887,7 @@ export default function DepositForm({
                       }
                     }
                   }}
-                  placeholder="Enter amount"
+                  placeholder={t("express.enterAmount", "Enter amount")}
                   className={`w-full rounded-2xl px-4 py-2 pr-16 text-lg focus:outline-none border appearance-none bg-transparent h-[44px] ${(isCalculating || isCalculatingReceive) &&
                     isCalculatingFromPay &&
                     selectedAsset &&
@@ -3911,7 +3916,7 @@ export default function DepositForm({
                 {/* Show info for non-direct assets when typing in You Send */}
                 {selectedAsset && !isSimpleCalculationAsset(selectedAsset) && !isForexAsset(selectedAsset) && isCalculatingFromPay && payAmount > 0 && (
                   <div className="mt-2 text-xs text-[#788099]">
-                    {estimateLoading ? "⏳ Fetching live rate..." : estimate ? "✅ Using live rate" : "⏳ Calculating..."}
+                    {estimateLoading ? t("express.fetchingLiveRate", "⏳ Fetching live rate...") : estimate ? t("express.usingLiveRate", "✅ Using live rate") : t("express.calculating", "⏳ Calculating...")}
                   </div>
                 )}
               </div>
@@ -3923,12 +3928,12 @@ export default function DepositForm({
                 className={`block text-[15px] mb-2 font-semibold flex items-center gap-2 ${isDark ? "text-[#9CA3AF]" : "text-[#475569]"
                   }`}
               >
-                Payment Method
+                {t("express.paymentMethod", "Payment Method")}
                 <div className="w-2 h-2 bg-[#1D8751] rounded-full animate-pulse"></div>
               </label>
               <div className={`text-xs mb-1 ${isDark ? "text-[#788099]" : "text-[#64748B]"
                 }`}>
-                Payment Method
+                {t("express.paymentMethod", "Payment Method")}
               </div>
               <div className="relative">
                 <CustomSelect
@@ -4067,15 +4072,15 @@ export default function DepositForm({
                 className={`block text-[15px] mb-2 font-semibold flex items-center gap-2 ${isDark ? "text-[#9CA3AF]" : "text-[#475569]"
                   }`}
               >
-                You Receive
+                {t("express.youReceive", "To")}
                 <div className="w-2 h-2 bg-[#1D8751] rounded-full animate-pulse"></div>
                 {!isCalculatingFromPay && (
-                  <span className="text-xs text-[#1D8751] font-medium">(Active)</span>
+                  <span className="text-xs text-[#1D8751] font-medium">{t("express.active", "(Active)")}</span>
                 )}
               </label>
               <div className={`text-xs mb-1 ${isDark ? "text-[#788099]" : "text-[#64748B]"
                 }`}>
-                Amount
+                {t("express.amount", "Amount")}
               </div>
               <div className="relative">
                 <input
@@ -4090,10 +4095,12 @@ export default function DepositForm({
                       return;
                     }
 
-                    const normalizedValue = normalizeToFiveDecimals(value);
+                    const truncatedDecimals = normalizeToFiveDecimals(value);
+                    const normalizedValue =
+                      stripLeadingZerosFromDecimalInput(truncatedDecimals);
                     // Only allow numbers and decimals (including 0.006 format)
                     if (normalizedValue === "" || /^\d*\.?\d*$/.test(normalizedValue)) {
-                      if (value !== normalizedValue) {
+                      if (truncatedDecimals !== value) {
                         setApiValidationError("Number cannot have more than 5 decimal places.");
                       }
                       // Check for decimal places validation
@@ -4183,7 +4190,7 @@ export default function DepositForm({
                       }
                     }
                   }}
-                  placeholder="Enter amount"
+                  placeholder={t("express.enterAmount", "Enter amount")}
                   className={`w-full rounded-2xl px-4 py-2 pr-16 text-lg focus:outline-none border appearance-none bg-transparent h-[44px] ${receiveAmountError &&
                     (receiveAmountError.includes("Rough estimate") ||
                       receiveAmountError.includes("Using estimated rate"))
@@ -4227,13 +4234,13 @@ export default function DepositForm({
                           <path d="M12 8v4m0 4h.01" stroke="#1D8751" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
                           <circle cx="12" cy="12" r="10" stroke="#1D8751" strokeWidth="2" />
                         </svg>
-                        <span>Using live rate</span>
+                        <span>{t("express.usingLiveRateShort", "Using live rate")}</span>
                       </div>
                     )}
                     {estimateLoading && !isCalculatingFromPay && (
                       <div className="flex items-center gap-2 text-[#1D8751] text-sm">
                         <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-[#1D8751]"></div>
-                        <span>Calculating ...</span>
+                        <span>{t("express.calculatingShort", "Calculating ...")}</span>
                       </div>
                     )}
                     {estimate && !estimateLoading && !isCalculatingFromPay && (
@@ -4242,7 +4249,7 @@ export default function DepositForm({
                           <path d="M12 8v4m0 4h.01" stroke="#1D8751" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
                           <circle cx="12" cy="12" r="10" stroke="#1D8751" strokeWidth="2" />
                         </svg>
-                        <span>Using live rate for reverse calculation</span>
+                        <span>{t("express.usingLiveRateReverse", "Using live rate for reverse calculation")}</span>
                       </div>
                     )}
                   </div>
@@ -4254,7 +4261,7 @@ export default function DepositForm({
             <div className="flex-1 min-w-0">
               <div className={`text-xs mb-1 mt-[30px] ${isDark ? "text-[#788099]" : "text-[#64748B]"
                 }`}>
-                Asset
+                {t("express.asset", "Asset")}
               </div>
               <div className="relative" ref={assetDropdownRef}>
                 <div
@@ -4305,8 +4312,8 @@ export default function DepositForm({
                         />
                         <span className={`${isDark ? "text-[#788099]" : "text-[#64748B]"}`}>
                           {assetsDisplay.isLoading
-                            ? "Loading assets..."
-                            : "Select Asset"}
+                            ? t("express.loadingAssets", "Loading assets...")
+                            : t("express.selectAsset", "Select Asset")}
                         </span>
                       </>
                     )}
@@ -5102,18 +5109,19 @@ export default function DepositForm({
                     if (addr.trim()) validateAddress(addr, currentCurrency, currentNetwork);
                     else resetAddressValidation();
                   }}
-                  onSaveCurrent={async () => {
+                  onSaveCurrent={async (label) => {
                     if (!walletAddress.trim() || !currentCurrency || !currentNetwork) {
                       showToast.error("Enter address and select asset/network first");
                       return;
                     }
                     await saveBookmark({
                       address: walletAddress.trim(),
-                      label: `My ${currentCurrency} wallet`,
+                      label,
                       network: currentNetwork,
                       asset: currentCurrency,
                     });
                   }}
+                  saveError={saveBookmarkError}
                   anchorRef={bookmarkAnchorRef}
                   isDark={isDark}
                   saveDisabled={isAddressValidating || !(addressValidationResult?.isValid)}

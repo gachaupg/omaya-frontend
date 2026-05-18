@@ -1103,7 +1103,7 @@ const MoneyXRates = ({
             {/* Amount Section */}
             <div className="flex-1 min-w-0">
               <label className="block text-sm sm:text-[17px] text-[#7e7e8f] dark:text-[#ffffff] mb-2 font-semibold flex items-center gap-2">
-                {t("rates.youSend", "You Send")}
+                {t("rates.youSend", "From")}
                 <div className="w-2 h-2 bg-[#1D8751] rounded-full animate-pulse"></div>
               </label>
               <div className="relative">
@@ -1264,7 +1264,7 @@ const MoneyXRates = ({
             {/* Amount Section */}
             <div className="flex-1 min-w-0">
               <label className="block text-sm sm:text-[17px] text-[#7e7e8f] dark:text-[#ffffff] mb-2 font-semibold flex items-center gap-2">
-                {t("rates.youGet", "You Get")}
+                {t("rates.youGet", "To")}
                 <div className="w-2 h-2 bg-[#1D8751] rounded-full animate-pulse"></div>
               </label>
               <div className="relative">
@@ -1673,7 +1673,8 @@ const MoneyXRates = ({
                       setBankAccountAddress(addr);
                       setBankAddressError(null);
                     }}
-                    onSaveCurrent={async () => {}}
+                    onSaveCurrent={async (_label) => {}}
+                    saveError={saveBookmarkError}
                     anchorRef={bookmarkAnchorRef}
                     isDark={isDark}
                     saveDisabled={true}

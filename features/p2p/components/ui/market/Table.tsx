@@ -239,7 +239,7 @@ const MarketTable: React.FC<MarketTableProps> = ({
                         <ThumbsUp height={10} /> {row.exchange_rate || '0'} %
                       </span>
                       <span className="flex items-center gap-1 text-xs text-[#1D8751] font-semibold">
-                        <FaRegClock className="text-xs" /> {row.avgRealiseTime || '0'}
+                        <FaRegClock className="text-xs" /> {row.timeLimit || "—"}
                       </span>
                     </div>
                   </div>
@@ -373,7 +373,7 @@ const MarketTable: React.FC<MarketTableProps> = ({
                         <ThumbsUp height={10} /> {row.exchange_rate || '0'}%
                       </div>
                       <div className="flex items-center gap-1 text-xs text-[#1D8751] font-semibold">
-                        <FaRegClock className="text-xs" /> {row.avgRealiseTime || '0'}
+                        <FaRegClock className="text-xs" /> {row.timeLimit || "—"}
                       </div>
                     </div>
                   </div>

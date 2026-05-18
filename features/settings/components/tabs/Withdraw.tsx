@@ -722,17 +722,19 @@ const Withdraw = () => {
                           if (addr.trim()) validateAddress(addr.trim(), "usdt", "bsc");
                           else resetAddressValidation();
                         }}
-                        onSaveCurrent={async () => {
+                        onSaveCurrent={async (label) => {
                           try {
                             if (!walletAddress.trim()) return;
                             await saveBookmark({
                               address: walletAddress.trim(),
-                              label: "My USDT wallet",
+                              label,
                               network: "bsc",
                               asset: "usdt",
                             });
                           } catch { /* handled by hook */ }
                         }}
+                        defaultLabel="My USDT wallet"
+                        saveError={saveBookmarkError}
                         anchorRef={bookmarkAnchorRef}
                         isDark={isDark}
                         saveDisabled={isAddressValidating || !(addressValidationResult?.isValid)}

@@ -71,6 +71,7 @@ const IdentityVerificationModal: React.FC<IdentityVerificationModalProps> = ({
   const [sendingOTP, setSendingOTP] = useState(false);
   const [verifyingOTP, setVerifyingOTP] = useState(false);
   const [otpSent, setOtpSent] = useState(false);
+  const [otpSuccessMessage, setOtpSuccessMessage] = useState<string | null>(null);
   const [phoneVerified, setPhoneVerified] = useState(false);
   const [resendTimer, setResendTimer] = useState(0);
 
@@ -135,14 +136,12 @@ const IdentityVerificationModal: React.FC<IdentityVerificationModalProps> = ({
 
   const handleSendOTP = async () => {
     setSendingOTP(true);
+    setOtpSuccessMessage(null);
     try {
       const result = await dispatch(sendPhoneOTP({})).unwrap();
       setOtpSent(true);
       setResendTimer(result?.cooldown_seconds ?? 60);
-      showToast.success(
-        "OTP Sent",
-        "OTP sent to your registered email address."
-      );
+      setOtpSuccessMessage("OTP sent to your registered email address.");
     } catch (error: any) {
       showToast.error("Error", error || "Failed to send OTP. Please try again.");
     } finally {
@@ -418,6 +417,12 @@ const IdentityVerificationModal: React.FC<IdentityVerificationModalProps> = ({
                 {/* OTP Input */}
                 {otpSent && !phoneVerified && (
                   <div className="space-y-3">
+                    {otpSuccessMessage && (
+                      <div className="bg-green-50 dark:bg-green-900/20 border border-green-500 text-green-700 dark:text-green-400 p-3 rounded-lg">
+                        <p className="font-semibold text-sm">OTP Sent</p>
+                        <p className="text-xs mt-0.5">{otpSuccessMessage}</p>
+                      </div>
+                    )}
                     <div>
                       <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                         Enter OTP

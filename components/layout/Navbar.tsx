@@ -17,6 +17,7 @@ import {
 } from "@/features/auth/slices/authSlice";
 import { getP2PProfileThunk } from "@/features/p2p/slices/orderSlice";
 import { useLanguageOptional } from "@/context/language";
+import { useMarketingI18n } from "@/lib/useMarketingI18n";
 import { useTheme } from "@/context/theme";
 import FrozenAccountModal from "@/components/ui/FrozenAccountModal";
 
@@ -133,6 +134,12 @@ const LanguageSelector = ({ isMobile = false }: { isMobile?: boolean }) => {
     ctx?.locale === "so" ? "Somali" : "English"
   );
 
+  useEffect(() => {
+    if (ctx?.locale) {
+      setSelectedLanguage(ctx.locale === "so" ? "Somali" : "English");
+    }
+  }, [ctx?.locale]);
+
   const toggleDropdown = () => {
     setDropdownOpen(!dropdownOpen);
   };
@@ -140,14 +147,8 @@ const LanguageSelector = ({ isMobile = false }: { isMobile?: boolean }) => {
   const selectLanguage = (language: string) => {
     setSelectedLanguage(language);
     setDropdownOpen(false);
-    try {
-      const locale = language === "Somali" ? "so" : "en";
-      if (ctx) {
-        ctx.setLocale(locale as any);
-      } else {
-        document.cookie = `NEXT_LOCALE=${locale}; path=/; max-age=${60 * 60 * 24 * 365}`;
-      }
-    } catch { }
+    const locale = language === "Somali" ? "so" : "en";
+    ctx?.setLocale(locale);
   };
 
   // Close dropdown when clicking outside
@@ -481,6 +482,7 @@ const ThemeSelector = ({
 };
 
 export default function Navbar() {
+  const { t } = useMarketingI18n();
   const router = useRouter();
   const pathnameRaw = usePathname();
   // Convert null to undefined for type compatibility
@@ -1061,7 +1063,7 @@ export default function Navbar() {
               isTransparent={isTransparentNavbar}
               pathname={pathname}
             >
-              Home
+              {t("marketing.nav.home", "Home")}
             </NavLink>
             {isAuthenticated && (
               <NavLink
@@ -1069,7 +1071,7 @@ export default function Navbar() {
                 isTransparent={isTransparentNavbar}
                 pathname={pathname}
               >
-                Dashboard
+                {t("marketing.nav.dashboard", "Dashboard")}
               </NavLink>
             )}
             <NavLink
@@ -1077,29 +1079,29 @@ export default function Navbar() {
               isTransparent={isTransparentNavbar}
               pathname={pathname}
             >
-              Market
+              {t("marketing.nav.market", "Market")}
             </NavLink>
             <NavLink
               href="/rates"
               isTransparent={isTransparentNavbar}
               pathname={pathname}
             >
-              Rates
+              {t("marketing.nav.rates", "Rates")}
             </NavLink>
             <NavLink
               href="/blog"
               isTransparent={isTransparentNavbar}
               pathname={pathname}
             >
-              Blog
+              {t("marketing.nav.blog", "Blog")}
             </NavLink>
             <NavLink
               href="/about"
               isTransparent={isTransparentNavbar}
               pathname={pathname}
             >
-              <span className="hidden lg:inline">About Us</span>
-              <span className="lg:hidden">About</span>
+              <span className="hidden lg:inline">{t("marketing.nav.about", "About Us")}</span>
+              <span className="lg:hidden">{t("marketing.nav.aboutShort", "About")}</span>
             </NavLink>
             {/* Show Contact us only on auth pages */}
             {/* {(pathname?.startsWith("/auth/login") || 
@@ -1116,8 +1118,8 @@ export default function Navbar() {
               isTransparent={isTransparentNavbar}
               pathname={pathname}
             >
-              <span className="hidden lg:inline">Contact Us</span>
-              <span className="lg:hidden">Contact</span>
+              <span className="hidden lg:inline">{t("marketing.nav.contact", "Contact Us")}</span>
+              <span className="lg:hidden">{t("marketing.nav.contactShort", "Contact")}</span>
             </NavLink>
           </div>
         </div>
@@ -1131,7 +1133,7 @@ export default function Navbar() {
                   onClick={toggleDepositDropdown}
                   className="flex items-center bg-[#1D8751] hover:bg-[#13B562] text-white px-2 py-1 md:px-2.5 md:py-1.5 lg:px-4 lg:py-2 xl:px-5 xl:py-2.5 rounded-[10px] transition-colors duration-200 text-xs md:text-xs lg:text-sm xl:text-base 2xl:text-lg whitespace-nowrap"
                 >
-                  Deposit
+                  {t("marketing.nav.deposit", "Deposit")}
                   <ChevronDown className={`ml-1 md:ml-2 w-3 h-3 md:w-3.5 md:h-3.5 lg:w-5 lg:h-5 transition-transform duration-200 ${depositDropdownOpen ? "rotate-180" : ""}`} />
                 </button>
                 {/* Deposit Dropdown */}
@@ -1452,7 +1454,7 @@ export default function Navbar() {
           onClick={toggleMobileMenu}
           pathname={pathname}
         >
-          Home
+          {t("marketing.nav.home", "Home")}
         </MobileNavLink>
         {isAuthenticated && (
           <MobileNavLink
@@ -1460,7 +1462,7 @@ export default function Navbar() {
             onClick={toggleMobileMenu}
             pathname={pathname}
           >
-            Dashboard
+            {t("marketing.nav.dashboard", "Dashboard")}
           </MobileNavLink>
         )}
         <MobileNavLink
@@ -1468,35 +1470,35 @@ export default function Navbar() {
           onClick={toggleMobileMenu}
           pathname={pathname}
         >
-          Market
+          {t("marketing.nav.market", "Market")}
         </MobileNavLink>
         <MobileNavLink
           href="/rates"
           onClick={toggleMobileMenu}
           pathname={pathname}
         >
-          Rates
+          {t("marketing.nav.rates", "Rates")}
         </MobileNavLink>
         <MobileNavLink
           href="/blog"
           onClick={toggleMobileMenu}
           pathname={pathname}
         >
-          Blog
+          {t("marketing.nav.blog", "Blog")}
         </MobileNavLink>
         <MobileNavLink
           href="/about"
           onClick={toggleMobileMenu}
           pathname={pathname}
         >
-          About Us
+          {t("marketing.nav.about", "About Us")}
         </MobileNavLink>
         <MobileNavLink
           href="/contactUs"
           onClick={toggleMobileMenu}
           pathname={pathname}
         >
-          Contact Us
+          {t("marketing.nav.contact", "Contact Us")}
         </MobileNavLink>
 
         <div className="flex flex-col space-y-4 pt-4">
@@ -1507,7 +1509,7 @@ export default function Navbar() {
                   onClick={toggleMobileDepositDropdown}
                   className="flex items-center justify-center w-full bg-[#1D8751] hover:bg-[#13B562] text-white px-6 py-2 rounded-full transition-colors duration-200 text-base min-h-[44px]"
                 >
-                  Deposit
+                  {t("marketing.nav.deposit", "Deposit")}
                   <ChevronDown className={`ml-2 w-5 h-5 transition-transform duration-200 ${mobileDepositDropdownOpen ? "rotate-180" : ""}`} />
                 </button>
 

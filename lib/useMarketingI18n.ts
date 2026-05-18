@@ -4,11 +4,16 @@ import { useEffect, useMemo, useState } from "react";
 import { useLanguageOptional } from "@/context/language";
 import { getMarketingMessages, type Messages } from "./getMessages";
 
-type Translator = (key: string, fallback?: string) => string;
+type Translator = (
+  key: string,
+  fallback?: string,
+  params?: Record<string, string>
+) => string;
 
 export function useMarketingI18n(): {
   t: Translator;
   messages: Messages | null;
+  locale: string;
 } {
   const ctx = useLanguageOptional();
   const locale = ctx?.locale ?? "en";
@@ -25,11 +30,24 @@ export function useMarketingI18n(): {
   }, [locale]);
 
   const t: Translator = useMemo(() => {
-    return (key: string, fallback: string = "") => {
+    return (
+      key: string,
+      fallback: string = "",
+      params?: Record<string, string>
+    ) => {
       if (!messages) return fallback;
-      return messages[key] ?? fallback;
+      let message = messages[key] ?? fallback;
+      if (params) {
+        Object.entries(params).forEach(([paramKey, paramValue]) => {
+          message = message.replace(
+            new RegExp(`{{${paramKey}}}|{${paramKey}}`, "g"),
+            paramValue
+          );
+        });
+      }
+      return message;
     };
   }, [messages]);
 
-  return { t, messages };
+  return { t, messages, locale };
 }

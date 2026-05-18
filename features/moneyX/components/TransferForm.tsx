@@ -1221,7 +1221,7 @@ export default function TransferForm({ onTransfer, initialState, commissionType 
             {/* Amount Section */}
             <div className="flex-1 sm:pr-4">
               <label className="block text-sm sm:text-[17px] text-[#7e7e8f] dark:text-[#ffffff] mb-2 font-semibold flex items-center gap-2">
-                {t("express.youSend", "You Send")}
+                {t("express.youSend", "From")}
                 <div className="w-2 h-2 bg-[#1D8751] rounded-full animate-pulse"></div>
               </label>
               <div className="relative">
@@ -1326,7 +1326,7 @@ export default function TransferForm({ onTransfer, initialState, commissionType 
             {/* You Receive Section */}
             <div className="flex-1 sm:pr-4">
               <label className="block text-sm sm:text-[17px] text-[#7e7e8f] dark:text-[#ffffff] mb-2 font-semibold flex items-center gap-2">
-                {t("express.youReceive", "You Receive")}
+                {t("express.youReceive", "To")}
                 <div className="w-2 h-2 bg-[#1D8751] rounded-full animate-pulse"></div>
                 {!isCalculatingFromPay && (
                   <span className="text-xs text-[#1D8751] font-medium hidden sm:inline">
@@ -1628,17 +1628,19 @@ export default function TransferForm({ onTransfer, initialState, commissionType 
                     setBankAccountAddress(addr);
                     setBankAddressError(null);
                   }}
-                  onSaveCurrent={async () => {
+                  onSaveCurrent={async (label) => {
                     try {
                       if (!bankAccountAddress.trim() || !currentBankAsset) return;
                       await saveBookmark({
                         address: bankAccountAddress.trim(),
-                        label: `My ${currentBankAsset} account`,
+                        label,
                         network: "BANK",
                         asset: currentBankAsset,
                       });
                     } catch { /* handled by hook */ }
                   }}
+                  labelKind="account"
+                  saveError={saveBookmarkError}
                   anchorRef={bookmarkAnchorRef}
                   isDark={isDark}
                   saveDisabled={!!bankAddressError}
