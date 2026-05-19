@@ -5,6 +5,7 @@ import {
   handleSwapAssetIconError,
   resolveSwapAssetIconSrc,
 } from "../utils/swapAssetIcon";
+import { SwapAssetOptionDisplay } from "./SwapAssetOptionDisplay";
 
 interface AssetDropdownProps {
   assets: SupportedAsset[];
@@ -34,7 +35,7 @@ const AssetDropdown: React.FC<AssetDropdownProps> = ({
   const handleAssetSelect = (asset: SupportedAsset) => {
     onAssetSelect(asset);
     onSearchChange("");
-    onToggle(); // Close the dropdown after selection
+    onToggle();
   };
 
   return (
@@ -51,35 +52,31 @@ const AssetDropdown: React.FC<AssetDropdownProps> = ({
         aria-expanded={isOpen}
         aria-haspopup="listbox"
         tabIndex={0}
-        className={`w-full cursor-pointer flex items-center justify-between ${
+        className={`w-full cursor-pointer flex items-center justify-between h-[44px] ${
           className ||
-          "dark:bg-[var(--card-color)] bg-gray-100 dark:border-[#35353E] border-gray-300 border rounded-[18px] px-3 py-2 dark:text-white text-gray-900"
+          "dark:bg-[var(--card-color)] bg-gray-100 dark:border-[#35353E] border-gray-300 border rounded-2xl px-4 py-2 dark:text-white text-gray-900"
         }`}
       >
         {selectedAsset ? (
-          <div className="flex items-center">
+          <div className="flex items-center min-w-0 flex-1">
             <img
               src={resolveSwapAssetIconSrc(selectedAsset)}
               alt={selectedAsset.name || "Asset"}
-              className="w-6 h-6 mr-3 rounded-full object-cover"
+              className="w-6 h-6 mr-3 rounded-full object-cover shrink-0"
               onError={(e) => handleSwapAssetIconError(e, selectedAsset)}
             />
-            <div className="flex flex-col">
-              <span className="dark:text-white text-gray-900 text-xs font-medium">
-                {selectedAsset.ticker?.toUpperCase()}
-              </span>
-              <span className="dark:text-[#8C8CA1] text-gray-500 text-xs">
-                {selectedAsset.name}
-              </span>
-            </div>
+            <SwapAssetOptionDisplay
+              asset={selectedAsset}
+              showSubtitle
+              primaryClassName="dark:text-white text-gray-900 text-sm font-semibold"
+              subtitleClassName="text-[10px] leading-tight dark:text-[#788099] text-[#64748B] truncate"
+            />
           </div>
         ) : (
-          <span className="dark:text-[#8C8CA1] text-gray-500">
-            {placeholder}
-          </span>
+          <span className="dark:text-[#8C8CA1] text-gray-500">{placeholder}</span>
         )}
         <svg
-          className={`w-4 h-4 dark:text-[#8C8CA1] text-gray-500 transition-transform ${
+          className={`w-4 h-4 shrink-0 dark:text-[#8C8CA1] text-gray-500 transition-transform ${
             isOpen ? "rotate-180" : ""
           }`}
           fill="none"
@@ -119,9 +116,7 @@ const AssetDropdown: React.FC<AssetDropdownProps> = ({
                   key={asset.asset_id || `asset-${index}`}
                   onClick={() => handleAssetSelect(asset)}
                   onKeyDown={(e) => {
-                    if (e.key === "Enter") {
-                      handleAssetSelect(asset);
-                    }
+                    if (e.key === "Enter") handleAssetSelect(asset);
                   }}
                   role="option"
                   tabIndex={0}
@@ -130,17 +125,15 @@ const AssetDropdown: React.FC<AssetDropdownProps> = ({
                   <img
                     src={resolveSwapAssetIconSrc(asset)}
                     alt={asset.name || "Asset"}
-                    className="w-6 h-6 mr-3 rounded-full object-cover"
+                    className="w-6 h-6 mr-3 rounded-full object-cover shrink-0"
                     onError={(e) => handleSwapAssetIconError(e, asset)}
                   />
-                  <div className="flex flex-col">
-                    <span className="dark:text-white text-gray-900 text-xs sm:text-sm font-medium">
-                      {asset.ticker?.toUpperCase()}
-                    </span>
-                    <span className="dark:text-[#8C8CA1] text-gray-500 text-xs">
-                      {asset.name}
-                    </span>
-                  </div>
+                  <SwapAssetOptionDisplay
+                    asset={asset}
+                    showSubtitle={true}
+                    primaryClassName="dark:text-white text-gray-900 text-xs sm:text-sm font-medium"
+                    subtitleClassName="dark:text-[#8C8CA1] text-gray-500 text-xs truncate"
+                  />
                 </div>
               ))}
           </div>

@@ -47,6 +47,7 @@ import PaymentMethodsModal from "../../../p2p/components/ui/p2pdashboard/section
 import InfoModal from "./info";
 import { debugAssetFetching } from "@/lib/utils/debugAssets";
 import { stripLeadingZerosFromDecimalInput } from "@/lib/utils/decimalAmountInput";
+import { assetMatchesSearchTerm } from "@/lib/utils/assetSearch";
 import {
   useAssetsDisplay,
   usePaymentMethodsDisplay,
@@ -2766,14 +2767,9 @@ export default function WithdrawalForm({
     if (!data?.length) return [] as SupportedAsset[];
     const term = assetSearchTerm.toUpperCase();
     if (!term) return data as SupportedAsset[];
-    return (data as SupportedAsset[]).filter((asset: SupportedAsset) => {
-      const ticker = asset?.ticker?.toUpperCase() || "";
-      const name = asset?.name?.toUpperCase() || "";
-      const symbol = asset?.symbol?.toUpperCase() || "";
-      return (
-        ticker.includes(term) || name.includes(term) || symbol.includes(term)
-      );
-    });
+    return (data as SupportedAsset[]).filter((asset: SupportedAsset) =>
+      assetMatchesSearchTerm(asset, term)
+    );
   }, [assetsDisplay.displayData, assetSearchTerm]);
 
   const sortedSwapAssets = useMemo(() => [...filteredSwapAssets].sort((a, b) => {
@@ -4355,8 +4351,19 @@ export default function WithdrawalForm({
                         }
 
                         if (value === "" || /^\d*[.,]?\d*$/.test(value)) {
+                          const usesCommaDecimal =
+                            value.includes(",") && !value.includes(".");
+                          const forStrip = usesCommaDecimal
+                            ? value.replace(",", ".")
+                            : value;
+                          let normalizedValue =
+                            stripLeadingZerosFromDecimalInput(forStrip);
+                          if (usesCommaDecimal) {
+                            normalizedValue = normalizedValue.replace(".", ",");
+                          }
+
                           // If user cleared input, clear the other side too.
-                          if (value.trim() === "") {
+                          if (normalizedValue.trim() === "") {
                             // Invalidate any in-flight estimate requests so they can't repopulate inputs.
                             estimateRequestSeqRef.current += 1;
                             setGetAmountInput("");
@@ -4372,7 +4379,10 @@ export default function WithdrawalForm({
                             return;
                           }
 
-                          const normalizedForDecimals = value.replace(",", ".");
+                          const normalizedForDecimals = normalizedValue.replace(
+                            ",",
+                            "."
+                          );
                           const decSep = normalizedForDecimals.includes(".")
                             ? normalizedForDecimals.split(".").slice(1).join("")
                             : "";
@@ -4382,11 +4392,16 @@ export default function WithdrawalForm({
                           }
 
                           const newAmount =
-                            value === "" ? 0 : parseLocalizedAmountString(value);
+                            normalizedValue === ""
+                              ? 0
+                              : parseLocalizedAmountString(normalizedValue);
 
                           // Only update state and calculate if value actually changed
-                          if (newAmount !== getAmount || value !== getAmountInput) {
-                            setGetAmountInput(value); // Store the string value for display
+                          if (
+                            newAmount !== getAmount ||
+                            normalizedValue !== getAmountInput
+                          ) {
+                            setGetAmountInput(normalizedValue);
                             setGetAmount(newAmount);
                             setIsCalculatingFromPay(false);
 

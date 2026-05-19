@@ -16,6 +16,13 @@ import { showToast } from "@/lib/utils/toast";
 import { RootState } from "@/store/rootReducer";
 
 import { validateP2PAd } from "@/lib/utils/validators";
+import {
+  clampKesRateToBounds,
+  KES_RATE_MINUS_OPTIONS,
+  KES_RATE_PLUS_OPTIONS,
+  roundKesRate,
+  validateKesRateAgainstMarket,
+} from "@/lib/utils/kesRateBounds";
 import { formatLargeNumber } from "@/utils/formatters";
 import PaymentMethodsModal from "./PaymentMethodsModal";
 import UserPaymentSelector, { UserPaymentDetail } from "./UserPaymentSelector";
@@ -25,9 +32,6 @@ import { useUserPaymentDetailsWebSocket } from "@/features/p2p/hooks/useUserPaym
 import { logger } from '@/lib/utils/logger';
 import { MdCheckCircle } from "react-icons/md";
 import { API_CONFIG } from "@/lib/appConfig";
-
-const KES_RATE_PLUS_OPTIONS = [1, 2, 3, 4, 5] as const;
-const KES_RATE_MINUS_OPTIONS = [1, 2, 3] as const;
 
 type LiveExchangeRatesResponse = {
   rate?: string;
@@ -168,10 +172,24 @@ const Adds: React.FC<AddsProps> = ({ filterType }) => {
   const applyCommissionDelta = (delta: number) => {
     setCommission((c) => {
       const current = parseFloat(c) || 1.0;
-      const next = Math.max(0.01, current + delta);
+      let next = current + delta;
+      if (activeCurrency === "KES" && kesBaseRate != null) {
+        next = clampKesRateToBounds(next, kesBaseRate);
+      } else {
+        next = Math.max(0.01, next);
+      }
       return next.toFixed(2);
     });
     setErrors((prev) => ({ ...prev, commission: undefined }));
+  };
+
+  const validateKesCommissionRate = (rateStr: string): string => {
+    if (activeCurrency !== "KES") return "";
+    if (kesBaseRate == null) {
+      return kesRateError || "Wait for live KES rate to load";
+    }
+    const rate = parseFloat(rateStr);
+    return validateKesRateAgainstMarket(rate, kesBaseRate);
   };
 
   const resetKesRateState = () => {
@@ -189,7 +207,13 @@ const Adds: React.FC<AddsProps> = ({ filterType }) => {
     const delta = key.startsWith("+") ? magnitude : -magnitude;
     setCommission((c) => {
       const current = parseFloat(c) || 0;
-      return Math.max(0.01, current + delta).toFixed(2);
+      let next = current + delta;
+      if (activeCurrency === "KES" && kesBaseRate != null) {
+        next = clampKesRateToBounds(next, kesBaseRate);
+      } else {
+        next = Math.max(0.01, next);
+      }
+      return next.toFixed(2);
     });
     setUsedRateStepButtons((prev) => new Set(prev).add(key));
     setErrors((prev) => ({ ...prev, commission: undefined }));
@@ -222,6 +246,7 @@ const Adds: React.FC<AddsProps> = ({ filterType }) => {
         }
         if (cancelled) return;
         setKesBaseRate(parsed);
+        setCommission(roundKesRate(parsed).toFixed(2));
         setUsedRateStepButtons(new Set());
       } catch (err) {
         if (cancelled) return;
@@ -296,6 +321,14 @@ const Adds: React.FC<AddsProps> = ({ filterType }) => {
       if (next.orderMax) delete next.orderMax;
       if (next.amount) delete next.amount;
 
+      if (activeCurrency === "KES" && kesBaseRate != null && commission.trim() !== "") {
+        const kesRateErr = validateKesRateAgainstMarket(
+          Number(commission),
+          kesBaseRate
+        );
+        if (kesRateErr) next.commission = kesRateErr;
+      }
+
       if (hasMin) {
         if (minNum < 10) {
           next.orderMin = "Minimum order amount must be at least 10";
@@ -346,7 +379,7 @@ const Adds: React.FC<AddsProps> = ({ filterType }) => {
 
       return next;
     });
-  }, [activeCurrency, amount, orderMin, orderMax, commission]);
+  }, [activeCurrency, amount, orderMin, orderMax, commission, kesBaseRate, kesRateError]);
 
   const validateForm = () => {
     const newErrors: ValidationErrors = {};
@@ -431,6 +464,14 @@ const Adds: React.FC<AddsProps> = ({ filterType }) => {
     if (commissionError) {
       newErrors.commission = commissionError;
       isValid = false;
+    }
+
+    if (activeCurrency === "KES") {
+      const kesRateErrorMsg = validateKesCommissionRate(commission);
+      if (kesRateErrorMsg) {
+        newErrors.commission = kesRateErrorMsg;
+        isValid = false;
+      }
     }
 
     const timeLimitError = validateP2PAd.timeLimit(timeLimit);
@@ -662,8 +703,31 @@ const Adds: React.FC<AddsProps> = ({ filterType }) => {
                         const value = e.target.value;
                         if (value === "" || /^\d*\.?\d*$/.test(value)) {
                           setCommission(value);
-                          setErrors((prev) => ({ ...prev, commission: undefined }));
+                          if (activeCurrency === "KES" && value !== "" && kesBaseRate != null) {
+                            const err = validateKesRateAgainstMarket(
+                              parseFloat(value),
+                              kesBaseRate
+                            );
+                            setErrors((prev) => ({
+                              ...prev,
+                              commission: err || undefined,
+                            }));
+                          } else {
+                            setErrors((prev) => ({ ...prev, commission: undefined }));
+                          }
                         }
+                      }}
+                      onBlur={() => {
+                        if (activeCurrency !== "KES" || kesBaseRate == null) return;
+                        const parsed = parseFloat(commission);
+                        if (!Number.isFinite(parsed)) return;
+                        const clamped = clampKesRateToBounds(parsed, kesBaseRate);
+                        setCommission(clamped.toFixed(2));
+                        const err = validateKesRateAgainstMarket(clamped, kesBaseRate);
+                        setErrors((prev) => ({
+                          ...prev,
+                          commission: err || undefined,
+                        }));
                       }}
                       className={`bg-transparent border-none text-gray-900 dark:text-white text-base focus:outline-none tabular-nums ${
                         activeCurrency === "KES" ? "flex-1 min-w-0" : "w-[5ch]"
@@ -1450,7 +1514,9 @@ const Adds: React.FC<AddsProps> = ({ filterType }) => {
                   !amount.trim() ||
                   !orderMin.trim() ||
                   !orderMax.trim() ||
-                  selectedPaymentDetails.length === 0
+                  selectedPaymentDetails.length === 0 ||
+                  (activeCurrency === "KES" &&
+                    (kesBaseRate == null || kesRateLoading || !!validateKesCommissionRate(commission)))
                 }
               >
                 {postOrderLoading ? <Loader size="sm" /> : "Post Ad"}

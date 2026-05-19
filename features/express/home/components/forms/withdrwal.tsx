@@ -4496,8 +4496,11 @@ export default function WithdrawalForm({
 
                         // Only allow numbers and decimals (including 0.006 format)
                         if (value === "" || /^\d*\.?\d*$/.test(value)) {
+                          const normalizedValue =
+                            stripLeadingZerosFromDecimalInput(value);
+
                           // If user cleared input, clear the other side too.
-                          if (value.trim() === "") {
+                          if (normalizedValue.trim() === "") {
                             setGetAmountInput("");
                             setGetAmount(0);
                             setPayAmountInput("");
@@ -4512,19 +4515,24 @@ export default function WithdrawalForm({
                           }
 
                           // Check for decimal places validation
-                          if (value.includes(".")) {
-                            const decimalPart = value.split(".")[1];
+                          if (normalizedValue.includes(".")) {
+                            const decimalPart = normalizedValue.split(".")[1];
                             if (decimalPart && decimalPart.length > 5) {
                               setApiValidationError("Number cannot have more than 5 decimal places.");
                               return;
                             }
                           }
 
-                          const newAmount = capReceiveAmount(parseFloat(value) || 0);
+                          const newAmount = capReceiveAmount(
+                            parseFloat(normalizedValue) || 0
+                          );
 
                           // Only update state and calculate if value actually changed
-                          if (newAmount !== getAmount || value !== getAmountInput) {
-                            setGetAmountInput(newAmount.toString()); // Store capped value for display
+                          if (
+                            newAmount !== getAmount ||
+                            normalizedValue !== getAmountInput
+                          ) {
+                            setGetAmountInput(normalizedValue);
                             setGetAmount(newAmount);
                             setIsCalculatingFromPay(false);
 
