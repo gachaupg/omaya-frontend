@@ -1,6 +1,11 @@
-import { createSlice, createAsyncThunk } from "@reduxjs/toolkit";
+import { createSlice, createAsyncThunk, PayloadAction } from "@reduxjs/toolkit";
 import { getMatchedTrades } from "../api";
-import { MatchedTradesResponse } from "../types";
+import { MatchedTrade, MatchedTradesResponse } from "../types";
+import {
+  filterPendingMatchedTradeNotifications,
+  isPendingMatchedTradeNotification,
+  isTerminalMatchedTradeNotificationStatus,
+} from "../utils/matchedTradeNotifications";
 
 interface MatchedTradesState {
   data: MatchedTradesResponse | null;
@@ -13,6 +18,34 @@ const initialState: MatchedTradesState = {
   loading: false,
   error: null,
 };
+
+function withFilteredResults(
+  payload: MatchedTradesResponse
+): MatchedTradesResponse {
+  const results = filterPendingMatchedTradeNotifications(
+    payload.results || []
+  );
+  return {
+    ...payload,
+    results,
+    count: results.length,
+  };
+}
+
+function applyTradeListToState(
+  state: MatchedTradesState,
+  trades: MatchedTrade[],
+  count?: number
+) {
+  const results = filterPendingMatchedTradeNotifications(trades);
+  state.data = {
+    ...(state.data ?? { next: null, previous: null }),
+    results,
+    count: count ?? results.length,
+    next: state.data?.next ?? null,
+    previous: state.data?.previous ?? null,
+  };
+}
 
 export const fetchMatchedTrades = createAsyncThunk(
   "matchedTrades/fetchMatchedTrades",
@@ -32,16 +65,17 @@ const matchedTradesSlice = createSlice({
     },
     // WebSocket updates
     updateMatchedTradesFromWS: (state, action) => {
-      state.data = {
-        ...action.payload,
-        results: action.payload.trades || action.payload.results || [],
-      };
+      const trades: MatchedTrade[] =
+        action.payload.trades || action.payload.results || [];
+      applyTradeListToState(state, trades, action.payload.count);
     },
-    addMatchedTradeFromWS: (state, action) => {
-      if (state.data && state.data.results) {
-        // Add new trade at the beginning
+    addMatchedTradeFromWS: (state, action: PayloadAction<MatchedTrade>) => {
+      if (!isPendingMatchedTradeNotification(action.payload)) return;
+      if (state.data?.results) {
+        const exists = state.data.results.some((t) => t.id === action.payload.id);
+        if (exists) return;
         state.data.results = [action.payload, ...state.data.results];
-        state.data.count = (state.data.count || 0) + 1;
+        state.data.count = state.data.results.length;
       } else {
         state.data = {
           results: [action.payload],
@@ -51,27 +85,45 @@ const matchedTradesSlice = createSlice({
         };
       }
     },
-    updateSingleTradeFromWS: (state, action) => {
-      if (state.data && state.data.results) {
-        const index = state.data.results.findIndex(
-          (trade) => trade.id === action.payload.id
-        );
-        if (index !== -1) {
-          state.data.results[index] = action.payload;
-        } else {
-          // If trade not found, add it
-          state.data.results = [action.payload, ...state.data.results];
-          state.data.count = (state.data.count || 0) + 1;
-        }
+    updateSingleTradeFromWS: (state, action: PayloadAction<MatchedTrade>) => {
+      const trade = action.payload;
+      const tradeId = trade.id;
+      if (!state.data?.results || !tradeId) return;
+
+      if (!isPendingMatchedTradeNotification(trade)) {
+        state.data.results = state.data.results.filter((t) => t.id !== tradeId);
+        state.data.count = state.data.results.length;
+        return;
+      }
+
+      const index = state.data.results.findIndex((t) => t.id === tradeId);
+      if (index !== -1) {
+        state.data.results[index] = trade;
+      } else {
+        state.data.results = [trade, ...state.data.results];
+      }
+      state.data.count = state.data.results.length;
+    },
+    removeMatchedTradeFromWS: (state, action: PayloadAction<string>) => {
+      if (!state.data?.results) return;
+      const before = state.data.results.length;
+      state.data.results = state.data.results.filter(
+        (trade) => trade.id !== action.payload
+      );
+      if (state.data.results.length !== before) {
+        state.data.count = state.data.results.length;
       }
     },
-    removeMatchedTradeFromWS: (state, action) => {
-      if (state.data && state.data.results) {
-        state.data.results = state.data.results.filter(
-          (trade) => trade.id !== action.payload
-        );
-        state.data.count = Math.max(0, (state.data.count || 0) - 1);
-      }
+    removeMatchedTradeByStatusFromWS: (
+      state,
+      action: PayloadAction<{ tradeId: string; status?: string }>
+    ) => {
+      const { tradeId, status } = action.payload;
+      if (!tradeId) return;
+      if (status && !isTerminalMatchedTradeNotificationStatus(status)) return;
+      if (!state.data?.results) return;
+      state.data.results = state.data.results.filter((t) => t.id !== tradeId);
+      state.data.count = state.data.results.length;
     },
   },
   extraReducers: (builder) => {
@@ -82,7 +134,7 @@ const matchedTradesSlice = createSlice({
       })
       .addCase(fetchMatchedTrades.fulfilled, (state, action) => {
         state.loading = false;
-        state.data = action.payload;
+        state.data = withFilteredResults(action.payload);
       })
       .addCase(fetchMatchedTrades.rejected, (state, action) => {
         state.loading = false;
@@ -97,5 +149,6 @@ export const {
   addMatchedTradeFromWS,
   updateSingleTradeFromWS,
   removeMatchedTradeFromWS,
+  removeMatchedTradeByStatusFromWS,
 } = matchedTradesSlice.actions;
 export default matchedTradesSlice.reducer;

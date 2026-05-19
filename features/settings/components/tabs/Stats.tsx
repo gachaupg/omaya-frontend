@@ -15,6 +15,7 @@ import {
   selectTransactionSummaryLoading,
 } from "@/features/p2p/slices/transactionSummarySlice";
 import { fetchMatchedTrades } from "@/features/p2p/slices/matchedTradesSlice";
+import { selectPendingMatchedTradeNotificationCount } from "@/features/p2p/selectors";
 import { fetchReferredUsers } from "@/features/settings/slices/referralSlice";
 import { fetchReferralWallet } from "@/features/settings/slices/referralWalletSlice";
 import { formatNumber } from "@/utils/formatters";
@@ -69,8 +70,8 @@ const Stats = ({ onSupportClick }: StatsProps) => {
     (state: RootState) => state.auth
   );
   const summary = useSelector(selectTransactionSummary);
-  const { data: matchedTrades } = useSelector(
-    (state: RootState) => state.matchedTrades
+  const pendingNotificationCount = useSelector(
+    selectPendingMatchedTradeNotificationCount
   );
   const { referredUsers } = useSelector(
     (state: RootState) => state.referral
@@ -266,9 +267,9 @@ const Stats = ({ onSupportClick }: StatsProps) => {
               <path d="M10.268 21a2 2 0 0 0 3.464 0" />
               <path d="M3.262 15.326A1 1 0 0 0 4 17h16a1 1 0 0 0 .74-1.673C19.41 13.956 18 12.499 18 8A6 6 0 0 0 6 8c0 4.499-1.411 5.956-2.738 7.326" />
             </svg>
-            {matchedTrades?.results && matchedTrades.results.length > 0 && (
+            {pendingNotificationCount > 0 && (
               <span className="absolute -top-1 -right-2 bg-[#E23D3A] text-white text-[10px] sm:text-xs rounded-full w-4 h-4 sm:w-5 sm:h-5 flex items-center justify-center">
-                {matchedTrades.results.length}
+                {pendingNotificationCount}
               </span>
             )}
           </div>

@@ -20,11 +20,13 @@ export const EXPRESS_P2P_WITHDRAWAL_TERMS_SECTIONS: { heading: string; body: str
   },
   {
     heading: "Irreversible transactions & user responsibility",
-    body: "Blockchain transactions are irreversible. If you provide an incorrect wallet address, or a wallet address on the wrong network, the funds will be permanently lost, and we will not be able to recover or assist in any way.",
+    body:
+      "Blockchain transactions are irreversible.\nIf you provide:\n• an incorrect wallet address, or\n• a wallet address on the wrong network,\n\nthe funds will be permanently lost, and we will not be able to recover or assist in any way.",
   },
   {
     heading: "Acceptance of terms",
-    body: "Before submitting the withdrawal, you must confirm that you have read and accepted all the terms and conditions listed above, and our full Terms of Service.",
+    body:
+      "Before submitting the withdrawal, you must confirm that you have read and accepted:\n\nall the terms and conditions listed above, and\n\nour full Terms of Service.",
   },
 ];
 

@@ -16,6 +16,7 @@ import { getUserProfile } from "@/features/auth/slices/authSlice";
 import useSound from "use-sound";
 import HelpSupportForm from "@/features/settings/components/HelpSupportForm";
 import { useMatchedTradesWebSocket } from "../../../hooks/useMatchedTradesWebSocket";
+import { selectPendingMatchedTradeNotificationCount } from "@/features/p2p/selectors";
 import { cookieUtils } from "@/lib/utils/cookieUtils";
 import VerifiedBadge from "@/components/ui/VerifiedBadge";
 import { checkKYCStatus } from "@/features/kyc/slices/kycSlice";
@@ -38,6 +39,9 @@ const UserCard = () => {
 
   const { data: matchedTrades } = useSelector(
     (state: RootState) => state.matchedTrades
+  );
+  const pendingNotificationCount = useSelector(
+    selectPendingMatchedTradeNotificationCount
   );
   const { user, isAuthenticated, profile } = useSelector(
     (state: RootState) => state.auth
@@ -455,10 +459,9 @@ const UserCard = () => {
                         strokeLinejoin="round"
                       />
                     </svg>
-                    {matchedTrades?.results &&
-                      matchedTrades.results.length > 0 && (
+                    {pendingNotificationCount > 0 && (
                         <span className="absolute -top-1 -right-1 bg-[#E23D3A] text-white text-xs rounded-full w-5 h-5 flex items-center justify-center">
-                          {matchedTrades.results.length}
+                          {pendingNotificationCount}
                         </span>
                       )}
                     {/* WebSocket connection indicator */}

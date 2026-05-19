@@ -34,7 +34,7 @@ import { logger } from '@/lib/utils/logger';
 import { withTimeout } from "@/lib/utils/fetchWithTimeout";
 import { useExpressI18n } from "@/lib/useExpressI18n";
 import { useTheme } from "@/context/theme";
-import { TermsAndConditionsSummary } from "./TermsAndConditionsSummary";
+import { ExpressP2PWithdrawalTermsPanel } from "@/features/express/components/legal/ExpressP2PWithdrawalTermsPanel";
 import { selectP2PWalletAmounts, selectTransactionSummary } from "@/features/p2p/selectors";
 
 const formatUnknownError = (error: unknown): string => {
@@ -272,6 +272,7 @@ export default function WithdrawalForm({
   onBeforeLegalNavigate,
 }: DepositFormProps) {
   const MIN_WITHDRAWAL_AMOUNT = 10;
+  const { isDark } = useTheme();
   // Use available amount from transaction summary (same common source as Available.tsx / P2PDashboard)
   const summary = useSelector(selectTransactionSummary);
   const { availableAmount } = useSelector(selectP2PWalletAmounts);
@@ -359,6 +360,7 @@ export default function WithdrawalForm({
   const [walletAddress, setWalletAddress] = useState("");
   const [walletError, setWalletError] = useState<string | null>(null);
   const [walletCopied, setWalletCopied] = useState(false);
+  const [expandedTerms, setExpandedTerms] = useState(false);
   const [isNetworkDropdownOpen, setIsNetworkDropdownOpen] = useState(false);
 
   // Network options - only Binance Smart Chain BEP20
@@ -3017,37 +3019,14 @@ export default function WithdrawalForm({
             )}
           </div>
 
-          {/* ----------------------------------------------------------------- */}
-          {/* ----------------------------------------------------------------- */}
+          {/* Terms & Conditions — P2P / USDT BEP20 (shows 3 items, Show More for 4–5) */}
           <div className="mb-6 mt-4 sm:mt-6">
-            <div className="flex items-center gap-2 mb-3">
-              <h3 className="text-sm sm:text-base font-medium text-[#7e7e8f] dark:text-[#ffffff]">
-                Transfer Details
-              </h3>
-              <img className="w-4 h-4" src="/assets/alert-circle_llaycw.png" alt="alert-circle" />
-            </div>
-            <div className="bg-white dark:bg-[var(--card-color)] border border-[#1D8751] rounded-lg sm:rounded-xl p-4">
-              <ul className="space-y-3">
-                <li className="flex items-start gap-3">
-                  <div className="w-2 h-2 rounded-full bg-[#1D8751] mt-1.5 shrink-0" />
-                  <span className="text-sm text-[#35353e] dark:text-[#788099]">
-                    Please send the money from your own account Only
-                  </span>
-                </li>
-                <li className="flex items-start gap-3">
-                  <div className="w-2 h-2 rounded-full bg-[#1D8751] mt-1.5 shrink-0" />
-                  <span className="text-sm text-[#35353e] dark:text-[#788099]">
-                    Put transaction ID in the description field of the bank
-                  </span>
-                </li>
-                <li className="flex items-start gap-3">
-                  <div className="w-2 h-2 rounded-full bg-[#1D8751] mt-1.5 shrink-0" />
-                  <span className="text-sm text-[#35353e] dark:text-[#788099]">
-                    Please note, If you do not follow above conditions, we will reject your transaction and send you back your money.
-                  </span>
-                </li>
-              </ul>
-            </div>
+            <ExpressP2PWithdrawalTermsPanel
+              expandedTerms={expandedTerms}
+              setExpandedTerms={setExpandedTerms}
+              variant="dashboard"
+              isDark={isDark}
+            />
           </div>
 
         </div>
@@ -3237,10 +3216,12 @@ export default function WithdrawalForm({
               </p>
             </div>
 
-            {/* Terms and Conditions Summary - same layout as swap */}
-            <TermsAndConditionsSummary
-              asset={selectedAsset?.ticker || selectedAsset?.symbol || "USDT"}
-              onBeforeLegalNavigate={onBeforeLegalNavigate}
+            {/* Terms & Conditions — P2P / USDT BEP20 withdrawal */}
+            <ExpressP2PWithdrawalTermsPanel
+              expandedTerms={expandedTerms}
+              setExpandedTerms={setExpandedTerms}
+              variant="dashboard"
+              isDark={isDark}
             />
 
             {/* Terms Checkbox */}
@@ -3261,26 +3242,18 @@ export default function WithdrawalForm({
                   className="terms-checkbox-green mt-1 mr-3 w-4 h-4 rounded border-2 border-[#1D8751] focus:ring-[#1D8751] appearance-none bg-transparent checked:bg-[#1D8751] checked:border-[#1D8751] flex-shrink-0"
                 />
                 <span className="text-[#35353e] dark:text-[#788099] text-sm">
-                  I've read and agree to the{" "}
-                  <span className="text-[#1D8751] cursor-pointer hover:underline">
-                    Terms of Use
-                  </span>
-                  ,{" "}
-                  <span className="text-[#1D8751] cursor-pointer hover:underline">
-                    Privacy Policy
-                  </span>
-                  ,{" "}
-                  <span className="text-[#1D8751] cursor-pointer hover:underline">
-                    Payment Policies
-                  </span>
-                  ,{" "}
-                  <span className="text-[#1D8751] cursor-pointer hover:underline">
-                    AML
-                  </span>
-                  ,{" "}
-                  <span className="text-[#1D8751] cursor-pointer hover:underline">
-                    Risk Disclosure Statements
-                  </span>
+                  I confirm that I have read and accepted all the terms listed above and the{" "}
+                  <a
+                    href="/legal/terms-of-service"
+                    className="text-[#1D8751] cursor-pointer hover:underline"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      onBeforeLegalNavigate?.();
+                    }}
+                  >
+                    Terms of Service
+                  </a>
+                  .
                 </span>
               </label>
             </div>

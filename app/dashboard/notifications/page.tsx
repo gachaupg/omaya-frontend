@@ -13,6 +13,8 @@ import { showToast } from "@/lib/utils/toast";
 import { getMessageFromApiError } from "@/lib/utils/errorHandler";
 import { waitForTradeConfirmStatus } from "@/features/p2p/utils/waitTradeConfirmSocketStatus";
 import { isPendingAcceptanceStatus } from "@/features/p2p/utils/tradeWsAcceptanceGate";
+import { getMatchedTradeNotificationStatus } from "@/features/p2p/utils/matchedTradeNotifications";
+import { selectPendingMatchedTradeNotifications } from "@/features/p2p/selectors";
 
 /** When owner === logged user: show order_type as-is (Buy/Sell). When not owner: show counterparty action (buy ad → Sell, sell ad → Buy). */
 const getOrderType = (order_type: string, isOwner: boolean) => {
@@ -24,17 +26,6 @@ const getOrderType = (order_type: string, isOwner: boolean) => {
   return order_type === "buy"
     ? { label: "Sell", color: "text-red-400" }
     : { label: "Buy", color: "text-[#1D8751]" };
-};
-
-const getStatus = (trade: any, userEmail: string) => {
-  if (trade.owner === userEmail) {
-    return { text: "Pending Incoming Trade", color: "text-[#1D8751]" };
-  } else {
-    return {
-      text: `Pending ${trade.order_type === "sell" ? "Buy" : "Sell"} Trade`,
-      color: "text-yellow-500",
-    };
-  }
 };
 
 const truncate = (str: string, n: number) =>
@@ -62,6 +53,7 @@ const Notifications = () => {
   const { data: matchedTrades, loading } = useSelector(
     (state: RootState) => state.matchedTrades
   );
+  const pendingNotifications = useSelector(selectPendingMatchedTradeNotifications);
   const { user } = useSelector((state: RootState) => state.auth);
   const { isAuthenticated } = useSelector((state: RootState) => state.auth);
   // Keep notifications in sync with the bell using the same matched-trades socket.
@@ -190,11 +182,7 @@ const Notifications = () => {
     );
 
   // Check for no notifications - handle both null/undefined and empty array cases
-  const hasNotifications =
-    matchedTrades &&
-    matchedTrades.results &&
-    Array.isArray(matchedTrades.results) &&
-    matchedTrades.results.length > 0;
+  const hasNotifications = pendingNotifications.length > 0;
 
   if (!hasNotifications)
     return (
@@ -269,14 +257,14 @@ const Notifications = () => {
 
 
         <span className="text-xs sm:text-sm text-gray-500 dark:text-[#A3A3C2] whitespace-nowrap">
-          {matchedTrades.count || matchedTrades.results.length}{" "}
-          {(matchedTrades.count || matchedTrades.results.length) === 1
+          {pendingNotifications.length}{" "}
+          {pendingNotifications.length === 1
             ? "notification"
             : "notifications"}
         </span>
       </div>
 
-      {[...(matchedTrades.results || [])]
+      {[...pendingNotifications]
         .sort((a: any, b: any) => {
           const timeA = new Date(a.timestamp || 0).getTime();
           const timeB = new Date(b.timestamp || 0).getTime();
@@ -285,7 +273,10 @@ const Notifications = () => {
         .map((trade: any) => {
         const isOwner = trade.owner === user?.email;
         const orderType = getOrderType(trade.order_type, isOwner);
-        const status = getStatus(trade, user?.email || "");
+        const status = getMatchedTradeNotificationStatus(
+          trade,
+          user?.email || ""
+        );
         const owner = trade.owner === user?.email ? trade.buyer : trade.seller;
         const isCurrentUserAdvertiser =
           trade.advertiser_name === user?.first_name;

@@ -54,7 +54,10 @@ import { API_CONFIG } from "@/lib/appConfig";
 import { useValidateAddress } from "@/hooks/useValidateAddress";
 import { resolveForexDepositAdminPaymentDetailId } from "../../express/utils/forexDepositResolution";
 import { assetMatchesSearchTerm } from "@/lib/utils/assetSearch";
-import { ExpressP2PWithdrawalTermsPanel } from "@/features/express/components/legal/ExpressP2PWithdrawalTermsPanel";
+import {
+  ExpressBankWithdrawalTermsPanel,
+  resolveExpressBankWithdrawalTermsFields,
+} from "@/features/express/components/legal/ExpressBankWithdrawalTermsPanel";
 import { EXPRESS_P2P_WITHDRAWAL_TERMS_OF_SERVICE_MODAL } from "@/features/express/constants/expressP2PWithdrawalTerms";
 import ForexWithdrawal from "../../express/components/forms/ForexWithdrawal";
 import InfoModal from "../../express/components/forms/info";
@@ -5065,11 +5068,18 @@ const getPaymentRestrictionMessage = (status?: string) =>
                   </div>
                 </div>
 
-                <ExpressP2PWithdrawalTermsPanel
+                <ExpressBankWithdrawalTermsPanel
                   expandedTerms={expandedP2pWithdrawalTerms}
                   setExpandedTerms={setExpandedP2pWithdrawalTerms}
                   variant="dashboard"
                   isDark={isDark}
+                  {...resolveExpressBankWithdrawalTermsFields({
+                    paymentDetail:
+                      selectedPaymentDetail || selectedPaymentDetails[0],
+                    providerData: selectedProviderData,
+                    payBank,
+                    asset: selectedAsset,
+                  })}
                 />
 
                 <div className="mt-4">
