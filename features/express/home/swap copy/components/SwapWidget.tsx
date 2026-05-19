@@ -38,6 +38,7 @@ import {
 } from "@/lib/utils/authRedirect";
 import { openKYCModal, checkKYCStatus } from "@/features/auth/slices/authSlice";
 import {
+  normalizeSwapAmountOnChange,
   swapAmountToInputString,
   isBadPersistedSwapSendAmount,
 } from "@/lib/utils/swapAmountInput";
@@ -556,9 +557,10 @@ const SwapWidget: React.FC<SwapWidgetProps> = ({ usePublicApi = false }) => {
   };
 
   const handleFromAmountChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const value = e.target.value;
+    const raw = e.target.value;
     // Only allow numbers and decimals
-    if (value === "" || /^\d*\.?\d*$/.test(value)) {
+    if (raw === "" || /^\d*\.?\d*$/.test(raw)) {
+      const value = raw === "" ? "" : normalizeSwapAmountOnChange(raw);
       if (!validateAmount(value)) return;
       setActiveInputField("from");
       setHasUserInteracted(true);
@@ -575,9 +577,10 @@ const SwapWidget: React.FC<SwapWidgetProps> = ({ usePublicApi = false }) => {
   };
 
   const handleToAmountChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const value = e.target.value;
+    const raw = e.target.value;
     // Only allow numbers and decimals
-    if (value === "" || /^\d*\.?\d*$/.test(value)) {
+    if (raw === "" || /^\d*\.?\d*$/.test(raw)) {
+      const value = raw === "" ? "" : normalizeSwapAmountOnChange(raw);
       if (!validateAmount(value)) return;
       setActiveInputField("to");
       setHasUserInteracted(true);

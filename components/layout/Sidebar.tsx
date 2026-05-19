@@ -26,6 +26,7 @@ import { RootState } from "@/store/rootReducer";
 import { AppDispatch } from "@/store";
 import { openKYCModal } from "@/features/auth/slices/authSlice";
 import FrozenAccountModal from "@/components/ui/FrozenAccountModal";
+import { useDashboardNavigationOptional } from "@/context/DashboardNavigationContext";
 
 export default function Sidebar() {
   const pathname = usePathname();
@@ -42,6 +43,7 @@ export default function Sidebar() {
 
   const { isDark } = useTheme();
   const [showFrozenModal, setShowFrozenModal] = React.useState(false);
+  const dashboardNav = useDashboardNavigationOptional();
   const isFrozenUser = isAuthenticated && user?.freeze === true;
   const isFrozenBlockedHref = (href: string) => {
     const normalized = href.replace(/\/$/, "");
@@ -53,9 +55,16 @@ export default function Sidebar() {
     );
   };
 
+  const beginDashboardNavigation = () => {
+    dashboardNav?.startNavigation();
+  };
+
   const handleNavClick = (e: React.MouseEvent<HTMLAnchorElement>, href: string) => {
     // Immediately cancel any ongoing Express work (estimates, commissions, etc.)
     markExpressCancelled();
+
+    const normalizedPathname = pathname?.replace(/\/$/, "") || "";
+    const normalizedHref = href.replace(/\/$/, "");
     // Allow dashboard access for all users (verified and unverified)
     if (href === "/dashboard/" || href === "/dashboard") {
       return; // Allow navigation
@@ -81,8 +90,6 @@ export default function Sidebar() {
     }
 
     // Check if clicking on an already active section - reset to default/base route
-    const normalizedPathname = pathname?.replace(/\/$/, "") || "";
-    const normalizedHref = href.replace(/\/$/, "");
     const isActive = normalizedHref === "/dashboard"
       ? normalizedPathname === normalizedHref
       : normalizedPathname === normalizedHref ||
@@ -94,14 +101,20 @@ export default function Sidebar() {
       if (normalizedPathname !== normalizedHref) {
         // We're on a sub-route, navigate to the base route
         e.preventDefault();
+        beginDashboardNavigation();
         router.push(href);
         return false;
       }
       // If already on the base route, avoid hard reload (it feels like lag).
       // If you need to "reset" state, prefer a soft refresh.
       e.preventDefault();
+      beginDashboardNavigation();
       router.refresh();
       return false;
+    }
+
+    if (normalizedHref !== normalizedPathname) {
+      beginDashboardNavigation();
     }
 
     // Let Next.js / Link handle SPA navigation normally (no forced full reload here)

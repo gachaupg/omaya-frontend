@@ -63,6 +63,7 @@ import {
 } from "../../api";
 import { withTimeout } from "../../utils/fetchWithTimeout";
 import { stripLeadingZerosFromDecimalInput } from "@/lib/utils/decimalAmountInput";
+import { assetMatchesSearchTerm } from "@/lib/utils/assetSearch";
 import {
   findPaymentMethodInList,
   getPaymentMethodKey,
@@ -2305,20 +2306,10 @@ export default function DepositForm({
     return () => clearTimeout(safetyTimeout);
   }, [isCalculating, isCalculatingReceive, estimateLoading]);
 
-  // Filter assets based on search term - search by ticker and name
   const filteredSwapAssets =
-    assetsDisplay.displayData?.filter((asset: SupportedAsset) => {
-      const ticker = asset?.ticker?.toUpperCase() || "";
-      const name = asset?.name?.toUpperCase() || "";
-      const symbol = asset?.symbol?.toUpperCase() || "";
-      const searchTerm = assetSearchTerm.toUpperCase();
-
-      return (
-        ticker.includes(searchTerm) ||
-        name.includes(searchTerm) ||
-        symbol.includes(searchTerm)
-      );
-    }) || [];
+    assetsDisplay.displayData?.filter((asset: SupportedAsset) =>
+      assetMatchesSearchTerm(asset, assetSearchTerm)
+    ) || [];
 
   // Sort assets: USDT on BSC, USDC on BSC, fxprimus, then rest in original order
   const sortedSwapAssets = [...filteredSwapAssets].sort((a, b) => {

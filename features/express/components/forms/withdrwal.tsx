@@ -47,6 +47,7 @@ import PaymentMethodsModal from "../../../p2p/components/ui/p2pdashboard/section
 import InfoModal from "./info";
 import { debugAssetFetching } from "@/lib/utils/debugAssets";
 import { stripLeadingZerosFromDecimalInput } from "@/lib/utils/decimalAmountInput";
+import { assetMatchesSearchTerm } from "@/lib/utils/assetSearch";
 import {
   useAssetsDisplay,
   usePaymentMethodsDisplay,
@@ -2766,14 +2767,9 @@ export default function WithdrawalForm({
     if (!data?.length) return [] as SupportedAsset[];
     const term = assetSearchTerm.toUpperCase();
     if (!term) return data as SupportedAsset[];
-    return (data as SupportedAsset[]).filter((asset: SupportedAsset) => {
-      const ticker = asset?.ticker?.toUpperCase() || "";
-      const name = asset?.name?.toUpperCase() || "";
-      const symbol = asset?.symbol?.toUpperCase() || "";
-      return (
-        ticker.includes(term) || name.includes(term) || symbol.includes(term)
-      );
-    });
+    return (data as SupportedAsset[]).filter((asset: SupportedAsset) =>
+      assetMatchesSearchTerm(asset, term)
+    );
   }, [assetsDisplay.displayData, assetSearchTerm]);
 
   const sortedSwapAssets = useMemo(() => [...filteredSwapAssets].sort((a, b) => {

@@ -21,6 +21,7 @@ import Express from "@/features/express/home/express/express";
 import SwapWidget from "@/features/express/home/swap copy/components/SwapWidget";
 import MoneyX from "@/features/express/home/components/moneyX/components/MoneyX";
 import FrozenAccountModal from "@/components/ui/FrozenAccountModal";
+import { assetMatchesSearchTerm } from "@/lib/utils/assetSearch";
 
 
 /**
@@ -889,20 +890,10 @@ export default function ExchangeForm({
   };
 
   /* ------------------- Asset Filtering and Sorting ------------------- */
-  // Filter assets based on search term - search by ticker and name
   const filteredAssets =
-    assetsDisplay.displayData?.filter((asset: Asset) => {
-      const ticker = asset?.ticker?.toUpperCase() || "";
-      const name = asset?.name?.toUpperCase() || "";
-      const symbol = asset?.symbol?.toUpperCase() || "";
-      const searchTerm = assetSearchTerm.toUpperCase();
-
-      return (
-        ticker.includes(searchTerm) ||
-        name.includes(searchTerm) ||
-        symbol.includes(searchTerm)
-      );
-    }) || [];
+    assetsDisplay.displayData?.filter((asset: Asset) =>
+      assetMatchesSearchTerm(asset, assetSearchTerm)
+    ) || [];
 
   // Sort assets based on active tab
   const sortedAssets = [...filteredAssets].sort((a, b) => {

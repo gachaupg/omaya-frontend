@@ -1,8 +1,16 @@
+import { stripLeadingZerosFromDecimalInput } from "@/lib/utils/decimalAmountInput";
+
 /**
  * Normalize values bound to swap amount text inputs.
  * Persist/API sometimes store "0.0" / "0.00" which makes editing awkward;
  * pure-zero forms become "0" so users can clear and type freely.
  */
+/** Strip leading zeros while typing (e.g. "00007" → "7", keeps "0." for decimals). */
+export function normalizeSwapAmountOnChange(value: string): string {
+  if (value === "" || value === ".") return value;
+  return stripLeadingZerosFromDecimalInput(value);
+}
+
 export function swapAmountToInputString(value: unknown): string {
   if (value == null) return "";
   const raw =

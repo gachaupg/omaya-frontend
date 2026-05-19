@@ -10,6 +10,14 @@ import {
   handleSwapAssetIconError,
   resolveSwapAssetIconSrc,
 } from "../utils/swapAssetIcon";
+import { ExpressAssetSelectorTrigger } from "@/features/express/components/ExpressAssetSelectorTrigger";
+import { SwapAssetOptionDisplay } from "./SwapAssetOptionDisplay";
+import {
+  swapAmountFieldClass,
+  swapAmountTickerClass,
+  swapAssetTriggerClass,
+  SWAP_AMOUNT_TEXT,
+} from "./swapFieldStyles";
 
 interface TransactionInfoStepProps {
   fromAsset: SupportedAsset | null;
@@ -58,7 +66,7 @@ const hasPositiveAmount = (s: string) => {
 };
 
 const inputBase =
-  `rounded-xl sm:rounded-2xl bg-transparent dark:bg-transparent ${strongBorder} dark:text-white text-[#35353e] px-3 sm:px-4 py-2 w-full text-base sm:text-lg dark:placeholder:text-[#5f6070] placeholder:text-[#7e7e8f] focus:outline-none h-[42px] sm:h-[46px] md:h-[48px]`;
+  `rounded-2xl bg-transparent dark:bg-transparent ${strongBorder} dark:text-white text-[#35353e] px-4 py-2 pr-16 w-full ${SWAP_AMOUNT_TEXT} dark:placeholder:text-[#5f6070] placeholder:text-[#7e7e8f] focus:outline-none h-[44px]`;
 
 const TransactionInfoStep: React.FC<TransactionInfoStepProps> = (props) => {
   const { isDark } = useTheme();
@@ -383,19 +391,11 @@ const TransactionInfoStep: React.FC<TransactionInfoStepProps> = (props) => {
                       onError={(e) => handleSwapAssetIconError(e, option)}
                     />
                     <div className="flex-1 min-w-0">
-                      <div className={`font-medium flex items-center gap-2 ${isDark ? "text-white" : "text-[#111827]"
-                        }`}>
-                        {(option.ticker || option.symbol || option.name || "Unknown").toUpperCase()}
-                        {option.network && (
-                          <span className="bg-[#1D8751] text-[#ffffff] dark:text-[#ffffff] text-xs font-semibold px-2 py-0.5 rounded-full">
-                            {option.network}
-                          </span>
-                        )}
-                      </div>
-                      <div className={`text-sm truncate ${isDark ? "text-[#788099]" : "text-[#475569]"
-                        }`}>
-                        {option.name || option.ticker || "Unknown Asset"}
-                      </div>
+                      <SwapAssetOptionDisplay
+                        asset={option}
+                        primaryClassName={`text-sm font-semibold ${isDark ? "text-white" : "text-[#111827]"}`}
+                        subtitleClassName={`text-[10px] leading-tight truncate ${isDark ? "text-[#788099]" : "text-[#475569]"}`}
+                      />
                     </div>
                     {asset?.ticker === option.ticker &&
                       asset?.network === option.network && (
@@ -426,37 +426,19 @@ const TransactionInfoStep: React.FC<TransactionInfoStepProps> = (props) => {
 
     return (
       <div className="relative" ref={isFrom ? fromAssetDropdownRef : toAssetDropdownRef}>
-        <button
-          type="button"
+        <ExpressAssetSelectorTrigger
+          as="button"
+          isDark={isDark}
+          isOpen={isOpen}
           onClick={toggle}
-          className={`flex items-center justify-between w-full rounded-xl sm:rounded-2xl ${strongBorder} bg-transparent dark:bg-transparent px-3 sm:px-4 py-2 text-base sm:text-lg h-[42px] sm:h-[46px] md:h-[48px] transition-opacity ${isLoadingEstimate ? "opacity-80" : ""}`}
-        >
-          <div className="flex items-center gap-2 sm:gap-3 text-left min-w-0">
-            <img
-              src={resolveSwapAssetIconSrc(asset)}
-              alt={asset?.name || "asset icon"}
-              className="w-5 h-5 sm:w-6 sm:h-6 rounded-full object-cover flex-shrink-0"
-              loading="lazy"
-              onError={(e) => handleSwapAssetIconError(e, asset)}
-            />
-            <p className="text-base sm:text-lg dark:text-white text-[#35353e] font-semibold truncate">
-              {asset
-                ? asset.ticker?.toUpperCase() ||
-                asset.symbol?.toUpperCase() ||
-                asset.name
-                : t("swap.selectAsset", "Select Asset")}
-            </p>
-          </div>
-          <svg
-            className={`w-5 h-5 dark:text-[#7d7f95] text-[#7e7e8f] transition-transform flex-shrink-0 ${isOpen ? "rotate-180" : ""
-              }`}
-            fill="none"
-            stroke="currentColor"
-            viewBox="0 0 24 24"
-          >
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-          </svg>
-        </button>
+          asset={asset}
+          iconSrc={resolveSwapAssetIconSrc(asset)}
+          onIconError={(e) => handleSwapAssetIconError(e, asset)}
+          placeholder={t("swap.selectAsset", "Select Asset")}
+          className={`${swapAssetTriggerClass(isDark, {
+            extra: `${strongBorder} transition-opacity ${isLoadingEstimate ? "opacity-80" : ""}`,
+          })}`}
+        />
         {renderAssetDropdown(asset, isOpen, toggle, onSelect, searchValue, onSearchChange, isFrom)}
       </div>
     );
@@ -496,7 +478,7 @@ const TransactionInfoStep: React.FC<TransactionInfoStepProps> = (props) => {
             className={`${inputClassName} ${showLoader ? "opacity-70" : ""}`}
             disabled={showLoader}
           />
-          <span className="absolute right-4 top-1/2 -translate-y-1/2 text-sm font-semibold text-[#35353e] dark:text-white/80">
+          <span className={`absolute right-3 top-1/2 -translate-y-1/2 ${swapAmountTickerClass(isDark)}`}>
             {asset?.ticker?.toUpperCase() ||
               asset?.symbol?.toUpperCase() ||
               "USDT"}

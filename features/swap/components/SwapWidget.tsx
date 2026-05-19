@@ -32,7 +32,10 @@ import { SwapWidgetSkeleton } from "@/components/ui/Skeletons";
 import InfoModal from "@/features/express/components/forms/info";
 
 import { logger } from "@/lib/utils/logger";
-import { swapAmountToInputString } from "@/lib/utils/swapAmountInput";
+import {
+  normalizeSwapAmountOnChange,
+  swapAmountToInputString,
+} from "@/lib/utils/swapAmountInput";
 
 // Minimum swap value in USD/USDT - smaller amounts can disappear due to fees
 const MIN_SWAP_USD = 1;
@@ -601,9 +604,10 @@ const SwapWidget = () => {
   };
 
   const handleFromAmountChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const value = e.target.value;
+    const raw = e.target.value;
     // Only allow numbers and decimals
-    if (value === "" || /^\d*\.?\d*$/.test(value)) {
+    if (raw === "" || /^\d*\.?\d*$/.test(raw)) {
+      const value = raw === "" ? "" : normalizeSwapAmountOnChange(raw);
       // Validate max 12 digits before decimal
       if (!validateAmount(value)) return;
       setActiveInputField("from");
@@ -620,9 +624,10 @@ const SwapWidget = () => {
   };
 
   const handleToAmountChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const value = e.target.value;
+    const raw = e.target.value;
     // Only allow numbers and decimals
-    if (value === "" || /^\d*\.?\d*$/.test(value)) {
+    if (raw === "" || /^\d*\.?\d*$/.test(raw)) {
+      const value = raw === "" ? "" : normalizeSwapAmountOnChange(raw);
       // Validate max 12 digits before decimal
       if (!validateAmount(value)) return;
       setActiveInputField("to");

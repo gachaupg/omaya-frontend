@@ -11,12 +11,17 @@ import { useSwapI18n } from "@/lib/useSwapI18n";
 import {
   handleSwapAssetIconError,
   resolveSwapAssetIconSrc,
-  SWAP_ASSET_ICON_FALLBACK,
 } from "@/features/swap/utils/swapAssetIcon";
+import { assetMatchesSearchTerm } from "@/lib/utils/assetSearch";
+import { ExpressAssetSelectorTrigger } from "@/features/express/components/ExpressAssetSelectorTrigger";
+import { SwapAssetOptionDisplay } from "@/features/swap/components/SwapAssetOptionDisplay";
+import {
+  swapAmountFieldClass,
+  swapAmountTickerClass,
+} from "@/features/swap/components/swapFieldStyles";
 
 const ZERO_AMOUNT_INVALID_MSG =
   "0 is not a valid amount input. Enter an amount greater than zero.";
-const ASSET_ICON_FALLBACK_URL = SWAP_ASSET_ICON_FALLBACK;
 
 interface TransactionInfoStepProps {
   fromAsset: SupportedAsset | null;
@@ -268,18 +273,9 @@ const TransactionInfoStep: React.FC<TransactionInfoStepProps> = ({
     }
 
     const dropdownStyle = updateDropdownPosition(isFrom);
-    const filteredAssets = supportedAssets.filter((asset: SupportedAsset) => {
-      if (!searchValue) return true;
-      const searchLower = searchValue.toLowerCase();
-      const ticker = asset.ticker?.toLowerCase() || "";
-      const name = asset.name?.toLowerCase() || "";
-      const network = asset.network?.toLowerCase() || "";
-      return (
-        ticker.includes(searchLower) ||
-        name.includes(searchLower) ||
-        network.includes(searchLower)
-      );
-    });
+    const filteredAssets = supportedAssets.filter((asset: SupportedAsset) =>
+      assetMatchesSearchTerm(asset, searchValue)
+    );
 
     const isMobile = typeof window !== "undefined" && window.innerWidth < 640;
 
@@ -350,19 +346,12 @@ const TransactionInfoStep: React.FC<TransactionInfoStepProps> = ({
                     className="w-6 h-6 rounded-full object-cover"
                     onError={(e) => handleSwapAssetIconError(e, assetItem)}
                   />
-                  <div className="flex-1">
-                    <div className={`font-normal text-sm flex items-center gap-2 ${isDark ? "text-white" : "text-[#1F2937]"
-                      }`}>
-                      {(assetItem.ticker || assetItem.symbol || assetItem.name || "Unknown").toUpperCase()}
-                      {assetItem.network && (
-                        <span className="bg-[#1D8751] text-[#ffffff] dark:text-[#ffffff] text-xs font-normal px-2 py-0.5 rounded-full">
-                          {assetItem.network}
-                        </span>
-                      )}
-                    </div>
-                    <div className={`text-sm text-gray-500 dark:text-gray-400`}>
-                      {assetItem.name || assetItem.ticker || "Unknown Asset"}
-                    </div>
+                  <div className="flex-1 min-w-0">
+                    <SwapAssetOptionDisplay
+                      asset={assetItem}
+                      primaryClassName={`text-sm ${isDark ? "text-white font-semibold" : "text-[#1F2937] font-semibold"}`}
+                      subtitleClassName="text-[10px] leading-tight text-gray-500 dark:text-gray-400 truncate"
+                    />
                   </div>
                   {asset?.ticker === assetItem.ticker &&
                     asset?.network === assetItem.network && (
@@ -410,11 +399,10 @@ const TransactionInfoStep: React.FC<TransactionInfoStepProps> = ({
                   value={fromAmount}
                   onChange={onFromAmountChange}
                   placeholder={t("swap.enterAmount", "Enter amount")}
-                  className={`w-full rounded-2xl px-4 py-2 pr-16 text-lg focus:outline-none border appearance-none bg-transparent ${isDark ? "border-[#35353E] text-white" : "border-[#CBD5F5] text-[#111827]"
-                    }`}
+                  className={swapAmountFieldClass(isDark)}
                 />
-                <div className="absolute right-4 top-1/2 transform -translate-y-1/2">
-                  <span className={`text-sm font-normal ${isDark ? "text-white" : "text-[#1F2937]"}`}>
+                <div className="absolute right-3 top-1/2 transform -translate-y-1/2">
+                  <span className={swapAmountTickerClass(isDark)}>
                     {fromAsset
                       ? fromAsset.ticker?.toUpperCase() ||
                       fromAsset.symbol?.toUpperCase() ||
@@ -447,61 +435,19 @@ const TransactionInfoStep: React.FC<TransactionInfoStepProps> = ({
                 {t("swap.asset", "Asset")}
               </div>
               <div className="relative" ref={fromAssetDropdownRef}>
-                <div
-                  className={`w-full rounded-2xl px-4 py-2 text-lg focus:outline-none border flex items-center justify-between cursor-pointer bg-transparent ${isDark ? "text-white border-white/10" : "text-[#1F2937] border-gray-200"
-                    }`}
+                <ExpressAssetSelectorTrigger
+                  isDark={isDark}
+                  isOpen={isFromAssetOpen}
                   onClick={onFromAssetToggle}
-                >
-                  <div className="flex items-center gap-3">
-                    {fromAsset ? (
-                      <>
-                        <img
-                          src={resolveSwapAssetIconSrc(fromAsset)}
-                          alt={fromAsset.name}
-                          className="w-6 h-6 rounded-full object-cover"
-                          onError={(e) => handleSwapAssetIconError(e, fromAsset)}
-                        />
-                        <div className="flex items-center gap-2 min-w-0 flex-1">
-                          <span className={`font-normal text-sm truncate ${isDark ? "text-white" : "text-[#1F2937]"}`}>
-                            {(() => {
-                              // Prioritize ticker/symbol, but show name if ticker/symbol is not available
-                              const ticker = fromAsset.ticker?.toUpperCase() || fromAsset.symbol?.toUpperCase();
-                              return ticker || fromAsset.name || "Unknown";
-                            })()}
-                          </span>
-                          <span className="bg-[#1D8751] text-[#ffffff] dark:text-[#ffffff] text-xs font-normal px-2 py-0.5 rounded-full flex-shrink-0">
-                            {fromAsset.network || "Unknown"}
-                          </span>
-                        </div>
-                      </>
-                    ) : (
-                      <>
-                        <img
-                          src={ASSET_ICON_FALLBACK_URL}
-                          alt="asset icon"
-                          className="w-6 h-6"
-                        />
-                        <span className={isDark ? "text-[#788099]" : "text-[#64748B]"}>
-                          {supportedAssets.length === 0 ? t("swap.loading", "Loading...") : t("swap.selectAsset", "Select Asset")}
-                        </span>
-                      </>
-                    )}
-                  </div>
-                  <svg
-                    className={`w-5 h-5 text-[#7e7e8f] transition-transform ${isFromAssetOpen ? "rotate-180" : ""
-                      }`}
-                    fill="none"
-                    stroke="currentColor"
-                    viewBox="0 0 24 24"
-                  >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth={2}
-                      d="M19 9l-7 7-7-7"
-                    />
-                  </svg>
-                </div>
+                  asset={fromAsset}
+                  iconSrc={resolveSwapAssetIconSrc(fromAsset)}
+                  onIconError={(e) => handleSwapAssetIconError(e, fromAsset)}
+                  placeholder={
+                    supportedAssets.length === 0
+                      ? t("swap.loading", "Loading...")
+                      : t("swap.selectAsset", "Select Asset")
+                  }
+                />
 
                 {/* Asset Dropdown */}
                 {renderAssetDropdown(fromAsset, isFromAssetOpen, onFromAssetToggle, onFromAssetSelect, searchTerm, onSearchTermChange, true)}
@@ -557,15 +503,12 @@ const TransactionInfoStep: React.FC<TransactionInfoStepProps> = ({
                   value={toAmount}
                   onChange={onToAmountChange}
                   placeholder={t("swap.enterAmount", "Enter amount")}
-                  className={`w-full rounded-2xl px-4 py-2 pr-16 text-lg focus:outline-none border appearance-none bg-transparent ${activeInputField === "to"
-                      ? "border-[#1D8751]"
-                      : isDark
-                        ? "border-[#35353E] text-white"
-                        : "border-[#CBD5F5] text-[#111827]"
-                    }`}
+                  className={swapAmountFieldClass(isDark, {
+                    active: activeInputField === "to",
+                  })}
                 />
-                <div className="absolute right-4 top-1/2 transform -translate-y-1/2">
-                  <span className={`text-sm font-normal ${isDark ? "text-white" : "text-[#1F2937]"}`}>
+                <div className="absolute right-3 top-1/2 transform -translate-y-1/2">
+                  <span className={swapAmountTickerClass(isDark)}>
                     {toAsset
                       ? toAsset.ticker?.toUpperCase() ||
                       toAsset.symbol?.toUpperCase() ||
@@ -603,61 +546,19 @@ const TransactionInfoStep: React.FC<TransactionInfoStepProps> = ({
                 Asset
               </div>
               <div className="relative" ref={toAssetDropdownRef}>
-                <div
-                  className={`w-full rounded-2xl px-4 py-2 text-lg focus:outline-none border flex items-center justify-between cursor-pointer bg-transparent ${isDark ? "text-white border-white/10" : "text-[#1F2937] border-gray-200"
-                    }`}
+                <ExpressAssetSelectorTrigger
+                  isDark={isDark}
+                  isOpen={isToAssetOpen}
                   onClick={onToAssetToggle}
-                >
-                  <div className="flex items-center gap-3">
-                    {toAsset ? (
-                      <>
-                        <img
-                          src={resolveSwapAssetIconSrc(toAsset)}
-                          alt={toAsset.name}
-                          className="w-6 h-6 rounded-full object-cover"
-                          onError={(e) => handleSwapAssetIconError(e, toAsset)}
-                        />
-                        <div className="flex items-center gap-2 min-w-0 flex-1">
-                          <span className={`font-normal text-sm truncate ${isDark ? "text-white" : "text-[#1F2937]"}`}>
-                            {(() => {
-                              // Prioritize ticker/symbol, but show name if ticker/symbol is not available
-                              const ticker = toAsset.ticker?.toUpperCase() || toAsset.symbol?.toUpperCase();
-                              return ticker || toAsset.name || "Unknown";
-                            })()}
-                          </span>
-                          <span className="bg-[#1D8751] text-[#ffffff] dark:text-[#ffffff] text-xs font-normal px-2 py-0.5 rounded-full flex-shrink-0">
-                            {toAsset.network || "Unknown"}
-                          </span>
-                        </div>
-                      </>
-                    ) : (
-                      <>
-                        <img
-                          src={ASSET_ICON_FALLBACK_URL}
-                          alt="asset icon"
-                          className="w-6 h-6"
-                        />
-                        <span className={isDark ? "text-[#788099]" : "text-[#64748B]"}>
-                          {supportedAssets.length === 0 ? t("swap.loading", "Loading...") : t("swap.selectAsset", "Select Asset")}
-                        </span>
-                      </>
-                    )}
-                  </div>
-                  <svg
-                    className={`w-5 h-5 text-[#7e7e8f] transition-transform ${isToAssetOpen ? "rotate-180" : ""
-                      }`}
-                    fill="none"
-                    stroke="currentColor"
-                    viewBox="0 0 24 24"
-                  >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth={2}
-                      d="M19 9l-7 7-7-7"
-                    />
-                  </svg>
-                </div>
+                  asset={toAsset}
+                  iconSrc={resolveSwapAssetIconSrc(toAsset)}
+                  onIconError={(e) => handleSwapAssetIconError(e, toAsset)}
+                  placeholder={
+                    supportedAssets.length === 0
+                      ? t("swap.loading", "Loading...")
+                      : t("swap.selectAsset", "Select Asset")
+                  }
+                />
 
                 {/* Asset Dropdown */}
                 {renderAssetDropdown(toAsset, isToAssetOpen, onToAssetToggle, onToAssetSelect, toSearchTerm, onToSearchTermChange, false)}
