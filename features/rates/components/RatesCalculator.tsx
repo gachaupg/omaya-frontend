@@ -2874,9 +2874,13 @@ const getPaymentRestrictionMessage = (status?: string) =>
 
       const state = JSON.parse(savedState);
 
-      // Restore basic values
-      if (state.amount) setAmount(state.amount);
-      if (state.receiveAmount) setReceiveAmount(state.receiveAmount);
+      // Restore basic values (sanitize so leading zeros like 00007 are not kept)
+      if (state.amount) {
+        setAmount(sanitizeNumericInput(String(state.amount)));
+      }
+      if (state.receiveAmount) {
+        setReceiveAmount(sanitizeNumericInput(String(state.receiveAmount)));
+      }
       if (state.isFieldsSwapped !== undefined) setIsFieldsSwapped(state.isFieldsSwapped);
       if (state.isDepositMode !== undefined) setIsDepositMode(state.isDepositMode);
       // Don't restore selectedPaymentMethod directly; let current provider list auto-select first.
