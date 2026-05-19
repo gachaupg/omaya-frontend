@@ -5,8 +5,15 @@ import {
   updateMatchedTradesFromWS,
   addMatchedTradeFromWS,
   updateSingleTradeFromWS,
+  removeMatchedTradeFromWS,
+  removeMatchedTradeByStatusFromWS,
   fetchMatchedTrades,
 } from "../slices/matchedTradesSlice";
+import { P2P_TRADE_CANCELED_EVENT } from "../constants/tradeSocketEvents";
+import {
+  isPendingMatchedTradeNotification,
+  isTerminalMatchedTradeNotificationStatus,
+} from "../utils/matchedTradeNotifications";
 import {
   getMatchedTradesWebSocket,
   WebSocketMessage,
@@ -43,6 +50,21 @@ export const useMatchedTradesWebSocket = (
       mountedRef.current = false;
     };
   }, []);
+
+  // Trade cancel on buy/sell forms uses trade-status / trade-messages sockets — sync bell + notifications.
+  useEffect(() => {
+    if (!enabled || typeof window === "undefined") return;
+
+    const onTradeCanceled = (event: Event) => {
+      const detail = (event as CustomEvent<{ tradeId?: string }>).detail;
+      const tradeId = detail?.tradeId != null ? String(detail.tradeId).trim() : "";
+      if (!tradeId || !mountedRef.current) return;
+      dispatch(removeMatchedTradeFromWS(tradeId));
+    };
+
+    window.addEventListener(P2P_TRADE_CANCELED_EVENT, onTradeCanceled);
+    return () => window.removeEventListener(P2P_TRADE_CANCELED_EVENT, onTradeCanceled);
+  }, [enabled, dispatch]);
 
   useEffect(() => {
     if (!enabled) {
@@ -136,15 +158,46 @@ export const useMatchedTradesWebSocket = (
             }
             break;
 
-          case "trade_update":
+          case "trade_update": {
+            const action = String(message.data?.action ?? "").toLowerCase();
+            const tradeId = String(
+              message.data?.trade_id ?? message.data?.trade?.id ?? ""
+            ).trim();
+            const status = String(
+              message.data?.status ?? message.data?.trade?.status ?? ""
+            );
+
+            if (
+              action === "deleted" ||
+              action === "removed" ||
+              action === "cancelled" ||
+              action === "canceled"
+            ) {
+              if (tradeId) dispatch(removeMatchedTradeFromWS(tradeId));
+              break;
+            }
+
+            if (tradeId && isTerminalMatchedTradeNotificationStatus(status)) {
+              dispatch(
+                removeMatchedTradeByStatusFromWS({ tradeId, status })
+              );
+              break;
+            }
+
             if (message.data.trade) {
-              if (message.data.action === "created") {
-                dispatch(addMatchedTradeFromWS(message.data.trade));
-              } else {
-                dispatch(updateSingleTradeFromWS(message.data.trade));
+              const trade = message.data.trade;
+              if (action === "created") {
+                if (isPendingMatchedTradeNotification(trade)) {
+                  dispatch(addMatchedTradeFromWS(trade));
+                }
+              } else if (isPendingMatchedTradeNotification(trade)) {
+                dispatch(updateSingleTradeFromWS(trade));
+              } else if (trade.id) {
+                dispatch(removeMatchedTradeFromWS(String(trade.id)));
               }
             }
             break;
+          }
 
           default:
             if (process.env.NODE_ENV === 'development') {

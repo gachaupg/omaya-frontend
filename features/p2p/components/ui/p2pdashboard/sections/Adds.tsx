@@ -24,6 +24,16 @@ import { useUserPaymentDetailsWebSocket } from "@/features/p2p/hooks/useUserPaym
 
 import { logger } from '@/lib/utils/logger';
 import { MdCheckCircle } from "react-icons/md";
+import { API_CONFIG } from "@/lib/appConfig";
+
+const KES_RATE_PLUS_OPTIONS = [1, 2, 3, 4, 5] as const;
+const KES_RATE_MINUS_OPTIONS = [1, 2, 3] as const;
+
+type LiveExchangeRatesResponse = {
+  rate?: string;
+  quote_per_usd?: string;
+  converted_amount?: string;
+};
 
 interface AddsProps {
   filterType: "buy" | "sell";
@@ -111,6 +121,12 @@ const Adds: React.FC<AddsProps> = ({ filterType }) => {
     useState<string | null>(null);
   const [isClient, setIsClient] = useState(false);
   const prevTypeRef = useRef<"buy" | "sell">(type);
+  const [kesBaseRate, setKesBaseRate] = useState<number | null>(null);
+  const [kesRateLoading, setKesRateLoading] = useState(false);
+  const [kesRateError, setKesRateError] = useState<string | null>(null);
+  const [usedRateStepButtons, setUsedRateStepButtons] = useState<Set<string>>(
+    () => new Set()
+  );
 
   useEffect(() => {
     setIsClient(true);
@@ -157,6 +173,71 @@ const Adds: React.FC<AddsProps> = ({ filterType }) => {
     });
     setErrors((prev) => ({ ...prev, commission: undefined }));
   };
+
+  const resetKesRateState = () => {
+    setKesBaseRate(null);
+    setKesRateError(null);
+    setUsedRateStepButtons(new Set());
+  };
+
+  /** Add/subtract from typed rate: USD +1% → +0.01, KES +1% → +1. */
+  const applyRateStep = (key: string) => {
+    if (usedRateStepButtons.has(key)) return;
+    const step = parseInt(key.slice(1), 10);
+    const unit = activeCurrency === "USD" ? 0.01 : 1;
+    const magnitude = step * unit;
+    const delta = key.startsWith("+") ? magnitude : -magnitude;
+    setCommission((c) => {
+      const current = parseFloat(c) || 0;
+      return Math.max(0.01, current + delta).toFixed(2);
+    });
+    setUsedRateStepButtons((prev) => new Set(prev).add(key));
+    setErrors((prev) => ({ ...prev, commission: undefined }));
+  };
+
+  useEffect(() => {
+    if (activeCurrency !== "KES") {
+      resetKesRateState();
+      if (Number(commission) > 100 || kesBaseRate != null) {
+        setCommission("1.00");
+      }
+      return;
+    }
+
+    let cancelled = false;
+    const fetchKesRate = async () => {
+      setKesRateLoading(true);
+      setKesRateError(null);
+      resetKesRateState();
+      try {
+        const url = `${API_CONFIG.BASE_URL}${API_CONFIG.LIVE_EXCHANGE_RATES("USDT", "KSH")}`;
+        const res = await fetch(url);
+        if (!res.ok) throw new Error(`HTTP ${res.status}`);
+        const data = (await res.json()) as LiveExchangeRatesResponse;
+        const raw =
+          data.rate ?? data.quote_per_usd ?? data.converted_amount ?? "";
+        const parsed = parseFloat(String(raw));
+        if (!Number.isFinite(parsed) || parsed <= 0) {
+          throw new Error("Invalid rate from server");
+        }
+        if (cancelled) return;
+        setKesBaseRate(parsed);
+        setUsedRateStepButtons(new Set());
+      } catch (err) {
+        if (cancelled) return;
+        logger.error("p2p", "Failed to fetch KES live rate", err);
+        setKesRateError("Could not load live KES rate");
+        showToast.error("Could not load live KES exchange rate");
+      } finally {
+        if (!cancelled) setKesRateLoading(false);
+      }
+    };
+
+    fetchKesRate();
+    return () => {
+      cancelled = true;
+    };
+  }, [activeCurrency]);
   useEffect(() => {
     if (postOrderError) {
       showToast.error(postOrderError);
@@ -179,7 +260,6 @@ const Adds: React.FC<AddsProps> = ({ filterType }) => {
       setAmount("");
       setOrderMin("");
       setOrderMax("");
-      setCommission("1.00");
       setPaymentMethod(paymentMethods[0].value);
       setProvider(providers[0].value);
       setTimeLimit(timeLimits[0].value);
@@ -187,9 +267,15 @@ const Adds: React.FC<AddsProps> = ({ filterType }) => {
       setAutoReply("");
       setSelectedPaymentDetails([]);
       setErrors({});
+      setUsedRateStepButtons(new Set());
+      if (activeCurrency === "USD") {
+        setCommission("1.00");
+        resetKesRateState();
+      }
+      // KES: keep market rate below currency select (kesBaseRate); only reset step buttons above
     }
     prevTypeRef.current = type;
-  }, [type]);
+  }, [type, activeCurrency]);
 
   // Re-validate dependent fields whenever currency/rate/amount bounds change.
   // This prevents stale USD/KES errors when user switches currency.
@@ -399,7 +485,8 @@ const Adds: React.FC<AddsProps> = ({ filterType }) => {
       min_order_amount: orderMin,
       max_order_amount: orderMax,
       commission_rate: commission.toString(),
-      exchange_rate: "0.3",
+      exchange_rate:
+        activeCurrency === "KES" ? commission.toString() : "0.3",
       payment_method_name: selectedPaymentDetails[0]?.payment_method_name || "",
       payment_provider_name:
         selectedPaymentDetails[0]?.payment_provider_name || "",
@@ -555,7 +642,7 @@ const Adds: React.FC<AddsProps> = ({ filterType }) => {
                 >
                   <div className="flex items-center flex-1 min-h-[40px]">
                     <svg
-                      className="w-6 h-6 text-[#1D8751] mr-2"
+                      className="w-6 h-6 text-[#1D8751] mr-2 shrink-0"
                       fill="none"
                       stroke="currentColor"
                       strokeWidth="2"
@@ -565,23 +652,29 @@ const Adds: React.FC<AddsProps> = ({ filterType }) => {
                       <path d="M12 17v2a2 2 0 002 2h4a2 2 0 002-2v-2" />
                       <circle cx="12" cy="13" r="4" />
                     </svg>
+                    {activeCurrency === "KES" && (
+                      <span className="text-[#1D8751] text-sm mr-1 shrink-0">KSh</span>
+                    )}
                     <input
                       type="text"
                       value={commission}
                       onChange={(e) => {
                         const value = e.target.value;
-                        // Only allow numbers and decimals
                         if (value === "" || /^\d*\.?\d*$/.test(value)) {
                           setCommission(value);
                           setErrors((prev) => ({ ...prev, commission: undefined }));
                         }
                       }}
-                      // Use ch-based width so "%" stays close to the number.
-                      className="bg-transparent border-none text-gray-900 dark:text-white text-base focus:outline-none w-[5ch] tabular-nums"
-                      placeholder="1.00"
+                      className={`bg-transparent border-none text-gray-900 dark:text-white text-base focus:outline-none tabular-nums ${
+                        activeCurrency === "KES" ? "flex-1 min-w-0" : "w-[5ch]"
+                      }`}
+                      placeholder={activeCurrency === "KES" ? "0.00" : "1.00"}
                     />
-                    <span className="text-gray-900 dark:text-white text-base">%</span>
+                    {activeCurrency !== "KES" && (
+                      <span className="text-gray-900 dark:text-white text-base">%</span>
+                    )}
                   </div>
+                  {activeCurrency !== "KES" && (
                   <div className="flex items-center">
                     <button
                       className="text-[#1D8751] text-xl w-9 h-9 rounded-lg bg-gray-100 dark:bg-[#2A2D35] hover:bg-[#1D8751]/10 flex items-center justify-center transition mr-2"
@@ -598,28 +691,47 @@ const Adds: React.FC<AddsProps> = ({ filterType }) => {
                       –
                     </button>
                   </div>
+                  )}
                 </div>
                 <div className="relative z-10 flex flex-wrap gap-2 mt-3 pointer-events-auto">
-                  {[1, 2, 3, 4, 5].map((n) => (
-                    <button
-                      key={`plus-${n}`}
-                      type="button"
-                      onClick={() => applyCommissionDelta(n / 100)}
-                      className="relative z-10 px-2.5 py-1.5 text-sm rounded-lg bg-gray-100 dark:bg-[#2A2D35] text-gray-700 dark:text-[#D1D5DB] hover:bg-gray-200 dark:hover:bg-[#3A3D45]"
-                    >
-                      +{n}%
-                    </button>
-                  ))}
-                  {[1, 2, 3].map((n) => (
-                    <button
-                      key={`minus-${n}`}
-                      type="button"
-                      onClick={() => applyCommissionDelta(-(n / 100))}
-                      className="relative z-10 px-2.5 py-1.5 text-sm rounded-lg bg-gray-100 dark:bg-[#2A2D35] text-gray-700 dark:text-[#D1D5DB] hover:bg-gray-200 dark:hover:bg-[#3A3D45]"
-                    >
-                      -{n}%
-                    </button>
-                  ))}
+                    {KES_RATE_PLUS_OPTIONS.map((n) => {
+                      const key = `+${n}`;
+                      const isUsed = usedRateStepButtons.has(key);
+                      return (
+                        <button
+                          key={key}
+                          type="button"
+                          disabled={isUsed}
+                          onClick={() => applyRateStep(key)}
+                          className={`relative z-10 px-2.5 py-1.5 text-sm rounded-lg transition ${
+                            isUsed
+                              ? "bg-gray-200 dark:bg-[#35353E] text-gray-400 dark:text-[#6B7280] cursor-not-allowed opacity-60"
+                              : "bg-gray-100 dark:bg-[#2A2D35] text-gray-700 dark:text-[#D1D5DB] hover:bg-gray-200 dark:hover:bg-[#3A3D45]"
+                          }`}
+                        >
+                          +{n}%
+                        </button>
+                      );
+                    })}
+                    {KES_RATE_MINUS_OPTIONS.map((n) => {
+                      const key = `-${n}`;
+                      const isUsed = usedRateStepButtons.has(key);
+                      return (
+                        <button
+                          key={key}
+                          type="button"
+                          disabled={isUsed}
+                          onClick={() => applyRateStep(key)}
+                          className={`relative z-10 px-2.5 py-1.5 text-sm rounded-lg transition ${
+                            isUsed
+                              ? "bg-gray-200 dark:bg-[#35353E] text-gray-400 dark:text-[#6B7280] cursor-not-allowed opacity-60"
+                              : "bg-gray-100 dark:bg-[#2A2D35] text-gray-700 dark:text-[#D1D5DB] hover:bg-gray-200 dark:hover:bg-[#3A3D45]"
+                          }`}
+                        >
+                          -{n}%
+                        </button>
+                      );
+                    })}
                 </div>
                 {errors.commission && (
                   <span className="text-red-500 text-sm mt-1">
@@ -821,6 +933,27 @@ const Adds: React.FC<AddsProps> = ({ filterType }) => {
                     <option value="KES">KES</option>
                   </select>
                 </div>
+                {activeCurrency === "KES" && (
+                  <div className="mt-2 min-h-[20px]">
+                    {kesRateLoading && (
+                      <p className="text-xs text-gray-500 dark:text-[#788099]">
+                        Loading live rate…
+                      </p>
+                    )}
+                    {kesRateError && !kesRateLoading && (
+                      <p className="text-xs text-red-500">{kesRateError}</p>
+                    )}
+                    {kesBaseRate != null && !kesRateLoading && (
+                      <p className="text-xs text-gray-600 dark:text-[#788099]">
+                        Market rate:{" "}
+                        <span className="text-[#1D8751] font-semibold">
+                          KSh {kesBaseRate.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                        </span>{" "}
+                        per 1 USDT
+                      </p>
+                    )}
+                  </div>
+                )}
               </div>
             </div>
 

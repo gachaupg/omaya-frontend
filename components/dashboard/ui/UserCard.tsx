@@ -20,6 +20,7 @@ import { getUserProfile } from "@/features/auth/slices/authSlice";
 import HelpSupportForm from "@/features/settings/components/HelpSupportForm";
 import { useDashboardI18n } from "@/lib/useDashboardI18n";
 import { useMatchedTradesWebSocket } from "@/features/p2p/hooks/useMatchedTradesWebSocket";
+import { selectPendingMatchedTradeNotificationCount } from "@/features/p2p/selectors";
 import { logger } from "@/lib/utils/logger";
 import { checkKYCStatus } from "@/features/kyc/slices/kycSlice";
 
@@ -33,8 +34,8 @@ function UserCard() {
   const { user, isAuthenticated } = useSelector(
     (state: RootState) => state.auth
   );
-  const { data: matchedTrades } = useSelector(
-    (state: RootState) => state.matchedTrades
+  const pendingNotificationCount = useSelector(
+    selectPendingMatchedTradeNotificationCount
   );
   const kycState = useSelector((state: RootState) => state.kyc);
   // KYC verification status from central KYC slice
@@ -376,10 +377,9 @@ function UserCard() {
                         strokeLinejoin="round"
                       />
                     </svg>
-                    {matchedTrades?.results &&
-                      matchedTrades.results.length > 0 && (
+                    {pendingNotificationCount > 0 && (
                         <span className="absolute -top-1 -right-1 bg-[#E23D3A] text-white text-xs rounded-full w-5 h-5 flex items-center justify-center">
-                          {matchedTrades.results.length}
+                          {pendingNotificationCount}
                         </span>
                       )}
                     {/* WebSocket connection indicator */}

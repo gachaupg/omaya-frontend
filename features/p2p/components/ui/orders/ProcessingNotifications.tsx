@@ -3,23 +3,16 @@ import { FaUserCircle } from "react-icons/fa";
 import { useRouter } from "next/navigation";
 import { useSelector } from "react-redux";
 import { RootState } from "@/store/rootReducer";
+import {
+  filterPendingMatchedTradeNotifications,
+  getMatchedTradeNotificationStatus,
+} from "@/features/p2p/utils/matchedTradeNotifications";
 
 const getOrderType = (order_type: string) => {
   if (order_type === "buy") {
     return { label: "Sell", color: "text-red-400" };
   } else {
     return { label: "Buy", color: "text-[#1D8751]" };
-  }
-};
-
-const getStatus = (trade: any, userEmail: string) => {
-  if (trade.owner === userEmail) {
-    return { text: "Pending Incoming Trade", color: "text-[#1D8751]" };
-  } else {
-    return {
-      text: `Pending ${trade.order_type === "sell" ? "Buy" : "Sell"} Trade`,
-      color: "text-yellow-500",
-    };
   }
 };
 
@@ -33,6 +26,9 @@ interface ProcessingNotificationsProps {
 const ProcessingNotifications: React.FC<ProcessingNotificationsProps> = ({ matchedTrades }) => {
   const router = useRouter();
   const { user } = useSelector((state: RootState) => state.auth);
+  const pendingResults = filterPendingMatchedTradeNotifications(
+    matchedTrades?.results || []
+  );
 
   const handleViewOrder = (trade: any) => {
     // Store the full order in local storage
@@ -66,8 +62,8 @@ const ProcessingNotifications: React.FC<ProcessingNotificationsProps> = ({ match
       console.error("Error storing order in localStorage:", error);
     }
 
-    const status = getStatus(trade, user?.email || "");
-    if (status.text === `Pending ${trade.order_type} Trade`) {
+    const status = getMatchedTradeNotificationStatus(trade, user?.email || "");
+    if (status.text === `Pending ${trade.order_type === "sell" ? "Buy" : "Sell"} Trade`) {
       if (trade.owner === user?.email) {
         router.push(
           `/p2p/${trade.id}/matched?order_type=${
@@ -102,11 +98,7 @@ const ProcessingNotifications: React.FC<ProcessingNotificationsProps> = ({ match
     }
   };
 
-  const hasNotifications =
-    matchedTrades &&
-    matchedTrades.results &&
-    Array.isArray(matchedTrades.results) &&
-    matchedTrades.results.length > 0;
+  const hasNotifications = pendingResults.length > 0;
 
   if (!hasNotifications) {
     return (
@@ -152,7 +144,7 @@ const ProcessingNotifications: React.FC<ProcessingNotificationsProps> = ({ match
 
   return (
     <div className="w-full">
-      {[...(matchedTrades.results || [])]
+      {[...pendingResults]
         .sort((a: any, b: any) => {
           const timeA = new Date(a.timestamp || 0).getTime();
           const timeB = new Date(b.timestamp || 0).getTime();
@@ -160,7 +152,10 @@ const ProcessingNotifications: React.FC<ProcessingNotificationsProps> = ({ match
         })
         .map((trade: any) => {
           const orderType = getOrderType(trade.order_type);
-          const status = getStatus(trade, user?.email || "");
+          const status = getMatchedTradeNotificationStatus(
+            trade,
+            user?.email || ""
+          );
           const isCurrentUserAdvertiser =
             trade.advertiser_name === user?.first_name;
 

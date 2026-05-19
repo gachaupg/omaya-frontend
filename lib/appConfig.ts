@@ -53,6 +53,8 @@ export const API_CONFIG = {
     COMMISSION: (asset: string, amount: number, type: "deposit" | "withdrawal") =>
       `/trading_engine/commission/?asset=${encodeURIComponent(asset)}&amount=${amount}&type=${type}`,
   },
+  LIVE_EXCHANGE_RATES: (fromCurrency: string, toCurrency: string) =>
+    `/api/coinmarketcap/live-exchange-rates/?from_currency=${encodeURIComponent(fromCurrency)}&to_currency=${encodeURIComponent(toCurrency)}`,
   COMMISSION_LOOKUP: (amount: number, type: "deposit" | "withdrawal", feature: string = "exchange") =>
     `/administration/commission-lookup/?feature=${feature}&commission_type=${type}&amount=${amount}`,
   /** Exchange estimate: from_currency, to_currency=USD, optional from_network (BEP20, BSC, ETH). Used for first 3 assets only. */

@@ -74,7 +74,10 @@ import {
   buildAssetDropdownRows,
 } from "@/features/express/components/forms/AssetDropdownVirtualized";
 import { assetMatchesSearchTerm } from "@/lib/utils/assetSearch";
-import { ExpressP2PWithdrawalTermsPanel } from "@/features/express/components/legal/ExpressP2PWithdrawalTermsPanel";
+import {
+  ExpressBankWithdrawalTermsPanel,
+  resolveExpressBankWithdrawalTermsFields,
+} from "@/features/express/components/legal/ExpressBankWithdrawalTermsPanel";
 import { EXPRESS_P2P_WITHDRAWAL_TERMS_OF_SERVICE_MODAL } from "@/features/express/constants/expressP2PWithdrawalTerms";
 
 const MISSING_USDT_USD_RATE_ERROR =
@@ -5299,11 +5302,19 @@ export default function WithdrawalForm({
                   </p>
                 </div>
 
-                {/* Terms & Conditions — P2P / USDT BEP20 withdrawal */}
-                <ExpressP2PWithdrawalTermsPanel
+                {/* Terms & Conditions — bank withdrawal */}
+                <ExpressBankWithdrawalTermsPanel
                   expandedTerms={expandedTerms}
                   setExpandedTerms={setExpandedTerms}
-                  variant="default"
+                  variant="dashboard"
+                  isDark={isDark}
+                  {...resolveExpressBankWithdrawalTermsFields({
+                    paymentDetail:
+                      selectedPaymentDetail || selectedPaymentDetails[0],
+                    providerData: selectedProviderData,
+                    payBank,
+                    asset: selectedAsset,
+                  })}
                 />
 
                 {/* Terms Checkbox */}

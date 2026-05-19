@@ -14,6 +14,7 @@ import { createSelector } from "@reduxjs/toolkit";
 import { RootState } from "@/store/rootReducer";
 import { toNumber } from "@/lib/finanacial";
 import { getWalletAmountsFromSummary } from "@/features/p2p/walletAmounts";
+import { filterPendingMatchedTradeNotifications } from "@/features/p2p/utils/matchedTradeNotifications";
 
 // ======================
 // Base Selectors (Input Selectors)
@@ -123,6 +124,18 @@ export const selectActiveMatchedTrades = createSelector(
       (trade) => trade.status === "matched" || trade.status === "half-matched"
     );
   }
+);
+
+/** Pending rows for notification bell and notification center (excludes cancelled/completed). */
+export const selectPendingMatchedTradeNotifications = createSelector(
+  [selectMatchedTradesState],
+  (tradesState) =>
+    filterPendingMatchedTradeNotifications(tradesState.data?.results || [])
+);
+
+export const selectPendingMatchedTradeNotificationCount = createSelector(
+  [selectPendingMatchedTradeNotifications],
+  (trades) => trades.length
 );
 
 /**

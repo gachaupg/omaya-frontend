@@ -72,8 +72,9 @@ export function ExpressP2PWithdrawalTermsPanel({
                 <span className="text-[#1D8751] font-bold text-sm sm:text-base flex-shrink-0">
                   {idx + 1}.
                 </span>
-                <p className={itemClass}>
-                  <span className="font-semibold">{section.heading}:</span> {section.body}
+                <p className={`${itemClass} whitespace-pre-line`}>
+                  <span className="font-semibold">{section.heading}:</span>{" "}
+                  {section.body}
                 </p>
               </div>
             ))}
