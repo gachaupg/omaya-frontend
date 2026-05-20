@@ -12,9 +12,16 @@ import { RootState } from "@/store/rootReducer";
 interface ContactFormProps {
   onSuccess?: () => void;
   onError?: (error: string) => void;
+  /** Marketing contact page: 2-col name/email, darker fields, no redirect after send */
+  layout?: "default" | "marketing";
 }
 
-const ContactForm: React.FC<ContactFormProps> = ({ onSuccess, onError }) => {
+const ContactForm: React.FC<ContactFormProps> = ({
+  onSuccess,
+  onError,
+  layout = "default",
+}) => {
+  const isMarketing = layout === "marketing";
   const { t } = useMarketingI18n();
   const router = useRouter();
   const { isAuthenticated, user, profile } = useSelector((state: RootState) => state.auth);
@@ -188,17 +195,25 @@ const ContactForm: React.FC<ContactFormProps> = ({ onSuccess, onError }) => {
       setFormData({ name: "", email_address: "", subject: "", question: "", supporting_file: null });
       onSuccess?.();
 
-      // Redirect after 4 seconds
-      setTimeout(() => {
-        router.back();
-      }, 3000);
+      if (!isMarketing) {
+        setTimeout(() => {
+          router.back();
+        }, 3000);
+      }
     } else {
       onError?.(result.error || "Failed to submit support request");
     }
   };
 
+  const labelClass = isMarketing
+    ? "block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2"
+    : "block text-sm font-medium text-[#344054] dark:text-white mb-2";
+  const inputClass = isMarketing
+    ? "w-full bg-white dark:bg-[#14141a] border border-gray-300 dark:border-gray-600 rounded-xl text-gray-900 dark:text-white placeholder:text-gray-400 dark:placeholder:text-gray-500 focus:ring-2 focus:ring-[#1D8751] focus:border-[#1D8751] dark:focus:border-gray-500 outline-none transition-colors disabled:opacity-50 disabled:cursor-not-allowed text-sm"
+    : "w-full bg-gray-50 dark:bg-[#1A1A1F] border border-border dark:border-accent rounded-2xl text-gray-900 dark:text-gray-100 placeholder-muted-foreground focus:ring-2 focus:ring-[#1D8751] focus:border-transparent outline-none transition-colors disabled:opacity-50 disabled:cursor-not-allowed text-sm sm:text-base";
+
   return (
-    <form onSubmit={handleSubmit} className="space-y-6">
+    <form onSubmit={handleSubmit} className={isMarketing ? "space-y-5" : "space-y-6"}>
       {/* Success Message */}
       {success && (
         <div className="bg-[#D1FAE5] dark:bg-[#064E3B] border border-[#10B981] rounded-2xl p-4 flex items-start space-x-3 animate-in fade-in slide-in-from-top-2 duration-300">
@@ -295,82 +310,107 @@ const ContactForm: React.FC<ContactFormProps> = ({ onSuccess, onError }) => {
         </div>
       )}
 
-      {/* Your Name Field */}
-      <div>
-        <label
-          htmlFor="name"
-          className="block text-sm font-medium text-[#344054] dark:text-white mb-2"
-        >
-          Your Name
-        </label>
-        <div className="relative">
-          <User className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-muted-foreground" />
-          <input
-            type="text"
-            id="name"
-            name="name"
-            value={formData.name || ""}
-            onChange={handleInputChange}
-            placeholder="Enter your name"
-            disabled={isSubmitting || isAuthenticated}
-            className="w-full pl-10 pr-4 py-2.5 sm:py-3 bg-gray-50 dark:bg-[#1A1A1F] border border-border dark:border-accent rounded-2xl text-gray-900 dark:text-gray-100 placeholder-muted-foreground focus:ring-2 focus:ring-[#1D8751] focus:border-transparent outline-none transition-colors disabled:opacity-50 disabled:cursor-not-allowed text-sm sm:text-base"
-          />
+      {isMarketing ? (
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-5">
+          <div>
+            <label htmlFor="name" className={labelClass}>
+              Full Name
+            </label>
+            <input
+              type="text"
+              id="name"
+              name="name"
+              value={formData.name || ""}
+              onChange={handleInputChange}
+              placeholder="John Doe"
+              disabled={isSubmitting || isAuthenticated}
+              className={`${inputClass} px-4 py-3`}
+            />
+          </div>
+          <div>
+            <label htmlFor="email_address" className={labelClass}>
+              Email Address
+            </label>
+            <input
+              type="email"
+              id="email_address"
+              name="email_address"
+              value={formData.email_address}
+              onChange={handleInputChange}
+              placeholder="john@example.com"
+              required
+              disabled={isSubmitting || isAuthenticated}
+              className={`${inputClass} px-4 py-3`}
+            />
+          </div>
         </div>
-      </div>
-
-      {/* Email Address Field */}
-      <div>
-        <label
-          htmlFor="email_address"
-          className="block text-sm font-medium text-[#344054] dark:text-white mb-2"
-        >
-          Email Address
-        </label>
-        <div className="relative">
-          <Mail className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-muted-foreground" />
-          <input
-            type="email"
-            id="email_address"
-            name="email_address"
-            value={formData.email_address}
-            onChange={handleInputChange}
-            placeholder="your@email.com"
-            required
-            disabled={isSubmitting || isAuthenticated}
-            className="w-full pl-10 pr-4 py-2.5 sm:py-3 bg-gray-50 dark:bg-[#1A1A1F] border border-border dark:border-accent rounded-2xl text-gray-900 dark:text-gray-100 placeholder-muted-foreground focus:ring-2 focus:ring-[#1D8751] focus:border-transparent outline-none transition-colors disabled:opacity-50 disabled:cursor-not-allowed text-sm sm:text-base"
-          />
-        </div>
-      </div>
+      ) : (
+        <>
+          <div>
+            <label htmlFor="name" className={labelClass}>
+              Your Name
+            </label>
+            <div className="relative">
+              <User className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground" />
+              <input
+                type="text"
+                id="name"
+                name="name"
+                value={formData.name || ""}
+                onChange={handleInputChange}
+                placeholder="Enter your name"
+                disabled={isSubmitting || isAuthenticated}
+                className={`${inputClass} pl-10 pr-4 py-2.5 sm:py-3`}
+              />
+            </div>
+          </div>
+          <div>
+            <label htmlFor="email_address" className={labelClass}>
+              Email Address
+            </label>
+            <div className="relative">
+              <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground" />
+              <input
+                type="email"
+                id="email_address"
+                name="email_address"
+                value={formData.email_address}
+                onChange={handleInputChange}
+                placeholder="your@email.com"
+                required
+                disabled={isSubmitting || isAuthenticated}
+                className={`${inputClass} pl-10 pr-4 py-2.5 sm:py-3`}
+              />
+            </div>
+          </div>
+        </>
+      )}
 
       {/* Subject Field */}
       <div>
-        <label
-          htmlFor="subject"
-          className="block text-sm font-medium text-[#344054] dark:text-white mb-2"
-        >
+        <label htmlFor="subject" className={labelClass}>
           Subject
         </label>
         <div className="relative">
-          <MessageCircle className="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-muted-foreground" />
+          {!isMarketing && (
+            <MessageCircle className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground" />
+          )}
           <input
             type="text"
             id="subject"
             name="subject"
             value={formData.subject || ""}
             onChange={handleInputChange}
-            placeholder="How can we help?"
+            placeholder={isMarketing ? "Subject" : "How can we help?"}
             disabled={isSubmitting}
-            className="w-full pl-10 pr-4 py-2.5 sm:py-3 bg-gray-50 dark:bg-[#1A1A1F] border border-border dark:border-accent rounded-2xl text-gray-900 dark:text-gray-100 placeholder-muted-foreground focus:ring-2 focus:ring-[#1D8751] focus:border-transparent outline-none transition-colors disabled:opacity-50 disabled:cursor-not-allowed text-sm sm:text-base"
+            className={`${inputClass} ${isMarketing ? "px-4 py-3" : "pl-10 pr-4 py-2.5 sm:py-3"}`}
           />
         </div>
       </div>
 
       {/* Message Field */}
       <div>
-        <label
-          htmlFor="question"
-          className="block text-sm font-medium text-[#344054] dark:text-white mb-2"
-        >
+        <label htmlFor="question" className={labelClass}>
           Message
         </label>
         <textarea
@@ -378,20 +418,28 @@ const ContactForm: React.FC<ContactFormProps> = ({ onSuccess, onError }) => {
           name="question"
           value={formData.question}
           onChange={handleInputChange}
-          placeholder="Tell us more about your inquiry..."
-          rows={4}
+          placeholder={
+            isMarketing
+              ? "Please describe your inquiry in detail..."
+              : "Tell us more about your inquiry..."
+          }
+          rows={isMarketing ? 5 : 4}
           required
           disabled={isSubmitting}
-          className="w-full px-3 sm:px-4 py-2.5 sm:py-3 bg-gray-50 dark:bg-[#1A1A1F] border border-border dark:border-accent rounded-2xl text-gray-900 dark:text-gray-100 placeholder-muted-foreground focus:ring-2 focus:ring-[#1D8751] focus:border-transparent outline-none transition-colors resize-none disabled:opacity-50 disabled:cursor-not-allowed text-sm sm:text-base"
+          className={`${inputClass} px-4 py-3 resize-none`}
         />
       </div>
 
       {/* Submit Button */}
-      <div className="pt-2">
+      <div className={isMarketing ? "pt-1" : "pt-2"}>
         <button
           type="submit"
           disabled={isSubmitting}
-          className="w-full bg-[#1D8751] text-white font-medium py-2.5 sm:py-3 px-5 sm:px-6 rounded-xl transition-colors disabled:opacity-50 disabled:cursor-not-allowed hover:bg-[#166b42] flex items-center justify-center gap-2 text-sm sm:text-base"
+          className={`w-full bg-[#1D8751] text-white font-semibold transition-colors disabled:opacity-50 disabled:cursor-not-allowed hover:bg-[#166b42] flex items-center justify-center gap-2 ${
+            isMarketing
+              ? "py-3.5 rounded-xl text-sm"
+              : "py-2.5 sm:py-3 px-5 sm:px-6 rounded-xl text-sm sm:text-base"
+          }`}
         >
           {isSubmitting ? (
             "Sending..."

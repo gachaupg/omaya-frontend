@@ -4,8 +4,8 @@ import { ContactPage } from "@/features/contact/components"
 
 const page = () => {
   return (
-    <div className="bg-gray-50 dark:bg-[var(--bg-color)] min-h-screen w-full pt-16 sm:pt-20 md:pt-24 lg:pt-28 pb-6 sm:pb-8 md:pb-12 lg:pb-16 px-3 sm:px-4 md:px-6 lg:px-6 relative z-0 overflow-x-hidden">
-      <div className="max-w-[1200px] mx-auto w-full">
+    <div className="bg-gray-50 dark:bg-[#0b0b0f] min-h-screen w-full pt-14 sm:pt-16 md:pt-20 lg:pt-20 pb-10 sm:pb-14 md:pb-16 px-3 sm:px-4 md:px-6 lg:px-8 relative z-0 overflow-x-hidden">
+      <div className="max-w-6xl mx-auto w-full">
         <ContactPage />
       </div>
     </div>
