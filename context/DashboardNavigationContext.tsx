@@ -20,6 +20,8 @@ const DashboardNavigationContext =
 
 /** Minimum time the route loader stays visible to avoid flicker. */
 const MIN_NAV_LOADER_MS = 200;
+/** Failsafe timeout to prevent stuck overlay if route doesn't transition. */
+const MAX_NAV_LOADER_MS = 2500;
 
 export function DashboardNavigationProvider({
   children,
@@ -30,6 +32,7 @@ export function DashboardNavigationProvider({
   const [isNavigating, setIsNavigating] = useState(false);
   const navStartedAtRef = useRef<number | null>(null);
   const hideTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const failsafeTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const isInitialPathnameRef = useRef(true);
 
   const clearHideTimer = useCallback(() => {
@@ -39,15 +42,30 @@ export function DashboardNavigationProvider({
     }
   }, []);
 
+  const clearFailsafeTimer = useCallback(() => {
+    if (failsafeTimerRef.current) {
+      clearTimeout(failsafeTimerRef.current);
+      failsafeTimerRef.current = null;
+    }
+  }, []);
+
   const startNavigation = useCallback(() => {
     clearHideTimer();
+    clearFailsafeTimer();
     navStartedAtRef.current = Date.now();
     setIsNavigating(true);
-  }, [clearHideTimer]);
+
+    failsafeTimerRef.current = setTimeout(() => {
+      navStartedAtRef.current = null;
+      setIsNavigating(false);
+      failsafeTimerRef.current = null;
+    }, MAX_NAV_LOADER_MS);
+  }, [clearHideTimer, clearFailsafeTimer]);
 
   const finishNavigation = useCallback(() => {
     const startedAt = navStartedAtRef.current;
     navStartedAtRef.current = null;
+    clearFailsafeTimer();
 
     const elapsed = startedAt ? Date.now() - startedAt : MIN_NAV_LOADER_MS;
     const remaining = Math.max(0, MIN_NAV_LOADER_MS - elapsed);
@@ -57,7 +75,7 @@ export function DashboardNavigationProvider({
       setIsNavigating(false);
       hideTimerRef.current = null;
     }, remaining);
-  }, [clearHideTimer]);
+  }, [clearHideTimer, clearFailsafeTimer]);
 
   useEffect(() => {
     if (isInitialPathnameRef.current) {
@@ -68,7 +86,13 @@ export function DashboardNavigationProvider({
     return clearHideTimer;
   }, [pathname, finishNavigation, clearHideTimer]);
 
-  useEffect(() => () => clearHideTimer(), [clearHideTimer]);
+  useEffect(
+    () => () => {
+      clearHideTimer();
+      clearFailsafeTimer();
+    },
+    [clearHideTimer, clearFailsafeTimer]
+  );
 
   return (
     <DashboardNavigationContext.Provider
