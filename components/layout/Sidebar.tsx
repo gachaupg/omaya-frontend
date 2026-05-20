@@ -105,11 +105,9 @@ export default function Sidebar() {
         router.push(href);
         return false;
       }
-      // If already on the base route, avoid hard reload (it feels like lag).
-      // If you need to "reset" state, prefer a soft refresh.
+      // If already on the base route, do nothing.
+      // Avoid refresh here because no pathname change can leave the transition overlay visible.
       e.preventDefault();
-      beginDashboardNavigation();
-      router.refresh();
       return false;
     }
 
