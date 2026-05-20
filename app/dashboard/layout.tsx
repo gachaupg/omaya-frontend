@@ -10,7 +10,6 @@ import { RootState } from "@/store/rootReducer";
 import React from "react";
 import FrozenAccountModal from "@/components/ui/FrozenAccountModal";
 import { MatchedTradesWebSocketProvider } from "@/features/p2p/components/MatchedTradesWebSocketProvider";
-import { DashboardNavigationProvider } from "@/context/DashboardNavigationContext";
 import DashboardContentArea from "@/components/dashboard/DashboardContentArea";
 
 export default function DashboardLayout({
@@ -47,39 +46,37 @@ export default function DashboardLayout({
 
   return (
     <MatchedTradesWebSocketProvider>
-      <DashboardNavigationProvider>
-        <motion.div className="min-h-screen mt-0 md:mt-8 w-full overflow-x-hidden md:flex bg-gray-50 dark:bg-[var(--bg-color)]">
+      <motion.div className="min-h-screen mt-0 md:mt-8 w-full overflow-x-hidden md:flex bg-gray-50 dark:bg-[var(--bg-color)]">
+        <motion.div
+          initial={{ y: -20, opacity: 0 }}
+          animate={{ y: 0, opacity: 1 }}
+          transition={{ duration: 0.3 }}
+          className="md:hidden sticky top-16 sm:top-20 left-0 right-0 z-50 bg-white dark:bg-[var(--bg-color)]"
+        >
+          <Sidebar />
+        </motion.div>
+
+        <div className="hidden md:block md:w-48 lg:w-56 xl:w-[222.28px] flex-shrink-0" aria-hidden>
           <motion.div
-            initial={{ y: -20, opacity: 0 }}
-            animate={{ y: 0, opacity: 1 }}
+            initial={{ x: -20, opacity: 0 }}
+            animate={{ x: 0, opacity: 1 }}
             transition={{ duration: 0.3 }}
-            className="md:hidden sticky top-16 sm:top-20 left-0 right-0 z-50 bg-white dark:bg-[var(--bg-color)]"
+            className="fixed top-28 left-0 z-50 h-[calc(100vh-7rem)] overflow-y-auto overflow-x-hidden md:w-48 lg:w-56 xl:w-[222.28px] pr-2"
           >
             <Sidebar />
           </motion.div>
+        </div>
 
-          <div className="hidden md:block md:w-48 lg:w-56 xl:w-[222.28px] flex-shrink-0" aria-hidden>
-            <motion.div
-              initial={{ x: -20, opacity: 0 }}
-              animate={{ x: 0, opacity: 1 }}
-              transition={{ duration: 0.3 }}
-              className="fixed top-28 left-0 z-50 h-[calc(100vh-7rem)] overflow-y-auto overflow-x-hidden md:w-48 lg:w-56 xl:w-[222.28px] pr-2"
-            >
-              <Sidebar />
-            </motion.div>
-          </div>
+        <div className="flex-1 w-full h-full max-w-full overflow-x-hidden box-border bg-gray-50 dark:bg-[var(--bg-color)]">
+          <DashboardContentArea>{children}</DashboardContentArea>
+        </div>
 
-          <div className="flex-1 w-full h-full max-w-full overflow-x-hidden box-border bg-gray-50 dark:bg-[var(--bg-color)]">
-            <DashboardContentArea>{children}</DashboardContentArea>
-          </div>
-
-          <KYCVerificationModal />
-          <FrozenAccountModal
-            isOpen={showFrozenModal}
-            onClose={() => setShowFrozenModal(false)}
-          />
-        </motion.div>
-      </DashboardNavigationProvider>
+        <KYCVerificationModal />
+        <FrozenAccountModal
+          isOpen={showFrozenModal}
+          onClose={() => setShowFrozenModal(false)}
+        />
+      </motion.div>
     </MatchedTradesWebSocketProvider>
   );
 }

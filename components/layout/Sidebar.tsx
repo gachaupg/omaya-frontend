@@ -26,7 +26,6 @@ import { RootState } from "@/store/rootReducer";
 import { AppDispatch } from "@/store";
 import { openKYCModal } from "@/features/auth/slices/authSlice";
 import FrozenAccountModal from "@/components/ui/FrozenAccountModal";
-import { useDashboardNavigationOptional } from "@/context/DashboardNavigationContext";
 
 export default function Sidebar() {
   const pathname = usePathname();
@@ -43,7 +42,6 @@ export default function Sidebar() {
 
   const { isDark } = useTheme();
   const [showFrozenModal, setShowFrozenModal] = React.useState(false);
-  const dashboardNav = useDashboardNavigationOptional();
   const isFrozenUser = isAuthenticated && user?.freeze === true;
   const isFrozenBlockedHref = (href: string) => {
     const normalized = href.replace(/\/$/, "");
@@ -53,10 +51,6 @@ export default function Sidebar() {
       normalized === "/dashboard/swap" ||
       normalized === "/dashboard/express-exchange"
     );
-  };
-
-  const beginDashboardNavigation = () => {
-    dashboardNav?.startNavigation();
   };
 
   const handleNavClick = (e: React.MouseEvent<HTMLAnchorElement>, href: string) => {
@@ -101,7 +95,6 @@ export default function Sidebar() {
       if (normalizedPathname !== normalizedHref) {
         // We're on a sub-route, navigate to the base route
         e.preventDefault();
-        beginDashboardNavigation();
         router.push(href);
         return false;
       }
@@ -109,10 +102,6 @@ export default function Sidebar() {
       // Avoid refresh here because no pathname change can leave the transition overlay visible.
       e.preventDefault();
       return false;
-    }
-
-    if (normalizedHref !== normalizedPathname) {
-      beginDashboardNavigation();
     }
 
     // Let Next.js / Link handle SPA navigation normally (no forced full reload here)
