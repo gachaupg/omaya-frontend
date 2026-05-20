@@ -31,6 +31,7 @@ import { useBookmarkedAddresses } from "@/features/express/hooks/useBookmarkedAd
 import { BookmarkDropdown } from "@/features/express/components/forms/BookmarkDropdown";
 import { useValidateAddress } from "@/hooks/useValidateAddress";
 import { showToast } from "@/lib/utils/toast";
+import { reportAssetLoadIssue } from "@/lib/utils/assetLoadNotice";
 import { createExpressDeposit, fetchCommission, getCommissionApiAsset, fetchDepositStatus } from "../../api";
 import { ExpressDepositResponse } from "../../types";
 
@@ -758,7 +759,7 @@ export default function DepositForm({
         console.error("Failed to fetch assets from cache, trying force refresh:", error);
         return withTimeout(dispatch(fetchAssets(true)).unwrap(), 15_000).catch(
           (refreshError: unknown) => {
-            showToast.error(`Failed to fetch assets: ${refreshError}`);
+            reportAssetLoadIssue("p2p-express-deposit:exchange-assets", refreshError);
             throw refreshError;
           }
         );
@@ -835,12 +836,11 @@ export default function DepositForm({
             // Only show error if it's a network issue, not cache issues
             if (refreshError instanceof Error) {
               if (refreshError.message.includes("Network Error") || refreshError.message.includes("Network connection issue")) {
-                showToast.warning("Network Issue", "Unable to fetch assets due to network problems. Using fallback data.");
-              } else if (refreshError.message.includes("Server Error")) {
-                showToast.error("Server Error", "Unable to fetch assets from server. Please try again later.");
+                showToast.warning("Network issue", "Asset list may be incomplete. You can still continue if options appear.");
               } else if (!refreshError.message.includes("Cache")) {
-                // Only show error if it's not a cache-related issue
-                showToast.error("Asset Loading Error", `Failed to fetch swap assets: ${refreshError.message}`);
+                reportAssetLoadIssue("p2p-express-deposit:swap-assets", refreshError, {
+                  title: "Could not load swap assets",
+                });
               }
             }
 

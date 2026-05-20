@@ -25,6 +25,7 @@ import {
 } from "../../../swap/slices/swapSlice";
 import { validateWalletAddress } from "@/lib/addressValidaion";
 import { showToast } from "@/lib/utils/toast";
+import { reportAssetLoadIssue } from "@/lib/utils/assetLoadNotice";
 import { DepositResponse } from "../../../exchange/types";
 import { SupportedAsset } from "../../../swap/types";
 import { FaSearch } from "react-icons/fa";
@@ -1342,7 +1343,7 @@ export default function WithdrawalForm({
         if (assetsRetryCount + 1 >= MAX_RETRIES) {
           // Only toast if we truly have no assets in state.
           if (!isHomePage && (!assets || assets.length === 0)) {
-            showToast.error(`Failed to fetch assets after ${MAX_RETRIES} attempts`);
+            reportAssetLoadIssue("express-withdrawal:exchange-assets", error);
           }
           setHasFetchedAssets(true);
         }
