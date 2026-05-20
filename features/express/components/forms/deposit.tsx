@@ -23,6 +23,7 @@ import {
 } from "../../../swap/slices/swapSlice";
 
 import { showToast } from "../../../../lib/utils/toast";
+import { reportAssetLoadIssue } from "@/lib/utils/assetLoadNotice";
 import { DepositResponse } from "../../../exchange/types";
 import { SupportedAsset } from "../../../swap/types";
 import { FaSearch } from "react-icons/fa";
@@ -1264,7 +1265,7 @@ export default function DepositForm({
         }
         return withTimeout(dispatch(fetchAssets(true)).unwrap(), 15_000).catch(
           (refreshError: unknown) => {
-            showToast.error(`Failed to fetch assets: ${refreshError}`);
+            reportAssetLoadIssue("express-deposit:exchange-assets", refreshError);
             throw refreshError;
           }
         );
@@ -1314,17 +1315,10 @@ export default function DepositForm({
                   "Network Issue",
                   "Unable to fetch assets due to network problems. Using fallback data."
                 );
-              } else if (refreshError.message.includes("Server Error")) {
-                showToast.error(
-                  "Server Error",
-                  "Unable to fetch assets from server. Please try again later."
-                );
               } else if (!refreshError.message.includes("Cache")) {
-                // Only show error if it's not a cache-related issue
-                showToast.error(
-                  "Asset Loading Error",
-                  `Failed to fetch swap assets: ${refreshError.message}`
-                );
+                reportAssetLoadIssue("express-deposit:swap-assets", refreshError, {
+                  title: "Could not load swap assets",
+                });
               }
             }
 

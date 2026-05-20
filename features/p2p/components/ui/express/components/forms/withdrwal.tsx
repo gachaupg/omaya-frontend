@@ -36,6 +36,7 @@ import { useExpressI18n } from "@/lib/useExpressI18n";
 import { useTheme } from "@/context/theme";
 import { ExpressP2PWithdrawalTermsPanel } from "@/features/express/components/legal/ExpressP2PWithdrawalTermsPanel";
 import { selectP2PWalletAmounts, selectTransactionSummary } from "@/features/p2p/selectors";
+import { reportAssetLoadIssue } from "@/lib/utils/assetLoadNotice";
 
 const formatUnknownError = (error: unknown): string => {
   if (!error) return "Unknown error";
@@ -623,7 +624,7 @@ export default function WithdrawalForm({
       .catch((error: unknown) => {
         // Redux Toolkit condition aborts are expected; don't show as errors.
         if (isConditionAbortError(error)) return;
-        showToast.error(`Failed to fetch assets: ${formatUnknownError(error)}`);
+        reportAssetLoadIssue("p2p-express-withdrawal:exchange-assets", error);
       });
   }, [dispatch]);
 
@@ -656,7 +657,9 @@ export default function WithdrawalForm({
           (error.message.includes("Network") ||
             error.message.includes("Server"))
         ) {
-          showToast.error(`Failed to fetch swap assets: ${error.message}`);
+          reportAssetLoadIssue("p2p-express-withdrawal:swap-assets", error, {
+            title: "Could not load swap assets",
+          });
         }
       });
   }, [dispatch]);

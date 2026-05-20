@@ -277,15 +277,15 @@ const MarketTable: React.FC<MarketTableProps> = ({
                       return (
                         <span
                           key={i}
-                          className="flex items-center gap-2 text-base font-medium text-gray-900 dark:text-white w-1/2"
+                          className="flex items-center gap-1.5 text-sm font-medium text-gray-900 dark:text-white w-1/2"
                         >
                           <img
                             src={imageUrl}
                             alt={method.provider || ''}
-                            className="w-6 h-6 rounded object-contain shrink-0"
+                            className="w-5 h-5 rounded-full object-cover shrink-0"
                             style={{
-                              width: '24px',
-                              height: '24px',
+                              width: '20px',
+                              height: '20px',
                               display: 'block'
                             }}
                             loading="lazy"
@@ -301,7 +301,7 @@ const MarketTable: React.FC<MarketTableProps> = ({
                     })}
                     {/* Show +X only when row is NOT expanded */}
                     {selectedRowIndex !== idx && row.payment_details && row.payment_details.length > 2 && (
-                      <span className="text-xs font-semibold text-muted-foreground bg-gray-100 dark:bg-accent px-2 py-1 rounded">
+                      <span className="text-[11px] font-semibold text-muted-foreground bg-gray-100 dark:bg-accent px-2 py-0.5 rounded-full">
                         +{row.payment_details.length - 2}
                       </span>
                     )}
@@ -413,15 +413,15 @@ const MarketTable: React.FC<MarketTableProps> = ({
                         return (
                           <span
                             key={i}
-                            className="flex items-center gap-2 text-sm font-medium text-gray-900 dark:text-white"
+                            className="flex items-center gap-1.5 text-xs font-medium text-gray-900 dark:text-white"
                           >
                             <img
                               src={imageUrl}
                               alt={method.provider || ''}
-                              className="w-5 h-5 rounded object-contain shrink-0"
+                              className="w-4 h-4 rounded-full object-cover shrink-0"
                               style={{
-                                width: '20px',
-                                height: '20px',
+                                width: '16px',
+                                height: '16px',
                                 display: 'block'
                               }}
                               loading="lazy"
