@@ -636,14 +636,14 @@ const Merchant = () => {
           )}
 
           {error && (
-            <div className="mb-4 p-4 bg-red-900/20 border border-red-500 rounded-lg">
+            <div className="mb-4 p-4 bg-red-50 dark:bg-red-900/20 border border-red-300 dark:border-red-500 rounded-lg">
               <div className="flex items-start gap-3">
-                <svg className="w-5 h-5 text-red-400 mt-0.5 flex-shrink-0" fill="currentColor" viewBox="0 0 24 24">
+                <svg className="w-5 h-5 text-red-600 dark:text-red-400 mt-0.5 flex-shrink-0" fill="currentColor" viewBox="0 0 24 24">
                   <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z" />
                 </svg>
                 <div className="flex-1">
-                  <p className="text-red-400 font-medium mb-2">Application Failed</p>
-                  <div className="text-red-300 text-sm">
+                  <p className="text-red-800 dark:text-red-400 font-medium mb-2">Application Failed</p>
+                  <div className="text-red-700 dark:text-red-300 text-sm">
                     {typeof error === 'string' ? (
                       <p>{error}</p>
                     ) : error?.detail ? (
@@ -668,22 +668,25 @@ const Merchant = () => {
         </div>
 
         {/* Action Buttons */}
-        <div className="flex justify-center gap-4 pl-6 pr-6 mb-8">
+        <div className="flex justify-center gap-4 pl-6 pr-6 mb-12">
           <button
             onClick={handleCancel}
-            className="px-8 py-3 border border-gray-300 dark:border-[#4B5563] bg-gray-100 dark:bg-[#2A2F40] text-gray-800 dark:text-gray-100 rounded-lg hover:bg-gray-200 dark:hover:bg-[#35353E] transition-all duration-200 font-medium"
+            className="min-w-[140px] px-12 py-3 border border-gray-300 dark:border-[#4B5563] bg-gray-100 dark:bg-[#2A2F40] text-gray-800 dark:text-gray-100 rounded-lg hover:bg-gray-200 dark:hover:bg-[#35353E] transition-all duration-200 font-medium"
           >
             Cancel
           </button>
           <button
             onClick={handleSubmit}
             disabled={loading || (!!showStatusBanner && status?.status !== 'rejected')}
-            className="px-8 py-3 bg-[#1D8751] text-white rounded-lg hover:bg-[#1D8851]/90 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed font-medium"
+            className="min-w-[140px] px-12 py-3 bg-[#1D8751] text-white rounded-lg hover:bg-[#1D8851]/90 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed font-medium"
           >
             {loading ? 'Submitting...' : showStatusBanner && status?.status !== 'rejected' ? 'Already Submitted' : 'Submit'}
           </button>
         </div>
+
       </div>
+      <div className="flex mt-7 items-center gap-2"></div>
+
     </div>
   )
 }
