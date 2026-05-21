@@ -66,6 +66,7 @@ const MAX_LOG_JSON_LEN = 8000;
 const SENSITIVE_REQUEST_KEYS = new Set([
   "password",
   "current_password",
+  "old_password",
   "new_password",
   "confirm_password",
   "otp",

@@ -12,6 +12,7 @@ import {
   PrivacySettings,
   ProfileUpdateRequest,
   PasswordChangeRequest,
+  PasswordResetOtpVerifyRequest,
   SessionInfo,
   DeviceSession,
   CreateDeviceSessionPayload,
@@ -19,6 +20,7 @@ import {
 } from "../types";
 import { showToast } from "@/lib/utils/toast";
 import { updateUser } from "@/features/auth/slices/authSlice";
+import { RootState } from "@/store/rootReducer";
 
 import { logger } from '@/lib/utils/logger';
 
@@ -201,6 +203,12 @@ export const changePassword = createAsyncThunk(
       showToast.error(error.message || "Failed to change password");
       return rejectWithValue(error.message || "Failed to change password");
     }
+  },
+  {
+    condition: (_, { getState }) => {
+      const { updating } = (getState() as RootState).settings;
+      return !updating;
+    },
   }
 );
 
@@ -223,23 +231,30 @@ export const resetPassword = createAsyncThunk(
 
 export const sendPasswordResetOTP = createAsyncThunk(
   "settings/sendPasswordResetOTP",
-  async (_, { rejectWithValue }) => {
+  async (data: PasswordChangeRequest, { rejectWithValue }) => {
     try {
-      const response = await settingsApi.sendPasswordResetOTP();
+      const response = await settingsApi.sendPasswordResetOTP(data);
       // No toast here - PasswordSection shows it to avoid duplicate toasts
       return response;
     } catch (error: any) {
-      showToast.error(error.message || "Failed to send OTP");
-      return rejectWithValue(error.message || "Failed to send OTP");
+      let errorMessage = "Failed to send OTP";
+      if (error?.response?.data?.error) {
+        errorMessage = error.response.data.error;
+      } else if (error?.response?.data?.message) {
+        errorMessage = error.response.data.message;
+      } else if (error?.message) {
+        errorMessage = error.message;
+      }
+      return rejectWithValue(errorMessage);
     }
   }
 );
 
 export const verifyPasswordResetOTP = createAsyncThunk(
   "settings/verifyPasswordResetOTP",
-  async (otp: string, { rejectWithValue }) => {
+  async (data: PasswordResetOtpVerifyRequest, { rejectWithValue }) => {
     try {
-      const response = await settingsApi.verifyPasswordResetOTP(otp);
+      const response = await settingsApi.verifyPasswordResetOTP(data);
       if (response.otp_verified) {
         // No toast here - PasswordSection shows "OTP Verified" inline to avoid duplicate toasts
       } else {
@@ -267,13 +282,9 @@ export const verifyPasswordResetOTP = createAsyncThunk(
 
 export const changePasswordWithOTP = createAsyncThunk(
   "settings/changePasswordWithOTP",
-  async (
-    data: { new_password: string; confirm_password: string },
-    { rejectWithValue }
-  ) => {
+  async (data: PasswordChangeRequest, { rejectWithValue }) => {
     try {
       const response = await settingsApi.changePasswordWithOTP(data);
-      showToast.success(response.message || "Password changed successfully");
       return response;
     } catch (error: any) {
       // Extract backend error message - prioritize error field, then message, then default
@@ -305,6 +316,12 @@ export const changePasswordWithOTP = createAsyncThunk(
       // No toast here - PasswordSection handles error display to avoid duplicate toasts
       return rejectWithValue(errorMessage);
     }
+  },
+  {
+    condition: (_, { getState }) => {
+      const { updating } = (getState() as RootState).settings;
+      return !updating;
+    },
   }
 );
 
