@@ -500,18 +500,20 @@ export default function Navbar() {
       href: "/dashboard/express-exchange",
       icon: "/assets/Vector_2_xauedx.png",
       title: (
-        <span className="flex items-center gap-0.5">
-          <span>E</span>
-          <img
-            className="mt-2 block dark:hidden"
-            src="/images/Group_9_momvgo.png"
-            alt=""
-          />
-          <img
-            className="mt-2 hidden dark:block"
-            src="/images/Group_5_gkxzdz.png"
-            alt=""
-          />
+        <span className="flex items-start font-bold uppercase leading-none">
+          E
+          <span className="inline-flex shrink-0 mt-[2px]">
+            <img
+              src="/images/Group_9_momvgo.png"
+              alt="XCHANGE"
+              className="h-5 w-auto object-contain object-top dark:hidden block"
+            />
+            <img
+              src="/images/Group_5_gkxzdz.png"
+              alt="XCHANGE"
+              className="h-5 w-auto object-contain object-top hidden dark:block"
+            />
+          </span>
         </span>
       ),
       description: "Trade cryptocurrencies on the exchange with advanced tools and features for optimal transactions",
@@ -1169,7 +1171,7 @@ export default function Navbar() {
                                 <h4 className="dark:text-white flex flex-row items-center text-[#727272] font-semibold text-sm sm:text-base mb-0.5">
                                   {item.title}
                                 </h4>
-                                <p className="dark:text-gray-400 text-gray-500 text-xs leading-relaxed line-clamp-2">
+                                <p className="dark:text-gray-400 text-gray-500 text-xs leading-relaxed">
                                   {item.description}
                                 </p>
                               </div>
@@ -1554,7 +1556,7 @@ export default function Navbar() {
                                   <h4 className="dark:text-white flex flex-row items-center text-gray-900 font-medium text-sm sm:text-base mb-0.5 sm:mb-1">
                                     {item.title}
                                   </h4>
-                                  <p className="dark:text-gray-400 text-gray-600 text-xs sm:text-sm leading-relaxed line-clamp-2">
+                                  <p className="dark:text-gray-400 text-gray-600 text-xs sm:text-sm leading-relaxed">
                                     {item.description}
                                   </p>
                                 </div>

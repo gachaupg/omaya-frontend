@@ -47,9 +47,12 @@ export interface PrivacySettings {
 }
 
 export interface PasswordChangeRequest {
-  current_password: string;
+  old_password: string;
   new_password: string;
-  confirm_password: string;
+}
+
+export interface PasswordResetOtpVerifyRequest extends PasswordChangeRequest {
+  otp: string;
 }
 
 export interface ProfileUpdateRequest {

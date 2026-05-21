@@ -3,6 +3,7 @@ import { withRetry } from "@/lib/utils/retry";
 import {
   ProfileUpdateRequest,
   PasswordChangeRequest,
+  PasswordResetOtpVerifyRequest,
   ThemeSettings,
   SecuritySettings,
   PrivacySettings,
@@ -119,29 +120,32 @@ export const settingsApi = {
   },
 
   // Password Reset with OTP
-  sendPasswordResetOTP: async (): Promise<{ message: string; masked_email?: string }> => {
+  sendPasswordResetOTP: async (
+    data: PasswordChangeRequest
+  ): Promise<{ message: string; masked_email?: string }> => {
     return withRetry(async () => {
       const response = await apiClient.post(
-        `${SETTINGS_API_BASE}/password-reset/send-otp/`
+        `${SETTINGS_API_BASE}/password-reset/send-otp/`,
+        data
       );
       return response.data;
     });
   },
 
   verifyPasswordResetOTP: async (
-    otp: string
+    data: PasswordResetOtpVerifyRequest
   ): Promise<{ otp_verified: boolean; message?: string }> => {
     return withRetry(async () => {
       const response = await apiClient.post(
         `${SETTINGS_API_BASE}/password-reset/verify-otp/`,
-        { otp }
+        data
       );
       return response.data;
     });
   },
 
   changePasswordWithOTP: async (
-    data: { new_password: string; confirm_password: string }
+    data: PasswordChangeRequest
   ): Promise<{ message: string }> => {
     return withRetry(async () => {
       const response = await apiClient.post(
