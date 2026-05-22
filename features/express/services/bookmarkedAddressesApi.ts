@@ -157,11 +157,8 @@ export function normalizeBookmarkedAddress(
   ).trim();
   if (!address) return null;
 
-  const walletId = record.user_wallet_address_id;
   const idRaw =
-    walletId != null && String(walletId).trim()
-      ? walletId
-      : record.id ?? record.bookmark_id ?? record.pk;
+    record.id ?? record.bookmark_id ?? record.pk ?? record.user_wallet_address_id;
   const id =
     idRaw != null && String(idRaw).trim()
       ? String(idRaw)
@@ -221,8 +218,8 @@ export const bookmarkedAddressesApi = {
     throw new Error("Invalid response when saving bookmarked address");
   },
 
-  /** DELETE /payments/user-wallet-addresses/{user_wallet_address_id}/ */
-  delete: async (userWalletAddressId: string): Promise<void> => {
-    await del(API_CONFIG.PAYMENTS.USER_WALLET_ADDRESS(userWalletAddressId));
+  /** DELETE /api/wallet/bookmarked-addresses/{id}/ */
+  delete: async (bookmarkId: string): Promise<void> => {
+    await del(API_CONFIG.WALLET.BOOKMARKED_ADDRESS(bookmarkId));
   },
 };
