@@ -821,6 +821,7 @@ export default function DepositForm({
     saving: bookmarkSaving,
     fetchBookmarks,
     saveBookmark,
+    deleteBookmark,
     saveBookmarkError,
     clearSaveBookmarkError,
   } = useBookmarkedAddresses(currentCurrency, currentNetwork || undefined);
@@ -1065,7 +1066,14 @@ export default function DepositForm({
       .list()
       .then((list) => {
         const pairs = Array.from(
-          new Map(list.map((b) => [`${b.asset.toLowerCase()}|${b.network.toLowerCase()}`, { asset: b.asset, network: b.network }])).values()
+          new Map(
+            list
+              .filter((b) => b.asset && b.network)
+              .map((b) => [
+                `${String(b.asset).toLowerCase()}|${String(b.network).toLowerCase()}`,
+                { asset: b.asset, network: b.network },
+              ])
+          ).values()
         );
         setWhitelistBookmarks(pairs);
       })
@@ -5174,18 +5182,23 @@ export default function DepositForm({
                       else resetAddressValidation();
                     }}
                     onSaveCurrent={async (label) => {
-                      if (!walletAddress.trim() || !currentCurrency || !currentNetwork) {
-                        showToast.error("Enter address and select asset/network first");
-                        return;
+                      try {
+                        if (!walletAddress.trim() || !currentCurrency || !currentNetwork) {
+                          showToast.error("Enter address and select asset/network first");
+                          return;
+                        }
+                        await saveBookmark({
+                          address: walletAddress.trim(),
+                          label,
+                          network: currentNetwork,
+                          asset: currentCurrency,
+                        });
+                      } catch {
+                        // handled by useBookmarkedAddresses
                       }
-                      await saveBookmark({
-                        address: walletAddress.trim(),
-                        label,
-                        network: currentNetwork,
-                        asset: currentCurrency,
-                      });
                     }}
                     saveError={saveBookmarkError}
+                    onDelete={(b) => deleteBookmark(b.id)}
                     anchorRef={bookmarkAnchorRef}
                     isDark={isDark}
                     saveDisabled={isAddressValidating || !(addressValidationResult?.isValid)}

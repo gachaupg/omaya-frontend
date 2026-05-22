@@ -10,6 +10,8 @@ import {
   buildExpressRedirectPath,
   setAuthRedirectPath,
 } from "@/lib/utils/authRedirect";
+import { useScrollAppToTopWhen } from "@/hooks/useScrollAppToTopWhen";
+import { scrollAppToTop } from "@/lib/utils/scrollAppToTop";
 
 interface ExpressProps {
   isHomePage?: boolean;
@@ -50,6 +52,7 @@ const Express = ({ isHomePage = false }: ExpressProps) => {
       if (!parsed?.transactionId) return;
       setTransactionData(parsed);
       setShowExchanging(true);
+      scrollAppToTop();
       if (parsed.type === "deposit" || parsed.type === "withdrawal") {
         setCurrentMode(parsed.type);
       }
@@ -58,6 +61,8 @@ const Express = ({ isHomePage = false }: ExpressProps) => {
       /* ignore */
     }
   }, [searchParams, router]);
+
+  useScrollAppToTopWhen(showExchanging && !!transactionData);
 
   const handleModeToggle = () => {
     // If on home page and not authenticated, navigate to login
@@ -109,6 +114,7 @@ const Express = ({ isHomePage = false }: ExpressProps) => {
           onExchange={(data) => {
             setTransactionData(data);
             setShowExchanging(true);
+            scrollAppToTop();
           }}
           initialMode={currentMode}
           isHomePage={isHomePage}

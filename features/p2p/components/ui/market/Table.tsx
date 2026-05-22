@@ -5,7 +5,7 @@ import { ThumbsUp } from "lucide-react";
 import { TiArrowUnsorted } from "react-icons/ti";
 import { MarketTableProps } from "./types";
 import TradePreview from "./sections/tradePreview";
-import { UserStatusBadge } from "./sections/UserStatusBadge";
+import { PresenceIndicator } from "./sections/UserStatusBadge";
 import Loader from "../../Common/Loader";
 import Image from "next/image";
 
@@ -152,15 +152,12 @@ const MarketTable: React.FC<MarketTableProps> = ({
       <div className="overflow-x-auto rounded-2xl">
         <div className="min-w-0 md:min-w-[920px] w-full overflow-hidden border bg-white border-gray-200 rounded-2xl dark:bg-[var(--card-color)] dark:border-[#35353E]">
           {/* ---------------- Desktop header row ---------------- */}
-          <div className="hidden md:grid grid-cols-6 py-3 px-4 border-b bg-gray-50 border-gray-200 text-xs font-semibold text-gray-500 dark:bg-[#35353E] dark:border-[#35353E] dark:text-[#788099]">
+          <div className="hidden md:grid grid-cols-5 py-3 px-4 border-b bg-gray-50 border-gray-200 text-xs font-semibold text-gray-500 dark:bg-[#35353E] dark:border-[#35353E] dark:text-[#788099]">
             <div
               className="min-w-[200px] flex items-center cursor-pointer hover:text-gray-700 dark:hover:text-gray-300"
               onClick={() => handleSort("advertiser")}
             >
               Advertiser {getSortIcon("advertiser")}
-            </div>
-            <div className="min-w-[100px] flex items-center justify-center">
-              Status
             </div>
             <div
               className="min-w-[120px] flex items-center cursor-pointer hover:text-gray-700 dark:hover:text-gray-300"
@@ -203,26 +200,28 @@ const MarketTable: React.FC<MarketTableProps> = ({
             filteredData.map((row, idx) => (
               <React.Fragment key={row.id ?? `row-${idx}`}>
                 {/* Desktop Grid View */}
-                <div className="hidden md:grid grid-cols-6 items-center py-4 px-4 border-b last:border-b-0 bg-white hover:bg-gray-50 border-gray-200 dark:bg-[var(--card-color)] dark:hover:bg-[#2d2d36] dark:border-[#35353E]">
+                <div className="hidden md:grid grid-cols-5 items-center py-4 px-4 border-b last:border-b-0 bg-white hover:bg-gray-50 border-gray-200 dark:bg-[var(--card-color)] dark:hover:bg-[#2d2d36] dark:border-[#35353E]">
                   {/* Advertiser */}
                   <div className="flex flex-col gap-1 min-w-[200px]">
                     <div className="flex items-center gap-2">
-                      {row.advertiser_photo ? (
-                        <img
-                          src={row.advertiser_photo}
-                          alt={row.advertiser}
-                          className="w-10 h-10 rounded-full object-cover cursor-pointer hover:opacity-80 transition-opacity bg-[#1D8751]"
-                          onClick={() => handleImageClick(row.advertiser_photo, row.advertiser)}
-                          onError={(e) => {
-                            // Hide image and show fallback
-                            (e.target as HTMLImageElement).style.display = 'none';
-                            (e.target as HTMLImageElement).nextElementSibling?.classList.remove('hidden');
-                          }}
-                        />
-                      ) : null}
-                      <span className={`bg-[#1D8751] text-white h-10 w-10 rounded-[10px] text-xs font-bold flex items-center justify-center ${row.advertiser_photo ? 'hidden' : ''}`}>
-                        {row.advertiserInitials}
-                      </span>
+                      <div className="relative shrink-0">
+                        {row.advertiser_photo ? (
+                          <img
+                            src={row.advertiser_photo}
+                            alt={row.advertiser}
+                            className="w-10 h-10 rounded-full object-cover cursor-pointer hover:opacity-80 transition-opacity bg-[#1D8751]"
+                            onClick={() => handleImageClick(row.advertiser_photo, row.advertiser)}
+                            onError={(e) => {
+                              (e.target as HTMLImageElement).style.display = 'none';
+                              (e.target as HTMLImageElement).nextElementSibling?.classList.remove('hidden');
+                            }}
+                          />
+                        ) : null}
+                        <span className={`bg-[#1D8751] text-white h-10 w-10 rounded-[10px] text-xs font-bold flex items-center justify-center ${row.advertiser_photo ? 'hidden' : ''}`}>
+                          {row.advertiserInitials}
+                        </span>
+                        <PresenceIndicator isOnline={row.online} />
+                      </div>
                       <span className="font-medium flex items-center text-sm text-gray-900 dark:text-[#E4E4E6]">
                         {row.advertiser}
                         <FaCheckCircle className="text-[#FFD600] ml-1" />
@@ -242,10 +241,6 @@ const MarketTable: React.FC<MarketTableProps> = ({
                         <FaRegClock className="text-xs" /> {row.timeLimit || "—"}
                       </span>
                     </div>
-                  </div>
-                  {/* Advertiser online / offline */}
-                  <div className="min-w-[100px] flex items-center justify-center">
-                    <UserStatusBadge isLive={row.online} variant="presence" />
                   </div>
                   {/* Commission */}
                   <div className="text-sm font-semibold ml-7 text-gray-900 dark:text-[#E4E4E6] min-w-[120px]">
@@ -328,22 +323,24 @@ const MarketTable: React.FC<MarketTableProps> = ({
                 <div className="md:hidden flex flex-col gap-2 sm:gap-3 p-2 sm:p-3 md:p-4 border-b last:border-b-0 bg-white hover:bg-gray-50 border-gray-200 dark:bg-[var(--card-color)] dark:hover:bg-[#2d2d36] dark:border-[#35353E]">
                   {/* Advertiser Section */}
                   <div className="flex items-center gap-2 pb-2 border-b border-gray-200 dark:border-accent">
-                    {row.advertiser_photo ? (
-                      <img
-                        src={row.advertiser_photo}
-                        alt={row.advertiser}
-                        className="w-10 h-10 rounded-full object-cover cursor-pointer hover:opacity-80 transition-opacity bg-[#1D8751]"
-                        onClick={() => handleImageClick(row.advertiser_photo, row.advertiser)}
-                        onError={(e) => {
-                          // Hide image and show fallback
-                          (e.target as HTMLImageElement).style.display = 'none';
-                          (e.target as HTMLImageElement).nextElementSibling?.classList.remove('hidden');
-                        }}
-                      />
-                    ) : null}
-                    <span className={`bg-[#1D8751] text-white h-10 w-10 rounded-[10px] text-xs font-bold flex items-center justify-center ${row.advertiser_photo ? 'hidden' : ''}`}>
-                      {row.advertiserInitials}
-                    </span>
+                    <div className="relative shrink-0">
+                      {row.advertiser_photo ? (
+                        <img
+                          src={row.advertiser_photo}
+                          alt={row.advertiser}
+                          className="w-10 h-10 rounded-full object-cover cursor-pointer hover:opacity-80 transition-opacity bg-[#1D8751]"
+                          onClick={() => handleImageClick(row.advertiser_photo, row.advertiser)}
+                          onError={(e) => {
+                            (e.target as HTMLImageElement).style.display = 'none';
+                            (e.target as HTMLImageElement).nextElementSibling?.classList.remove('hidden');
+                          }}
+                        />
+                      ) : null}
+                      <span className={`bg-[#1D8751] text-white h-10 w-10 rounded-[10px] text-xs font-bold flex items-center justify-center ${row.advertiser_photo ? 'hidden' : ''}`}>
+                        {row.advertiserInitials}
+                      </span>
+                      <PresenceIndicator isOnline={row.online} />
+                    </div>
                     <div className="flex-1">
                       <div className="flex items-center gap-1">
                         <span className="font-medium text-sm text-gray-900 dark:text-[#E4E4E6]">
@@ -353,9 +350,6 @@ const MarketTable: React.FC<MarketTableProps> = ({
                       </div>
                       <div className="text-xs text-gray-400 dark:text-[#8C8CA1] mt-0.5">
                         <span className="text-[#1D8751]">{row.orders}</span> Orders | <span className="text-[#1D8751]">{row.completion}</span> Completion
-                      </div>
-                      <div className="mt-1">
-                        <UserStatusBadge isLive={row.online} variant="presence" />
                       </div>
                     </div>
                   </div>

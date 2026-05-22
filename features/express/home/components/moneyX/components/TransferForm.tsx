@@ -389,6 +389,7 @@ export default function TransferForm({ isHomePage = false, onTransfer, commissio
     saving: bookmarkSaving,
     fetchBookmarks,
     saveBookmark,
+    deleteBookmark,
     saveBookmarkError,
     clearSaveBookmarkError,
   } = useBookmarkedAddresses(currentBankAsset || "BANK", "BANK");
@@ -1495,6 +1496,7 @@ export default function TransferForm({ isHomePage = false, onTransfer, commissio
                   }}
                   labelKind="account"
                   saveError={saveBookmarkError}
+                  onDelete={(b) => deleteBookmark(b.id)}
                   anchorRef={bookmarkAnchorRef}
                   isDark={isDark}
                   saveDisabled={!!bankAddressError}

@@ -7,6 +7,7 @@ import {
   CreateBookmarkPayload,
   getBookmarkApiErrorMessage,
   isBookmarkAuthError,
+  normalizeBookmarkedAddress,
 } from "../services/bookmarkedAddressesApi";
 import { showToast } from "@/lib/utils/toast";
 
@@ -60,7 +61,9 @@ export function useBookmarkedAddresses(asset?: string, network?: string) {
     setSaveBookmarkError(null);
     try {
       const created = await bookmarkedAddressesApi.create(payload);
-      setBookmarks((prev) => [created, ...prev]);
+      const normalized =
+        normalizeBookmarkedAddress(created, payload) ?? created;
+      setBookmarks((prev) => [normalized, ...prev]);
       setSaveBookmarkError(null);
       showToast.success("Address saved to bookmarks");
       return created;
@@ -79,11 +82,11 @@ export function useBookmarkedAddresses(asset?: string, network?: string) {
     }
   }, []);
 
-  const deleteBookmark = useCallback(async (bookmarkId: string) => {
+  const deleteBookmark = useCallback(async (userWalletAddressId: string) => {
     try {
-      await bookmarkedAddressesApi.delete(bookmarkId);
-      setBookmarks((prev) => prev.filter((b) => b.id !== bookmarkId));
-      showToast.success("Bookmark removed");
+      await bookmarkedAddressesApi.delete(userWalletAddressId);
+      setBookmarks((prev) => prev.filter((b) => b.id !== userWalletAddressId));
+      showToast.success("Address removed from whitelist");
     } catch (err: unknown) {
       if (isBookmarkAuthError(err)) {
         return;

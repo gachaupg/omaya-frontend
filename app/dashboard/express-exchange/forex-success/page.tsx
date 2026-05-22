@@ -7,6 +7,7 @@ import { useTheme } from "@/context/theme";
 import CopyButton from "@/components/ui/CopyButton";
 import { useRouteProtection } from "@/features/auth/hooks/useRouteProtection";
 import Loader from "@/features/p2p/components/Common/Loader";
+import { useScrollAppToTopWhen } from "@/hooks/useScrollAppToTopWhen";
 
 function ForexSuccessContent() {
   const { isChecking, isVerified } = useRouteProtection();
@@ -14,7 +15,9 @@ function ForexSuccessContent() {
   const router = useRouter();
   const { isDark } = useTheme();
   const transactionId = searchParams?.get("transactionId") || null;
-  
+
+  useScrollAppToTopWhen(!!transactionId);
+
   const { currentExchange } = useSelector((state: any) => state.forex);
   const [exchangeData, setExchangeData] = useState<any>(null);
   const shouldHideExchangeRate =

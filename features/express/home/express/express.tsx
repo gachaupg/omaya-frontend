@@ -11,6 +11,8 @@ import {
 } from "@/lib/utils/authRedirect";
 import Exchanging from "../components/exchnaging";
 import ExpressExchangeForm from "../components/ExpressExchangeForm";
+import { useScrollAppToTopWhen } from "@/hooks/useScrollAppToTopWhen";
+import { scrollAppToTop } from "@/lib/utils/scrollAppToTop";
 
 interface ExpressProps {
   isHomePage?: boolean;
@@ -37,6 +39,8 @@ const Express = ({ isHomePage = false }: ExpressProps) => {
     window.localStorage.removeItem("express_transaction_data");
     window.localStorage.removeItem("express_transaction_expiry");
   }, []);
+
+  useScrollAppToTopWhen(showExchanging && !!transactionData);
 
   const handleModeToggle = () => {
     // If on home page and not authenticated, navigate to login (include saved amount/asset)
@@ -106,6 +110,7 @@ const Express = ({ isHomePage = false }: ExpressProps) => {
           onExchange={(data) => {
             setTransactionData(data);
             setShowExchanging(true);
+            scrollAppToTop();
           }}
           initialMode={currentMode}
           isHomePage={isHomePage}

@@ -6,6 +6,8 @@ import ExpressExchangeForm from "./ExpressExchangeForm";
 import Exchanging from "./exchnaging";
 import SuccessPage from "./success";
 import { useTheme } from "@/context/theme";
+import { useScrollAppToTopWhen } from "@/hooks/useScrollAppToTopWhen";
+import { scrollAppToTop } from "@/lib/utils/scrollAppToTop";
 
 interface ExpressProps {
   isHomePage?: boolean;
@@ -25,6 +27,8 @@ const Express = ({ isHomePage = false }: ExpressProps) => {
   useEffect(() => {
     setMounted(true);
   }, []);
+
+  useScrollAppToTopWhen(showExchanging && !!transactionData);
 
   const handleModeToggle = () => {
     // If on home page and not authenticated, navigate to login
@@ -91,6 +95,7 @@ const Express = ({ isHomePage = false }: ExpressProps) => {
           onExchange={(data) => {
             setTransactionData(data);
             setShowExchanging(true);
+            scrollAppToTop();
           }}
           initialMode={currentMode}
           isHomePage={isHomePage}

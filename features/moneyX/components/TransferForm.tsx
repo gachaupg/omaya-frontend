@@ -16,6 +16,7 @@ import {
 import { useTheme } from "@/context/theme";
 import CustomSelect from "@/components/ui/CustomSelect";
 import { showToast } from "../../../lib/utils/toast";
+import { scrollAppToTop } from "@/lib/utils/scrollAppToTop";
 import { useBookmarkedAddresses } from "@/features/express/hooks/useBookmarkedAddresses";
 import { BookmarkDropdown } from "@/features/express/components/forms/BookmarkDropdown";
 import { usePaymentMethodsDisplay } from "../../express/hooks/useDataDisplay";
@@ -367,6 +368,7 @@ export default function TransferForm({ onTransfer, initialState, commissionType 
     saving: bookmarkSaving,
     fetchBookmarks,
     saveBookmark,
+    deleteBookmark,
     saveBookmarkError,
     clearSaveBookmarkError,
   } = useBookmarkedAddresses(currentBankAsset || "BANK", "BANK");
@@ -1641,6 +1643,7 @@ export default function TransferForm({ onTransfer, initialState, commissionType 
                   }}
                   labelKind="account"
                   saveError={saveBookmarkError}
+                  onDelete={(b) => deleteBookmark(b.id)}
                   anchorRef={bookmarkAnchorRef}
                   isDark={isDark}
                   saveDisabled={!!bankAddressError}
@@ -1861,7 +1864,7 @@ export default function TransferForm({ onTransfer, initialState, commissionType 
 
                   showToast.success("Transaction is successful", "Account updated successfully.");
 
-                  window.scrollTo({ top: 0, behavior: 'smooth' });
+                  scrollAppToTop();
 
                   if (onTransfer) {
                     onTransfer({

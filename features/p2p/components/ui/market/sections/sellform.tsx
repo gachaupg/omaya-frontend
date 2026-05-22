@@ -178,18 +178,8 @@ const FinalSell: React.FC<FinalSellProps> = ({ orderData }) => {
 
     if (isPendingAcceptanceStatus(sellerSnap.rawStatus)) {
       setPendingAcceptanceStartedAt((prev) => prev ?? Date.now());
-      setTradeLifecycleBanner((prev) =>
-        prev?.tone === "danger"
-          ? prev
-          : {
-              tone: "info",
-              message:
-                "Waiting for the trade owner to accept this trade before you can confirm payment as received.",
-            }
-      );
     } else {
       setPendingAcceptanceStartedAt(null);
-      setTradeLifecycleBanner((prev) => (prev?.tone === "info" ? null : prev));
     }
 
     const oldStatus = confirmOrder?.status;
@@ -616,11 +606,11 @@ const FinalSell: React.FC<FinalSellProps> = ({ orderData }) => {
       : null;
 
   const lifecycleBannerText =
-    tradeLifecycleBanner &&
-    tradeLifecycleBanner.tone === "info" &&
-    pendingAcceptanceSecondsLeft != null
-      ? `${tradeLifecycleBanner.message} Auto-cancel in ${formatCountdownSeconds(pendingAcceptanceSecondsLeft)} if not accepted.`
-      : tradeLifecycleBanner?.message ?? null;
+    tradeLifecycleBanner && !inPendingAcceptanceSeller
+      ? tradeLifecycleBanner.tone === "info" && pendingAcceptanceSecondsLeft != null
+        ? `${tradeLifecycleBanner.message} Auto-cancel in ${formatCountdownSeconds(pendingAcceptanceSecondsLeft)} if not accepted.`
+        : tradeLifecycleBanner.message
+      : null;
 
   return (
     <div className="md:mt-20">

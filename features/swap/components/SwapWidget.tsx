@@ -32,6 +32,7 @@ import { SwapWidgetSkeleton } from "@/components/ui/Skeletons";
 import InfoModal from "@/features/express/components/forms/info";
 
 import { logger } from "@/lib/utils/logger";
+import { useScrollAppToTopWhen } from "@/hooks/useScrollAppToTopWhen";
 import {
   normalizeSwapAmountOnChange,
   swapAmountToInputString,
@@ -100,6 +101,8 @@ const SwapWidget = () => {
   const [currentStep, setCurrentStep] =
     React.useState<SwapStep>("transaction-info");
   const [showWalletAddress, setShowWalletAddress] = React.useState(false);
+  useScrollAppToTopWhen(currentStep !== "transaction-info");
+  useScrollAppToTopWhen(showWalletAddress);
   const [hasRestoredState, setHasRestoredState] = React.useState(false);
   const [isInfoModalOpen, setIsInfoModalOpen] = React.useState(false);
   const otcThresholdExceededRef = React.useRef(false);

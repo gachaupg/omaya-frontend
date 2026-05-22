@@ -161,18 +161,8 @@ function FinalBuy({ orderData }: FinalBuyProps) {
 
     if (isPendingAcceptanceStatus(snap.rawStatus)) {
       setPendingAcceptanceStartedAt((prev) => prev ?? Date.now());
-      setTradeLifecycleBanner((prev) =>
-        prev?.tone === "danger"
-          ? prev
-          : {
-              tone: "info",
-              message:
-                "Waiting for the trade owner to accept this trade before you can mark payment as sent.",
-            }
-      );
     } else {
       setPendingAcceptanceStartedAt(null);
-      setTradeLifecycleBanner((prev) => (prev?.tone === "info" ? null : prev));
     }
 
     const oldStatus = confirmOrder?.status;
@@ -586,11 +576,11 @@ function FinalBuy({ orderData }: FinalBuyProps) {
       : null;
 
   const lifecycleBannerText =
-    tradeLifecycleBanner &&
-    tradeLifecycleBanner.tone === "info" &&
-    pendingAcceptanceSecondsLeft != null
-      ? `${tradeLifecycleBanner.message} Auto-cancel in ${formatCountdownSeconds(pendingAcceptanceSecondsLeft)} if not accepted.`
-      : tradeLifecycleBanner?.message ?? null;
+    tradeLifecycleBanner && !inPendingAcceptanceBuyer
+      ? tradeLifecycleBanner.tone === "info" && pendingAcceptanceSecondsLeft != null
+        ? `${tradeLifecycleBanner.message} Auto-cancel in ${formatCountdownSeconds(pendingAcceptanceSecondsLeft)} if not accepted.`
+        : tradeLifecycleBanner.message
+      : null;
 
   // Custom copy handler that shows "Copied" in button
   const handleCopyToClipboard = (value: string | undefined, buttonId: string) => {

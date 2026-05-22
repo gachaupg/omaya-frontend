@@ -7,7 +7,7 @@ export interface MarketRow {
   completion: string;
   exchange_rate: string;
   completion_time: string;
-  /** Advertiser presence from API (`advertiser_online`); drives market table status column. */
+  /** Advertiser presence from API (`advertiser_online`); shown as dot on avatar. */
   online: boolean;
   commission: string;
   available: string;

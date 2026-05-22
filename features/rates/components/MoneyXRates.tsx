@@ -23,6 +23,7 @@ import {
 } from "@/features/express/home/components/moneyX/slices/moneyXSlice";
 import { useTheme } from "@/context/theme";
 import { showToast } from "@/lib/utils/toast";
+import { scrollAppToTop } from "@/lib/utils/scrollAppToTop";
 import { usePaymentMethodsDisplay } from "@/features/express/hooks/useDataDisplay";
 import { setAuthRedirectPath } from "@/lib/utils/authRedirect";
 import { FiChevronDown, FiInfo } from "react-icons/fi";
@@ -448,6 +449,7 @@ const MoneyXRates = ({
     loading: bookmarksLoading,
     saving: bookmarkSaving,
     fetchBookmarks,
+    deleteBookmark,
     saveBookmarkError,
     clearSaveBookmarkError,
   } = useBookmarkedAddresses(currentBankAsset || "BANK", "BANK");
@@ -982,6 +984,7 @@ const MoneyXRates = ({
       );
 
       const txId = result.moneyx_transaction_id || "";
+      scrollAppToTop();
       router.push(
         `/dashboard/exchange/exchanging${txId ? `?transactionId=${encodeURIComponent(txId)}` : ""}`
       );
@@ -1675,6 +1678,7 @@ const MoneyXRates = ({
                     }}
                     onSaveCurrent={async (_label) => {}}
                     saveError={saveBookmarkError}
+                    onDelete={(b) => deleteBookmark(b.id)}
                     anchorRef={bookmarkAnchorRef}
                     isDark={isDark}
                     saveDisabled={true}

@@ -27,6 +27,7 @@ import {
 } from "@/features/express/slices/transactionSlice";
 import FailureStatusModal from "@/features/express/components/FailureStatusModal";
 import { resolveExpressTransactionFailureMessage } from "@/lib/utils/websocketUtils";
+import { useScrollAppToTopWhen } from "@/hooks/useScrollAppToTopWhen";
 const formatDateTimeEastAfrica = (input: Date | number | string): string => {
   const d = input instanceof Date ? input : new Date(input);
   if (Number.isNaN(d.getTime())) return "";
@@ -94,6 +95,8 @@ export default function Exchanging({ transactionData, onBackToTransfer }: Exchan
   const { tokens } = useSelector((state: any) => state.auth);
   const token = tokens?.access ?? cookieUtils.getCookie("access_token") ?? (typeof window !== "undefined" ? localStorage.getItem("access_token") : null);
   const [showSuccess, setShowSuccess] = useState(false);
+  useScrollAppToTopWhen(true);
+  useScrollAppToTopWhen(showSuccess);
   const [currentStatus, setCurrentStatus] = useState<string>("pending");
 
   // Initialize persistedTransactionData synchronously from localStorage to prevent redirect on refresh

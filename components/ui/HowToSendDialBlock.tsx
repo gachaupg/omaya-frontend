@@ -10,6 +10,8 @@ type HowToSendDialBlockProps = {
   className?: string;
   /** Tighter layout under QR code */
   compact?: boolean;
+  /** Hide "Dial now" from md breakpoint up; keep on small screens (express deposit USSD) */
+  dialOnMobileOnly?: boolean;
 };
 
 export default function HowToSendDialBlock({
@@ -17,6 +19,7 @@ export default function HowToSendDialBlock({
   isDark = false,
   className = "",
   compact = false,
+  dialOnMobileOnly = false,
 }: HowToSendDialBlockProps) {
   const trimmed = String(value || "").trim();
   if (!trimmed) return null;
@@ -38,6 +41,18 @@ export default function HowToSendDialBlock({
     isDark ? "text-gray-400" : "text-gray-500"
   }`;
 
+  const copyBtnClass = `flex shrink-0 items-center justify-center rounded-lg border px-2.5 ${
+    isDark
+      ? "border-[#35353d] text-gray-300 hover:bg-[#25252c]"
+      : "border-gray-200 text-gray-600 hover:bg-gray-50"
+  }`;
+
+  const dialBtnClass = `flex flex-1 items-center justify-center gap-1.5 rounded-lg px-2 py-2 text-xs font-semibold text-white transition active:scale-[0.98] ${
+    isDark
+      ? "bg-[#1D8751] hover:bg-[#167044]"
+      : "bg-[#1D8751] hover:bg-[#167044] shadow-sm"
+  }`;
+
   if (dialable && telHref) {
     return (
       <div className={shell}>
@@ -53,30 +68,37 @@ export default function HowToSendDialBlock({
             <span className={labelClass}>USSD payment</span>
           </div>
 
-          <p className={codeBox}>{trimmed}</p>
-
-          <div className="flex items-stretch gap-1.5">
-            <a
-              href={telHref}
-              className={`flex flex-1 items-center justify-center gap-1.5 rounded-lg px-2 py-2 text-xs font-semibold text-white transition active:scale-[0.98] ${
-                isDark
-                  ? "bg-[#1D8751] hover:bg-[#167044]"
-                  : "bg-[#1D8751] hover:bg-[#167044] shadow-sm"
-              }`}
-            >
-              <Phone className="h-3.5 w-3.5 shrink-0" aria-hidden />
-              Dial now
-            </a>
-            <CopyButton
-              value={trimmed}
-              showInlineMessage
-              className={`flex shrink-0 items-center justify-center rounded-lg border px-2.5 ${
-                isDark
-                  ? "border-[#35353d] text-gray-300 hover:bg-[#25252c]"
-                  : "border-gray-200 text-gray-600 hover:bg-gray-50"
-              }`}
-            />
-          </div>
+          {dialOnMobileOnly ? (
+            <div className="flex flex-col gap-2 md:flex-row md:items-stretch md:gap-1.5 min-w-0">
+              <p className={`${codeBox} md:flex-1 md:min-w-0`}>{trimmed}</p>
+              <div className="flex items-stretch gap-1.5 shrink-0">
+                <a href={telHref} className={`${dialBtnClass} md:hidden`}>
+                  <Phone className="h-3.5 w-3.5 shrink-0" aria-hidden />
+                  Dial now
+                </a>
+                <CopyButton
+                  value={trimmed}
+                  showInlineMessage
+                  className={copyBtnClass}
+                />
+              </div>
+            </div>
+          ) : (
+            <>
+              <p className={codeBox}>{trimmed}</p>
+              <div className="flex items-stretch gap-1.5">
+                <a href={telHref} className={dialBtnClass}>
+                  <Phone className="h-3.5 w-3.5 shrink-0" aria-hidden />
+                  Dial now
+                </a>
+                <CopyButton
+                  value={trimmed}
+                  showInlineMessage
+                  className={copyBtnClass}
+                />
+              </div>
+            </>
+          )}
         </div>
       </div>
     );

@@ -66,6 +66,7 @@ import { BookmarkDropdown } from "../../express/components/forms/BookmarkDropdow
 import FrozenAccountModal from "@/components/ui/FrozenAccountModal";
 
 import { logger } from '@/lib/utils/logger';
+import { scrollAppToTop } from "@/lib/utils/scrollAppToTop";
 import { stripLeadingZerosFromDecimalInput } from "@/lib/utils/decimalAmountInput";
 import { useChangeNowAssets } from "@/features/express/home/hooks/useChangeNowAssets";
 import {
@@ -433,6 +434,7 @@ const getPaymentRestrictionMessage = (status?: string) =>
     saving: bookmarkSaving,
     fetchBookmarks,
     saveBookmark,
+    deleteBookmark,
     saveBookmarkError,
     clearSaveBookmarkError,
   } = useBookmarkedAddresses(bookmarkAsset, bookmarkNetwork);
@@ -2207,6 +2209,7 @@ const getPaymentRestrictionMessage = (status?: string) =>
           showToast.success(
             t("rates.forexExchangeCreated", "Forex exchange created successfully!")
           );
+          scrollAppToTop();
           router.push(
             `/dashboard/express-exchange/forex-status?transactionId=${result.forex_transaction_id}`
           );
@@ -2357,6 +2360,7 @@ const getPaymentRestrictionMessage = (status?: string) =>
         );
       }
       const mode = isDepositMode ? "deposit" : "withdrawal";
+      scrollAppToTop();
       router.push(
         `/dashboard/express-exchange?resumeStatus=1&mode=${encodeURIComponent(mode)}`
       );
@@ -4960,6 +4964,7 @@ const getPaymentRestrictionMessage = (status?: string) =>
                         }
                       }}
                       saveError={saveBookmarkError}
+                      onDelete={(b) => deleteBookmark(b.id)}
                       anchorRef={bookmarkAnchorRef}
                       isDark={isDark}
                       saveDisabled={!!walletError}
