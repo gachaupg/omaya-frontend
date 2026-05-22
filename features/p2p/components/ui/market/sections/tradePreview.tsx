@@ -5,7 +5,10 @@ import { validateBalance } from "@/utils/balanceValidator";
 import { useDispatch, useSelector } from "react-redux";
 import { AppDispatch } from "@/store";
 import { fetchWallets } from "@/features/p2p/slices/walletSlice";
-import { getTransactionSummary, matchP2POrder } from "@/features/p2p/api";
+import { getTransactionSummary, getConfirmOrder, matchP2POrder } from "@/features/p2p/api";
+import { PresenceIndicator } from "./UserStatusBadge";
+import { PendingAcceptanceWaitModal } from "./PendingAcceptanceWaitModal";
+import { isTradeAcceptedFromConfirmOrder } from "@/features/p2p/utils/tradeWsAcceptanceGate";
 import { TransactionSummary, OrderMatchRequest } from "@/features/p2p/types";
 import { getWalletAmountsFromSummary } from "@/features/p2p/walletAmounts";
 import { useRouter } from "next/navigation";
@@ -92,8 +95,21 @@ const TradePreview: React.FC<TradePreviewProps> = ({
     maxHeight: number;
   } | null>(null);
   const [activeField, setActiveField] = useState<"send" | "receive" | null>(null);
+  const [awaitingAcceptanceTradeId, setAwaitingAcceptanceTradeId] = useState<string | null>(null);
 
   const paymentDropdownRef = useRef<HTMLDivElement>(null);
+
+  const navigateToMatched = (tradeId: string) => {
+    const searchParams = new URLSearchParams();
+    searchParams.set(
+      "orderData",
+      JSON.stringify({
+        order_type: tradeType === "buy" ? "sell" : "buy",
+        commission: advertiserData.commission,
+      })
+    );
+    router.push(`/p2p/${tradeId}/matched?${searchParams.toString()}`);
+  };
 
   const { userPaymentDetails, userDetailsLoading } = useSelector(
     (state: RootState) => state.paymentMethods || { userPaymentDetails: [], userDetailsLoading: false }
@@ -709,21 +725,22 @@ const TradePreview: React.FC<TradePreviewProps> = ({
       } else {
       }
 
-      // Navigate with state using URL search params
-      const searchParams = new URLSearchParams();
-      searchParams.set(
-        "orderData",
-        JSON.stringify({
-          order_type: tradeType === "buy" ? "sell" : "buy",
-          commission: advertiserData.commission,
-        })
-      );
-
-      // Use trade_id in URL instead of advertiserData.id
       const urlId = tradeIdFromResponse || advertiserData.id;
-      router.push(
-        `/p2p/${urlId}/matched?${searchParams.toString()}`
-      );
+
+      let alreadyAccepted = false;
+      try {
+        const confirm = await getConfirmOrder(urlId);
+        alreadyAccepted = isTradeAcceptedFromConfirmOrder(confirm);
+      } catch {
+        alreadyAccepted = false;
+      }
+      if (alreadyAccepted) {
+        navigateToMatched(urlId);
+        setIsSubmitting(false);
+        return;
+      }
+      setAwaitingAcceptanceTradeId(urlId);
+      setIsSubmitting(false);
     } catch (error: any) {
       let errorMessage = "";
 
@@ -751,18 +768,21 @@ const TradePreview: React.FC<TradePreviewProps> = ({
           <div className="flex-1 flex flex-col gap-3">
             {/* Advertiser Info */}
             <div className="flex items-center gap-3 sm:gap-4">
-              {advertiserData.advertiser_photo && !imageError ? (
-                <img
-                  src={advertiserData.advertiser_photo}
-                  alt={advertiserData.advertiser}
-                  className="w-10 h-10 sm:w-12 sm:h-12 rounded-full object-cover flex-shrink-0"
-                  onError={() => setImageError(true)}
-                />
-              ) : (
-                <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-full flex items-center justify-center text-xl sm:text-2xl font-bold bg-[#1D8751] text-white flex-shrink-0">
-                  {advertiserData.advertiserInitials}
-                </div>
-              )}
+              <div className="relative shrink-0">
+                {advertiserData.advertiser_photo && !imageError ? (
+                  <img
+                    src={advertiserData.advertiser_photo}
+                    alt={advertiserData.advertiser}
+                    className="w-10 h-10 sm:w-12 sm:h-12 rounded-full object-cover flex-shrink-0"
+                    onError={() => setImageError(true)}
+                  />
+                ) : (
+                  <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-full flex items-center justify-center text-xl sm:text-2xl font-bold bg-[#1D8751] text-white flex-shrink-0">
+                    {advertiserData.advertiserInitials}
+                  </div>
+                )}
+                <PresenceIndicator isOnline={advertiserData.online} />
+              </div>
               <div className="min-w-0 flex-1">
                 <div className="flex items-center gap-2 text-base sm:text-lg font-semibold text-gray-900 dark:text-white">
                   <span className="truncate" title={advertiserData.advertiser}>
@@ -1320,7 +1340,7 @@ const TradePreview: React.FC<TradePreviewProps> = ({
               <button
                 className="w-full sm:flex-1 py-2.5 sm:py-2 rounded-lg border font-semibold text-sm sm:text-base transition border-gray-400 dark:border-[#788099] text-gray-700 dark:text-[#788099] hover:bg-gray-200 dark:hover:bg-[var(--card-color)]"
                 onClick={onClose}
-                disabled={isSubmitting}
+                disabled={isSubmitting || !!awaitingAcceptanceTradeId}
               >
                 Close
               </button>
@@ -1328,12 +1348,12 @@ const TradePreview: React.FC<TradePreviewProps> = ({
                 className={`w-full sm:flex-1 py-2.5 sm:py-2 rounded-lg font-semibold text-sm sm:text-base transition text-white ${tradeType === "sell"
                     ? "bg-[#E23D3A] hover:bg-[#b71c1c]"
                     : "bg-[#1D8751] hover:bg-[#17643a]"
-                  } ${!isFormValid() || isSubmitting
+                  } ${!isFormValid() || isSubmitting || !!awaitingAcceptanceTradeId
                     ? "opacity-50 cursor-not-allowed"
                     : ""
                   }`}
                 onClick={handleSubmit}
-                disabled={!isFormValid() || isSubmitting}
+                disabled={!isFormValid() || isSubmitting || !!awaitingAcceptanceTradeId}
               >
                 {isSubmitting ? (
                   <div className="flex items-center justify-center gap-2">
@@ -1381,6 +1401,27 @@ const TradePreview: React.FC<TradePreviewProps> = ({
         }}
         filterByProviderName={tradeType === "sell" ? paymentMethod || undefined : undefined}
       />
+
+      {awaitingAcceptanceTradeId && (
+        <PendingAcceptanceWaitModal
+          open
+          tradeId={awaitingAcceptanceTradeId}
+          advertiserName={advertiserData.advertiser}
+          advertiserPhoto={advertiserData.advertiser_photo}
+          advertiserInitials={advertiserData.advertiserInitials}
+          isOnline={advertiserData.online}
+          onAccepted={() => {
+            const id = awaitingAcceptanceTradeId;
+            if (!id) return;
+            setAwaitingAcceptanceTradeId(null);
+            navigateToMatched(id);
+          }}
+          onClose={() => {
+            setAwaitingAcceptanceTradeId(null);
+            onClose?.();
+          }}
+        />
+      )}
     </>
   );
 };

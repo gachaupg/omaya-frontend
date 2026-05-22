@@ -32,6 +32,7 @@ import { useChangeNowAssets } from "../../hooks/useChangeNowAssets";
 import { useRouter } from "next/navigation";
 import InfoModal from "@/features/express/components/forms/info";
 import { logger } from "@/lib/utils/logger";
+import { useScrollAppToTopWhen } from "@/hooks/useScrollAppToTopWhen";
 import {
   buildSwapRedirectPath,
   setAuthRedirectPath,
@@ -90,6 +91,8 @@ const SwapWidget: React.FC<SwapWidgetProps> = ({ usePublicApi = false }) => {
   const [currentStep, setCurrentStep] =
     React.useState<SwapStep>("transaction-info");
   const [showWalletAddress, setShowWalletAddress] = React.useState(false);
+  useScrollAppToTopWhen(currentStep !== "transaction-info");
+  useScrollAppToTopWhen(showWalletAddress);
   const [isInfoModalOpen, setIsInfoModalOpen] = React.useState(false);
   const otcThresholdExceededRef = React.useRef(false);
 

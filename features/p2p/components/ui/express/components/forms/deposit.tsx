@@ -164,6 +164,7 @@ export default function DepositForm({
     saving: bookmarkSaving,
     fetchBookmarks,
     saveBookmark,
+    deleteBookmark,
     saveBookmarkError,
     clearSaveBookmarkError,
   } = useBookmarkedAddresses(currentCurrency, currentNetwork);
@@ -2606,6 +2607,7 @@ export default function DepositForm({
                       } catch { /* handled by hook */ }
                     }}
                     saveError={saveBookmarkError}
+                    onDelete={(b) => deleteBookmark(b.id)}
                     anchorRef={bookmarkAnchorRef}
                     isDark={isDark}
                     saveDisabled={isAddressValidating || !(addressValidationResult?.isValid)}

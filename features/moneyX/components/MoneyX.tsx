@@ -3,6 +3,7 @@
 import React from "react";
 import TransferForm from "./TransferForm";
 import { useRouter } from "next/navigation";
+import { scrollAppToTop } from "@/lib/utils/scrollAppToTop";
 
 interface MoneyXProps {
   onTransferComplete?: (data: {
@@ -67,6 +68,7 @@ const MoneyX = ({ onTransferComplete, initialState }: MoneyXProps) => {
     }
 
     const txId = data.moneyxTransactionId || "";
+    scrollAppToTop();
     router.push(
       `/dashboard/exchange/exchanging${txId ? `?transactionId=${encodeURIComponent(txId)}` : ""}`
     );

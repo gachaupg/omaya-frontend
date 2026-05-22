@@ -6,6 +6,8 @@ import Exchanging from "@/features/moneyX/components/Exchanging";
 import { useRouteProtection } from "@/features/auth/hooks/useRouteProtection";
 import Loader from "@/features/p2p/components/Common/Loader";
 import { consumeMoneyXPrefillState } from "@/lib/utils/authRedirect";
+import { useScrollAppToTopWhen } from "@/hooks/useScrollAppToTopWhen";
+import { scrollAppToTop } from "@/lib/utils/scrollAppToTop";
 
 const ExchangePage = () => {
   const { isChecking, isVerified } = useRouteProtection();
@@ -53,7 +55,10 @@ const ExchangePage = () => {
 
     setTransactionData(moneyxTransactionData);
     setShowExchanging(true);
+    scrollAppToTop();
   };
+
+  useScrollAppToTopWhen(showExchanging && !!transactionData);
 
   if (isChecking) {
     return (

@@ -4,6 +4,7 @@ import ExpressExchangeForm from "./ExpressExchangeForm";
 import Exchanging from "./exchnaging";
 import SuccessPage from "./success";
 import { useTheme } from "@/context/theme";
+import { scrollAppToHalfway } from "@/lib/utils/scrollAppToTop";
 
 interface ExpressProps {
   mode?: "deposit" | "withdrawal";
@@ -34,6 +35,7 @@ const Express = ({
           onExchange={(data) => {
             setTransactionData(data);
             setShowExchanging(true);
+            scrollAppToHalfway();
           }}
           initialMode={mode}
           balance={balance}

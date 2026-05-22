@@ -2,6 +2,25 @@
 
 import React from "react";
 
+interface PresenceIndicatorProps {
+  isOnline: boolean;
+  className?: string;
+}
+
+/** Small dot for avatar overlay: green = online, red = offline. */
+export const PresenceIndicator: React.FC<PresenceIndicatorProps> = ({
+  isOnline,
+  className = "",
+}) => (
+  <span
+    className={`absolute bottom-0 right-0 h-3 w-3 rounded-full border-2 border-white dark:border-[var(--card-color)] ${
+      isOnline ? "bg-[#1D8751]" : "bg-red-500"
+    } ${className}`}
+    aria-label={isOnline ? "Online" : "Offline"}
+    title={isOnline ? "Online" : "Offline"}
+  />
+);
+
 interface UserStatusBadgeProps {
   isLive: boolean;
   lastSeenMinutes?: number | null;

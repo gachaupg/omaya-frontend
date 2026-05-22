@@ -958,7 +958,14 @@ export default function WithdrawalForm({
       .list()
       .then((list) => {
         const pairs = Array.from(
-          new Map(list.map((b) => [`${b.asset.toLowerCase()}|${b.network.toLowerCase()}`, { asset: b.asset, network: b.network }])).values()
+          new Map(
+            list
+              .filter((b) => b.asset && b.network)
+              .map((b) => [
+                `${String(b.asset).toLowerCase()}|${String(b.network).toLowerCase()}`,
+                { asset: b.asset, network: b.network },
+              ])
+          ).values()
         );
         setWhitelistBookmarks(pairs);
       })

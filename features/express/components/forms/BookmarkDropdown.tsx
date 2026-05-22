@@ -14,7 +14,7 @@ interface BookmarkDropdownProps {
   asset?: string;
   network?: string;
   onSelect: (address: string) => void;
-  onSaveCurrent: (label: string) => void;
+  onSaveCurrent: (label: string) => void | Promise<void>;
   anchorRef: React.RefObject<HTMLElement | null>;
   isDark?: boolean;
   /** Hint shown as placeholder only (e.g. "My USDT wallet") */
@@ -24,6 +24,13 @@ interface BookmarkDropdownProps {
   hideSaveButton?: boolean;
   /** API / validation error from whitelist save (shown inside panel) */
   saveError?: string | null;
+  /** Remove a saved whitelist address (user bookmarks only; not approved-payment rows) */
+  onDelete?: (bookmark: BookmarkedAddress) => void | Promise<void>;
+}
+
+function canDeleteBookmark(b: BookmarkedAddress): boolean {
+  const id = String(b.id ?? "").trim();
+  return !!id && !id.startsWith("approved-");
 }
 
 /** Prevent parent bookmark toggle handlers from closing the panel while interacting inside it. */
@@ -45,11 +52,11 @@ function BookmarkLabelBadge({
   const styles =
     variant === "primary"
       ? isDark
-        ? "bg-[#1D8751]/20 text-[#4ade80] border border-[#1D8751]/45"
-        : "bg-[#1D8751] text-white border border-[#1D8751]"
+        ? "bg-[#1D8751]/25 text-[#86efac] border border-[#1D8751]/55 group-hover:bg-[#1D8751]/35 group-hover:text-[#bbf7d0]"
+        : "bg-[#1D8751] text-white border border-[#166b3e] shadow-sm group-hover:bg-[#166b3e]"
       : isDark
-        ? "bg-[#1D8751]/10 text-[#788099] border border-[#35353E]"
-        : "bg-[#1D8751]/8 text-[#1D8751] border border-[#1D8751]/25";
+        ? "bg-[#1c1c24] text-[#c8ccd6] border border-[#3d3d48] group-hover:bg-[#26262f] group-hover:text-[#eceef2] group-hover:border-[#52525e]"
+        : "bg-white text-[#14532d] border border-gray-200 group-hover:bg-[#f0fdf4] group-hover:border-[#1D8751]/40";
   return <span className={`${base} ${styles}`}>{children}</span>;
 }
 
@@ -70,6 +77,7 @@ export function BookmarkDropdown({
   saveDisabled = false,
   hideSaveButton = false,
   saveError = null,
+  onDelete,
 }: BookmarkDropdownProps) {
   const dropdownRef = useRef<HTMLDivElement>(null);
   const labelInputId = useId();
@@ -77,6 +85,7 @@ export function BookmarkDropdown({
     defaultLabel?.trim() || getDefaultBookmarkLabel(asset, labelKind);
   const [label, setLabel] = useState("");
   const [labelError, setLabelError] = useState<string | null>(null);
+  const [deletingId, setDeletingId] = useState<string | null>(null);
 
   useEffect(() => {
     if (isOpen) {
@@ -112,11 +121,11 @@ export function BookmarkDropdown({
         : "border-gray-200"
   } ${
     isDark
-      ? "bg-[#25252c] text-white placeholder:text-[#788099]"
+      ? "bg-[#18181f] text-white placeholder:text-[#788099]"
       : "bg-white text-gray-900 placeholder:text-gray-400"
   }`;
 
-  const handleSave = () => {
+  const handleSave = async () => {
     const trimmed = label.trim();
     if (!trimmed) {
       setLabelError("Label is required");
@@ -127,7 +136,11 @@ export function BookmarkDropdown({
       return;
     }
     setLabelError(null);
-    onSaveCurrent(trimmed);
+    try {
+      await onSaveCurrent(trimmed);
+    } catch {
+      // Errors surfaced via saveError / toast from useBookmarkedAddresses
+    }
   };
 
   return (
@@ -137,8 +150,10 @@ export function BookmarkDropdown({
       aria-label="Saved addresses"
       onMouseDown={stopBubble}
       onClick={stopBubble}
-      className={`absolute right-0 top-full mt-1 z-[11000] min-w-[260px] max-w-[320px] rounded-xl shadow-lg border ${
-        isDark ? "bg-[#1D1D23] border-[#35353E]" : "bg-white border-gray-200"
+      className={`absolute right-0 top-full mt-1 z-[11000] min-w-[260px] max-w-[320px] rounded-xl shadow-xl border ${
+        isDark
+          ? "bg-[#0f0f14] border-[#2e2e38] shadow-black/50"
+          : "bg-[#fafafa] border-gray-200 shadow-gray-300/30"
       }`}
     >
       <div className="p-2 max-h-[320px] overflow-y-auto">
@@ -211,8 +226,14 @@ export function BookmarkDropdown({
             </button>
           </div>
         )}
-        <div className={`border-t my-1 ${isDark ? "border-[#35353E]" : "border-gray-200"}`} />
-        <div className="text-xs font-semibold px-2 py-1 text-[#788099]">Saved addresses</div>
+        <div className={`border-t my-1 ${isDark ? "border-[#2a2a34]" : "border-gray-200/90"}`} />
+        <div
+          className={`text-xs font-semibold px-2 py-1 ${
+            isDark ? "text-[#9ca3af]" : "text-gray-700"
+          }`}
+        >
+          Saved addresses
+        </div>
         {loading ? (
           <div className="flex items-center justify-center py-6">
             <span className="w-5 h-5 border-2 border-[#1D8751] border-t-transparent rounded-full animate-spin" />
@@ -223,38 +244,92 @@ export function BookmarkDropdown({
           </p>
         ) : (
           <div className="space-y-0.5">
-            {bookmarks.map((b) => (
-              <button
-                key={b.id}
-                type="button"
-                onClick={() => {
-                  onSelect(b.address);
-                  onClose();
-                }}
-                className={`w-full flex flex-col items-start gap-1.5 px-3 py-2 rounded-lg text-left text-sm transition-colors ${
-                  isDark ? "hover:bg-[#2A2A32]" : "hover:bg-gray-100"
+            {bookmarks.map((b, index) => {
+              const addr = String(b.address ?? "").trim();
+              const rowKey = b.id || `${addr}-${index}`;
+              const showRemove = !!onDelete && canDeleteBookmark(b);
+              const isDeleting = deletingId === b.id;
+              return (
+              <div
+                key={rowKey}
+                className={`group flex items-stretch gap-0.5 rounded-lg border transition-colors ${
+                  isDark
+                    ? "bg-[#16161d] border-[#2a2a34] hover:bg-[#1e1e26] hover:border-[#40404c]"
+                    : "bg-white border-gray-200/90 hover:bg-[#f5f5f5] hover:border-[#1D8751]/30 hover:shadow-sm"
                 }`}
               >
-                <div className="flex flex-wrap items-center gap-1 w-full min-w-0">
-                  <BookmarkLabelBadge isDark={isDark} variant="primary">
-                    {b.label?.trim() || "Unnamed"}
-                  </BookmarkLabelBadge>
-                  {b.asset ? (
-                    <BookmarkLabelBadge isDark={isDark} variant="muted">
-                      {String(b.asset).toUpperCase()}
+                <button
+                  type="button"
+                  disabled={!addr}
+                  onClick={() => {
+                    if (!addr) return;
+                    onSelect(addr);
+                    onClose();
+                  }}
+                  className="flex-1 min-w-0 flex flex-col items-start gap-1.5 px-3 py-2.5 rounded-lg text-left text-sm transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#1D8751]/50"
+                >
+                  <div className="flex flex-wrap items-center gap-1 w-full min-w-0">
+                    <BookmarkLabelBadge isDark={isDark} variant="primary">
+                      {b.label?.trim() || "Unnamed"}
                     </BookmarkLabelBadge>
-                  ) : null}
-                  {b.network && String(b.network).toUpperCase() !== String(b.asset || "").toUpperCase() ? (
-                    <BookmarkLabelBadge isDark={isDark} variant="muted">
-                      {String(b.network).toUpperCase()}
-                    </BookmarkLabelBadge>
-                  ) : null}
-                </div>
-                <span className={`text-xs font-mono truncate w-full ${isDark ? "text-[#788099]" : "text-gray-500"}`}>
-                  {b.address.length > 20 ? `${b.address.slice(0, 10)}...${b.address.slice(-8)}` : b.address}
-                </span>
-              </button>
-            ))}
+                    {b.asset ? (
+                      <BookmarkLabelBadge isDark={isDark} variant="muted">
+                        {String(b.asset).toUpperCase()}
+                      </BookmarkLabelBadge>
+                    ) : null}
+                    {b.network && String(b.network).toUpperCase() !== String(b.asset || "").toUpperCase() ? (
+                      <BookmarkLabelBadge isDark={isDark} variant="muted">
+                        {String(b.network).toUpperCase()}
+                      </BookmarkLabelBadge>
+                    ) : null}
+                  </div>
+                  <span
+                    className={`text-xs font-mono truncate w-full transition-colors ${
+                      isDark
+                        ? "text-[#c4c8d4] group-hover:text-[#f3f4f6]"
+                        : "text-gray-700 group-hover:text-gray-900"
+                    }`}
+                  >
+                    {!addr
+                      ? "—"
+                      : addr.length > 20
+                        ? `${addr.slice(0, 10)}...${addr.slice(-8)}`
+                        : addr}
+                  </span>
+                </button>
+                {showRemove ? (
+                  <button
+                    type="button"
+                    aria-label="Remove whitelisted address"
+                    disabled={isDeleting}
+                    onClick={async (e) => {
+                      stopBubble(e);
+                      if (!b.id) return;
+                      setDeletingId(b.id);
+                      try {
+                        await onDelete(b);
+                      } finally {
+                        setDeletingId(null);
+                      }
+                    }}
+                    className={`shrink-0 self-center mr-1.5 p-1.5 rounded-md border border-transparent transition-colors ${
+                      isDark
+                        ? "text-[#9ca3af] group-hover:text-[#d1d5db] hover:!text-red-400 hover:border-red-500/30 hover:bg-red-500/15"
+                        : "text-gray-500 group-hover:text-gray-700 hover:!text-red-600 hover:border-red-200 hover:bg-red-50"
+                    } ${isDeleting ? "opacity-50 cursor-not-allowed" : ""}`}
+                  >
+                    {isDeleting ? (
+                      <span className="block w-4 h-4 border-2 border-current border-t-transparent rounded-full animate-spin" />
+                    ) : (
+                      <svg width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
+                        <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+                      </svg>
+                    )}
+                  </button>
+                ) : null}
+              </div>
+            );
+            })}
           </div>
         )}
       </div>

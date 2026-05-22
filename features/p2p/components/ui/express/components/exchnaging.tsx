@@ -19,6 +19,8 @@ import { fetchDepositStatus } from "../api";
 import SuccessPage from "./success";
 import FailureStatusModal from "@/features/express/components/FailureStatusModal";
 import { resolveExpressTransactionFailureMessage } from "@/lib/utils/websocketUtils";
+import { useScrollAppToTopWhen } from "@/hooks/useScrollAppToTopWhen";
+import { P2P_STATUS_SCROLL_FRACTION } from "@/lib/utils/scrollAppToTop";
 
 interface ExchangingProps {
   transactionData?: {
@@ -69,6 +71,7 @@ export default function Exchanging({ transactionData }: ExchangingProps) {
   const { isDark } = useTheme();
   const { tokens } = useSelector((state: any) => state.auth);
   const token = tokens?.access ?? cookieUtils.getCookie("access_token") ?? (typeof window !== "undefined" ? localStorage.getItem("access_token") : null);
+  useScrollAppToTopWhen(true, "smooth", P2P_STATUS_SCROLL_FRACTION);
   const [currentStatus, setCurrentStatus] = useState<string>(() =>
     transactionData?.status || "pending"
   );

@@ -20,6 +20,8 @@ import {
 } from "../slices/transactionSlice";
 import FailureStatusModal from "./FailureStatusModal";
 import { resolveExpressTransactionFailureMessage } from "@/lib/utils/websocketUtils";
+import { OMAYA_IO_ACCOUNT_DETAILS_TITLE } from "../utils/paymentDetailDisplay";
+import { useScrollAppToTopWhen } from "@/hooks/useScrollAppToTopWhen";
 
 interface ExchangingProps {
   transactionData?: {
@@ -188,6 +190,8 @@ export default function Exchanging({ transactionData }: ExchangingProps) {
   const { tokens } = useSelector((state: any) => state.auth);
   const token = tokens?.access ?? cookieUtils.getCookie("access_token") ?? (typeof window !== "undefined" ? localStorage.getItem("access_token") : null);
   const [showSuccess, setShowSuccess] = useState(false);
+  useScrollAppToTopWhen(true);
+  useScrollAppToTopWhen(showSuccess);
   const [currentStatus, setCurrentStatus] = useState<string>("pending");
   const [expandedTerms, setExpandedTerms] = useState(false);
   const [persistedTransactionData, setPersistedTransactionData] =
@@ -1512,6 +1516,7 @@ export default function Exchanging({ transactionData }: ExchangingProps) {
                   value={value}
                   isDark={isDark}
                   compact
+                  dialOnMobileOnly
                   className="w-full"
                 />
               );
@@ -1988,7 +1993,9 @@ export default function Exchanging({ transactionData }: ExchangingProps) {
             className={`flex-shrink-0 w-1/2 ${isDark ? "text-[#7B7B7B]" : "text-gray-600"
               } text-sm sm:text-base font-medium`}
           >
-            From
+            {effectiveTransactionData?.type === "deposit"
+              ? OMAYA_IO_ACCOUNT_DETAILS_TITLE
+              : "From"}
           </div>
           <div
             className={`flex-1 min-w-0 text-left pl-2 sm:pl-4 ${isDark ? "text-[#7B7B7B]" : "text-gray-600"
@@ -1998,7 +2005,7 @@ export default function Exchanging({ transactionData }: ExchangingProps) {
           </div>
         </div>
         <div className="flex mt-2 items-start gap-0">
-          {/* Left: From */}
+          {/* Left: From / Omaya.io Account Details */}
           <div className="flex items-start gap-3 min-w-0 w-1/2 flex-shrink-0 pr-2 sm:pr-4">
             {effectiveTransactionData?.type === "deposit" &&
               effectiveTransactionData?.paymentDetail ? (

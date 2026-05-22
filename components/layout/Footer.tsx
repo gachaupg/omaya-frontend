@@ -493,9 +493,9 @@ export default function Footer() {
               </div>
             </div>
 
-            {/* Tablet and Desktop: column — App Store block, then Google Play; each badge above QR */}
-            <div className="hidden md:flex flex-col w-full items-start gap-4 lg:gap-5 leading-none">
-              <div className="flex flex-col items-start justify-center gap-[2px] shrink-0">
+            {/* Tablet and Desktop: row — App Store and Google Play side by side; each badge above QR */}
+            <div className="hidden md:flex flex-row w-full items-end justify-start gap-4 lg:gap-6 leading-none">
+              <div className="flex flex-col items-center justify-center gap-[2px] shrink-0">
                 <Image
                   src="/assets/Appstore_nqe65y.png"
                   alt="App Store"
@@ -512,7 +512,7 @@ export default function Footer() {
                   className="object-contain w-[70px] h-[70px] lg:w-[84px] lg:h-[84px]"
                 />
               </div>
-              <div className="flex flex-col items-start justify-center gap-[2px] shrink-0">
+              <div className="flex flex-col items-center justify-center gap-[2px] shrink-0">
                 <Image
                   src="/images/playstore.webp"
                   alt="Google Play"

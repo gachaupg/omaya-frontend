@@ -131,27 +131,98 @@ export function isBookmarkAuthError(err: unknown): boolean {
   );
 }
 
+/** Coerce API / nested shapes into a stable bookmark row (avoids render crashes on save). */
+export function normalizeBookmarkedAddress(
+  raw: unknown,
+  fallback?: Partial<CreateBookmarkPayload>
+): BookmarkedAddress | null {
+  if (raw == null) return null;
+
+  let record: Record<string, unknown>;
+  if (typeof raw === "object" && !Array.isArray(raw)) {
+    const obj = raw as Record<string, unknown>;
+    const nested =
+      obj.data && typeof obj.data === "object" && !Array.isArray(obj.data)
+        ? (obj.data as Record<string, unknown>)
+        : obj.bookmark && typeof obj.bookmark === "object" && !Array.isArray(obj.bookmark)
+          ? (obj.bookmark as Record<string, unknown>)
+          : null;
+    record = nested ?? obj;
+  } else {
+    return null;
+  }
+
+  const address = String(
+    record.address ?? record.wallet_address ?? fallback?.address ?? ""
+  ).trim();
+  if (!address) return null;
+
+  const walletId = record.user_wallet_address_id;
+  const idRaw =
+    walletId != null && String(walletId).trim()
+      ? walletId
+      : record.id ?? record.bookmark_id ?? record.pk;
+  const id =
+    idRaw != null && String(idRaw).trim()
+      ? String(idRaw)
+      : `tmp-${address.slice(0, 8)}-${Date.now()}`;
+
+  return {
+    id,
+    address,
+    label:
+      record.label != null
+        ? String(record.label)
+        : fallback?.label,
+    network: String(
+      record.network ?? record.network_type ?? fallback?.network ?? ""
+    ),
+    asset: String(record.asset ?? record.currency ?? fallback?.asset ?? ""),
+    created_at:
+      record.created_at != null ? String(record.created_at) : undefined,
+  };
+}
+
+function normalizeBookmarkList(data: unknown): BookmarkedAddress[] {
+  const rows: unknown[] = Array.isArray(data)
+    ? data
+    : (() => {
+        const obj = data as Record<string, unknown>;
+        const arr = obj?.results ?? obj?.data;
+        return Array.isArray(arr) ? arr : [];
+      })();
+
+  return rows
+    .map((row) => normalizeBookmarkedAddress(row))
+    .filter((b): b is BookmarkedAddress => b != null);
+}
+
 export const bookmarkedAddressesApi = {
+  /** GET /api/wallet/bookmarked-addresses/?asset=USDT&network=bsc */
   list: async (params?: { asset?: string; network?: string }): Promise<BookmarkedAddress[]> => {
     const searchParams = new URLSearchParams();
     if (params?.asset) searchParams.append("asset", params.asset);
     if (params?.network) searchParams.append("network", params.network);
     const query = searchParams.toString();
-    const url = API_CONFIG.WALLET.BOOKMARKED_ADDRESSES + (query ? `?${query}` : "");
+    const url =
+      API_CONFIG.WALLET.BOOKMARKED_ADDRESSES + (query ? `?${query}` : "");
     const res = await get<unknown>(url);
-    const data = res.data as unknown;
-    if (Array.isArray(data)) return data;
-    const obj = data as Record<string, unknown>;
-    const arr = (obj?.results ?? obj?.data) as BookmarkedAddress[] | undefined;
-    return Array.isArray(arr) ? arr : [];
+    return normalizeBookmarkList(res.data);
   },
 
+  /** POST /api/wallet/bookmarked-addresses/ */
   create: async (payload: CreateBookmarkPayload): Promise<BookmarkedAddress> => {
-    const res = await post<BookmarkedAddress>(API_CONFIG.WALLET.BOOKMARKED_ADDRESSES, payload);
-    return res.data;
+    const res = await post<unknown>(
+      API_CONFIG.WALLET.BOOKMARKED_ADDRESSES,
+      payload
+    );
+    const normalized = normalizeBookmarkedAddress(res.data, payload);
+    if (normalized) return normalized;
+    throw new Error("Invalid response when saving bookmarked address");
   },
 
-  delete: async (bookmarkId: string): Promise<void> => {
-    await del(API_CONFIG.WALLET.BOOKMARKED_ADDRESS(bookmarkId));
+  /** DELETE /payments/user-wallet-addresses/{user_wallet_address_id}/ */
+  delete: async (userWalletAddressId: string): Promise<void> => {
+    await del(API_CONFIG.PAYMENTS.USER_WALLET_ADDRESS(userWalletAddressId));
   },
 };

@@ -41,6 +41,41 @@ export function isPendingAcceptanceStatus(raw: string): boolean {
   return raw.trim().toLowerCase() === "pending_acceptance";
 }
 
+const TERMINAL_REJECT_STATUSES = new Set([
+  "cancelled",
+  "canceled",
+  "declined",
+  "rejected",
+  "refused",
+]);
+
+/** True when owner has accepted — via status or confirm flags from REST/WS. */
+export function isTradeAcceptedFromWsSnapshot(snap: WsTradeSnapshot): boolean {
+  if (snap.can_confirm_payment === true || snap.can_confirm_receipt === true) {
+    return true;
+  }
+  const s = snap.rawStatus.trim().toLowerCase();
+  if (!s || isPendingAcceptanceStatus(s) || TERMINAL_REJECT_STATUSES.has(s)) {
+    return false;
+  }
+  return true;
+}
+
+export function isTradeAcceptedFromConfirmOrder(order: {
+  status?: string | null;
+  can_confirm_payment?: boolean;
+  can_confirm_receipt?: boolean;
+}): boolean {
+  if (order.can_confirm_payment === true || order.can_confirm_receipt === true) {
+    return true;
+  }
+  const st = String(order.status ?? "").trim();
+  if (!st || isPendingAcceptanceStatus(st)) return false;
+  const lowered = st.toLowerCase();
+  if (TERMINAL_REJECT_STATUSES.has(lowered)) return false;
+  return true;
+}
+
 /** trade_id / id from flat or nested p2p-trade-confirm WebSocket payload */
 export function getTradeIdFromWsStatusPayload(payload: Record<string, unknown>): string {
   const data =

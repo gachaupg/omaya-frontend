@@ -12,6 +12,7 @@ import { useRouteProtection } from "@/features/auth/hooks/useRouteProtection";
 import Loader from "@/features/p2p/components/Common/Loader";
 import { withTimeout } from "@/lib/utils/fetchWithTimeout";
 import FailureStatusModal from "@/features/express/components/FailureStatusModal";
+import { useScrollAppToTopWhen } from "@/hooks/useScrollAppToTopWhen";
 
 function ForexStatusContent() {
   const { isChecking, isVerified } = useRouteProtection();
@@ -20,6 +21,8 @@ function ForexStatusContent() {
   const dispatch = useDispatch<AppDispatch>();
   const { isDark } = useTheme();
   const transactionId = searchParams?.get("transactionId") || null;
+
+  useScrollAppToTopWhen(!!transactionId);
 
   const { currentExchange, loading, error } = useSelector(
     (state: any) => state.forex

@@ -66,6 +66,7 @@ const WalletAddressStep: React.FC<WalletAddressStepProps> = ({
     saving: bookmarkSaving,
     fetchBookmarks,
     saveBookmark,
+    deleteBookmark,
     saveBookmarkError,
     clearSaveBookmarkError,
   } = useBookmarkedAddresses(currentCurrency, currentNetwork || undefined);
@@ -282,6 +283,7 @@ const WalletAddressStep: React.FC<WalletAddressStepProps> = ({
                         } catch { /* handled by hook */ }
                       }}
                       saveError={saveBookmarkError}
+                      onDelete={(b) => deleteBookmark(b.id)}
                       anchorRef={bookmarkAnchorRef}
                       isDark={isDark}
                       saveDisabled={isAddressValidating || !(addressValidationResult?.isValid)}

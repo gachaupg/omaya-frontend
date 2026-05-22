@@ -74,6 +74,7 @@ const Withdraw = () => {
     saving: bookmarkSaving,
     fetchBookmarks,
     saveBookmark,
+    deleteBookmark,
     saveBookmarkError,
     clearSaveBookmarkError,
   } = useBookmarkedAddresses("usdt", "bsc");
@@ -735,6 +736,7 @@ const Withdraw = () => {
                         }}
                         defaultLabel="My USDT wallet"
                         saveError={saveBookmarkError}
+                        onDelete={(b) => deleteBookmark(b.id)}
                         anchorRef={bookmarkAnchorRef}
                         isDark={isDark}
                         saveDisabled={isAddressValidating || !(addressValidationResult?.isValid)}
