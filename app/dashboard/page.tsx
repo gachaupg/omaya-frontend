@@ -1,11 +1,10 @@
 "use client";
 import UserCard from "@/components/dashboard/ui/UserCard";
-import PriceCards from "@/components/charts/PriceChart";
 import VolumeChart from "@/components/charts/VolumeChart";
 import LineCharts from "@/components/charts/LineCharts";
 import Transactions from "@/components/dashboard/ui/Transactions";
 import CongratulationsModal from "@/components/dashboard/ui/CongratulationsModal";
-import { useEffect, useMemo, useState, useRef } from "react";
+import { useEffect, useState, useRef } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import {
   fetchTransactionSummary,
@@ -15,8 +14,6 @@ import { useKYC } from "@/features/kyc";
 import { openKYCModal } from "@/features/auth/slices/authSlice";
 import { AppDispatch, RootState } from "@/store";
 import { emptyTransactionSummary } from "@/components/types";
-import { logger } from "@/lib/utils/logger";
-import { storage } from "@/features/auth/utils/storage";
 
 const CONGRATULATIONS_SHOWN_KEY = "omaya_congratulations_shown";
 // Track users who were previously unverified in this session
@@ -25,24 +22,20 @@ const PREVIOUSLY_UNVERIFIED_KEY = "omaya_previously_unverified";
 export default function DashboardPage() {
   const dispatch = useDispatch<AppDispatch>();
   const transactionSummary = useSelector(selectTransactionSummary);
-  const { user } = useSelector((state: RootState) => state.auth);
+  const { user, isAuthenticated } = useSelector(
+    (state: RootState) => state.auth
+  );
   const [showCongratulations, setShowCongratulations] = useState(false);
   // Track if we've seen the user as unverified in this session
   const wasUnverifiedRef = useRef(false);
-  // Read token once client-side; effects will no-op if missing
-  const accessToken = useMemo(() => (typeof window !== 'undefined' ? storage.getToken() : null), []);
-
   // KYC hook usage example
   const { isVerified, loading, checkStatus, error } = useKYC();
 
   useEffect(() => {
-    if (!accessToken) {
-      logger.warn("auth", "Skipping dashboard API calls: no access token yet");
-      return;
-    }
+    if (!isAuthenticated) return;
     dispatch(fetchTransactionSummary());
     checkStatus();
-  }, [dispatch, checkStatus, accessToken]);
+  }, [dispatch, checkStatus, isAuthenticated]);
 
   // Track when user is unverified (will show congratulations when they become verified)
   useEffect(() => {
@@ -85,12 +78,11 @@ export default function DashboardPage() {
     <div className="w-full min-h-screen pt-0 pb-4 flex flex-col gap-0 sm:gap-4 overflow-x-hidden px-3   md:px-6">
       <UserCard />
       <div className="w-full flex flex-col gap-4">
-        <PriceCards />
         <VolumeChart
-          transactionSummary={transactionSummary || emptyTransactionSummary}
+          transactionSummary={transactionSummary ?? emptyTransactionSummary}
         />
         <LineCharts
-          transactionSummary={transactionSummary || emptyTransactionSummary}
+          transactionSummary={transactionSummary ?? emptyTransactionSummary}
         />
         <Transactions />
       </div>

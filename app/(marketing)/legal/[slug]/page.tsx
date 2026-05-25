@@ -12,13 +12,13 @@ const policyContent: Record<string, PolicyConfig> = {
   "terms-of-service": {
     title: "Terms of Service",
     description:
-      "These Terms of Service outline the rules and regulations for using OMAYA Exchange products and services.",
+      "These Terms of Service outline the rules and regulations for using OMAYA.io products and services.",
     lastUpdated: "October 1, 2024",
     sections: [
       {
         heading: "Acceptance of Terms",
         body:
-          "By creating an account or engaging with OMAYA Exchange services, you agree to comply with these terms and all applicable laws and regulations.",
+          "By creating an account or engaging with OMAYA.io services, you agree to comply with these terms and all applicable laws and regulations.",
       },
       {
         heading: "Eligible Users",
@@ -35,7 +35,7 @@ const policyContent: Record<string, PolicyConfig> = {
   "privacy-policy": {
     title: "Privacy Policy",
     description:
-      "Our Privacy Policy explains how OMAYA Exchange collects, uses, and protects your personal information.",
+      "Our Privacy Policy explains how OMAYA.io collects, uses, and protects your personal information.",
     lastUpdated: "October 1, 2024",
     sections: [
       {
@@ -58,10 +58,10 @@ const policyContent: Record<string, PolicyConfig> = {
   terms: {
     title: "Terms of Service",
     description:
-      "These Terms of Service outline the rules and regulations for using OMAYA Exchange products and services.",
+      "These Terms of Service outline the rules and regulations for using OMAYA.io products and services.",
     lastUpdated: "October 1, 2024",
     sections: [
-      { heading: "Acceptance of Terms", body: "By creating an account or engaging with OMAYA Exchange services, you agree to comply with these terms and all applicable laws and regulations." },
+      { heading: "Acceptance of Terms", body: "By creating an account or engaging with OMAYA.io services, you agree to comply with these terms and all applicable laws and regulations." },
       { heading: "Eligible Users", body: "You must be at least 18 years old and legally permitted to use digital asset services in your jurisdiction. We may request verification documents at any time." },
       { heading: "Account Responsibilities", body: "You are responsible for maintaining the confidentiality of your login credentials and for all activities that occur under your account." },
     ],
@@ -69,7 +69,7 @@ const policyContent: Record<string, PolicyConfig> = {
   "cookie-use": {
     title: "Cookie Use",
     description:
-      "This policy describes how OMAYA Exchange uses cookies and similar technologies on our digital channels.",
+      "This policy describes how OMAYA.io uses cookies and similar technologies on our digital channels.",
     lastUpdated: "October 1, 2024",
     sections: [
       { heading: "What Are Cookies?", body: "Cookies are small text files stored on your device that help us remember your preferences and understand how you interact with our services." },
@@ -80,7 +80,7 @@ const policyContent: Record<string, PolicyConfig> = {
   "data-use-policy": {
     title: "Data Use Policy",
     description:
-      "Our Data Use Policy explains how OMAYA Exchange collects, uses, stores, and protects your personal data.",
+      "Our Data Use Policy explains how OMAYA.io collects, uses, stores, and protects your personal data.",
     lastUpdated: "October 1, 2024",
     sections: [
       { heading: "Data We Collect", body: "We collect information you provide directly (contact details, identification documents, transaction information) and technical data such as IP address and device information." },
@@ -92,7 +92,7 @@ const policyContent: Record<string, PolicyConfig> = {
   "cookies-policy": {
     title: "Cookies Policy",
     description:
-      "This Cookies Policy describes how OMAYA Exchange uses cookies and similar technologies on our digital channels.",
+      "This Cookies Policy describes how OMAYA.io uses cookies and similar technologies on our digital channels.",
     lastUpdated: "October 1, 2024",
     sections: [
       {
@@ -115,13 +115,13 @@ const policyContent: Record<string, PolicyConfig> = {
   "disclaimer-policy": {
     title: "Disclaimer Policy",
     description:
-      "Our Disclaimer Policy clarifies the limitations of liability and the scope of information provided by OMAYA Exchange.",
+      "Our Disclaimer Policy clarifies the limitations of liability and the scope of information provided by OMAYA.io.",
     lastUpdated: "October 1, 2024",
     sections: [
       {
         heading: "Information Accuracy",
         body:
-          "While we strive for accuracy, OMAYA Exchange does not guarantee that all information is complete, current, or error-free.",
+          "While we strive for accuracy, OMAYA.io does not guarantee that all information is complete, current, or error-free.",
       },
       {
         heading: "No Financial Advice",
@@ -131,14 +131,14 @@ const policyContent: Record<string, PolicyConfig> = {
       {
         heading: "Third-Party Links",
         body:
-          "We may reference third-party websites or services. OMAYA Exchange is not responsible for the content or privacy practices of external sites.",
+          "We may reference third-party websites or services. OMAYA.io is not responsible for the content or privacy practices of external sites.",
       },
     ],
   },
   "payment-policy": {
     title: "Payment Policy",
     description:
-      "This Payment Policy explains how payments, settlements, and refunds are handled on OMAYA Exchange.",
+      "This Payment Policy explains how payments, settlements, and refunds are handled on OMAYA.io.",
     lastUpdated: "October 1, 2024",
     sections: [
       {
@@ -165,7 +165,7 @@ const policyContent: Record<string, PolicyConfig> = {
     sections: [
       {
         heading: "Compliance Commitment",
-        body: "OMAYA Exchange is committed to the highest standards of Anti-Money Laundering (AML) compliance and requires management and employees to adhere to these standards to prevent the use of our products and services for money laundering purposes.",
+        body: "OMAYA.io is committed to the highest standards of Anti-Money Laundering (AML) compliance and requires management and employees to adhere to these standards to prevent the use of our products and services for money laundering purposes.",
       },
       {
         heading: "Identity Verification",
@@ -176,7 +176,7 @@ const policyContent: Record<string, PolicyConfig> = {
   "express-terms": {
     title: "Deposit, Withdrawal & Swap Terms",
     description:
-      "These terms apply to deposit, withdrawal, and swap transactions on OMAYA Exchange. By using these services, you agree to comply with these terms.",
+      "These terms apply to deposit, withdrawal, and swap transactions on OMAYA.io. By using these services, you agree to comply with these terms.",
     lastUpdated: "February 3, 2025",
     sections: [
       {

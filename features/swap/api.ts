@@ -6,6 +6,7 @@ import { cachedGet } from "@/lib/cachedApiClient";
 import { withRetry } from "@/lib/utils/retry";
 import { API_CONFIG } from "@/lib/appConfig";
 import { logger } from '@/lib/utils/logger';
+import { resolveSwapCreateErrorMessage } from "@/lib/utils/swapAssetValidation";
 
 import {
   SupportedAsset,
@@ -366,40 +367,126 @@ const extractErrorMessage = (errorData: any): string => {
   return "";
 };
 
-/** User-visible line for swap estimate failures (min amount, etc.) */
-const buildSwapEstimateDisplayMessage = (
-  body: any,
-  extracted: string
-): string => {
-  let msg = (extracted || "").trim();
+export const isSwapBelowMinAmountError = (text: string): boolean =>
+  /deposit_too_small|too_small|below minimum|out of min amount/i.test(
+    String(text || "")
+  );
+
+import {
+  formatExpressMinAmountMessage,
+  normalizeExpressErrorBody,
+  resolveExpressMinAmountDisplayError,
+} from "@/lib/utils/expressMinAmount";
+
+export { formatExpressMinAmountMessage as formatSwapMinAmountMessage } from "@/lib/utils/expressMinAmount";
+
+function getSwapMinAmountFromPayload(body: any): string | number | null {
+  if (!body || typeof body !== "object") return null;
   const root =
     body?.response_data && typeof body.response_data === "object"
       ? body.response_data
       : body;
+  const range = root?.range ?? root?.payload?.range;
+  const min = range?.minAmount ?? range?.min_amount;
+  if (min == null || String(min).trim() === "") return null;
+  return min;
+}
+
+/** User-visible line for swap estimate failures (min amount, etc.) */
+export const buildSwapEstimateDisplayMessage = (
+  body: any,
+  extracted: string
+): string => {
+  const normalized = normalizeExpressErrorBody(body) ?? body;
+  const minMsg = resolveExpressMinAmountDisplayError(normalized, {
+    message: extracted,
+  });
+  if (minMsg) return minMsg;
+
+  let msg = (extracted || "").trim();
+  const root =
+    normalized?.response_data && typeof normalized.response_data === "object"
+      ? normalized.response_data
+      : normalized;
   const rootMessage =
     typeof root?.message === "string" ? root.message.trim() : "";
   const rootError = typeof root?.error === "string" ? root.error.trim() : "";
   if (!msg && rootMessage) {
     msg = rootMessage;
   }
-  const range = root?.range ?? root?.payload?.range;
-  const min = range?.minAmount ?? range?.min_amount;
+  const min =
+    getSwapMinAmountFromPayload(normalized) ?? getSwapMinAmountFromPayload(root);
   const errStr =
-    (typeof body?.error === "string" ? body.error : "") +
+    (typeof normalized?.error === "string" ? normalized.error : "") +
     (msg || "") +
     rootError;
-  if (
-    min != null &&
-    String(min).trim() !== "" &&
-    (/deposit_too_small|too_small|below minimum|min amount/i.test(errStr) ||
-      /deposit_too_small|too small/i.test(msg))
-  ) {
-    if (!msg || /^deposit_too_small$/i.test(msg))
-      msg = "The amount is below the minimum for this pair.";
-    if (!msg.includes(String(min)))
-      msg = `${msg} Minimum: ${min}.`;
+
+  if (isSwapBelowMinAmountError(errStr) || isSwapBelowMinAmountError(msg)) {
+    if (min != null) return formatExpressMinAmountMessage(min);
+    if (isSwapBelowMinAmountError(msg)) {
+      return "Minimum amount required for this pair.";
+    }
   }
+
   return msg;
+};
+
+const buildSwapEstimateErrorFromBody = (data: any): string => {
+  const normalized = normalizeExpressErrorBody(data) ?? data;
+  const minMsg = resolveExpressMinAmountDisplayError(normalized);
+  if (minMsg) return minMsg;
+
+  const responseData =
+    normalized?.response_data && typeof normalized.response_data === "object"
+      ? normalized.response_data
+      : null;
+  const messageFromResponse =
+    typeof responseData?.message === "string" ? responseData.message : "";
+  const messageFromError =
+    typeof normalized?.error === "string" ? normalized.error : "";
+  const messageFromCode =
+    typeof responseData?.error === "string" ? responseData.error : "";
+  const raw = (
+    messageFromResponse ||
+    messageFromError ||
+    messageFromCode ||
+    ""
+  ).trim();
+  return (
+    buildSwapEstimateDisplayMessage(normalized, raw) ||
+    raw ||
+    "Exchange service error"
+  ).trim();
+};
+
+const attachSwapEstimateResponseData = (
+  err: Error & { response_data?: any },
+  body: unknown
+) => {
+  const normalized = normalizeExpressErrorBody(body);
+  err.response_data =
+    normalized?.response_data ??
+    (normalized && typeof normalized === "object" ? normalized : undefined);
+};
+
+/** Build Error with min-amount message when API returns deposit_too_small. */
+const createSwapEstimateError = (
+  body: unknown,
+  fallbackMessage?: string
+): Error & { response_data?: any } => {
+  const normalized = normalizeExpressErrorBody(body);
+  const minMsg = resolveExpressMinAmountDisplayError(normalized, body);
+  const extracted = extractErrorMessage(normalized ?? body);
+  const message =
+    minMsg ||
+    buildSwapEstimateDisplayMessage(normalized ?? body, extracted) ||
+    extracted ||
+    fallbackMessage ||
+    "Unable to calculate swap estimate. Please try again later.";
+
+  const err = new Error(message) as Error & { response_data?: any };
+  attachSwapEstimateResponseData(err, normalized ?? body);
+  return err;
 };
 
 export const getEstimateSwap = async (
@@ -421,97 +508,63 @@ export const getEstimateSwap = async (
       const data = raw?.data !== undefined && typeof raw.data === "object" ? raw.data : raw;
       // Backend can return 200 OK with error in body (e.g. deposit_too_small) – treat as error so UI shows it in red
       if (data?.error || data?.response_data?.error) {
-        const responseData =
-          data?.response_data && typeof data.response_data === "object"
-            ? data.response_data
-            : null;
-        const messageFromResponse =
-          typeof responseData?.message === "string"
-            ? responseData.message
-            : "";
-        const messageFromError =
-          typeof data?.error === "string" ? data.error : "";
-        const messageFromCode =
-          typeof responseData?.error === "string" ? responseData.error : "";
-
-        const err = new Error(
-          (messageFromResponse || messageFromError || messageFromCode || "Exchange service error").trim()
-        ) as Error & { response_data?: any; response?: { status: number } };
-        // Attach full payload for UI (minAmount etc.); prefer nested response_data, fallback to full body
-        err.response_data = data?.response_data ?? data;
+        const err = createSwapEstimateError(data) as Error & {
+          response_data?: any;
+          response?: { status: number };
+        };
         err.response = { status: 400 }; // so withRetry does not retry (only retries on !response or 5xx)
         throw err;
       }
       return data;
     } catch (error: any) {
-      // Re-throw our own error (200-with-error-body) so response_data reaches the UI
+      const body = error.response?.data ?? error?.response_data ?? error;
+      const minFromBody = resolveExpressMinAmountDisplayError(body, error);
+
+      // Re-throw our own error (200-with-error-body) — ensure min-amount copy wins
       if (error?.response_data !== undefined) {
+        if (minFromBody) error.message = minFromBody;
         throw error;
       }
-      // Axios error: backend may return 400 with same body – attach so UI can show minAmount
-      if (error?.response?.data && typeof error.response.data === "object") {
-        const body = error.response.data as any;
-        (error as any).response_data = body?.response_data ?? body;
-      }
-      // Do not rethrow raw Axios error here — message would be "Request failed with status code 400"
 
       console.error("Failed to fetch swap estimate:", error);
       console.error("Error response data:", error.response?.data);
 
-      // Handle network errors gracefully
       if (error.code === "ECONNREFUSED" || error.code === "ENOTFOUND") {
         throw new Error(
           "Network connection issue. Please check your internet connection and try again."
         );
       }
 
-      const body = error.response?.data;
-      const detailedError = extractErrorMessage(body);
-      const displayMsg =
-        buildSwapEstimateDisplayMessage(body, detailedError) ||
-        detailedError ||
-        (error.response?.status
-          ? `Request failed (${error.response.status}). Please try again.`
-          : "");
-
-      if (error.response?.status === 500) {
-        throw new Error(
-          displayMsg ||
-            "Server Error: Unable to calculate swap estimate. Please try again later."
-        );
-      } else if (error.response?.status === 400) {
-        const err = new Error(
-          displayMsg || "Invalid swap parameters. Please check your input."
-        ) as Error & { response_data?: any };
-        err.response_data =
-          typeof body === "object" && body
-            ? body?.response_data ?? body
-            : undefined;
-        throw err;
-      } else if (error.response?.status === 404) {
-        throw new Error(
-          displayMsg || "Swap service not available. Please try again later."
-        );
-      } else if (error.response?.status === 422) {
-        const err = new Error(
-          displayMsg || "Validation error. Please check your input."
-        ) as Error & { response_data?: any };
-        err.response_data =
-          typeof body === "object" && body
-            ? body?.response_data ?? body
-            : undefined;
-        throw err;
+      if (minFromBody) {
+        throw createSwapEstimateError(body);
       }
 
-      const err = new Error(
-        displayMsg ||
-          "Unable to calculate swap estimate. Please try again later."
-      ) as Error & { response_data?: any };
-      err.response_data =
-        typeof body === "object" && body
-          ? body?.response_data ?? body
-          : undefined;
-      throw err;
+      const status =
+        error.response?.status ??
+        (normalizeExpressErrorBody(body)?.status_code as number | undefined);
+
+      if (status === 500) {
+        throw createSwapEstimateError(
+          body,
+          "Server Error: Unable to calculate swap estimate. Please try again later."
+        );
+      }
+      if (status === 400 || status === 422) {
+        throw createSwapEstimateError(
+          body,
+          status === 400
+            ? "Invalid swap parameters. Please check your input."
+            : "Validation error. Please check your input."
+        );
+      }
+      if (status === 404) {
+        throw createSwapEstimateError(
+          body,
+          "Swap service not available. Please try again later."
+        );
+      }
+
+      throw createSwapEstimateError(body);
     }
   });
 };
@@ -533,19 +586,21 @@ export const getPublicEstimateSwap = async (
       const data = raw?.data !== undefined && typeof raw.data === "object" ? raw.data : raw;
       // Backend can return 200 OK with error in body (e.g. deposit_too_small) – treat as error so UI shows it in red
       if (data?.error || data?.response_data?.error) {
-        const err = new Error(data?.error || data?.response_data?.error || "Exchange service error") as Error & { response_data?: any; response?: { status: number } };
-        err.response_data = data?.response_data ?? data;
+        const err = createSwapEstimateError(data) as Error & {
+          response_data?: any;
+          response?: { status: number };
+        };
         err.response = { status: 400 }; // so withRetry does not retry
         throw err;
       }
       return data;
     } catch (error: any) {
+      const body = error.response?.data ?? error?.response_data ?? error;
+      const minFromBody = resolveExpressMinAmountDisplayError(body, error);
+
       if (error?.response_data !== undefined) {
+        if (minFromBody) error.message = minFromBody;
         throw error;
-      }
-      if (error?.response?.data && typeof error.response.data === "object") {
-        const body = error.response.data as any;
-        (error as any).response_data = body?.response_data ?? body;
       }
 
       console.error("Failed to fetch public swap estimate:", error);
@@ -557,53 +612,36 @@ export const getPublicEstimateSwap = async (
         );
       }
 
-      const body = error.response?.data;
-      const detailedError = extractErrorMessage(body);
-      const displayMsg =
-        buildSwapEstimateDisplayMessage(body, detailedError) ||
-        detailedError ||
-        (error.response?.status
-          ? `Request failed (${error.response.status}). Please try again.`
-          : "");
-
-      if (error.response?.status === 500) {
-        throw new Error(
-          displayMsg ||
-            "Server Error: Unable to calculate swap estimate. Please try again later."
-        );
-      } else if (error.response?.status === 400) {
-        const err = new Error(
-          displayMsg || "Invalid swap parameters. Please check your input."
-        ) as Error & { response_data?: any };
-        err.response_data =
-          typeof body === "object" && body
-            ? body?.response_data ?? body
-            : undefined;
-        throw err;
-      } else if (error.response?.status === 404) {
-        throw new Error(
-          displayMsg || "Swap service not available. Please try again later."
-        );
-      } else if (error.response?.status === 422) {
-        const err = new Error(
-          displayMsg || "Validation error. Please check your input."
-        ) as Error & { response_data?: any };
-        err.response_data =
-          typeof body === "object" && body
-            ? body?.response_data ?? body
-            : undefined;
-        throw err;
+      if (minFromBody) {
+        throw createSwapEstimateError(body);
       }
 
-      const err = new Error(
-        displayMsg ||
-          "Unable to calculate swap estimate. Please try again later."
-      ) as Error & { response_data?: any };
-      err.response_data =
-        typeof body === "object" && body
-          ? body?.response_data ?? body
-          : undefined;
-      throw err;
+      const status =
+        error.response?.status ??
+        (normalizeExpressErrorBody(body)?.status_code as number | undefined);
+
+      if (status === 500) {
+        throw createSwapEstimateError(
+          body,
+          "Server Error: Unable to calculate swap estimate. Please try again later."
+        );
+      }
+      if (status === 400 || status === 422) {
+        throw createSwapEstimateError(
+          body,
+          status === 400
+            ? "Invalid swap parameters. Please check your input."
+            : "Validation error. Please check your input."
+        );
+      }
+      if (status === 404) {
+        throw createSwapEstimateError(
+          body,
+          "Swap service not available. Please try again later."
+        );
+      }
+
+      throw createSwapEstimateError(body);
     }
   });
 };
@@ -633,12 +671,14 @@ export const createSwap = async (
           "Server Error: Unable to create swap. Please try again later."
         );
       } else if (error.response?.status === 400) {
-        const errorMessage =
+        const rawMessage =
           extractErrorMessage(error.response?.data) ||
           (typeof error.response?.data?.message === "string"
             ? error.response.data.message
             : "") ||
           "Invalid swap request. Please check your input.";
+        const errorMessage =
+          resolveSwapCreateErrorMessage({ message: rawMessage }) || rawMessage;
         throw new Error(errorMessage);
       } else if (error.response?.status === 401) {
         throw new Error("Authentication required. Please log in to continue.");

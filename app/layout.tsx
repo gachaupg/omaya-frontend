@@ -51,7 +51,7 @@ const mulish = localFont({
 
 export const metadata: Metadata = {
   title: "OMAYA.io |  Your Gateway to the Crypto World, Built on Trust & Security!",
-  description: "Omaya Exchange is a platform for buying and selling cryptocurrencies.",
+  description: "OMAYA.io is a platform for buying and selling cryptocurrencies.",
   icons: {
     icon: [
       {

@@ -525,7 +525,7 @@ export default function Navbar() {
         <span className="flex items-center text-[#76777B] dark:text-white font-bold uppercase">
           Money{" "}
           <span className="inline-flex">
-            <img src="/images/x.png" alt="X" className="dark:hidden inline-block" />
+            <img src="/images/moneyx-x-light.png" alt="" aria-hidden className="dark:hidden inline-block" />
             <img src="/images/xwhite.png" alt="X" className="hidden dark:inline-block" />
           </span>
         </span>
@@ -926,19 +926,19 @@ export default function Navbar() {
       // Home page, not scrolled: white logo for transparent/green background
       return {
         src: "/assets/bad9edd9da5201cb8f8f9cea35bf46f4fb541bd6_lplbyc.png",
-        alt: "OMAYA Exchange",
+        alt: "OMAYA.io",
       };
     } else if (isDarkTheme) {
       // Dark theme: green logo
       return {
         src: "/assets/bad9edd9da5201cb8f8f9cea35bf46f4fb541bd6_lplbyc.png",
-        alt: "OMAYA Exchange",
+        alt: "OMAYA.io",
       };
     } else {
       // Light theme: default logo
       return {
         src: "/assets/bad9edd9da5201cb8f8f9cea35bf46f4fb541bd6_lplbyc.png",
-        alt: "OMAYA Exchange",
+        alt: "OMAYA.io",
       };
     }
   }, [mounted, pathname, scrolled, theme]);

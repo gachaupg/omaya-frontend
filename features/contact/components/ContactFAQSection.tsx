@@ -47,7 +47,7 @@ export default function ContactFAQSection() {
         <p className="text-sm text-gray-600 dark:text-gray-400 max-w-2xl mx-auto">
           {t(
             "contact.faq.subtitle",
-            "Find answers to common questions about OMAYA Exchange, trading, security, and more"
+            "Find answers to common questions about OMAYA.io, trading, security, and more"
           )}
         </p>
       </div>

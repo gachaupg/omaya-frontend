@@ -48,7 +48,7 @@ const PaymentMethodsWithLogos: React.FC<PaymentMethodsWithLogosProps> = ({
                   "mobile_number": null,
                   "wallet_address": null,
                   "how_to_send": null,
-                  "account_type": "Omaya",
+                  "account_type": "OMAYA",
                   "asset": null,
                   "network": null
                 }
@@ -84,12 +84,12 @@ const PaymentMethodsWithLogos: React.FC<PaymentMethodsWithLogosProps> = ({
               "logo": "https://omayabucket.s3.amazonaws.com/bank_logo/Bitcoin.jpg?X-Amz-Algorithm=AWS4-HMAC-SHA256&X-Amz-Credential=AKIAW7TPBKP2YLA7Y4X4%2F20251028%2Feu-north-1%2Fs3%2Faws4_request&X-Amz-Date=20251028T073303Z&X-Amz-Expires=3600&X-Amz-SignedHeaders=host&X-Amz-Signature=4a732d2f215c9c6a0dbb02fa8a8f39198e6fab0a55d1db6d46c6aaa0ce5d0879",
               "payment_details": [
                 {
-                  "account_name": "Omaya",
+                  "account_name": "OMAYA",
                   "account_number": "34523555",
                   "mobile_number": null,
                   "wallet_address": "TNPuGQc5Z6HH5xJ1YZwCYYtToq1ZhPh5Q",
                   "how_to_send": null,
-                  "account_type": "Omaya",
+                  "account_type": "OMAYA",
                   "asset": {
                     "symbol": "USDT Tether",
                     "name": "1"

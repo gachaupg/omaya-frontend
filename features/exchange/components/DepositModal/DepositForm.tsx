@@ -141,7 +141,7 @@ const DepositForm: React.FC<DepositFormProps> = ({
       {/* Payment Details */}
       <div className="mt-6">
         <h2 className="text-lg font-semibold mb-4 text-white">
-          3- OMAYA Exchange Payment Details
+          3- OMAYA.io Payment Details
         </h2>
         <div className="bg-[#1D1D23] border border-[#35353E] p-4 rounded-xl mb-8">
           <div className="flex items-start mb-4">

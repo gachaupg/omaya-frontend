@@ -77,7 +77,7 @@ const MoneyX = ({ isHomePage = false, onTransferComplete, commissionType = "depo
 
   // Otherwise show the transfer form
   return (
-    <div className="w-full pt-0 mb-0">
+    <div className="w-full max-w-full mx-auto pt-0 mb-0">
       <TransferForm isHomePage={isHomePage} onTransfer={handleTransfer} commissionType={commissionType} />
     </div>
   );

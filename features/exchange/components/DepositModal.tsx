@@ -590,7 +590,7 @@ const DepositModal: React.FC<DepositModalProps> = ({ asset, assetType, onClose }
 
       {/* Payment Details */}
       <div className="mt-6">
-        <h2 className="text-lg font-semibold mb-4 text-white">3- OMAYA Exchange Payment Details</h2>
+        <h2 className="text-lg font-semibold mb-4 text-white">3- OMAYA.io Payment Details</h2>
         <div className="bg-[#1D1D23] border border-[#35353E] p-4 rounded-xl mb-8">
           <div className="flex items-start mb-4">
             <AlertCircle className="w-5 h-5 text-[#F79330] mr-2 mt-0.5 flex-shrink-0" />

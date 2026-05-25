@@ -516,7 +516,7 @@ const WalletAddressStep: React.FC<WalletAddressStepProps> = ({
                   className="mt-0.5 w-4 h-4 sm:w-5 sm:h-5 rounded border-2 border-[#1D8751] focus:ring-[#1D8751] focus:ring-offset-0 cursor-pointer appearance-none bg-transparent checked:bg-[#1D8751] checked:border-[#1D8751] relative after:content-[''] after:absolute after:w-1.5 after:h-2.5 after:border-white after:border-r-2 after:border-b-2 after:rotate-45 after:opacity-0 checked:after:opacity-100 after:left-[5px] after:top-[1px]"
                 />
                 <span className={`text-xs sm:text-sm ${isDark ? "text-[#788099]" : "text-[#475569]"}`}>
-                  I have read and agreed to Omaya Exchange{" "}
+                  I have read and agreed to OMAYA.io{" "}
                   <button
                     type="button"
                     className="text-[#1D8751] underline font-medium hover:text-[#166b3e]"

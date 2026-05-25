@@ -21,6 +21,10 @@ import { fetchReferralWallet } from "@/features/settings/slices/referralWalletSl
 import { storage } from "@/features/auth/utils/storage";
 import { useTheme } from "@/context/theme";
 import { fetchAllUserTransactions } from "@/features/transactions/slices/allTransactionsSlice";
+import {
+  applyExchangeChartSummaryFallback,
+  buildExchangeMonthlyChartBuckets,
+} from "@/lib/utils/normalizeTransactionSummary";
 
 const months = [
   "JAN",
@@ -37,20 +41,49 @@ const months = [
   "DEC",
 ];
 
+function uniqueYTicksDescending(ticks: number[]): number[] {
+  const seen = new Set<string>();
+  const out: number[] = [];
+  for (const tick of ticks) {
+    const key = Number.isFinite(tick) ? tick.toFixed(8) : String(tick);
+    if (seen.has(key)) continue;
+    seen.add(key);
+    out.push(tick);
+  }
+  return out;
+}
+
 function getDynamicYTicks(data: number[], minTicks = 5) {
   const max = Math.max(...data, 0);
-  let step = 1000;
-  if (max > 0) {
-    const roughStep = max / (minTicks - 1);
-    // Round step to nearest 1000, 500, 100, etc.
-    const pow = Math.pow(10, Math.floor(Math.log10(roughStep)));
-    step = Math.ceil(roughStep / pow) * pow;
+  if (max === 0) {
+    return [0];
   }
-  const ticks = [];
-  for (let i = 0; i < minTicks; i++) {
-    ticks.push(step * (minTicks - 1 - i));
+
+  const span = Math.max(minTicks - 1, 1);
+
+  // Small USD amounts (typical Express exchange volumes)
+  if (max <= 100) {
+    const step =
+      max <= 2
+        ? 0.5
+        : max <= 10
+          ? 2
+          : max <= 50
+            ? 10
+            : 25;
+    const top = Math.max(step, Math.ceil(max / step) * step);
+    const ticks = Array.from({ length: minTicks }, (_, i) =>
+      Number(((top * (span - i)) / span).toFixed(2))
+    );
+    const unique = uniqueYTicksDescending(ticks);
+    return unique.length > 0 ? unique : [0, top];
   }
-  return ticks;
+
+  const roughStep = max / span;
+  const pow = Math.pow(10, Math.floor(Math.log10(roughStep)));
+  const step = Math.ceil(roughStep / pow) * pow;
+  const ticks = Array.from({ length: minTicks }, (_, i) => step * (span - i));
+  return uniqueYTicksDescending(ticks);
 }
 
 const GradientLineChart = React.memo(
@@ -88,7 +121,7 @@ const GradientLineChart = React.memo(
       // This ensures we always have enough horizontal drawing room on mobile.
       const baseWidth = windowWidth < 640 ? 360 : 440; // smaller but wide enough on mobile
       const height = windowWidth < 640 ? 200 : 240;
-      const left = windowWidth < 640 ? 36 : windowWidth < 1024 ? 48 : 60;
+      const left = windowWidth < 640 ? 44 : windowWidth < 1024 ? 52 : 64;
       const right = baseWidth - 20; // draw nearly to the right edge
       const top = windowWidth < 640 ? 24 : 40;
       const bottom = height - (windowWidth < 640 ? 24 : 40);
@@ -103,21 +136,26 @@ const GradientLineChart = React.memo(
           (_, idx) => months[idx] || `#${idx + 1}`
         );
 
+    const visibleValues = React.useMemo(() => {
+      const values: number[] = [];
+      if (showData1) values.push(...data1.data);
+      if (showData2) values.push(...data2.data);
+      return values;
+    }, [data1.data, data2.data, showData1, showData2]);
+
     const { min, max } = React.useMemo(() => {
-      const combinedValues = [...data1.data, ...data2.data];
-      if (!combinedValues.length) {
+      if (!visibleValues.length) {
         return { min: 0, max: 0 };
       }
       return {
         min: 0,
-        max: Math.max(...combinedValues, 0),
+        max: Math.max(...visibleValues, 0),
       };
-    }, [data1.data, data2.data]);
+    }, [visibleValues]);
 
-    // Memoize y-axis ticks
     const yTicks = React.useMemo(
-      () => getDynamicYTicks([...data1.data, ...data2.data]),
-      [data1.data, data2.data]
+      () => getDynamicYTicks(visibleValues),
+      [visibleValues]
     );
 
     const createPoints = React.useCallback(
@@ -154,7 +192,11 @@ const GradientLineChart = React.memo(
     // Memoize path generation function
     const generateSmoothPath = React.useCallback(
       (points: { x: number; y: number }[]) => {
-        if (points.length < 2) return "";
+        if (points.length === 0) return "";
+        if (points.length === 1) {
+          const p = points[0];
+          return `M ${p.x},${p.y} L ${p.x + 1},${p.y}`;
+        }
         const firstPoint = points[0];
         let path = `M ${firstPoint.x},${firstPoint.y}`;
         for (let i = 1; i < points.length; i++) {
@@ -232,8 +274,8 @@ const GradientLineChart = React.memo(
               <stop offset="100%" stopColor="#23262F" stopOpacity="0.1" />
             </linearGradient>
           </defs>
-          {yTicks.map((y) => (
-            <g key={y}>
+          {yTicks.map((y, tickIndex) => (
+            <g key={`y-tick-${tickIndex}-${y}`}>
               <line
                 x1={chartDimensions.left}
                 x2={chartDimensions.right}
@@ -268,9 +310,11 @@ const GradientLineChart = React.memo(
                 alignmentBaseline="middle"
                 className="font-medium"
               >
-                {windowWidth < 640 && y >= 1000
-                  ? `${(y / 1000).toFixed(y >= 1000000 ? 1 : 0)}${y >= 1000000 ? "M" : "K"}`
-                  : y.toLocaleString()}
+                {y < 1000
+                  ? y.toFixed(y % 1 === 0 ? 0 : 2)
+                  : windowWidth < 640 && y >= 1000
+                    ? `${(y / 1000).toFixed(y >= 1000000 ? 1 : 0)}${y >= 1000000 ? "M" : "K"}`
+                    : y.toLocaleString()}
               </text>
             </g>
           ))}
@@ -304,6 +348,30 @@ const GradientLineChart = React.memo(
               />
             </>
           )}
+          {showData1 &&
+            points1.map((p, i) =>
+              data1.data[i] > 0 ? (
+                <circle
+                  key={`dep-${i}`}
+                  cx={p.x}
+                  cy={p.y}
+                  r={4}
+                  fill={color1}
+                />
+              ) : null
+            )}
+          {showData2 &&
+            points2.map((p, i) =>
+              data2.data[i] > 0 ? (
+                <circle
+                  key={`wd-${i}`}
+                  cx={p.x}
+                  cy={p.y}
+                  r={4}
+                  fill={color2}
+                />
+              ) : null
+            )}
           {safeLabels.map((label, i) => {
             const shouldRenderLabel =
               safeLabels.length <= 6 || i % 2 === 0 || safeLabels.length <= 0;
@@ -466,8 +534,8 @@ function DonutChartWithCenter({
             ? "Transactions"
             : formatLargeNumber(displayTotal)
           : allZero
-            ? "0 USDT"
-            : `${formatLargeNumber(displayTotal)} USDT`}
+            ? "0 USD"
+            : `${formatLargeNumber(displayTotal)} USD`}
       </text>
       <text
         x={center}
@@ -572,8 +640,9 @@ const Legend = ({ data, hideCurrency }: { data: DonutChartData[]; hideCurrency?:
         <span className="text-muted-foreground font-medium flex-1 min-w-0 break-normal sm:text-xs md:text-sm">
           {d.label}
         </span>
-        <span className="dark:text-white text-[#051015] font-medium ml-auto min-w-[56px] sm:min-w-[56px] text-right tracking-tight shrink-0 text-[10px] md:text-xs lg:text-sm">
-          {formatLargeNumber(d.value)}{hideCurrency ? "" : " USDT"}
+        <span className="dark:text-white text-[#051015] font-medium ml-auto min-w-[72px] sm:min-w-[80px] text-right tracking-tight shrink-0 text-[10px] md:text-xs lg:text-sm tabular-nums">
+          {formatLargeNumber(d.value)}
+          {hideCurrency ? "" : " USD"}
         </span>
       </div>
     ))}
@@ -585,10 +654,10 @@ const LineCharts = React.memo(
     const dispatch = useDispatch<AppDispatch>();
     const { isDeem } = useTheme();
     const [filter, setFilter] = useState<"All" | "Deposits" | "Withdrawals">(
-      "Deposits"
+      "All"
     );
     const [p2pFilter, setP2pFilter] = useState<"All" | "Sell Orders" | "Buy Orders">(
-      "Sell Orders"
+      "All"
     );
     const [period, setPeriod] = useState("Month");
     const [exchangeTimePeriod, setExchangeTimePeriod] = useState("All");
@@ -635,92 +704,39 @@ const LineCharts = React.memo(
       (state: RootState) => state.auth
     );
 
-    // Fetch all transactions on mount
+    // Fetch transaction lists when authenticated (feeds line charts + recent table)
     useEffect(() => {
+      if (!isAuthenticated) return;
       dispatch(loadAllP2PTransactions());
       dispatch(fetchUserTrades({ page: 1 }));
       dispatch(
-        fetchAllUserTransactions({ type: "exchange", page: 1, page_size: 500 })
+        fetchAllUserTransactions({ type: "all", page: 1, page_size: 500 })
       );
-    }, [dispatch]);
+    }, [dispatch, isAuthenticated]);
 
-    // Process exchange transactions for Exchange Overview
+    // Process exchange transactions for Exchange Overview (approved/completed only)
     useEffect(() => {
       const allTransactions = Array.isArray(allTransactionsRaw)
         ? allTransactionsRaw
         : [];
-      if (allTransactions?.length) {
-        const depositData = Array(12).fill(0);
-        const withdrawalData = Array(12).fill(0);
-        const currentDate = new Date();
-        const terminalStatuses = new Set(["approved", "completed"]);
+      const buckets = buildExchangeMonthlyChartBuckets(allTransactions);
+      const withFallback = applyExchangeChartSummaryFallback(
+        buckets.deposits,
+        buckets.withdrawals,
+        transactionSummary
+      );
 
-        const parseUsdtAmount = (transaction: any): number => {
-          const currency = String(transaction?.currency || "").toUpperCase();
-          const asset = String(transaction?.asset || "").toUpperCase();
-          const toCurrency = String(transaction?.to_currency || "").toUpperCase();
-          const netAmount = parseFloat(String(transaction?.net_amount || "0"));
-          const amount = parseFloat(String(transaction?.amount || "0"));
-          const toAmount = parseFloat(String(transaction?.to_amount || "0"));
-
-          // Prefer explicit USDT-valued fields to avoid mixing fiat into USDT chart.
-          if (currency === "USDT" && !Number.isNaN(amount)) return amount;
-          if (asset === "USDT" && !Number.isNaN(amount)) return amount;
-          if (toCurrency === "USDT" && !Number.isNaN(toAmount)) return toAmount;
-          if (
-            (currency === "USDT" || asset === "USDT" || toCurrency === "USDT") &&
-            !Number.isNaN(netAmount)
-          ) {
-            return netAmount;
-          }
-
-          return 0;
-        };
-
-        allTransactions.forEach((transaction: any) => {
-          if (transaction?.type !== "exchange") return;
-          const status = String(transaction?.status || "").toLowerCase();
-          if (!terminalStatuses.has(status)) return;
-          const transactionDate = new Date(
-            transaction.created_at || transaction.timestamp
-          );
-          if (Number.isNaN(transactionDate.getTime())) return;
-          const monthDiff =
-            (currentDate.getFullYear() - transactionDate.getFullYear()) * 12 +
-            (currentDate.getMonth() - transactionDate.getMonth());
-          if (monthDiff < 12) {
-            const monthIndex = 11 - monthDiff;
-            const amount = parseUsdtAmount(transaction);
-            if (Number.isNaN(amount)) return;
-
-            const subType = String(
-              transaction.sub_type || transaction.transaction_type || ""
-            ).toLowerCase();
-            if (subType === "deposit") {
-              depositData[monthIndex] += amount;
-            } else if (subType === "withdrawal") {
-              withdrawalData[monthIndex] += amount;
-            }
-          }
-        });
-
-        setChartData({
-          depositData: {
-            label: "Deposits",
-            data: depositData,
-          },
-          withdrawalData: {
-            label: "Withdrawals",
-            data: withdrawalData,
-          },
-        });
-      } else {
-        setChartData({
-          depositData: { label: "Deposits", data: Array(12).fill(0) },
-          withdrawalData: { label: "Withdrawals", data: Array(12).fill(0) },
-        });
-      }
-    }, [allTransactionsRaw]);
+      setChartData({
+        depositData: {
+          label: "Deposits",
+          data: withFallback.deposits,
+        },
+        withdrawalData: {
+          label: "Withdrawals",
+          data: withFallback.withdrawals,
+        },
+      });
+    }, [allTransactionsRaw, transactionSummary]);
 
     // Process P2P transactions for P2P Overview
     useEffect(() => {
@@ -767,10 +783,6 @@ const LineCharts = React.memo(
           },
         });
 
-        console.log("[P2P Overview] Current user:", currentUserEmail);
-        console.log("[P2P Overview] Buy Orders:", buyData);
-        console.log("[P2P Overview] Sell Orders:", sellData);
-        console.log("[P2P Overview] Raw trades:", userTrades.results);
       }
     }, [userTrades, user?.email]);
 
@@ -865,6 +877,20 @@ const LineCharts = React.memo(
       getFilteredDataset,
     ]);
 
+    const exchangeDepositTotal = React.useMemo(
+      () => exchangeSeries.deposits.data.reduce((sum, v) => sum + v, 0),
+      [exchangeSeries.deposits.data]
+    );
+    const exchangeWithdrawalTotal = React.useMemo(
+      () => exchangeSeries.withdrawals.data.reduce((sum, v) => sum + v, 0),
+      [exchangeSeries.withdrawals.data]
+    );
+    const showExchangeDeposits =
+      (filter === "All" || filter === "Deposits") && exchangeDepositTotal > 0;
+    const showExchangeWithdrawals =
+      (filter === "All" || filter === "Withdrawals") &&
+      exchangeWithdrawalTotal > 0;
+
     const p2pSeries = React.useMemo(() => {
       const primary = getFilteredDataset(
         p2pChartData.buyData,
@@ -913,7 +939,7 @@ const LineCharts = React.memo(
           {/* Exchange Overview */}
           <Card className={`w-full rounded-none lg:rounded-2xl bg-gray-50 dark:bg-card shadow-sm ${isDeem ? "border border-[#35353E]" : ""}`}>
             <h3 className="text-black dark:text-white text-xs sm:text-sm md:text-[14px] mb-2 font-semibold">
-              Exchange Overview (USDT)
+              Exchange Overview (USD)
             </h3>
             <div className="flex flex-nowrap overflow-x-auto overflow-y-hidden scrollbar-thin items-center gap-1 sm:gap-2 mb-4 sm:mb-6 min-w-0 pb-1">
               <Button
@@ -948,20 +974,26 @@ const LineCharts = React.memo(
                 />
               </div>
             </div>
-            <div className="w-full">
-              <GradientLineChart
-                data1={exchangeSeries.deposits}
-                data2={exchangeSeries.withdrawals}
-                labels={exchangeSeries.labels}
-                showData1={filter === "All" || filter === "Deposits"}
-                showData2={filter === "All" || filter === "Withdrawals"}
-              />
+            <div className="w-full min-h-[200px] sm:min-h-[240px]">
+              {showExchangeDeposits || showExchangeWithdrawals ? (
+                <GradientLineChart
+                  data1={exchangeSeries.deposits}
+                  data2={exchangeSeries.withdrawals}
+                  labels={exchangeSeries.labels}
+                  showData1={showExchangeDeposits}
+                  showData2={showExchangeWithdrawals}
+                />
+              ) : (
+                <div className="flex items-center justify-center h-[200px] sm:h-[240px] text-sm text-gray-500 dark:text-gray-400">
+                  No exchange activity for this period
+                </div>
+              )}
             </div>
           </Card>
           {/* P2P Overview */}
           <Card className={`w-full rounded-none lg:rounded-2xl bg-gray-50 dark:bg-card shadow-sm ${isDeem ? "border border-[#35353E]" : ""}`}>
             <h3 className="dark:text-wh text-[#051015] dark:text-white text-xs sm:text-sm md:text-[14px] mb-2 font-semibold">
-              P2P Overview (USDT)
+              P2P Overview (USD)
             </h3>
             <div className="flex flex-nowrap overflow-x-auto overflow-y-hidden scrollbar-thin items-center gap-1 sm:gap-2 mb-4 sm:mb-6 min-w-0 pb-1">
               <Button
@@ -1036,7 +1068,11 @@ const LineCharts = React.memo(
               <div className="xl:w-1/2">
                 <Legend
                   data={overviewTotalData(transactionSummary, activeTab)}
-                  hideCurrency={false}
+                  hideCurrency={
+                    activeTab === "p2p" ||
+                    activeTab === "swap" ||
+                    activeTab === "buy"
+                  }
                 />
               </div>
 
@@ -1051,7 +1087,11 @@ const LineCharts = React.memo(
                         ? "Buy Orders"
                         : "Transactions"
                   }
-                  hideCurrency={false}
+                  hideCurrency={
+                    activeTab === "p2p" ||
+                    activeTab === "swap" ||
+                    activeTab === "buy"
+                  }
                 />
               </div>
             </div>

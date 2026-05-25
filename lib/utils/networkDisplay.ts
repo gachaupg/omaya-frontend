@@ -4,6 +4,8 @@ export function getNetworkDisplayName(network?: string | null): string {
 
   const networkMap: Record<string, string> = {
     bsc: "BSC",
+    bep20: "BSC",
+    bep2: "BSC",
     matic: "Polygon",
     avaxc: "Avalanche",
     eth: "Ethereum",

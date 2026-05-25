@@ -1,11 +1,11 @@
 {
   "tabs.dashboard": "P2P Dashboard",
-  "tabs.market": "Market",
+  "tabs.market": "P2P Market",
   "tabs.orders": "Orders",
   "tabs.center": "P2P Center",
   "tabs.chats": "Chats",
   "back.back": "Back",
-  "back.backToMarket": "Back to Market",
+  "back.backToMarket": "Back to P2P Market",
   "back.backToOrders": "Back to Orders",
   "filters.allOrders": "All Orders",
   "filters.completed": "Completed",

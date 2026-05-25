@@ -60,6 +60,38 @@ const COLORS = {
   sell: "#E23D3A",
 };
 
+/** Sell ads: USDT cap is the lesser of entered amount and wallet available. */
+function getSellUsdtCap(amount: string, availableBalance: number): number {
+  const balance = Math.max(0, availableBalance);
+  const amountNum = Number(amount);
+  if (Number.isFinite(amountNum) && amountNum > 0) {
+    return Math.min(amountNum, balance);
+  }
+  return balance;
+}
+
+/** Max allowed Order Max for sell (USD or KES per active currency). */
+function getSellOrderMaxLimit(
+  tradeType: "buy" | "sell",
+  activeCurrency: string,
+  amount: string,
+  commission: string,
+  availableBalance: number
+): number {
+  if (tradeType !== "sell") return Number.POSITIVE_INFINITY;
+  const usdtCap = getSellUsdtCap(amount, availableBalance);
+  if (activeCurrency === "KES") {
+    const rate = Number(commission) || 0;
+    return rate > 0 && usdtCap > 0 ? usdtCap * rate : 0;
+  }
+  return usdtCap;
+}
+
+function formatOrderMaxInputValue(value: number): string {
+  if (!Number.isFinite(value) || value <= 0) return "";
+  return (Math.round(value * 100) / 100).toFixed(2);
+}
+
 const paymentMethods = [
   { label: "Bank Transfer", value: "bank" },
   { label: "Mobile Money", value: "mobile" },
@@ -131,6 +163,24 @@ const Adds: React.FC<AddsProps> = ({ filterType }) => {
   const [usedRateStepButtons, setUsedRateStepButtons] = useState<Set<string>>(
     () => new Set()
   );
+
+  const sellOrderMaxLimit = getSellOrderMaxLimit(
+    type,
+    activeCurrency,
+    amount,
+    commission,
+    availableBalance
+  );
+
+  const applySellOrderMax = () => {
+    if (type !== "sell") return;
+    if (sellOrderMaxLimit <= 0) {
+      showToast.error("No available balance to use for order max");
+      return;
+    }
+    setOrderMax(formatOrderMaxInputValue(sellOrderMaxLimit));
+    setErrors((prev) => ({ ...prev, orderMax: undefined }));
+  };
 
   useEffect(() => {
     setIsClient(true);
@@ -379,7 +429,17 @@ const Adds: React.FC<AddsProps> = ({ filterType }) => {
 
       return next;
     });
-  }, [activeCurrency, amount, orderMin, orderMax, commission, kesBaseRate, kesRateError]);
+  }, [
+    activeCurrency,
+    amount,
+    orderMin,
+    orderMax,
+    commission,
+    kesBaseRate,
+    kesRateError,
+    type,
+    availableBalance,
+  ]);
 
   const validateForm = () => {
     const newErrors: ValidationErrors = {};
@@ -1135,8 +1195,35 @@ const Adds: React.FC<AddsProps> = ({ filterType }) => {
 
               {/* Order Max */}
               <div className="flex-1 min-w-0 flex flex-col">
-                <label className="text-xs text-gray-600 dark:text-[#788099] mb-1">
-                  Order Max
+                <label className="text-xs text-gray-600 dark:text-[#788099] mb-1 flex justify-between items-center gap-2">
+                  <span>Order Max</span>
+                  {type === "sell" && (
+                    <div className="flex items-center gap-2 shrink-0">
+                      <span className="text-xs text-[#1D8751] dark:text-[#1D8751] font-medium">
+                        Available:{" "}
+                        {sellOrderMaxLimit > 0
+                          ? `${formatLargeNumber(sellOrderMaxLimit)} ${
+                              activeCurrency === "KES" ? "KES" : "USD"
+                            }`
+                          : "—"}
+                      </span>
+                      <button
+                        type="button"
+                        onClick={applySellOrderMax}
+                        disabled={sellOrderMaxLimit <= 0}
+                        className="text-xs px-2 py-0.5 rounded bg-[#1D8751] text-white hover:bg-[#166b3e] transition-colors font-medium disabled:opacity-50 disabled:cursor-not-allowed"
+                        title={
+                          sellOrderMaxLimit > 0
+                            ? `Fill order max with ${formatLargeNumber(sellOrderMaxLimit)} ${
+                                activeCurrency === "KES" ? "KES" : "USD"
+                              }`
+                            : "No available balance"
+                        }
+                      >
+                        Max
+                      </button>
+                    </div>
+                  )}
                 </label>
                 <div className={`flex items-center bg-card border ${errors.orderMax
                   ? "border-red-500"

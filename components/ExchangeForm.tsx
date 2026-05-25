@@ -20,8 +20,12 @@ import { FaSearch } from "react-icons/fa";
 import Express from "@/features/express/home/express/express";
 import SwapWidget from "@/features/express/home/swap copy/components/SwapWidget";
 import MoneyX from "@/features/express/home/components/moneyX/components/MoneyX";
+import { MoneyXLabel } from "@/components/ui/MoneyXLabel";
 import FrozenAccountModal from "@/components/ui/FrozenAccountModal";
-import { assetMatchesSearchTerm } from "@/lib/utils/assetSearch";
+import {
+  assetMatchesSearchTerm,
+  compareAssetsForDisplay,
+} from "@/lib/utils/assetSearch";
 
 
 /**
@@ -895,56 +899,11 @@ export default function ExchangeForm({
       assetMatchesSearchTerm(asset, assetSearchTerm)
     ) || [];
 
-  // Sort assets based on active tab
   const sortedAssets = [...filteredAssets].sort((a, b) => {
     if (activeTab === "express") {
-      // For Express Exchange: USDT on BSC first, then USDC on BSC, then rest
-      const tickerA = (a?.ticker || a?.symbol || a?.name || "")
-        .toString()
-        .toLowerCase();
-      const tickerB = (b?.ticker || b?.symbol || b?.name || "")
-        .toString()
-        .toLowerCase();
-      const networkA = (a?.network || "").toString().toLowerCase();
-      const networkB = (b?.network || "").toString().toLowerCase();
-
-      // Priority 1: USDT on BSC
-      if (
-        tickerA === "usdt" &&
-        networkA === "bsc" &&
-        !(tickerB === "usdt" && networkB === "bsc")
-      ) {
-        return -1;
-      }
-      if (
-        tickerB === "usdt" &&
-        networkB === "bsc" &&
-        !(tickerA === "usdt" && networkA === "bsc")
-      ) {
-        return 1;
-      }
-
-      // Priority 2: USDC on BSC
-      if (
-        tickerA === "usdc" &&
-        networkA === "bsc" &&
-        !(tickerB === "usdc" && networkB === "bsc")
-      ) {
-        return -1;
-      }
-      if (
-        tickerB === "usdc" &&
-        networkB === "bsc" &&
-        !(tickerA === "usdc" && networkA === "bsc")
-      ) {
-        return 1;
-      }
-
-      return 0;
-    } else {
-      // For Swap Crypto: keep original order
-      return 0;
+      return compareAssetsForDisplay(a, b, assetSearchTerm);
     }
+    return 0;
   });
 
   /* ------------------- Payment Method Filtering ------------------- */
@@ -1218,7 +1177,7 @@ export default function ExchangeForm({
       variant === "express"
         ? t("marketing.exchange.tabs.express", "Express Exchange")
         : variant === "moneyx"
-          ? t("marketing.exchange.tabs.moneyx", "Money X")
+          ? "MoneyX"
           : label || t("marketing.exchange.tabs.swap", "Swap");
 
     // Icon Sources
@@ -1227,12 +1186,6 @@ export default function ExchangeForm({
     // Dark Mode Active: Group_8 (Usually White/Green X)
     const exchangeIconSrc1 = "/images/Group_9_momvgo.png";
     const exchangeIconSrc2 = "/images/Group_5_gkxzdz.png";
-
-    // MoneyX Icons (from Sidebar)
-    // Light Mode / Inactive: Group_6 (Dark X)
-    // Dark Mode Active: Group_7 (Green/White X)
-    const moneyXIconSrc1 = "/images/x.png";
-    const moneyXIconSrc2 = "/assets/Group_7_ichuyz.png";
 
     // Process label rendering
     const renderLabel = () => {
@@ -1250,17 +1203,12 @@ export default function ExchangeForm({
           </span>
         );
       } else if (variant === "moneyx") {
-        // "Money_X" Style - Money followed by X icon
         return (
-          <span className="flex flex-row items-center justify-center h-full">
-            <span className={`${textColorClass} text-[10px] sm:text-xs md:text-sm lg:text-base font-bold`} style={{ lineHeight: 1 }}>Money</span>
-            <img
-              src={isActive && isDark ? moneyXIconSrc2 : moneyXIconSrc1}
-              className="h-[10px] mt-2 sm:h-[11px] md:h-[13px] lg:h-[15px] w-auto"
-              alt="X"
-              style={{ display: 'inline-block' }}
-            />
-          </span>
+          <MoneyXLabel
+            moneyClassName={`${textColorClass} text-[10px] sm:text-xs md:text-sm lg:text-base font-bold`}
+            xClassName="h-[10px] mt-2 sm:h-[11px] md:h-[13px] lg:h-[15px] w-auto"
+            active={isActive}
+          />
         );
       }
       // Default rendering for Swap 
@@ -1624,7 +1572,7 @@ export default function ExchangeForm({
           id="moneyx"
           variant="moneyx"
           position="middle"
-          label={t("marketing.exchange.tabs.moneyx", "Money X")}
+          label="MoneyX"
         />
         <TabButton
           id="swap"

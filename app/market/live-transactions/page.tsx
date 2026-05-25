@@ -2,15 +2,15 @@
 
 import React, { useEffect, useState, useRef } from "react";
 import { AllSystemTransactionsWebSocket } from "@/features/markets/services/allSystemTransactionsWebSocket";
-import {
-  getHighResAssetIcon,
-  getHighResPaymentLogo,
-  getDefaultProviderLogo,
-} from "@/features/express/utils/imageHelpers";
 import { transactionApi } from "@/features/rates/api";
+import type { Transaction as RatesTransaction } from "@/features/rates/types";
+import {
+  formatTimeAgo,
+  getTransactionFromTo,
+  normalizeSystemTransaction,
+} from "@/features/rates/utils/transactionUtils";
 
-
-interface Transaction {
+interface LiveTransactionRow {
   id: string;
   from: {
     name: string;
@@ -26,75 +26,22 @@ interface Transaction {
   when: string;
 }
 
-// Helper function to format time ago
-const formatTimeAgo = (timestamp: string): string => {
-  const date = new Date(timestamp);
-  const now = new Date();
-  const diffInSeconds = Math.floor((now.getTime() - date.getTime()) / 1000);
-
-  if (diffInSeconds < 60) {
-    return `${diffInSeconds} sec ago`;
-  } else if (diffInSeconds < 3600) {
-    const minutes = Math.floor(diffInSeconds / 60);
-    return `${minutes} min ago`;
-  } else if (diffInSeconds < 86400) {
-    const hours = Math.floor(diffInSeconds / 3600);
-    return `${hours} hour${hours > 1 ? 's' : ''} ago`;
-  } else {
-    const days = Math.floor(diffInSeconds / 86400);
-    return `${days} day${days > 1 ? 's' : ''} ago`;
-  }
-};
-
-// Helper to get logo URL: use asset icon for currencies, provider logo for banks/providers
-const getLogoUrl = (name: string, isCurrency: boolean, logoFromData?: string | null): string => {
-  if (logoFromData) {
-    return getHighResPaymentLogo(logoFromData, null, 48);
-  }
-  if (isCurrency) {
-    return getHighResAssetIcon({ ticker: name }, 48);
-  }
-  return getDefaultProviderLogo();
-};
-
-// Return API logo URL when valid (http/https or relative path)
-const resolveLogoUrl = (url: string | null | undefined): string | null => {
-  if (url && (url.startsWith("http") || url.startsWith("/"))) return url;
-  return null;
-};
-
-// Map API/WebSocket data to display Transaction (matches REST API structure)
-const mapApiDataToTransaction = (data: any): Transaction => {
-  const currency = data.currency || data.asset || "USDT";
-  const ts = data.timestamp || data.created_at || new Date().toISOString();
-  const fromName = (
-    data.from_currency ||
-    data.fromCurrency ||
-    currency
-  ).toString().toUpperCase();
-  const toName = (
-    data.to_currency ||
-    data.toCurrency ||
-    currency
-  ).toString().toUpperCase();
-
-  const fromLogo =
-    resolveLogoUrl(data.from_currency_image) ||
-    resolveLogoUrl(data.from_asset_image) ||
-    resolveLogoUrl(data.asset_image) ||
-    getLogoUrl(fromName, true, null);
-  const toLogo =
-    resolveLogoUrl(data.to_currency_image) ||
-    resolveLogoUrl(data.to_asset_image) ||
-    resolveLogoUrl(data.asset_image) ||
-    getLogoUrl(toName, true, null);
+// Map API/WebSocket data to display row (no client PII — shared with Rates live feed)
+const mapApiDataToTransaction = (
+  data: RatesTransaction | Record<string, unknown>
+): LiveTransactionRow => {
+  const tx = normalizeSystemTransaction(
+    data as unknown as Record<string, unknown>
+  );
+  const { from, to } = getTransactionFromTo(tx);
+  const ts = tx.timestamp;
 
   return {
-    id: data.id || data.transaction_id || `tx-${Date.now()}-${Math.random()}`,
-    from: { name: fromName, logo: fromLogo || undefined },
-    to: { name: toName, logo: toLogo || undefined },
-    amount: data.total_amount_due || data.total_amount || data.amount || "0",
-    currency,
+    id: tx.transaction_id,
+    from: { name: from.name, logo: from.logo ?? undefined },
+    to: { name: to.name, logo: to.logo ?? undefined },
+    amount: tx.total_amount_due || tx.amount || "0",
+    currency: tx.currency,
     timestamp: ts,
     when: formatTimeAgo(ts),
   };
@@ -144,7 +91,7 @@ function Avatar({
 }
 
 const LiveTransactionsPage = () => {
-  const [transactions, setTransactions] = useState<Transaction[]>([]);
+  const [transactions, setTransactions] = useState<LiveTransactionRow[]>([]);
   const [totalCount, setTotalCount] = useState(0);
   const [totalPages, setTotalPages] = useState(1);
   const [pageSize, setPageSize] = useState(10);
@@ -190,7 +137,9 @@ const LiveTransactionsPage = () => {
     const unsubscribeMessage = wsRef.current.onMessage((message) => {
       try {
         if (message.type === "transaction" || message.type === "new_transaction") {
-          const tx = mapApiDataToTransaction(message.data);
+          const tx = mapApiDataToTransaction(
+            (message.data || {}) as Record<string, unknown>
+          );
           setTransactions((prev) => {
             if (currentPageRef.current !== 1) return prev;
             return [tx, ...prev].slice(0, 100);

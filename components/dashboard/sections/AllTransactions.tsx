@@ -1,15 +1,24 @@
 "use client";
-import React, { useEffect, useState } from "react";
+import React, { useCallback, useEffect, useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
+import { Eye } from "lucide-react";
 import { AppDispatch, RootState } from "@/store";
 import { fetchAllUserTransactions, setCurrentPage } from "@/features/transactions/slices/allTransactionsSlice";
-import { formatDistanceToNow } from "date-fns";
+import { formatDashboardTransactionWhen } from "@/lib/globalFormatter";
 import { NoDataFound } from "../ui/Transactions";
 import { useDashboardI18n } from "@/lib/useDashboardI18n";
 import { SortArrowsIcon } from "@/components/ui/SortArrowsIcon";
-import { FaUniversity } from "react-icons/fa";
-import { getHighResAssetIcon } from "@/features/express/utils/imageHelpers";
+import {
+  DashboardTransactionDetailsModal,
+  type DashboardTransactionDetailView,
+} from "@/components/dashboard/ui/DashboardTransactionDetailsModal";
+import { resolveDashboardTransactionAssetImage } from "@/features/express/utils/imageHelpers";
+import {
+  UsdFlagIcon,
+  isUsdOrMoneyXTransaction,
+} from "@/components/dashboard/ui/UsdFlagIcon";
 import type { AllTransactionItem } from "@/features/transactions/api";
+import { getAllUserTransactions } from "@/features/transactions/api";
 import { getMyTransactions as getMyP2PTransactions } from "@/features/p2p/api";
 import { TransactionFromToCell } from "@/components/dashboard/ui/TransactionFromToCell";
 import { TransactionStatusCell } from "@/components/dashboard/ui/TransactionStatusCell";
@@ -21,7 +30,9 @@ import {
   type FromToCellModel,
   buildExchangeFromTo,
   buildP2pWithdrawalDepositFromTo,
+  buildSwapFromTo,
   formatP2pCryptoLabel,
+  pickFirstAssetLogo,
   textFromToCell,
   withFromToLogos,
 } from "@/lib/utils/transactionFromTo";
@@ -31,11 +42,6 @@ const formatAmount = (amount: string | number | undefined | null): string => {
   const numAmount = typeof amount === "string" ? parseFloat(amount) : amount;
   if (isNaN(numAmount)) return "0.0000";
   return numAmount.toFixed(4);
-};
-
-const formatRecentTime = (dateValue: string) => {
-  const v = formatDistanceToNow(new Date(dateValue), { addSuffix: true });
-  return /less than (a|1) minute ago/i.test(v) ? "now" : v;
 };
 
 const normalizeStatusForBadge = (status: unknown): string => {
@@ -66,12 +72,39 @@ const getAssetName = (symbol: string) => {
   }
 };
 
+const normalizeTransactionSubType = (tx: AllTransactionItem): string =>
+  String(tx.sub_type || (tx as { transaction_type?: string }).transaction_type || "")
+    .trim()
+    .toLowerCase();
+
+const matchesSubTypeFilter = (
+  tx: AllTransactionItem,
+  includeSubTypes?: string[],
+  excludeSubTypes?: string[]
+): boolean => {
+  const sub = normalizeTransactionSubType(tx);
+  if (includeSubTypes?.length) {
+    return includeSubTypes.some((s) => sub.includes(s.trim().toLowerCase()));
+  }
+  if (excludeSubTypes?.length) {
+    return !excludeSubTypes.some((s) => sub.includes(s.trim().toLowerCase()));
+  }
+  return true;
+};
+
 const getTypeLabel = (type: string, subType: string) => {
+  const sub = (subType || "").toLowerCase();
   if (type === "exchange") {
-    return subType === "deposit" ? "Deposit" : subType === "withdrawal" ? "Withdrawal" : type;
+    return sub === "deposit" ? "Deposit" : sub === "withdrawal" ? "Withdrawal" : type;
+  }
+  if (type === "p2p") {
+    if (sub === "buy") return "Buy";
+    if (sub === "sell") return "Sell";
+    if (sub === "deposit") return "Deposit";
+    if (sub === "withdrawal") return "Withdrawal";
+    return "P2P";
   }
   if (type === "moneyx") return "MoneyX";
-  if (type === "p2p") return "P2P";
   if (type === "swap") return "Swap";
   return type;
 };
@@ -111,7 +144,45 @@ const formatStatus = (status: string | undefined | null): string => {
     .replace(/\b\w/g, (char) => char.toUpperCase());
 };
 
-const AllTransactions = () => {
+type AllTransactionsProps = {
+  /** API filter — `exchange` tab uses same feed as All with type=exchange */
+  apiType?: string;
+  emptyTitle?: string;
+  emptyMessage?: string;
+  /** Only rows whose sub_type contains one of these values (client-side) */
+  includeSubTypes?: string[];
+  /** Exclude rows whose sub_type contains any of these values (client-side) */
+  excludeSubTypes?: string[];
+};
+
+const getAssetColumnLabels = (tx: AllTransactionItem): { title: string; subtitle?: string } => {
+  if (tx.type === "exchange") {
+    const isDeposit = tx.sub_type === "deposit";
+    const title = String(
+      isDeposit ? tx.to_asset || tx.currency : tx.from_asset || tx.currency
+    )
+      .trim()
+      .toUpperCase();
+    const subtitle = String(tx.asset_name || tx.network || "").trim();
+    if (!subtitle || subtitle.toUpperCase() === title) {
+      return { title: title || "—" };
+    }
+    return { title: title || "—", subtitle };
+  }
+  const title = String(
+    tx.currency || tx.asset || (tx.type === "moneyx" ? "USD" : "USDT")
+  ).trim();
+  const subtitle = getAssetName(title);
+  return { title, subtitle: subtitle || undefined };
+};
+
+const AllTransactions = ({
+  apiType = "all",
+  emptyTitle,
+  emptyMessage,
+  includeSubTypes,
+  excludeSubTypes,
+}: AllTransactionsProps) => {
   const dispatch = useDispatch<AppDispatch>();
   const { t } = useDashboardI18n();
   const { data, loading, error } = useSelector(
@@ -122,16 +193,90 @@ const AllTransactions = () => {
   const containerRef = React.useRef<HTMLDivElement>(null);
   const [p2pAddressById, setP2pAddressById] = useState<Record<string, { from?: string | null; to?: string | null; receiver?: string | null }>>({});
   const [p2pAddressByFingerprint, setP2pAddressByFingerprint] = useState<Record<string, { from?: string | null; to?: string | null; receiver?: string | null }>>({});
+  const [transactionDetail, setTransactionDetail] =
+    useState<DashboardTransactionDetailView | null>(null);
+  const [allPagesData, setAllPagesData] = useState<AllTransactionItem[] | null>(null);
+  const [loadingAllPages, setLoadingAllPages] = useState(false);
+
+  const needsClientPagination =
+    (includeSubTypes?.length ?? 0) > 0 || (excludeSubTypes?.length ?? 0) > 0;
+
+  const subTypeFilterKey = [
+    apiType,
+    ...(includeSubTypes ?? []),
+    ...(excludeSubTypes ?? []),
+  ].join("|");
 
   useEffect(() => {
+    setCurrentPageLocal(1);
+    dispatch(setCurrentPage(1));
+    setP2pAddressById({});
+    setP2pAddressByFingerprint({});
+  }, [dispatch, subTypeFilterKey]);
+
+  useEffect(() => {
+    if (!needsClientPagination) {
+      setAllPagesData(null);
+      dispatch(
+        fetchAllUserTransactions({
+          type: apiType,
+          page: currentPage,
+          page_size: itemsPerPage,
+        })
+      );
+      return;
+    }
+
+    let cancelled = false;
+    setLoadingAllPages(true);
+    setAllPagesData(null);
+
+    (async () => {
+      try {
+        const all: AllTransactionItem[] = [];
+        let page = 1;
+        let hasMore = true;
+        while (hasMore && page <= 50) {
+          const resp = await getAllUserTransactions({
+            type: apiType,
+            page,
+            page_size: 50,
+          });
+          const batch = resp?.results ?? [];
+          if (batch.length === 0) break;
+          all.push(...batch);
+          hasMore = !!resp?.next;
+          page += 1;
+        }
+        if (!cancelled) {
+          setAllPagesData(all);
+        }
+      } catch {
+        if (!cancelled) {
+          setAllPagesData([]);
+        }
+      } finally {
+        if (!cancelled) {
+          setLoadingAllPages(false);
+        }
+      }
+    })();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [dispatch, apiType, needsClientPagination, subTypeFilterKey]);
+
+  useEffect(() => {
+    if (needsClientPagination) return;
     dispatch(
       fetchAllUserTransactions({
-        type: "all",
+        type: apiType,
         page: currentPage,
         page_size: itemsPerPage,
       })
     );
-  }, [dispatch, currentPage]);
+  }, [dispatch, currentPage, apiType, needsClientPagination]);
 
   const handlePageChange = (pageNumber: number, e?: React.MouseEvent) => {
     e?.preventDefault();
@@ -146,15 +291,32 @@ const AllTransactions = () => {
     }
   };
 
-  const rawResults = data?.results ?? [];
-  const results = [...rawResults]
+  const rawResults = needsClientPagination
+    ? (allPagesData ?? [])
+    : (data?.results ?? []);
+  const filteredResults = [...rawResults]
     .filter((tx) => !isPendingAddressDashboardStatus(tx.status))
     .filter((tx) => !shouldOmitExchangeWithoutDepositOrWithdrawal(tx))
+    .filter((tx) => matchesSubTypeFilter(tx, includeSubTypes, excludeSubTypes))
     .sort((a, b) => {
-    const dateA = new Date(a.created_at || 0).getTime();
-    const dateB = new Date(b.created_at || 0).getTime();
-    return dateB - dateA;
-  });
+      const dateA = new Date(a.created_at || 0).getTime();
+      const dateB = new Date(b.created_at || 0).getTime();
+      return dateB - dateA;
+    });
+
+  const totalCount = needsClientPagination
+    ? filteredResults.length
+    : (data?.count ?? 0);
+  const totalPages = needsClientPagination
+    ? Math.max(1, Math.ceil(filteredResults.length / itemsPerPage))
+    : (data?.total_pages ?? 1);
+
+  const results = needsClientPagination
+    ? filteredResults.slice(
+        (currentPage - 1) * itemsPerPage,
+        currentPage * itemsPerPage
+      )
+    : filteredResults;
 
   const buildP2PFingerprint = (input: {
     kind?: string;
@@ -230,205 +392,262 @@ const AllTransactions = () => {
     };
   }, [results, p2pAddressById, p2pAddressByFingerprint]);
 
-  if (loading && !data) {
+  const getFromToDisplay = useCallback(
+    (tx: AllTransactionItem) => {
+      const clean = (v: unknown): string | null => {
+        const s = String(v ?? "").trim();
+        if (!s || s === "-" || s.toLowerCase() === "null" || s.toLowerCase() === "undefined") {
+          return null;
+        }
+        return s;
+      };
+      const paymentProvider = clean((tx as any)?.payment_method?.provider);
+      const senderProvider = clean((tx as any)?.sender_provider);
+      const receiverProvider = clean((tx as any)?.receiver_provider);
+      const recipientName = clean((tx as any)?.recipient_name);
+      const fallbackAsset = clean(tx.currency || tx.asset) || "USD";
+
+      const walletType = (clean((tx as any)?.wallet_type) || "").toLowerCase();
+      const txTypeHint = (clean((tx as any)?.transaction_type) || "").toLowerCase();
+      if (
+        (walletType === "crypto" && txTypeHint.includes("withdraw")) ||
+        (walletType === "p2p" && txTypeHint.includes("deposit"))
+      ) {
+        return buildP2pWithdrawalDepositFromTo({
+          ...tx,
+          transaction_type: txTypeHint || tx.sub_type,
+        } as Record<string, unknown>);
+      }
+
+      if (tx.type === "swap") {
+        return buildSwapFromTo(tx as unknown as Record<string, unknown>);
+      }
+      if (tx.type === "exchange") {
+        return buildExchangeFromTo(tx as unknown as Record<string, unknown>);
+      }
+      if ((tx as any)?.type === "forex") {
+        const fromCurrency = clean((tx as any)?.from_currency);
+        const toCurrency = clean((tx as any)?.to_currency);
+        return {
+          from: textFromToCell(fromCurrency || fallbackAsset),
+          to: textFromToCell(
+            paymentProvider || receiverProvider || recipientName || toCurrency || "Bank / Wallet"
+          ),
+        };
+      }
+      if (tx.type === "moneyx") {
+        return {
+          from: {
+            label: senderProvider || paymentProvider || "Sender Provider",
+            iconUrl: pickFirstAssetLogo(
+              (tx as { sender_provider_logo?: string }).sender_provider_logo
+            ),
+          },
+          to: {
+            label:
+              receiverProvider ||
+              recipientName ||
+              paymentProvider ||
+              "Receiver Provider",
+            iconUrl: pickFirstAssetLogo(
+              (tx as { receiver_provider_logo?: string }).receiver_provider_logo
+            ),
+          },
+        };
+      }
+      if (tx.type === "p2p" && (tx.from_currency || tx.to_currency || (tx as any).from_asset)) {
+        return buildSwapFromTo(tx as unknown as Record<string, unknown>);
+      }
+      const p2pSub = (tx.sub_type || "").toLowerCase();
+      const p2pTxType = String((tx as any)?.transaction_type || "").toLowerCase();
+      const idKey = String(tx.id || "").trim();
+      const fpKey = buildP2PFingerprint({
+        kind: p2pSub || p2pTxType,
+        amount: (tx as any)?.amount,
+        currency: (tx as any)?.currency || (tx as any)?.asset,
+        network: (tx as any)?.network,
+        ts: (tx as any)?.created_at,
+      });
+      const enrich =
+        (idKey ? p2pAddressById[idKey] : null) ||
+        (fpKey ? p2pAddressByFingerprint[fpKey] : null) ||
+        null;
+
+      const inferP2PKind = (): string => {
+        const raw = (p2pSub || p2pTxType || "").trim();
+        if (raw.includes("withdraw")) return "withdrawal";
+        if (raw.includes("deposit")) return "deposit";
+        if (raw.includes("buy")) return "buy";
+        if (raw.includes("sell")) return "sell";
+        if (enrich && !enrich.from && !enrich.to && !!enrich.receiver) return "withdrawal";
+        const walletTypeInner = String((tx as any)?.wallet_type || "").toLowerCase().trim();
+        if (walletTypeInner === "crypto") return "withdrawal";
+        if (walletTypeInner === "p2p") return "deposit";
+        if (tx.withdrawal_address) return "withdrawal";
+        if (tx.deposit_address) return "deposit";
+        return raw;
+      };
+      const p2pKind = inferP2PKind();
+
+      if (tx.type === "p2p" && (p2pKind === "withdrawal" || p2pKind === "deposit")) {
+        return buildP2pWithdrawalDepositFromTo(
+          {
+            ...tx,
+            transaction_type: p2pKind,
+          } as Record<string, unknown>,
+          enrich
+        );
+      }
+      if (tx.type === "p2p" && (p2pSub === "buy" || p2pSub === "sell")) {
+        const hasPair =
+          String((tx as any)?.from_asset || "").trim() ||
+          String((tx as any)?.to_asset || "").trim();
+        if (hasPair) {
+          return buildSwapFromTo(tx as unknown as Record<string, unknown>);
+        }
+        const fromAsset =
+          String((tx as any)?.from_asset || (p2pSub === "buy" ? "USD" : formatP2pCryptoLabel(tx))).trim() ||
+          "USD";
+        const toAsset =
+          String((tx as any)?.to_asset || (p2pSub === "buy" ? formatP2pCryptoLabel(tx) : "USD")).trim() ||
+          "USDT";
+        return { from: textFromToCell(fromAsset), to: textFromToCell(toAsset) };
+      }
+      if (tx.type === "p2p") {
+        const cryptoLabel = formatP2pCryptoLabel(tx);
+        return {
+          from: textFromToCell("P2P"),
+          to: textFromToCell(`${cryptoLabel} · Wallet`),
+        };
+      }
+      return {
+        from: textFromToCell(senderProvider || paymentProvider || fallbackAsset),
+        to: textFromToCell(
+          receiverProvider || recipientName || paymentProvider || "Bank / Wallet"
+        ),
+      };
+    },
+    [p2pAddressById, p2pAddressByFingerprint]
+  );
+
+  const buildTransactionDetailView = useCallback(
+    (tx: AllTransactionItem): DashboardTransactionDetailView => {
+      const display = getFromToDisplay(tx);
+      const { from, to } = withFromToLogos(
+        tx as unknown as Record<string, unknown>,
+        display.from,
+        display.to
+      );
+      const assetLabels = getAssetColumnLabels(tx);
+      return {
+        tx,
+        from,
+        to,
+        assetTitle: assetLabels.title,
+        assetSubtitle: assetLabels.subtitle,
+        assetImageUrl: resolveDashboardTransactionAssetImage(tx),
+        typeLabel: getTypeLabel(tx.type, tx.sub_type),
+      };
+    },
+    [getFromToDisplay]
+  );
+
+  const openTransactionDetails = useCallback(
+    (tx: AllTransactionItem) => {
+      setTransactionDetail(buildTransactionDetailView(tx));
+    },
+    [buildTransactionDetailView]
+  );
+
+  const closeTransactionDetails = useCallback(() => {
+    setTransactionDetail(null);
+  }, []);
+
+  const transactionDetailsModal = (
+    <DashboardTransactionDetailsModal
+      open={!!transactionDetail}
+      onClose={closeTransactionDetails}
+      detail={transactionDetail}
+    />
+  );
+
+  const isLoading =
+    (loading && !data && !needsClientPagination) ||
+    (needsClientPagination && loadingAllPages && allPagesData === null);
+
+  if (isLoading) {
     return (
-      <div className="flex items-center justify-center h-64">
-        <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-[#1D8751]" />
-      </div>
+      <>
+        <div className="flex items-center justify-center h-64">
+          <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-[#1D8751]" />
+        </div>
+        {transactionDetailsModal}
+      </>
     );
   }
 
   if (error) {
     return (
-      <div className="text-red-500 text-center p-4">
-        {t("common.error", "Error")}: {error}
-      </div>
+      <>
+        <div className="text-red-500 text-center p-4">
+          {t("common.error", "Error")}: {error}
+        </div>
+        {transactionDetailsModal}
+      </>
     );
   }
-
-  const totalCount = data?.count ?? 0;
-  const totalPages = data?.total_pages ?? 1;
 
   if (!results.length) {
     return (
-      <NoDataFound
-        title={t("transactions.noTransactions", "No Transactions Found")}
-        message={t(
-          "transactions.noTransactionsDescription",
-          "There are currently no transactions to display. Please check back later."
-        )}
-      />
+      <>
+        <NoDataFound
+          title={
+            emptyTitle ??
+            t("transactions.noTransactions", "No Transactions Found")
+          }
+          message={
+            emptyMessage ??
+            t(
+              "transactions.noTransactionsDescription",
+              "There are currently no transactions to display. Please check back later."
+            )
+          }
+        />
+        {transactionDetailsModal}
+      </>
     );
   }
 
-  const getFromToDisplay = (tx: AllTransactionItem) => {
-    const clean = (v: unknown): string | null => {
-      const s = String(v ?? "").trim();
-      if (!s || s === "-" || s.toLowerCase() === "null" || s.toLowerCase() === "undefined") {
-        return null;
-      }
-      return s;
-    };
-    const paymentProvider = clean((tx as any)?.payment_method?.provider);
-    const senderProvider = clean((tx as any)?.sender_provider);
-    const receiverProvider = clean((tx as any)?.receiver_provider);
-    const recipientName = clean((tx as any)?.recipient_name);
-    const fallbackAsset = clean(tx.currency || tx.asset) || "USD";
-
-    // P2P Withdrawal/Deposit sometimes arrive in the "all" feed without stable `type/sub_type`.
-    // Use wallet_type + transaction_type as a strong hint when present.
-    const walletType = (clean((tx as any)?.wallet_type) || "").toLowerCase();
-    const txTypeHint = (clean((tx as any)?.transaction_type) || "").toLowerCase();
-    if (
-      (walletType === "crypto" && txTypeHint.includes("withdraw")) ||
-      (walletType === "p2p" && txTypeHint.includes("deposit"))
-    ) {
-      return buildP2pWithdrawalDepositFromTo({
-        ...tx,
-        transaction_type: txTypeHint || tx.sub_type,
-      } as Record<string, unknown>);
-    }
-
-    if (tx.type === "swap") {
-      return {
-        from: textFromToCell(
-          `${tx.from_currency || tx.currency} (${tx.from_network || tx.network || "-"})`
-        ),
-        to: textFromToCell(
-          `${tx.to_currency || "-"} (${tx.to_network || "-"})`
-        ),
-      };
-    }
-    if (tx.type === "exchange") {
-      return buildExchangeFromTo(tx as unknown as Record<string, unknown>);
-    }
-    if ((tx as any)?.type === "forex") {
-      const fromCurrency = clean((tx as any)?.from_currency);
-      const toCurrency = clean((tx as any)?.to_currency);
-      return {
-        from: textFromToCell(fromCurrency || fallbackAsset),
-        to: textFromToCell(
-          paymentProvider || receiverProvider || recipientName || toCurrency || "Bank / Wallet"
-        ),
-      };
-    }
-    if (tx.type === "moneyx") {
-      return {
-        from: textFromToCell(senderProvider || paymentProvider || "Sender Provider"),
-        to: textFromToCell(
-          receiverProvider || recipientName || paymentProvider || "Receiver Provider"
-        ),
-      };
-    }
-    if (tx.type === "p2p" && (tx.from_currency || tx.to_currency)) {
-      return {
-        from: textFromToCell(
-          `${tx.from_currency || tx.currency} (${tx.from_network || tx.network || "-"})`
-        ),
-        to: textFromToCell(
-          `${tx.to_currency || "-"} (${tx.to_network || "-"})`
-        ),
-      };
-    }
-    const p2pSub = (tx.sub_type || "").toLowerCase();
-    const p2pTxType = String((tx as any)?.transaction_type || "").toLowerCase();
-    const idKey = String(tx.id || "").trim();
-    // Fingerprint uses raw subtype/transaction_type when present (more stable than inferred kind).
-    const fpKey = buildP2PFingerprint({
-      kind: p2pSub || p2pTxType,
-      amount: (tx as any)?.amount,
-      currency: (tx as any)?.currency || (tx as any)?.asset,
-      network: (tx as any)?.network,
-      ts: (tx as any)?.created_at,
-    });
-    const enrich =
-      (idKey ? p2pAddressById[idKey] : null) ||
-      (fpKey ? p2pAddressByFingerprint[fpKey] : null) ||
-      null;
-
-    const inferP2PKind = (): string => {
-      const raw = (p2pSub || p2pTxType || "").trim();
-      if (raw.includes("withdraw")) return "withdrawal";
-      if (raw.includes("deposit")) return "deposit";
-      if (raw.includes("buy")) return "buy";
-      if (raw.includes("sell")) return "sell";
-      // If enrichment exists but has only receiver_wallet (no from/to), it's a withdrawal payload.
-      if (enrich && !enrich.from && !enrich.to && !!enrich.receiver) return "withdrawal";
-      // Some "all" feed rows include wallet_type but not sub_type.
-      const walletType = String((tx as any)?.wallet_type || "").toLowerCase().trim();
-      if (walletType === "crypto") return "withdrawal";
-      if (walletType === "p2p") return "deposit";
-      // Heuristic: legacy "all" feed often only sets address fields
-      if (tx.withdrawal_address) return "withdrawal";
-      if (tx.deposit_address) return "deposit";
-      return raw;
-    };
-    const p2pKind = inferP2PKind(); // "deposit"/"withdrawal"/"buy"/"sell"
-
-    if (tx.type === "p2p" && (p2pKind === "withdrawal" || p2pKind === "deposit")) {
-      return buildP2pWithdrawalDepositFromTo(
-        {
-          ...tx,
-          transaction_type: p2pKind,
-        } as Record<string, unknown>,
-        enrich
-      );
-    }
-    if (tx.type === "p2p" && p2pSub === "buy") {
-      const fromAsset = String((tx as any)?.from_asset || "USD").trim() || "USD";
-      const toAsset =
-        String((tx as any)?.to_asset || formatP2pCryptoLabel(tx) || "USDT").trim() || "USDT";
-      return { from: textFromToCell(fromAsset), to: textFromToCell(toAsset) };
-    }
-    if (tx.type === "p2p" && p2pSub === "sell") {
-      const fromAsset =
-        String((tx as any)?.from_asset || formatP2pCryptoLabel(tx) || "USDT").trim() || "USDT";
-      const toAsset = String((tx as any)?.to_asset || "USD").trim() || "USD";
-      return { from: textFromToCell(fromAsset), to: textFromToCell(toAsset) };
-    }
-    if (tx.type === "p2p") {
-      const cryptoLabel = formatP2pCryptoLabel(tx);
-      return {
-        from: textFromToCell("P2P"),
-        to: textFromToCell(`${cryptoLabel} · Wallet`),
-      };
-    }
-    return {
-      from: textFromToCell(senderProvider || paymentProvider || fallbackAsset),
-      to: textFromToCell(
-        receiverProvider || recipientName || paymentProvider || "Bank / Wallet"
-      ),
-    };
-  };
+  const renderViewDetailsButton = (
+    tx: AllTransactionItem,
+    extraClassName = ""
+  ) => (
+    <button
+      type="button"
+      onClick={(e) => {
+        e.stopPropagation();
+        openTransactionDetails(tx);
+      }}
+      className={`inline-flex flex-row items-center justify-center gap-2 px-4 py-2.5 min-w-[148px] rounded-xl text-sm font-semibold text-[#1D8751] border border-[#1D8751]/40 bg-[#1D8751]/8 hover:bg-[#1D8751]/15 dark:hover:bg-[#1D8751]/20 transition-colors whitespace-nowrap ${extraClassName}`}
+      aria-label={t("transactions.viewDetails", "View transaction details")}
+    >
+      <Eye className="w-5 h-5 shrink-0" aria-hidden />
+      <span>{t("transactions.viewDetails", "View details")}</span>
+    </button>
+  );
 
   const renderAssetIcon = (tx: AllTransactionItem) => {
-    if (tx.type === "moneyx" && !tx.currency && !tx.asset) {
-      return (
-        <div className="w-7 h-7 sm:w-8 sm:h-8 rounded-full bg-[#1D8751] flex items-center justify-center flex-shrink-0">
-          <FaUniversity className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-white" />
-        </div>
-      );
+    const label = tx.currency || tx.asset || (tx.type === "moneyx" ? "USD" : "Asset");
+    if (isUsdOrMoneyXTransaction(tx, label)) {
+      return <UsdFlagIcon size={32} className="w-7 h-7 sm:w-8 sm:h-8 shadow-sm" alt={label} />;
     }
-    // Use getHighResAssetIcon based on currency/ticker for proper asset logos
-    const ticker = tx.currency || tx.asset;
-    if (ticker) {
-      return (
-        <img
-          src={getHighResAssetIcon({ ticker })}
-          alt={ticker}
-          className="w-7 h-7 sm:w-8 sm:h-8 rounded-full object-cover shadow-sm flex-shrink-0"
-          onError={(e) => {
-            e.currentTarget.style.display = "none";
-          }}
-        />
-      );
-    }
+    const iconSrc = resolveDashboardTransactionAssetImage(tx);
     return (
-      <div className="w-7 h-7 sm:w-8 sm:h-8 rounded-full bg-[#1D8751] flex items-center justify-center flex-shrink-0">
-        <span className="text-xs font-semibold text-white">
-          {(tx.currency || tx.asset || "?").slice(0, 1)}
-        </span>
-      </div>
+      <img
+        src={iconSrc}
+        alt={label}
+        className="w-7 h-7 sm:w-8 sm:h-8 rounded-full object-cover shadow-sm flex-shrink-0"
+      />
     );
   };
 
@@ -442,22 +661,33 @@ const AllTransactions = () => {
       display.to
     );
 
-    const assetName = getAssetName(tx.currency || tx.asset || "USDT");
+    const assetLabels = getAssetColumnLabels(tx);
     return (
       <tr
         key={tx.id || `tx-${index}`}
-        className="hover:bg-gray-100 dark:hover:bg-[#23232A] transition-colors"
+        className="hover:bg-gray-100 dark:hover:bg-[#23232A] transition-colors cursor-pointer"
+        onClick={() => openTransactionDetails(tx)}
+        onDoubleClick={() => openTransactionDetails(tx)}
+        role="button"
+        tabIndex={0}
+        onKeyDown={(e) => {
+          if (e.key === "Enter" || e.key === " ") {
+            e.preventDefault();
+            openTransactionDetails(tx);
+          }
+        }}
+        aria-label={t("transactions.viewDetailsRow", "View transaction details")}
       >
         <td className="px-3 sm:px-4 lg:px-6 py-4 border-b border-gray-200 dark:border-[#35353E]">
           <div className="flex items-center gap-2 sm:gap-3">
             {renderAssetIcon(tx)}
             <div className="flex flex-col min-w-0">
               <span className="font-semibold text-sm sm:text-base text-gray-900 dark:text-white truncate">
-                {tx.currency || tx.asset || "USDT"}
+                {assetLabels.title}
               </span>
-              {assetName && (
+              {assetLabels.subtitle && (
                 <span className="text-xs text-gray-500 dark:text-[#A0A3BC] truncate">
-                  {assetName}
+                  {assetLabels.subtitle}
                 </span>
               )}
             </div>
@@ -466,6 +696,7 @@ const AllTransactions = () => {
         <td className="px-3 sm:px-4 lg:px-6 py-4 border-b border-gray-200 dark:border-[#35353E]">
           <TransactionFromToCell
             label={fromCell.label}
+            subLabel={fromCell.subLabel}
             copyValue={fromCell.copyValue}
             iconUrl={fromCell.iconUrl}
           />
@@ -473,6 +704,7 @@ const AllTransactions = () => {
         <td className="px-3 sm:px-4 lg:px-6 py-4 border-b border-gray-200 dark:border-[#35353E]">
           <TransactionFromToCell
             label={toCell.label}
+            subLabel={toCell.subLabel}
             copyValue={toCell.copyValue}
             iconUrl={toCell.iconUrl}
           />
@@ -483,7 +715,10 @@ const AllTransactions = () => {
         >
           {formatAmount(tx.amount)}
         </td>
-        <td className="px-3 sm:px-4 lg:px-6 py-4 border-b border-gray-200 dark:border-[#35353E]">
+        <td
+          className="px-3 sm:px-4 lg:px-6 py-4 border-b border-gray-200 dark:border-[#35353E]"
+          onClick={(e) => e.stopPropagation()}
+        >
           <TransactionStatusCell
             status={tx.status}
             transactionId={
@@ -494,7 +729,13 @@ const AllTransactions = () => {
           />
         </td>
         <td className="px-3 sm:px-4 lg:px-6 py-4 border-b border-gray-200 dark:border-[#35353E] text-sm sm:text-base text-gray-500 dark:text-[#A0A3BC]">
-          {formatRecentTime(tx.created_at)}
+          {formatDashboardTransactionWhen(tx.created_at)}
+        </td>
+        <td
+          className="px-3 sm:px-4 lg:px-6 py-4 border-b border-gray-200 dark:border-[#35353E] whitespace-nowrap align-middle"
+          onClick={(e) => e.stopPropagation()}
+        >
+          {renderViewDetailsButton(tx)}
         </td>
       </tr>
     );
@@ -510,66 +751,78 @@ const AllTransactions = () => {
       display.to
     );
 
+    const assetLabels = getAssetColumnLabels(tx);
+
     const renderMobileAssetIcon = () => {
-      if (tx.type === "moneyx" && !tx.asset_image) {
-        return (
-          <div className="w-10 h-10 rounded-full bg-[#1D8751] flex items-center justify-center flex-shrink-0">
-            <FaUniversity className="w-5 h-5 text-white" />
-          </div>
-        );
+      const label = tx.currency || tx.asset || (tx.type === "moneyx" ? "USD" : "Asset");
+      if (isUsdOrMoneyXTransaction(tx, label)) {
+        return <UsdFlagIcon size={40} className="w-10 h-10 shadow-sm" alt={label} />;
       }
-      if (tx.asset_image) {
-        return (
-          <img
-            src={tx.asset_image}
-            alt={tx.currency || "Asset"}
-            className="w-10 h-10 rounded-full shadow-sm flex-shrink-0"
-            onError={(e) => {
-              e.currentTarget.style.display = "none";
-            }}
-          />
-        );
-      }
+      const iconSrc = resolveDashboardTransactionAssetImage(tx);
       return (
-        <div className="w-10 h-10 rounded-full bg-[#1D8751] flex items-center justify-center flex-shrink-0">
-          <span className="text-sm font-semibold text-white">
-            {(tx.currency || tx.asset || "?").slice(0, 1)}
-          </span>
-        </div>
+        <img
+          src={iconSrc}
+          alt={label}
+          className="w-10 h-10 rounded-full object-cover shadow-sm flex-shrink-0"
+        />
       );
     };
 
     return (
       <div
         key={tx.id || `tx-${index}`}
-        className="bg-transparent border border-[#E8EFF5] dark:border-[#35353E] rounded-xl p-4 space-y-3"
+        className="bg-transparent border border-[#E8EFF5] dark:border-[#35353E] rounded-xl p-4 space-y-3 cursor-pointer hover:border-[#1D8751]/40 transition-colors"
+        onClick={() => openTransactionDetails(tx)}
+        onDoubleClick={() => openTransactionDetails(tx)}
+        role="button"
+        tabIndex={0}
+        onKeyDown={(e) => {
+          if (e.key === "Enter" || e.key === " ") {
+            e.preventDefault();
+            openTransactionDetails(tx);
+          }
+        }}
       >
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-3">
+        <div className="space-y-2">
+          <div className="flex items-center gap-3 min-w-0">
             {renderMobileAssetIcon()}
-            <div>
-              <div className="font-semibold text-sm uppercase tracking-wide text-gray-900 dark:text-white">
-                {tx.currency || tx.asset || "USDT"}
+            <div className="min-w-0 flex-1">
+              <div className="font-semibold text-sm uppercase tracking-wide text-gray-900 dark:text-white truncate">
+                {assetLabels.title}
               </div>
-              <span className="text-[10px] px-2 py-0.5 rounded-full bg-[#1D8751]/10 text-[#1D8751]">
-                {getTypeLabel(tx.type, tx.sub_type)}
-              </span>
+              {assetLabels.subtitle && (
+                <div className="text-xs text-gray-500 dark:text-[#A0A3BC] truncate">
+                  {assetLabels.subtitle}
+                </div>
+              )}
             </div>
           </div>
-          <TransactionStatusCell
-            status={tx.status}
-            transactionId={
-              (tx as any)?.referral_withdrawal_id ||
-              (tx as any)?.withdrawal_id ||
-              tx.id
-            }
-          />
+          <div
+            className="flex flex-wrap items-center gap-2 pt-2 border-t border-gray-200 dark:border-[#35353E]"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <span className="text-[11px] px-2.5 py-1 rounded-full font-semibold bg-[#1D8751]/10 text-[#1D8751]">
+              {getTypeLabel(tx.type, tx.sub_type)}
+            </span>
+            <TransactionStatusCell
+              status={tx.status}
+              transactionId={
+                (tx as any)?.referral_withdrawal_id ||
+                (tx as any)?.withdrawal_id ||
+                tx.id
+              }
+            />
+            <span className="text-xs font-medium text-gray-500 dark:text-[#A0A3BC] whitespace-nowrap">
+              {formatDashboardTransactionWhen(tx.created_at)}
+            </span>
+          </div>
         </div>
         <div className="grid grid-cols-2 gap-3 text-sm">
           <div>
             <div className="text-xs text-gray-500 dark:text-[#A0A3BC] mb-1">From</div>
             <TransactionFromToCell
               label={fromCell.label}
+              subLabel={fromCell.subLabel}
               copyValue={fromCell.copyValue}
               iconUrl={fromCell.iconUrl}
             />
@@ -578,6 +831,7 @@ const AllTransactions = () => {
             <div className="text-xs text-gray-500 dark:text-[#A0A3BC] mb-1">To</div>
             <TransactionFromToCell
               label={toCell.label}
+              subLabel={toCell.subLabel}
               copyValue={toCell.copyValue}
               iconUrl={toCell.iconUrl}
             />
@@ -594,9 +848,12 @@ const AllTransactions = () => {
           <div>
             <div className="text-xs text-gray-500 dark:text-[#A0A3BC] mb-1">When</div>
             <div className="font-medium text-sm text-gray-500 dark:text-[#A0A3BC]">
-              {formatRecentTime(tx.created_at)}
+              {formatDashboardTransactionWhen(tx.created_at)}
             </div>
           </div>
+        </div>
+        <div className="pt-2" onClick={(e) => e.stopPropagation()}>
+          {renderViewDetailsButton(tx, "w-full min-w-0")}
         </div>
       </div>
     );
@@ -624,10 +881,15 @@ const AllTransactions = () => {
                 t("transactions.amount", "Amount"),
                 t("transactions.status", "Status"),
                 t("transactions.when", "When"),
+                t("transactions.actions", "Actions"),
               ].map((h) => (
                 <th
                   key={h}
-                  className="px-3 sm:px-4 lg:px-6 py-3 text-left text-xs sm:text-sm font-medium text-gray-600 dark:text-[#788099]"
+                  className={`px-3 sm:px-4 lg:px-6 py-3 text-left text-xs sm:text-sm font-medium text-gray-600 dark:text-[#788099] ${
+                    h === t("transactions.actions", "Actions")
+                      ? "min-w-[160px] whitespace-nowrap"
+                      : ""
+                  }`}
                 >
                   <span className="inline-flex items-center">
                     {h}
@@ -706,6 +968,8 @@ const AllTransactions = () => {
           </div>
         </div>
       )}
+
+      {transactionDetailsModal}
     </div>
   );
 };

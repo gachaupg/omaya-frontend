@@ -20,6 +20,7 @@ import { showToast } from "@/lib/utils/toast";
 import { useExpressI18n } from "@/lib/useExpressI18n";
 import { useBookmarkedAddresses } from "@/features/express/hooks/useBookmarkedAddresses";
 import { BookmarkDropdown } from "@/features/express/components/forms/BookmarkDropdown";
+import ProviderPaymentDetailsCard from "@/components/ui/ProviderPaymentDetailsCard";
 import { usePaymentMethodsDisplay } from "@/features/express/hooks/useDataDisplay";
 import { setAuthRedirectPath, buildMoneyXRedirectPath, setMoneyXPrefillState } from "@/lib/utils/authRedirect";
 import { openKYCModal, checkKYCStatus } from "@/features/auth/slices/authSlice";
@@ -244,7 +245,6 @@ export default function TransferForm({ isHomePage = false, onTransfer, commissio
   const [isTermsAccepted, setIsTermsAccepted] = useState(false);
   const [apiCommission, setApiCommission] = useState<number | null>(null);
   const [apiCommissionIsPercentage, setApiCommissionIsPercentage] = useState(true);
-  const [accountNumberCopied, setAccountNumberCopied] = useState(false);
   const commissionFetchTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const paymentDetailsRef = useRef<HTMLDivElement>(null);
   const MONEYX_LEGAL_RETURN_STATE_KEY = "omaya_moneyx_legal_return_state";
@@ -416,7 +416,9 @@ export default function TransferForm({ isHomePage = false, onTransfer, commissio
         return provider.includes(assetFilter) || assetFilter.includes(provider);
       })
       .map((detail: any, idx: number) => {
-        const address = String(detail?.account_number ?? detail?.wallet_address ?? "").trim();
+        const address = String(
+          detail?.account_number ?? detail?.mobile_number ?? detail?.wallet_address ?? ""
+        ).trim();
         const providerName = String(
           detail?.payment_provider_name ?? detail?.provider_name ?? detail?.payment_method_name ?? "Approved payment"
         ).trim();
@@ -1307,71 +1309,19 @@ export default function TransferForm({ isHomePage = false, onTransfer, commissio
           <h2 className="text-xl font-semibold mb-2 text-gray-900 dark:text-[#788099] inline-flex items-center gap-2">
             1- Account details
           </h2>
-          {(() => {
-            const accountName =
-              selectedFromPaymentDetail?.account_name ??
-              selectedFromPaymentDetail?.payment_details?.[0]?.account_name ??
-              getProviderName(selectedFromPaymentDetail) ??
-              "—";
-            const accountNumber =
-              selectedFromPaymentDetail?.account_number ??
-              selectedFromPaymentDetail?.payment_details?.[0]?.account_number ??
-              "—";
-            const copyAccountNumber = () => {
-              if (!accountNumber || accountNumber === "—") return;
-              navigator.clipboard.writeText(accountNumber).then(
-                () => {
-                  setAccountNumberCopied(true);
-                  showToast.success("Account number copied");
-                  setTimeout(() => setAccountNumberCopied(false), 2000);
-                },
-                () => showToast.error("Failed to copy")
-              );
-            };
-            return (
-              <div className="bg-white dark:bg-[#18181D] border border-border dark:border-[#35353E] rounded-2xl p-4 mb-4 sm:mb-6">
-                <p className="text-[#35353e] dark:text-[#788099] text-sm sm:text-base mb-4">
-                  Copy the following account to deposit the <span className="font-semibold text-gray-900 dark:text-white">${payAmount.toFixed(2)}</span> amount
-                </p>
-                <div className="space-y-3">
-                  <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-1 p-3 border border-border dark:border-[#35353E] rounded-xl">
-                    <span className="text-[#788099] text-sm">Account name</span>
-                    <span className="text-[#35353e] dark:text-white font-medium text-sm truncate">
-                      {accountName}
-                    </span>
-                  </div>
-                  <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 p-3 border border-border dark:border-[#35353E] rounded-xl">
-                    <span className="text-[#788099] text-sm">Account number</span>
-                    <div className="flex items-center justify-between gap-4 min-w-0 w-full">
-                      
-                      <span className="text-[#35353e] dark:text-white font-medium text-sm truncate">
-                        {accountNumber}
-                      </span>
-                      {accountNumber !== "—" && (
-                        <button
-                          type="button"
-                          onClick={copyAccountNumber}
-                          className="flex-shrink-0 p-1.5 rounded-lg bg-[#1D8751]/20 text-[#1D8751] hover:bg-[#1D8751]/30 transition-colors"
-                          title="Copy account number"
-                          aria-label="Copy account number"
-                        >
-                          {accountNumberCopied ? (
-                            <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-                            </svg>
-                          ) : (
-                            <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h2m8 0h2a2 2 0 012 2v2m2 4a2 2 0 01-2 2h-8a2 2 0 01-2-2v-8" />
-                            </svg>
-                          )}
-                        </button>
-                      )}
-                    </div>
-                  </div>
-                </div>
-              </div>
-            );
-          })()}
+          <ProviderPaymentDetailsCard
+            paymentDetail={selectedFromPaymentDetail}
+            fallbackProviderName={getProviderName(selectedFromPaymentDetail)}
+            instruction={
+              <>
+                Copy the following account to deposit the{" "}
+                <span className="font-semibold text-gray-900 dark:text-white">
+                  ${payAmount.toFixed(2)}
+                </span>{" "}
+                amount
+              </>
+            }
+          />
 
           {/* 2- Bank Account Address (user's receiving account) */}
           <h2 className="text-xl font-bold mb-2 text-[#788099] dark:text-[#788099] inline-flex items-center gap-2">

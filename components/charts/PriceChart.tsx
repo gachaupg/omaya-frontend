@@ -173,7 +173,7 @@ const CryptoCard = ({
       <div className="flex flex-col gap-0.5 min-w-0 flex-1">
         {transactionCount !== undefined ? (
           <>
-            <p className="text-[10px] sm:text-xs text-gray-500 truncate">Omaya Transactions</p>
+            <p className="text-[10px] sm:text-xs text-gray-500 truncate">OMAYA Transactions</p>
             <p className="text-base sm:text-lg">{transactionCount}</p>
           </>
         ) : (

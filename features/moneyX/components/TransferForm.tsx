@@ -19,6 +19,7 @@ import { showToast } from "../../../lib/utils/toast";
 import { scrollAppToTop } from "@/lib/utils/scrollAppToTop";
 import { useBookmarkedAddresses } from "@/features/express/hooks/useBookmarkedAddresses";
 import { BookmarkDropdown } from "@/features/express/components/forms/BookmarkDropdown";
+import ProviderPaymentDetailsCard from "@/components/ui/ProviderPaymentDetailsCard";
 import { usePaymentMethodsDisplay } from "../../express/hooks/useDataDisplay";
 import { useExpressI18n } from "@/lib/useExpressI18n";
 import {
@@ -213,7 +214,6 @@ export default function TransferForm({ onTransfer, initialState, commissionType 
   const [expandedTerms, setExpandedTerms] = useState(false);
   const [apiCommission, setApiCommission] = useState<number | null>(null);
   const [apiCommissionIsPercentage, setApiCommissionIsPercentage] = useState(true);
-  const [accountNumberCopied, setAccountNumberCopied] = useState(false);
   const commissionFetchTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const paymentDetailsRef = useRef<HTMLDivElement>(null);
 
@@ -395,7 +395,9 @@ export default function TransferForm({ onTransfer, initialState, commissionType 
         return provider.includes(assetFilter) || assetFilter.includes(provider);
       })
       .map((detail: any, idx: number) => {
-        const address = String(detail?.account_number ?? detail?.wallet_address ?? "").trim();
+        const address = String(
+          detail?.account_number ?? detail?.mobile_number ?? detail?.wallet_address ?? ""
+        ).trim();
         const providerName = String(
           detail?.payment_provider_name ?? detail?.provider_name ?? detail?.payment_method_name ?? "Approved payment"
         ).trim();
@@ -1193,7 +1195,7 @@ export default function TransferForm({ onTransfer, initialState, commissionType 
     !selectedToPaymentDetail;
 
   return (
-    <div className="flex flex-col dark:bg-[var(--bg-color)] pl-0 pr-2 sm:pr-0 mr-0 sm:mr-40 w-full mx-auto">
+    <div className="flex flex-col dark:bg-[var(--bg-color)] w-full box-border">
       {/* Money X Page Title */}
       <h1 className="flex items-center text-xl sm:text-2xl font-bold mb-4 sm:mb-6 text-[#76777B] dark:text-white [.deem_&]:text-white uppercase">
         Money <span>
@@ -1465,72 +1467,19 @@ export default function TransferForm({ onTransfer, initialState, commissionType 
             1- Account details
           </h2>
 
-          {/* Card: instruction + account name/number with copy */}
-          {(() => {
-            const accountName =
-              selectedFromPaymentDetail?.account_name ??
-              selectedFromPaymentDetail?.payment_details?.[0]?.account_name ??
-              getProviderName(selectedFromPaymentDetail) ??
-              "—";
-            // Display only the provider's account number (where user sends money); do not use what user types
-            const accountNumber =
-              selectedFromPaymentDetail?.account_number ??
-              selectedFromPaymentDetail?.payment_details?.[0]?.account_number ??
-              "—";
-            const copyAccountNumber = () => {
-              if (!accountNumber || accountNumber === "—") return;
-              navigator.clipboard.writeText(accountNumber).then(
-                () => {
-                  setAccountNumberCopied(true);
-                  showToast.success("Account number copied");
-                  setTimeout(() => setAccountNumberCopied(false), 2000);
-                },
-                () => showToast.error("Failed to copy")
-              );
-            };
-            return (
-              <div className="bg-white dark:bg-[#18181D] border border-border dark:border-[#35353E] rounded-2xl p-4 mb-4 sm:mb-6">
-                <p className="text-[#35353e] dark:text-[#788099] text-sm sm:text-base mb-4">
-                  Copy the following account to deposit the <span className="font-semibold text-gray-900 dark:text-white">${payAmount.toFixed(2)}</span> amount
-                </p>
-                <div className="space-y-3">
-                  <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-1 p-3 border border-border dark:border-[#35353E] rounded-xl">
-                    <span className="text-[#788099] text-sm">Account name</span>
-                    <span className="text-[#35353e] dark:text-white font-medium text-sm truncate">
-                      {accountName}
-                    </span>
-                  </div>
-                  <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 p-3 border border-border dark:border-[#35353E] rounded-xl">
-                    <span className="text-[#788099] text-sm">Account number</span>
-                    <div className="flex items-center gap-2 min-w-0">
-                      <span className="text-[#35353e] dark:text-white font-medium text-sm truncate">
-                        {accountNumber}
-                      </span>
-                      {accountNumber !== "—" && (
-                        <button
-                          type="button"
-                          onClick={copyAccountNumber}
-                          className="flex-shrink-0 p-1.5 rounded-lg bg-[#1D8751]/20 text-[#1D8751] hover:bg-[#1D8751]/30 transition-colors"
-                          title="Copy account number"
-                          aria-label="Copy account number"
-                        >
-                          {accountNumberCopied ? (
-                            <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-                            </svg>
-                          ) : (
-                            <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h2m8 0h2a2 2 0 012 2v2m2 4a2 2 0 01-2 2h-8a2 2 0 01-2-2v-8" />
-                            </svg>
-                          )}
-                        </button>
-                      )}
-                    </div>
-                  </div>
-                </div>
-              </div>
-            );
-          })()}
+          <ProviderPaymentDetailsCard
+            paymentDetail={selectedFromPaymentDetail}
+            fallbackProviderName={getProviderName(selectedFromPaymentDetail)}
+            instruction={
+              <>
+                Copy the following account to deposit the{" "}
+                <span className="font-semibold text-gray-900 dark:text-white">
+                  ${payAmount.toFixed(2)}
+                </span>{" "}
+                amount
+              </>
+            }
+          />
 
           {/* Bank Account Address Section - Dynamic Title */}
           <h2 className="text-xl font-semibold mb-2 text-gray-900 dark:text-[#788099] inline-flex items-center gap-2">
@@ -1787,7 +1736,7 @@ export default function TransferForm({ onTransfer, initialState, commissionType 
                 }
                 className="w-4 h-4 mt-0.5 rounded border-[#1D8751] text-[#1D8751] accent-[#1D8751] cursor-pointer"
               />
-              <span>I have read and agreed to Omaya Exchange <Link href="/legal/terms-of-service" rel="noopener noreferrer" className="text-[#1D8751] underline" onClick={(e) => { e.stopPropagation(); handleBeforeLegalNavigate(); }}>Terms of Use</Link>, <Link href="/legal/privacy-policy" rel="noopener noreferrer" className="text-[#1D8751] underline" onClick={(e) => { e.stopPropagation(); handleBeforeLegalNavigate(); }}>Privacy Policy</Link></span>
+              <span>I have read and agreed to OMAYA.io <Link href="/legal/terms-of-service" rel="noopener noreferrer" className="text-[#1D8751] underline" onClick={(e) => { e.stopPropagation(); handleBeforeLegalNavigate(); }}>Terms of Use</Link>, <Link href="/legal/privacy-policy" rel="noopener noreferrer" className="text-[#1D8751] underline" onClick={(e) => { e.stopPropagation(); handleBeforeLegalNavigate(); }}>Privacy Policy</Link></span>
             </div>
           </div>
 

@@ -1,8 +1,9 @@
 import React, { useState, useEffect } from "react";
-import { FaCheckCircle } from "react-icons/fa";
 import { useRouter } from "next/navigation";
 import CopyButton from "@/components/ui/CopyButton";
 import { useTheme } from "@/context/theme";
+import { formatSwapDisplayTicker } from "@/features/swap/utils/swapDisplayFormat";
+import { ExpressSuccessHero } from "@/features/express/components/ExpressSuccessHero";
 
 const GREEN = "#309A64";
 
@@ -261,18 +262,8 @@ const SuccessPage: React.FC<SuccessPageProps> = ({
   }, []);
   
   return (
-    <div className="flex flex-col mt-1 w-full max-w-2xl mx-auto px-4">
-      {/* Success Image */}
-      <div className="flex flex-col w-full items-center mb-4">
-        <img 
-          className="w-80 h-40 object-contain" 
-          src={isDark 
-            ? "/assets/Screenshot_2025-08-29_191548_two36s.png" 
-            : "/assets/success_wdhc19.png"
-          } 
-          alt="Success" 
-        />
-      </div>
+    <div className="flex flex-col w-full max-w-2xl mx-auto px-4 pt-0 pb-2">
+      <ExpressSuccessHero className="mb-1" />
 
       {/* Main Content Container */}
       <div className={`w-full rounded-[18px] shadow-xl border-2 ${
@@ -336,7 +327,7 @@ const SuccessPage: React.FC<SuccessPageProps> = ({
               }`}>You Received</div>
               <div className="font-bold flex items-center justify-end gap-2" style={{ color: GREEN }}>
                 <span>{realData.receivedAmount} </span>
-                <span>{realData.receivedCurrency}</span>
+                <span>{formatSwapDisplayTicker(realData.receivedCurrency)}</span>
               </div>
             </div>
           </div>
@@ -379,7 +370,7 @@ const SuccessPage: React.FC<SuccessPageProps> = ({
                   />
                 )}
                 <span>{realData.netAmount}</span>
-                <span>{realData.receivedCurrency}</span>
+                <span>{formatSwapDisplayTicker(realData.receivedCurrency)}</span>
               </div>
             </div>
           </div>

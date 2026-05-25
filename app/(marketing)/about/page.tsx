@@ -62,8 +62,8 @@ const AboutPage = () => {
     },
     {
       icon: DollarSign,
-      value: "$10M+",
-      label: t("marketing.aboutPage.stat.dailyTx", "Daily Transactions"),
+      value: "100M+",
+      label: t("marketing.aboutPage.stat.totalVolume", "Total Volume"),
     },
     {
       icon: Globe,
@@ -203,7 +203,7 @@ const AboutPage = () => {
       year: "2020",
       quarter: "Q1",
       title: "Foundation",
-      description: "OMAYA Exchange was founded by crypto pioneers and fintech experts with a vision to revolutionize digital asset trading.",
+      description: "OMAYA.io was founded by crypto pioneers and fintech experts with a vision to revolutionize digital asset trading.",
       icon: Rocket,
       pills: ["10 Cryptocurrencies", "Beta Launch", "1,000+ Users"],
       image: "/assets/Container_9_e1cnzo.png",
@@ -215,7 +215,7 @@ const AboutPage = () => {
       title: "Rapid Growth",
       description: "Expanded to 50 countries and reached 10,000 active users with enhanced trading features and mobile app launch.",
       icon: TrendingUp,
-      pills: ["50 Countries", "$100M+ Volume", "10K+ Users"],
+      pills: ["50 Countries", "100M+ Total Volume", "10K+ Users"],
       image: "/assets/Container_5_aj1cpq.png",
       align: "left",
     },
@@ -254,7 +254,7 @@ const AboutPage = () => {
             <div className="inline-block mb-8">
               <div className="px-4 py-1.5 rounded-3xl bg-[#1D87511A] border border-[#1D87514D] dark:bg-[#1D8751]/10 dark:border-[#1D8751]/30">
                 <p className="text-sm md:text-sm text-white dark:text-[#1D8751] font-medium">
-                  {t("marketing.aboutPage.welcome", "Welcome to OMAYA Exchange")}
+                  {t("marketing.aboutPage.welcome", "Welcome to OMAYA.io")}
                 </p>
               </div>
             </div>
@@ -262,7 +262,7 @@ const AboutPage = () => {
             {/* Main Heading */}
             <h1 className="text-5xl md:text-6xl lg:text-7xl font-bold mb-6">
               <div className="text-white">{t("marketing.aboutPage.titleAbout", "About")}</div>
-              <div className="text-white dark:text-[#1D8751]">{t("marketing.aboutPage.titleBrand", "OMAYA Exchange")}</div>
+              <div className="text-white dark:text-[#1D8751]">{t("marketing.aboutPage.titleBrand", "OMAYA.io")}</div>
             </h1>
 
             {/* Tagline */}
@@ -304,53 +304,25 @@ const AboutPage = () => {
           </div>
 
           <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
-            <div className="text-center p-6 rounded-2xl bg-white dark:bg-[#14141A] border border-gray-100 dark:border-[#20202A] shadow-sm">
-              <div className="inline-flex items-center justify-center w-12 h-12 rounded-xl bg-[#1D8751]/10 mb-4">
-                <Users className="w-6 h-6 text-[#1D8751]" />
-              </div>
-              <div className="text-3xl md:text-4xl font-bold text-gray-900 dark:text-white mb-2">
-                50,000+
-              </div>
-              <div className="text-sm text-gray-600 dark:text-gray-400">
-                {stats[0].label}
-              </div>
-            </div>
-
-            <div className="text-center p-6 rounded-2xl bg-white dark:bg-[#14141A] border border-gray-100 dark:border-[#20202A] shadow-sm">
-              <div className="inline-flex items-center justify-center w-12 h-12 rounded-xl bg-[#1D8751]/10 mb-4">
-                <Zap className="w-6 h-6 text-[#1D8751]" />
-              </div>
-              <div className="text-3xl md:text-4xl font-bold text-gray-900 dark:text-white mb-2">
-                $10M+
-              </div>
-              <div className="text-sm text-gray-600 dark:text-gray-400">
-                {stats[1].label}
-              </div>
-            </div>
-
-            <div className="text-center p-6 rounded-2xl bg-white dark:bg-[#14141A] border border-gray-100 dark:border-[#20202A] shadow-sm">
-              <div className="inline-flex items-center justify-center w-12 h-12 rounded-xl bg-[#1D8751]/10 mb-4">
-                <Globe className="w-6 h-6 text-[#1D8751]" />
-              </div>
-              <div className="text-3xl md:text-4xl font-bold text-gray-900 dark:text-white mb-2">
-                150+
-              </div>
-              <div className="text-sm text-gray-600 dark:text-gray-400">
-                {stats[2].label}
-              </div>
-            </div>
-
-            <div className="text-center p-6 rounded-2xl bg-white dark:bg-[#14141A] border border-gray-100 dark:border-[#20202A] shadow-sm">
-              <div className="inline-flex items-center justify-center w-12 h-12 rounded-xl bg-[#1D8751]/10 mb-4">
-                <Shield className="w-6 h-6 text-[#1D8751]" />
-              </div>
-              <div className="text-3xl md:text-4xl font-bold text-gray-900 dark:text-white mb-2">
-                99.9%
-              </div>
-              <div className="text-sm text-gray-600 dark:text-gray-400">
-                {stats[3].label}
-              </div>
-            </div>
+            {stats.map((stat) => {
+              const StatIcon = stat.icon;
+              return (
+                <div
+                  key={stat.label}
+                  className="text-center p-6 rounded-2xl bg-white dark:bg-[#14141A] border border-gray-100 dark:border-[#20202A] shadow-sm"
+                >
+                  <div className="inline-flex items-center justify-center w-12 h-12 rounded-xl bg-[#1D8751]/10 mb-4">
+                    <StatIcon className="w-6 h-6 text-[#1D8751]" />
+                  </div>
+                  <div className="text-3xl md:text-4xl font-bold text-gray-900 dark:text-white mb-2">
+                    {stat.value}
+                  </div>
+                  <div className="text-sm text-gray-600 dark:text-gray-400">
+                    {stat.label}
+                  </div>
+                </div>
+              );
+            })}
           </div>
         </div>
       </section>
@@ -557,7 +529,7 @@ const AboutPage = () => {
               </span>
             </div>
             <h2 className="text-3xl md:text-4xl lg:text-5xl font-bold text-gray-900 dark:text-white mb-4">
-              Why Choose OMAYA Exchange?
+              Why Choose OMAYA.io?
             </h2>
             <p className="text-sm md:text-base text-gray-600 dark:text-gray-400 max-w-2xl mx-auto">
               Industry-leading features designed for traders of all levels.
@@ -1249,7 +1221,7 @@ const AboutPage = () => {
 
             {/* Description */}
             <p className="text-lg md:text-xl mb-10 text-gray-700 dark:text-white/90 max-w-2xl mx-auto">
-              Join thousands of traders who trust OMAYA Exchange for their digital asset needs
+              Join thousands of traders who trust OMAYA.io for their digital asset needs
             </p>
 
             {/* CTA Buttons */}
@@ -1277,7 +1249,9 @@ const AboutPage = () => {
               </div>
               <div className="flex items-center gap-2">
                 <div className="w-2 h-2 rounded-full bg-gradient-to-r from-[#1D8751] to-[#22c55e]" />
-                <span className="text-sm md:text-base">$10M+ Daily Volume</span>
+                <span className="text-sm md:text-base">
+                  {t("marketing.aboutPage.trust.totalVolume", "100M+ Total Volume")}
+                </span>
               </div>
               <div className="flex items-center gap-2">
                 <div className="w-2 h-2 rounded-full bg-gradient-to-r from-[#1D8751] to-[#22c55e]" />

@@ -25,6 +25,7 @@ import {
 import FailureStatusModal from "@/features/express/components/FailureStatusModal";
 import { resolveExpressTransactionFailureMessage } from "@/lib/utils/websocketUtils";
 import { useScrollAppToTopWhen } from "@/hooks/useScrollAppToTopWhen";
+import { encodeQrScanData } from "@/lib/utils/ussdDial";
 const formatDateTimeEastAfrica = (input: Date | number | string): string => {
   const d = input instanceof Date ? input : new Date(input);
   if (Number.isNaN(d.getTime())) return "";
@@ -1157,12 +1158,18 @@ export default function Exchanging({ transactionData, onBackToTransfer, isHomePa
     effectiveTransactionData?.currency ||
     "USD";
 
+  const flowSectionClass = isHomePage ? "w-full" : "w-full max-w-4xl mx-auto";
+
   return (
-    <div className={`w-full ${isHomePage ? 'min-h-0' : 'min-h-screen'} flex flex-col ${isHomePage ? 'pt-0 px-2 sm:px-4' : 'pt-2'} overflow-x-hidden`}>
+    <div
+      className={`w-full ${isHomePage ? "min-h-0" : "min-h-screen"} flex flex-col items-center ${
+        isHomePage ? "pt-0 px-0" : "pt-2 px-2 sm:px-4"
+      } overflow-x-hidden`}
+    >
       {/* Timer Banner */}
       {timerActive && timeRemaining > 0 && (
         <div
-          className={`w-full ${isHomePage ? 'mb-2 sm:mb-3' : 'mb-4'} ${
+          className={`${flowSectionClass} ${isHomePage ? "mb-2 sm:mb-3" : "mb-4"} ${
             timeRemaining <= 60
               ? "bg-red-500/20 border-red-500"
               : timeRemaining <= 300
@@ -1246,7 +1253,7 @@ export default function Exchanging({ transactionData, onBackToTransfer, isHomePa
       {/* Approval gate banner (withdrawal) */}
       {approvalGate.active && (
         <div
-          className={`w-full ${isHomePage ? "mb-2 sm:mb-3" : "mb-4"} border-2 rounded-2xl ${
+          className={`${flowSectionClass} ${isHomePage ? "mb-2 sm:mb-3" : "mb-4"} border-2 rounded-2xl ${
             isHomePage ? "p-2 sm:p-3" : "p-4"
           } bg-[#1D8751]/10 border-[#1D8751]`}
         >
@@ -1266,7 +1273,7 @@ export default function Exchanging({ transactionData, onBackToTransfer, isHomePa
           isDark
             ? "bg-[#23232B]  border:[#E8EFF5] dark:border-[#35353E]"
             : "bg-white border-gray-200"
-        } border-2 rounded-2xl ${isHomePage ? 'p-2 sm:p-3' : 'p-4'} shadow-lg w-full ${isHomePage ? 'mb-2 sm:mb-3' : 'mb-4'} ${isHomePage ? 'min-h-[120px] sm:min-h-[140px]' : 'min-h-[180px]'} overflow-hidden`}
+        } border-2 rounded-2xl ${isHomePage ? "p-2 sm:p-3" : "p-4"} shadow-lg ${flowSectionClass} ${isHomePage ? "mb-2 sm:mb-3" : "mb-4"} ${isHomePage ? "min-h-[120px] sm:min-h-[140px]" : "min-h-[180px]"} overflow-hidden`}
       >
         <div className={`flex flex-col justify-between ${isHomePage ? 'flex-1 py-1 sm:py-2 pr-0 sm:pr-2' : 'flex-1 py-2 pr-2'} min-w-0`}>
           <div>
@@ -1436,13 +1443,13 @@ export default function Exchanging({ transactionData, onBackToTransfer, isHomePa
 
           </div>
         </div>
-        <div className={`${isHomePage ? "flex-shrink-0 ml-0 mt-2 md:mt-0 md:ml-3" : "flex-shrink-0 ml-0 md:ml-2 md:mr-48 mt-3 sm:mt-2 md:mt-0"} flex flex-col items-center justify-center gap-3 min-w-[9rem] max-w-[220px] ${isHomePage ? 'py-1 sm:py-2' : 'py-2'}`}>
+        <div className={`${isHomePage ? "flex-shrink-0 ml-0 mt-2 md:mt-0 md:ml-3" : "flex-shrink-0 ml-0 md:ml-6 mt-3 sm:mt-2 md:mt-0"} flex flex-col items-center justify-center gap-3 min-w-[9rem] max-w-[220px] ${isHomePage ? "py-1 sm:py-2" : "py-2"}`}>
           {/* QR code */}
           <div className={`${isHomePage ? 'w-24 h-24 sm:w-28 sm:h-28' : 'w-36 h-36'} bg-white rounded-lg flex items-center justify-center flex-shrink-0`}>
             <img
-              src={`https://api.qrserver.com/v1/create-qr-code/?size=${isHomePage ? '112' : '180'}x${isHomePage ? '112' : '180'}&data=${
-                encodeURIComponent(qrPayload)
-              }`}
+              src={`https://api.qrserver.com/v1/create-qr-code/?size=${isHomePage ? '112' : '180'}x${isHomePage ? '112' : '180'}&data=${encodeQrScanData(
+                qrPayload
+              )}`}
               alt="QR Code"
               className={isHomePage ? "w-20 h-20 sm:w-24 sm:h-24" : "w-32 h-32"}
             />
@@ -1459,7 +1466,7 @@ export default function Exchanging({ transactionData, onBackToTransfer, isHomePa
       </div>
 
       {/* Progress Steps - Same as express */}
-      <div className={`flex items-center justify-between w-full ${isHomePage ? 'mb-2 sm:mb-3 px-1' : 'mb-4'} relative overflow-x-auto`}>
+      <div className={`flex items-center justify-between ${flowSectionClass} ${isHomePage ? "mb-2 sm:mb-3 px-1" : "mb-4"} relative overflow-x-auto`}>
         {/* Connecting Lines */}
         <div className={`absolute ${isHomePage ? 'top-3 sm:top-4' : 'top-5'} left-[12.5%] right-[12.5%] h-0.5 z-0 hidden sm:block`}>
           <div
@@ -1877,7 +1884,7 @@ export default function Exchanging({ transactionData, onBackToTransfer, isHomePa
       <div
         className={`${
           isDark ? "bg-[#23232B] border-[#35353E]" : "bg-white border-gray-200"
-        } border-2 rounded-2xl ${isHomePage ? 'p-3 sm:p-4' : 'p-6'} shadow-lg w-full ${isHomePage ? 'mb-2 sm:mb-3' : 'mb-4'} overflow-hidden`}
+        } border-2 rounded-2xl ${isHomePage ? "p-3 sm:p-4" : "p-6"} shadow-lg ${flowSectionClass} ${isHomePage ? "mb-2 sm:mb-3" : "mb-4"} overflow-hidden`}
       >
         <div
           className={`${
@@ -2040,7 +2047,7 @@ export default function Exchanging({ transactionData, onBackToTransfer, isHomePa
       </div>
 
       {/* Terms & Conditions */}
-      <div className="w-full rounded-2xl flex">
+      <div className={`${flowSectionClass} rounded-2xl flex`}>
         <div className={`w-full border border-[#1D8751] rounded-xl overflow-hidden transition-all duration-300 ${isDark ? "bg-[#1D1D23]" : "bg-[#F8FAFF]"}`}>
           <div className={`flex flex-col ${isHomePage ? "gap-1 sm:gap-2 p-2 sm:p-3" : "gap-2 p-3"}`}>
             <div className="flex items-center gap-2">

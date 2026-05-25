@@ -4,6 +4,7 @@
 
 import React from "react";
 import { TransactionSummary } from "../types";
+import { parseSummaryNumber } from "@/lib/utils/normalizeTransactionSummary";
 
 interface VolumeChartProps {
   transactionSummary: TransactionSummary;
@@ -18,54 +19,50 @@ const VolumeChart: React.FC<VolumeChartProps> = ({ transactionSummary }) => {
     }).format(value || 0);
   };
 
-  // Clean total volume value - remove any "USD" and "USDT" currency labels
-  const cleanTotalVolume = () => {
-    const rawValue = transactionSummary?.total_volume;
-    if (!rawValue) return "0.00";
-    
-    // If it's a number, format it
-    if (!isNaN(Number(rawValue))) {
-      return formatValue(Number(rawValue));
-    }
-    
-    // If it's a string, clean it up (remove USD and USDT)
-    if (typeof rawValue === 'string') {
-      const cleanedValue = rawValue
-        .replace(/\bUSD\b/gi, '')
-        .replace(/\bUSDT\b/gi, '')
-        .replace(/\s+/g, ' ')
-        .trim();
-      const numValue = parseFloat(cleanedValue.replace(/,/g, ''));
-      if (!isNaN(numValue)) {
-        return formatValue(numValue);
-      }
-      return cleanedValue;
-    }
-    
-    return "0.00";
-  };
-
   const summary = transactionSummary as Record<string, any>;
   const byStatus = summary?.total_moneyx_by_status;
   const moneyXVolume =
     (typeof byStatus === "object" && byStatus !== null
-      ? (Number(byStatus.approved) || 0) + (Number(byStatus.completed) || 0)
+      ? parseSummaryNumber(byStatus.approved) +
+        parseSummaryNumber(byStatus.completed) +
+        parseSummaryNumber(byStatus.agent_approved) +
+        parseSummaryNumber(byStatus.reviewer_approved)
       : 0) ||
-    summary?.total_approved_moneyx_volume ||
-    summary?.total_moneyx_volume ||
-    summary?.total_completed_moneyx ||
+    parseSummaryNumber(summary?.total_approved_moneyx_volume) ||
+    parseSummaryNumber(summary?.total_moneyx_volume) ||
+    parseSummaryNumber(summary?.total_completed_moneyx) ||
     0;
+
+  const totalValue =
+    parseSummaryNumber(transactionSummary?.total_approved_volume) ||
+    parseSummaryNumber(transactionSummary?.total_volume) ||
+    parseSummaryNumber(transactionSummary?.total_approved_net);
+
+  const exchangeVolume =
+    parseSummaryNumber(transactionSummary.total_approved_exchange_volume) ||
+    parseSummaryNumber(transactionSummary.total_approved_exchange_net) ||
+    parseSummaryNumber(transactionSummary.total_approved_exchange_combined);
+
+  const p2pVolume =
+    parseSummaryNumber(transactionSummary.total_approved_p2p_volume) ||
+    parseSummaryNumber(transactionSummary.total_approved_p2p_net) ||
+    parseSummaryNumber(transactionSummary.total_approved_p2p_combined);
+
+  const swapVolume =
+    parseSummaryNumber(summary?.total_approved_changenow_swap_volume) ||
+    parseSummaryNumber(summary?.total_changenow_swap_volume) ||
+    parseSummaryNumber(transactionSummary.total_completed_changenow_swaps);
 
   const volumeData = [
     {
       title: "Total Value",
-      value: cleanTotalVolume(),
-      currency: "USDT" as const,
+      value: formatValue(totalValue),
+      currency: "USD" as const,
     },
     {
       title: "Exchange",
-      value: formatValue(transactionSummary.total_approved_exchange_volume || transactionSummary.total_approved_exchange_combined || 0),
-      currency: "USDT" as const,
+      value: formatValue(exchangeVolume),
+      currency: "USD" as const,
     },
     {
       title: "Money X",
@@ -74,13 +71,13 @@ const VolumeChart: React.FC<VolumeChartProps> = ({ transactionSummary }) => {
     },
     {
       title: "P2P",
-      value: formatValue(transactionSummary.total_approved_p2p_volume || transactionSummary.total_approved_p2p_combined || 0),
-      currency: "USDT" as const,
+      value: formatValue(p2pVolume),
+      currency: "USD" as const,
     },
     {
       title: "Swap",
-      value: formatValue(transactionSummary.total_completed_changenow_swaps ?? 0),
-      currency: "USDT" as const,
+      value: formatValue(swapVolume),
+      currency: "USD" as const,
     },
   ];
 

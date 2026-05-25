@@ -234,7 +234,7 @@ const ContactPage: React.FC<ContactPageProps> = () => {
             title={t("contact.info.address", "Address")}
           >
             <p className="text-gray-600 dark:text-gray-400">
-              {t("contact.info.addressLine1", "OMAYA Exchange")}
+              {t("contact.info.addressLine1", "OMAYA.io")}
             </p>
             <p className="text-gray-600 dark:text-gray-400">
               {t("contact.info.addressLine2", "Mogadishu, Somalia")}

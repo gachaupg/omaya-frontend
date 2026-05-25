@@ -168,7 +168,7 @@ const FloatingChatButton = () => {
           {/* Footer */}
           <div className="mt-3 pt-3 border-t border-gray-100 dark:border-[#2A2A35]">
             <p className="text-[10px] text-center text-gray-400 dark:text-[#5A5A65]">
-              Powered by OMAYA Exchange
+              Powered by OMAYA.io
             </p>
           </div>
         </div>

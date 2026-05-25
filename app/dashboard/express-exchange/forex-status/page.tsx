@@ -32,9 +32,6 @@ function ForexStatusContent() {
   const accessToken = authState?.tokens?.access || null;
 
   const [copySuccess, setCopySuccess] = useState(false);
-  const [wsConnected, setWsConnected] = useState(false);
-  const [wsConnectionState, setWsConnectionState] = useState<string>("Not initialized");
-  const [lastUpdateTime, setLastUpdateTime] = useState<string | null>(null);
   const [failureModal, setFailureModal] = useState<{
     isOpen: boolean;
     status: string;
@@ -120,13 +117,7 @@ function ForexStatusContent() {
   useEffect(() => {
    
 
-    if (!transactionId) {
-      setWsConnectionState("Missing transaction ID");
-      return;
-    }
-
-    if (!accessToken) {
-      setWsConnectionState("Missing access token");
+    if (!transactionId || !accessToken) {
       return;
     }
 
@@ -142,7 +133,6 @@ function ForexStatusContent() {
         // Initial status received on connection - use this data directly
         dispatch(setForexExchangeFromCache(message.data));
         localStorage.setItem('currentForexExchange', JSON.stringify(message.data));
-        setLastUpdateTime(new Date().toLocaleTimeString());
         const status = extractFailureStatus(message);
         if (["rejected", "failed", "stopped"].includes(status)) {
           setFailureModal({
@@ -155,7 +145,6 @@ function ForexStatusContent() {
         // Status update received - update with new data
         dispatch(setForexExchangeFromCache(message.data));
         localStorage.setItem('currentForexExchange', JSON.stringify(message.data));
-        setLastUpdateTime(new Date().toLocaleTimeString());
         const status = extractFailureStatus(message);
         if (["rejected", "failed", "stopped"].includes(status)) {
           setFailureModal({
@@ -179,32 +168,13 @@ function ForexStatusContent() {
       }
     });
 
-    const unsubscribeOpen = forexStatusWebSocket.onOpen(() => {
-      setWsConnected(true);
-      setWsConnectionState(forexStatusWebSocket.getConnectionStateString());
-    });
-
-    const unsubscribeClose = forexStatusWebSocket.onClose(() => {
-      setWsConnected(false);
-      setWsConnectionState(forexStatusWebSocket.getConnectionStateString());
-    });
-
     const unsubscribeError = forexStatusWebSocket.onError((error) => {
       console.error("❌ WebSocket error", error);
-      setWsConnectionState(forexStatusWebSocket.getConnectionStateString());
     });
-
-    // Update connection state periodically
-    const stateInterval = setInterval(() => {
-      setWsConnectionState(forexStatusWebSocket.getConnectionStateString());
-    }, 1000);
 
     // Cleanup on unmount
     return () => {
-      clearInterval(stateInterval);
       unsubscribeMessage();
-      unsubscribeOpen();
-      unsubscribeClose();
       unsubscribeError();
       forexStatusWebSocket.disconnect();
     };
@@ -349,7 +319,7 @@ function ForexStatusContent() {
                 Waiting for Transaction Update
               </h2>
               <p className="text-[#788099] text-sm">
-                Transaction record is not available via API yet. Live status updates are still active.
+                Transaction record is not available via API yet. Please wait while we refresh your status.
               </p>
             </div>
           </div>
@@ -374,55 +344,6 @@ function ForexStatusContent() {
   return (
     <>
     <div className={`container mx-auto px-4 sm:px-6 md:px-8 min-h-screen flex flex-col items-center pt-2 overflow-x-hidden ${isDark ? 'bg-transparent' : 'bg-transparent'}`}>
-      {/* WebSocket Connection Status Indicator */}
-      <div className="w-full max-w-4xl mb-2 flex justify-between items-center">
-        <div className="flex-1" />
-        <div className="flex gap-2">
-          {lastUpdateTime && (
-            <div
-              className={`flex items-center gap-2 px-3 py-1.5 rounded-full text-xs font-medium ${isDark
-                  ? "bg-blue-900/30 text-blue-400 border border-blue-700/50"
-                  : "bg-blue-100 text-blue-700 border border-blue-300"
-                }`}
-            >
-              <svg width="12" height="12" fill="none" viewBox="0 0 24 24">
-                <path
-                  d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"
-                  stroke="currentColor"
-                  strokeWidth="2"
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                />
-              </svg>
-              <span>Updated: {lastUpdateTime}</span>
-            </div>
-          )}
-          <div
-            className={`flex items-center gap-2 px-3 py-1.5 rounded-full text-xs font-medium ${wsConnected
-                ? isDark
-                  ? "bg-green-900/30 text-green-400 border border-green-700/50"
-                  : "bg-green-100 text-green-700 border border-green-300"
-                : isDark
-                  ? "bg-gray-800/50 text-gray-400 border border-gray-700/50"
-                  : "bg-gray-100 text-gray-600 border border-gray-300"
-              }`}
-          >
-            <div className="relative">
-              <div
-                className={`w-2 h-2 rounded-full ${wsConnected ? "bg-green-500" : "bg-gray-400"
-                  }`}
-              />
-              {wsConnected && (
-                <div className="absolute inset-0 w-2 h-2 rounded-full bg-green-500 animate-ping opacity-75" />
-              )}
-            </div>
-            <span>
-              {wsConnected ? "Live Updates" : `WebSocket: ${wsConnectionState}`}
-            </span>
-          </div>
-        </div>
-      </div>
-
       {/* Top Card - Transaction Summary */}
       <div
         className={`flex flex-col md:flex-row justify-between items-stretch ${isDark

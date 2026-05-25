@@ -28,6 +28,7 @@ import {
 import FailureStatusModal from "@/features/express/components/FailureStatusModal";
 import { resolveExpressTransactionFailureMessage } from "@/lib/utils/websocketUtils";
 import { useScrollAppToTopWhen } from "@/hooks/useScrollAppToTopWhen";
+import { encodeQrScanData } from "@/lib/utils/ussdDial";
 const formatDateTimeEastAfrica = (input: Date | number | string): string => {
   const d = input instanceof Date ? input : new Date(input);
   if (Number.isNaN(d.getTime())) return "";
@@ -958,7 +959,7 @@ export default function Exchanging({ transactionData, onBackToTransfer }: Exchan
   // If showing success page, render it
   if (showSuccess) {
     return (
-      <div className="w-full min-h-screen flex flex-col items-center justify-center pt-0 sm:pt-1 md:pt-2 px-0 sm:px-2 md:px-0 pr-2 sm:pr-0">
+      <div className="w-full min-h-screen flex flex-col items-center justify-center pt-2 px-2 sm:px-4">
         <SuccessPage
           transactionData={effectiveTransactionData}
           websocketData={snapshotWebsocketData || finalWebsocketData}
@@ -971,7 +972,7 @@ export default function Exchanging({ transactionData, onBackToTransfer }: Exchan
   if (isLoadingData) {
     return (
       <div
-        className={`w-full min-h-screen flex flex-col items-center justify-center pt-0 sm:pt-1 md:pt-2 px-0 sm:px-2 md:px-0 pr-2 sm:pr-0 ${isDark ? "bg-[var(--bg-color)]" : "bg-gray-50"
+        className={`w-full min-h-screen flex flex-col items-center justify-center pt-2 px-2 sm:px-4 ${isDark ? "bg-[var(--bg-color)]" : "bg-gray-50"
           }`}
       >
         <div className={`${isDark ? "text-white" : "text-gray-900"} text-lg`}>
@@ -985,7 +986,7 @@ export default function Exchanging({ transactionData, onBackToTransfer }: Exchan
   if (!effectiveTransactionData) {
     return (
       <div
-        className={`w-full min-h-screen flex flex-col items-center justify-center pt-0 sm:pt-1 md:pt-2 px-0 sm:px-2 md:px-0 pr-2 sm:pr-0 ${isDark ? "bg-[var(--bg-color)]" : "bg-gray-50"
+        className={`w-full min-h-screen flex flex-col items-center justify-center pt-2 px-2 sm:px-4 ${isDark ? "bg-[var(--bg-color)]" : "bg-gray-50"
           }`}
       >
         <div className={`${isDark ? "text-white" : "text-gray-900"} text-lg`}>
@@ -1039,7 +1040,7 @@ export default function Exchanging({ transactionData, onBackToTransfer }: Exchan
   };
 
   return (
-    <div className={`w-full min-h-screen flex flex-col pt-0 sm:pt-1 md:pt-2 pl-0 sm:pl-4 pr-2 sm:pr-0 max-w-full overflow-x-hidden box-border`}>
+    <div className="w-full min-h-screen flex flex-col items-center pt-2 px-2 sm:px-4 overflow-x-hidden box-border">
       {/* Timer Banner */}
       {timerActive && timeRemaining > 0 && (
         <div
@@ -1269,11 +1270,11 @@ export default function Exchanging({ transactionData, onBackToTransfer }: Exchan
 
           </div>
         </div>
-        <div className="flex-shrink-0 ml-0 md:ml-2 md:mr-48 mt-3 sm:mt-2 md:mt-0 flex flex-col items-center justify-center py-2 gap-3 min-w-[9rem] max-w-[220px]">
+        <div className="flex-shrink-0 ml-0 md:ml-6 mt-3 sm:mt-2 md:mt-0 flex flex-col items-center justify-center py-2 gap-3 min-w-[9rem] max-w-[220px]">
           {/* QR code */}
           <div className="w-28 h-28 sm:w-36 sm:h-36 bg-white rounded-lg flex items-center justify-center">
             <img
-              src={`https://api.qrserver.com/v1/create-qr-code/?size=180x180&data=${encodeURIComponent(
+              src={`https://api.qrserver.com/v1/create-qr-code/?size=180x180&data=${encodeQrScanData(
                 ussdCode || fromPaymentAccountNumber || effectiveTransactionData?.walletAddress || ""
               )}`}
               alt="QR Code"

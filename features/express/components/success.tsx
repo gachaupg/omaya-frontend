@@ -1,9 +1,8 @@
 import React, { useState, useEffect } from "react";
-import { FaCheckCircle } from "react-icons/fa";
 import { useRouter } from "next/navigation";
 import CopyButton from "@/components/ui/CopyButton";
 import { useTheme } from "@/context/theme";
-import { type } from "os";
+import { ExpressSuccessHero } from "./ExpressSuccessHero";
 const formatDateTimeEastAfrica = (input: Date | number | string): string => {
   const d = input instanceof Date ? input : new Date(input);
   if (Number.isNaN(d.getTime())) return "";
@@ -377,20 +376,8 @@ const SuccessPage: React.FC<SuccessPageProps> = ({
   }, [realData.date]);
   
   return (
-    <div className="flex flex-col mt-1 w-full max-w-2xl mx-auto px-3 sm:px-4 py-2">
-      {/* Success Image */}
-      <div className="flex flex-col w-full items-center mb-4">
-        <div className="flex items-center justify-center">
-          <img 
-            className="w-80 h-40 object-contain" 
-            src={isDark 
-              ? "/assets/Screenshot_2025-08-29_191548_two36s.png" 
-              : "/images/suc.png"
-            } 
-            alt="Success" 
-          />
-        </div>
-      </div>
+    <div className="flex flex-col w-full max-w-2xl mx-auto px-3 sm:px-4 pt-0 pb-2">
+      <ExpressSuccessHero className="mb-1" />
 
       {/* Main Content Container */}
       <div className={`w-full rounded-[18px] shadow-xl border-2 ${

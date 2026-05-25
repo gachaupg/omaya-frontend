@@ -111,6 +111,38 @@ export function formatCountdownSeconds(totalSeconds: number): string {
   return `${m}:${r.toString().padStart(2, "0")}`;
 }
 
+const TRANSACTION_TIMER_TERMINAL_STATUSES = new Set([
+  "cancelled",
+  "canceled",
+  "completed",
+  "released",
+  "declined",
+  "rejected",
+  "refused",
+  "failed",
+]);
+
+export function isTerminalTradeStatusForTimer(
+  status: string | undefined | null
+): boolean {
+  return TRANSACTION_TIMER_TERMINAL_STATUSES.has(
+    String(status ?? "").trim().toLowerCase()
+  );
+}
+
+/** Start limit_duration countdown on the order screen (no trade-acceptance gate). */
+export function isTransactionCountdownActive(
+  displaySeconds: number,
+  tradeId: string | undefined | null,
+  status: string | undefined | null
+): boolean {
+  return (
+    displaySeconds > 0 &&
+    Boolean(tradeId) &&
+    !isTerminalTradeStatusForTimer(status)
+  );
+}
+
 export function isDeclinedLikeStatus(payload: Record<string, unknown>): boolean {
   const snap = wsPayloadToSnapshot(payload);
   const s = snap.rawStatus.toLowerCase();

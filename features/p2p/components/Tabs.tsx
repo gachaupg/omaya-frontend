@@ -31,7 +31,16 @@ shouldShowMessagesButton = false,
             }`}
           >
             <span className="relative">
-              {t(tab.label, tab.label)}
+              {t(
+                tab.label,
+                tab.id === "market"
+                  ? "P2P Market"
+                  : tab.id === "dashboard"
+                    ? "P2P Dashboard"
+                    : tab.id === "center"
+                      ? "P2P Center"
+                      : tab.label
+              )}
               {activeTab === tab.id && (
                 <div className="absolute bottom-[-8px] left-0 h-0.5 w-full bg-[#1D8751]" />
               )}

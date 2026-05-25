@@ -20,7 +20,11 @@ function ExchangingContent() {
     return null; // Modal will be shown by the hook
   }
 
-  return <Exchanging />;
+  return (
+    <div className="w-full overflow-x-hidden container mx-auto flex flex-col items-center">
+      <Exchanging />
+    </div>
+  );
 }
 
 function ExchangingLoading() {

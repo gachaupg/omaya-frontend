@@ -6,13 +6,23 @@ import { SupportedAsset, SwapEstimate } from "../types";
 import { useTheme } from "@/context/theme";
 import SuccessPage from "./success";
 import { FaSearch } from "react-icons/fa";
-import { isNonEmptyInvalidZeroSwapAmount } from "@/lib/utils/swapAmountInput";
+import {
+  isNonEmptyInvalidZeroSwapAmount,
+  isPositiveSwapAmount,
+} from "@/lib/utils/swapAmountInput";
+import {
+  isSameSwapAssetPair,
+  SWAP_SAME_COIN_MESSAGE,
+} from "@/lib/utils/swapAssetValidation";
 import { useSwapI18n } from "@/lib/useSwapI18n";
 import {
   handleSwapAssetIconError,
   resolveSwapAssetIconSrc,
 } from "@/features/swap/utils/swapAssetIcon";
-import { assetMatchesSearchTerm } from "@/lib/utils/assetSearch";
+import {
+  assetMatchesSearchTerm,
+  sortAssetsForDisplay,
+} from "@/lib/utils/assetSearch";
 import { ExpressAssetSelectorTrigger } from "@/features/express/components/ExpressAssetSelectorTrigger";
 import { SwapAssetOptionDisplay } from "@/features/swap/components/SwapAssetOptionDisplay";
 import {
@@ -50,13 +60,11 @@ interface TransactionInfoStepProps {
   hideContinueButton?: boolean;
   onSwapAssets?: () => void;
   activeInputField?: "from" | "to";
+  sameCoinPair?: boolean;
 }
 
 /** Allow typing "0" without showing stale estimate errors */
-const hasPositiveAmount = (s: string) => {
-  const n = parseFloat(s);
-  return s !== "" && !Number.isNaN(n) && n > 0;
-};
+const hasPositiveAmount = (s: string) => isPositiveSwapAmount(s);
 
 const TransactionInfoStep: React.FC<TransactionInfoStepProps> = ({
   fromAsset,
@@ -85,7 +93,10 @@ const TransactionInfoStep: React.FC<TransactionInfoStepProps> = ({
   hideContinueButton,
   onSwapAssets,
   activeInputField,
+  sameCoinPair = false,
 }) => {
+  const sameCoinBlocksSubmit =
+    sameCoinPair || isSameSwapAssetPair(fromAsset, toAsset);
   const { isDark } = useTheme();
   const { t } = useSwapI18n();
 
@@ -273,9 +284,19 @@ const TransactionInfoStep: React.FC<TransactionInfoStepProps> = ({
     }
 
     const dropdownStyle = updateDropdownPosition(isFrom);
-    const filteredAssets = supportedAssets.filter((asset: SupportedAsset) =>
+    let filteredAssets = supportedAssets.filter((asset: SupportedAsset) =>
       assetMatchesSearchTerm(asset, searchValue)
     );
+    if (isFrom && toAsset) {
+      filteredAssets = filteredAssets.filter(
+        (option) => !isSameSwapAssetPair(option, toAsset)
+      );
+    } else if (!isFrom && fromAsset) {
+      filteredAssets = filteredAssets.filter(
+        (option) => !isSameSwapAssetPair(fromAsset, option)
+      );
+    }
+    filteredAssets = sortAssetsForDisplay(filteredAssets, searchValue);
 
     const isMobile = typeof window !== "undefined" && window.innerWidth < 640;
 
@@ -583,6 +604,12 @@ const TransactionInfoStep: React.FC<TransactionInfoStepProps> = ({
 
         {/* estimateError is shown under the relevant input */}
 
+        {sameCoinBlocksSubmit && (
+          <p className="text-red-600 dark:text-red-400 text-xs sm:text-sm mb-2">
+            {SWAP_SAME_COIN_MESSAGE}
+          </p>
+        )}
+
         {/* Submit Button */}
         {!hideContinueButton && (
           <div className="mt-4">
@@ -590,12 +617,13 @@ const TransactionInfoStep: React.FC<TransactionInfoStepProps> = ({
               className={`w-full text-base font-medium py-1.5 rounded-full flex items-center justify-center gap-2 transition-colors text-white ${!fromAsset ||
                   !toAsset ||
                   !fromAmount ||
-                  parseFloat(fromAmount) <= 0 ||
+                  !isPositiveSwapAmount(fromAmount) ||
                   invalidZeroBlocksSubmit ||
                   !estimate ||
                   estimateLoading ||
                   swapLoading ||
-                  estimateErrorBlocksSubmit
+                  estimateErrorBlocksSubmit ||
+                  sameCoinBlocksSubmit
                   ? "bg-gray-500 cursor-not-allowed"
                   : "bg-[#1D8751] hover:bg-[#1D8751]/80"
                 }`}
@@ -604,12 +632,13 @@ const TransactionInfoStep: React.FC<TransactionInfoStepProps> = ({
                 !fromAsset ||
                 !toAsset ||
                 !fromAmount ||
-                parseFloat(fromAmount) <= 0 ||
+                !isPositiveSwapAmount(fromAmount) ||
                 invalidZeroBlocksSubmit ||
                 !estimate ||
                 estimateLoading ||
                 swapLoading ||
-                estimateErrorBlocksSubmit
+                estimateErrorBlocksSubmit ||
+                sameCoinBlocksSubmit
               }
             >
               {swapLoading ? (

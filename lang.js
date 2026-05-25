@@ -2,8 +2,8 @@ const dictionaries = {
     en: {
       // Marketing
       'hero.welcome': 'Welcome to',
-      'hero.title': 'OMAYA Exchange',
-      'hero.description': 'We are OMAYA EXCHANGE, Somalia\'s leading platform for exchanging cryptocurrencies and Forex. Founded by experts with over 15 years of IT experience, we bridge traditional finance with the digital economy in East Africa.',
+      'hero.title': 'OMAYA.io',
+      'hero.description': 'We are OMAYA.io, Somalia\'s leading platform for exchanging cryptocurrencies and Forex. Founded by experts with over 15 years of IT experience, we bridge traditional finance with the digital economy in East Africa.',
       'hero.getStarted': 'Get Started',
       'hero.learnMore': 'Learn More',
       
@@ -41,8 +41,8 @@ const dictionaries = {
     so: {
       // Marketing
       'hero.welcome': 'Ku soo dhawoow',
-      'hero.title': 'OMAYA Exchange',
-      'hero.description': 'Waxaan nahay OMAYA EXCHANGE, barxada ugu horeysa ee Soomaaliya ee lagu beddesho cryptocurrency-ga iyo Forex-ka. Waxaa aasaasay khabiiro leh in ka badan 15 sano oo khibrad ah oo IT ah, waxaanan ku xidhaa dhaqaalaha dhaqameedka iyo dhaqaalaha dijital-ka ee Bariga Afrika.',
+      'hero.title': 'OMAYA.io',
+      'hero.description': 'Waxaan nahay OMAYA.io, barxada ugu horeysa ee Soomaaliya ee lagu beddesho cryptocurrency-ga iyo Forex-ka. Waxaa aasaasay khabiiro leh in ka badan 15 sano oo khibrad ah oo IT ah, waxaanan ku xidhaa dhaqaalaha dhaqameedka iyo dhaqaalaha dijital-ka ee Bariga Afrika.',
       'hero.getStarted': 'Bilow',
       'hero.learnMore': 'Wax Badan Baro',
       

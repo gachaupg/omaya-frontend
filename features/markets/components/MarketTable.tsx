@@ -22,7 +22,7 @@ import {
   ArrowDownRight,
   ArrowLeftRight,
   ArrowUpRight,
-  Repeat,
+  RefreshCw,
   Users,
   ChevronLeft,
   ChevronRight,
@@ -489,12 +489,12 @@ const MarketTable = ({ showFullLayout = true }: MarketTableProps) => {
         toast.success(`${marketSymbol.toUpperCase()} removed from favorites!`);
         await dispatch(getFavoriteAssets());
         setFavoritesUpdateTrigger((prev) => prev + 1);
-        handleReloadFavorites();
+        refreshFavorites();
       } catch (error: any) {
         toast.error(`Failed to remove favorite: ${error?.message || "Unknown error"}`);
         await dispatch(getFavoriteAssets());
         setFavoritesUpdateTrigger((prev) => prev + 1);
-        handleReloadFavorites();
+        refreshFavorites();
       }
       return;
     }
@@ -514,12 +514,12 @@ const MarketTable = ({ showFullLayout = true }: MarketTableProps) => {
         toast.success(`${marketSymbol.toUpperCase()} added to favorites!`);
         await dispatch(getFavoriteAssets());
         setFavoritesUpdateTrigger((prev) => prev + 1);
-        handleReloadFavorites();
+        refreshFavorites();
       } catch (error: any) {
         toast.error(`Failed to add favorite: ${error?.message || "Unknown error"}`);
         await dispatch(getFavoriteAssets());
         setFavoritesUpdateTrigger((prev) => prev + 1);
-        handleReloadFavorites();
+        refreshFavorites();
       }
     }
   };
@@ -542,14 +542,17 @@ const MarketTable = ({ showFullLayout = true }: MarketTableProps) => {
     window.scrollTo({ top: 250, behavior: "smooth" });
   };
 
-  const handleRefresh = useCallback(() => {
-    refetch();
-  }, [refetch]);
-
-  const handleReloadFavorites = useCallback(() => {
+  const refreshFavorites = useCallback(() => {
     dispatch(fetchAssets());
     dispatch(getFavoriteAssets());
+    setFavoritesUpdateTrigger((prev) => prev + 1);
   }, [dispatch]);
+
+  /** Refresh market table (prices, volume, gainers/losers) + favourites + timestamp. */
+  const handleRefresh = useCallback(() => {
+    refetch();
+    refreshFavorites();
+  }, [refetch, refreshFavorites]);
 
   const isCoinDetailsReady = useCallback(
     (marketId: string) =>
@@ -668,11 +671,16 @@ const MarketTable = ({ showFullLayout = true }: MarketTableProps) => {
                   </span>
                 )}
                 <button
+                  type="button"
                   onClick={handleRefresh}
-                  disabled={loading}
-                  className="px-3 py-1.5 sm:py-1 lg:py-1 bg-gray-100 dark:bg-[#1D1D23] text-gray-700 dark:text-[#788099] rounded border border-gray-300 dark:border-[#35353E] hover:bg-gray-200 dark:hover:bg-[#35353E] disabled:opacity-50 text-xs sm:text-sm lg:text-sm min-h-[44px] sm:min-h-0 lg:min-h-0"
+                  disabled={loading || loadingAssets}
+                  className="inline-flex items-center justify-center gap-2 px-3 py-1.5 sm:py-1 lg:py-1 bg-gray-100 dark:bg-[#1D1D23] text-gray-700 dark:text-[#788099] rounded border border-gray-300 dark:border-[#35353E] hover:bg-gray-200 dark:hover:bg-[#35353E] disabled:opacity-50 text-xs sm:text-sm lg:text-sm min-h-[44px] sm:min-h-0 lg:min-h-0"
+                  aria-label="Refresh market data"
                 >
-                  {loading ? "Loading..." : "Refresh"}
+                  <RefreshCw
+                    className={`w-4 h-4 text-[#1D8751] ${loading || loadingAssets ? "animate-spin" : ""}`}
+                  />
+                  {loading || loadingAssets ? "Loading..." : "Refresh"}
                 </button>
               </div>
             </div>
@@ -729,14 +737,6 @@ const MarketTable = ({ showFullLayout = true }: MarketTableProps) => {
                   </>
                 )}
               </div>
-              <button
-                className="flex items-center text-gray-900 dark:text-[#fff] font-medium text-sm sm:text-base lg:text-base cursor-pointer gap-2 min-h-[44px] sm:min-h-0 lg:min-h-0"
-                onClick={handleReloadFavorites}
-                disabled={loadingAssets}
-              >
-                Reload
-                <Repeat className="w-4 h-4 text-[#1D8751]" />
-              </button>
             </div>
 
             {/* Favourite Assets Cards Row */}

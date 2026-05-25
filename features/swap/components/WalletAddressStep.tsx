@@ -552,7 +552,7 @@ const WalletAddressStep: React.FC<WalletAddressStepProps> = ({
                   className="text-xs sm:text-sm text-gray-900 dark:text-white leading-relaxed cursor-pointer"
                 >
                   <span className="font-medium">
-                    I have read and agreed to Omaya Exchange{" "}
+                    I have read and agreed to OMAYA.io{" "}
                   </span>
                   <Link
                     href="/legal/terms-of-service"

@@ -6,6 +6,7 @@ import {
   TransactionStatusMessage,
 } from "../websockets";
 import { API_CONFIG } from "@/lib/appConfig";
+import { resolveExpressStatusNetDisplay } from "../utils/successAmountDisplay";
 import { cookieUtils } from "@/lib/utils/cookieUtils";
 import { useTheme } from "@/context/theme";
 import CopyButton from "@/components/ui/CopyButton";
@@ -22,6 +23,7 @@ import FailureStatusModal from "./FailureStatusModal";
 import { resolveExpressTransactionFailureMessage } from "@/lib/utils/websocketUtils";
 import { OMAYA_IO_ACCOUNT_DETAILS_TITLE } from "../utils/paymentDetailDisplay";
 import { useScrollAppToTopWhen } from "@/hooks/useScrollAppToTopWhen";
+import { encodeQrScanData } from "@/lib/utils/ussdDial";
 
 interface ExchangingProps {
   transactionData?: {
@@ -1112,6 +1114,24 @@ export default function Exchanging({ transactionData }: ExchangingProps) {
       : null) ??
     (Number.isFinite(wsNetCandidates.netAmount) ? wsNetCandidates.netAmount : null) ??
     ((effectiveTransactionData as any)?.receiveAmount ?? 0);
+  const statusNetDisplay = resolveExpressStatusNetDisplay({
+    transactionType: effectiveTransactionData?.type,
+    paidAmount: Number(effectiveTransactionData?.amount ?? 0),
+    commission: (effectiveTransactionData as any)?.commission,
+    socketNetAmount: resolvedDisplayNetAmount,
+    liveNetCurrency,
+    payinMethod:
+      effectiveTransactionData?.type === "withdrawal"
+        ? `${(finalWebsocketData as any)?.data?.from_currency || effectiveTransactionData?.asset?.ticker || "USD"} Wallet`
+        : undefined,
+    payoutMethod:
+      (effectiveTransactionData as any)?.paymentDetail?.name ||
+      (effectiveTransactionData as any)?.paymentDetails?.[0]?.name ||
+      `${(finalWebsocketData as any)?.data?.to_currency || effectiveTransactionData?.asset?.ticker || "USDT"} Wallet`,
+    toCurrency:
+      (finalWebsocketData as any)?.data?.to_currency ||
+      effectiveTransactionData?.asset?.ticker,
+  });
   const resolvedDepositCode =
     effectiveTransactionData?.type === "deposit" &&
     !(effectiveTransactionData as any)?.isMoneyX
@@ -1234,16 +1254,10 @@ export default function Exchanging({ transactionData }: ExchangingProps) {
                     } text-base font-semibold flex items-center gap-2`}
                 >
                   <span>
-                    {(resolvedDisplayNetAmount
-                    )
+                    {statusNetDisplay.amount
                       .toFixed(8)
                       .replace(/\.?0+$/, "")}{" "}
-                    <span className="uppercase">
-                      {liveNetCurrency ||
-                        (effectiveTransactionData?.type === "deposit"
-                          ? "USD"
-                          : "USD")}
-                    </span>
+                    <span className="uppercase">{statusNetDisplay.currency}</span>
                   </span>
                 </div>
               </div>
@@ -1480,7 +1494,7 @@ export default function Exchanging({ transactionData }: ExchangingProps) {
               );
             }
 
-            const encodedData = encodeURIComponent(qrData);
+            const encodedData = encodeQrScanData(qrData);
             return (
               <div className="w-36 h-36 bg-white rounded-lg flex items-center justify-center">
                 <img
@@ -2005,7 +2019,7 @@ export default function Exchanging({ transactionData }: ExchangingProps) {
           </div>
         </div>
         <div className="flex mt-2 items-start gap-0">
-          {/* Left: From / Omaya.io Account Details */}
+          {/* Left: From / OMAYA.io Account Details */}
           <div className="flex items-start gap-3 min-w-0 w-1/2 flex-shrink-0 pr-2 sm:pr-4">
             {effectiveTransactionData?.type === "deposit" &&
               effectiveTransactionData?.paymentDetail ? (

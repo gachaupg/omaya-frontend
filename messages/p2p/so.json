@@ -1,11 +1,11 @@
 {
   "tabs.dashboard": "Dashboard-ka P2P",
-  "tabs.market": "Suuqa",
+  "tabs.market": "Suuqa P2P",
   "tabs.orders": "Dalabyada",
   "tabs.center": "Xarunta P2P",
   "tabs.chats": "Fariimaha",
   "back.back": "Dib",
-  "back.backToMarket": "Dib ugu noqo Suuqa",
+  "back.backToMarket": "Dib ugu noqo Suuqa P2P",
   "back.backToOrders": "Dib ugu noqo Dalabyada",
   "filters.allOrders": "Dhammaan Dalabyada",
   "filters.completed": "La dhammeeyay",

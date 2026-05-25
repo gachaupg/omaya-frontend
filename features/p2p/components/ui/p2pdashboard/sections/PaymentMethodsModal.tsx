@@ -5,6 +5,7 @@ import { AppDispatch } from "@/store";
 import { RootState } from "@/store/rootReducer";
 import {
   fetchPublicPaymentMethods,
+  fetchUserPaymentDetails,
   postUserPaymentDetail,
   sendPaymentDetailAddOtp,
   verifyPaymentDetailAddOtp,
@@ -19,6 +20,10 @@ import {
 } from "@/features/express/utils/imageHelpers";
 import CustomSelect from "@/components/ui/CustomSelect";
 import { useValidateAddress } from "@/hooks/useValidateAddress";
+import {
+  findAutoSendPaymentDetail,
+  pickProviderForFilter,
+} from "@/features/p2p/utils/paymentAutoSend";
 
 const extractCryptoNetworkForValidation = (source: string): string => {
   const s = String(source || "").toLowerCase();
@@ -34,12 +39,19 @@ const extractCryptoNetworkForValidation = (source: string): string => {
   return "";
 };
 
-/** Bank tab: account / mobile number — digits only, max length for long domestic / IBAN-style numeric strings */
-const BANK_TAB_ACCOUNT_MAX_DIGITS = 34;
-const sanitizeBankTabAccountInput = (raw: string) =>
+/** Bank account: alphanumeric (e.g. Dahabshiil MUQD00564645) */
+const BANK_ACCOUNT_MAX_LENGTH = 34;
+const sanitizeBankAccountInput = (raw: string) =>
+  String(raw || "")
+    .replace(/[^A-Za-z0-9\s-]/g, "")
+    .slice(0, BANK_ACCOUNT_MAX_LENGTH);
+
+/** Mobile money: digits only */
+const MOBILE_ACCOUNT_MAX_DIGITS = 15;
+const sanitizeMobileAccountInput = (raw: string) =>
   String(raw || "")
     .replace(/\D/g, "")
-    .slice(0, BANK_TAB_ACCOUNT_MAX_DIGITS);
+    .slice(0, MOBILE_ACCOUNT_MAX_DIGITS);
 
 type PaymentDetailPayload = {
   account_name: string;
@@ -122,17 +134,11 @@ const PaymentMethodsModal: React.FC<PaymentMethodsModalProps> = ({
   const [resendCooldown, setResendCooldown] = useState(0);
   const [otpFeedback, setOtpFeedback] = useState<{ type: "success" | "error"; text: string } | null>(null);
   const RESEND_COOLDOWN_SECONDS = 60;
-  const autoSendPreviouslyEnabled = React.useMemo(
-    () =>
-      Array.isArray(userPaymentDetails) &&
-      userPaymentDetails.some((detail: any) => {
-        const raw = detail?.allow_auto_send;
-        if (typeof raw === "boolean") return raw;
-        if (typeof raw === "string") return raw.trim().toLowerCase() === "true";
-        return false;
-      }),
+  const existingAutoSendMethod = React.useMemo(
+    () => findAutoSendPaymentDetail(userPaymentDetails),
     [userPaymentDetails]
   );
+  const autoSendPreviouslyEnabled = existingAutoSendMethod != null;
 
   // Set isClient to true after mount
   useEffect(() => {
@@ -174,6 +180,9 @@ const PaymentMethodsModal: React.FC<PaymentMethodsModalProps> = ({
        // Try to fetch public payment methods, but don't block the UI
        try {
          dispatch(fetchPublicPaymentMethods() as any);
+         if (isAuthenticated) {
+           dispatch(fetchUserPaymentDetails() as any);
+         }
        } catch (error) {
          logger.debug('p2p', "Error fetching public payment methods:", error);
        }
@@ -192,7 +201,7 @@ const PaymentMethodsModal: React.FC<PaymentMethodsModalProps> = ({
        setPendingPayload(null);
        dispatch(clearPostStatus());
      }
-   }, [open, dispatch, isClient, user]);
+   }, [open, dispatch, isClient, user, isAuthenticated]);
 
   // A user that has already had auto-send enabled should not re-enable it
   // while adding a new payment method.
@@ -340,23 +349,31 @@ const PaymentMethodsModal: React.FC<PaymentMethodsModalProps> = ({
     [user?.email]
   );
 
-  // When filtered to a single provider, auto-select its method and provider
-  const singleFilteredProvider = processedProvidersFiltered.length === 1 ? processedProvidersFiltered[0] : null;
+  const providerToPrefill = React.useMemo(() => {
+    if (!filterByProviderName?.trim()) return null;
+    return (
+      pickProviderForFilter(processedProvidersFiltered, filterByProviderName) ||
+      pickProviderForFilter(processedProviders, filterByProviderName)
+    );
+  }, [filterByProviderName, processedProvidersFiltered, processedProviders]);
+
   useEffect(() => {
-    if (!open || !filterByProviderName?.trim() || !singleFilteredProvider) return;
-    if (singleFilteredProvider.payment_method_type) {
-      const singleType = String(singleFilteredProvider.payment_method_type);
-      setMethod(singleType);
+    if (!open || !providerToPrefill) return;
+    const methodType = String(providerToPrefill.payment_method_type || "");
+    if (methodType) {
+      setMethod(methodType);
       setMethodTab(
-        singleType.toLowerCase().includes("crypto")
+        methodType.toLowerCase().includes("crypto")
           ? "crypto"
-          : singleType.toLowerCase().includes("forex")
+          : methodType.toLowerCase().includes("forex")
             ? "forex"
             : "bank"
       );
     }
-    if (singleFilteredProvider.provider_name) setProvider(singleFilteredProvider.provider_name);
-  }, [open, filterByProviderName, singleFilteredProvider?.payment_method_type, singleFilteredProvider?.provider_name]);
+    const providerName =
+      providerToPrefill.provider_name || providerToPrefill.provider || "";
+    if (providerName) setProvider(String(providerName));
+  }, [open, providerToPrefill]);
 
   const normalizedMethod = method.trim().toLowerCase();
   // Use the selected tab as source of truth (method string may lag/omit "crypto").
@@ -501,20 +518,31 @@ const PaymentMethodsModal: React.FC<PaymentMethodsModalProps> = ({
     }
 
     if (methodTab === "bank") {
-      const digits = String(account || "").trim();
-      if (!/^\d+$/.test(digits)) {
-        setOtpFeedback({
-          type: "error",
-          text: "Account number must contain numbers only. Remove any letters or symbols.",
-        });
-        return;
-      }
-      if (digits.length < 5) {
-        setOtpFeedback({
-          type: "error",
-          text: "Please enter a valid account number (at least 5 digits).",
-        });
-        return;
+      const trimmed = String(account || "").trim();
+      if (isMobileMethod) {
+        if (!/^\d+$/.test(trimmed)) {
+          setOtpFeedback({
+            type: "error",
+            text: "Mobile number must contain digits only.",
+          });
+          return;
+        }
+        if (trimmed.length < 5) {
+          setOtpFeedback({
+            type: "error",
+            text: "Please enter a valid mobile number (at least 5 digits).",
+          });
+          return;
+        }
+      } else {
+        const alnumCore = trimmed.replace(/[^A-Za-z0-9]/g, "");
+        if (!alnumCore || alnumCore.length < 5) {
+          setOtpFeedback({
+            type: "error",
+            text: "Please enter a valid account number (at least 5 letters or numbers).",
+          });
+          return;
+        }
       }
     }
      
@@ -663,8 +691,15 @@ const PaymentMethodsModal: React.FC<PaymentMethodsModalProps> = ({
         style={{ pointerEvents: 'auto' }}
       >
         <div className="flex items-center justify-between mb-4">
-          <div className="text-gray-900 dark:text-white text-2xl leading-[1.1] font-semibold">
-            {methodTab === "forex" ? "Add FOREX Broker" : "Add Payment Method"}
+          <div>
+            <div className="text-gray-900 dark:text-white text-2xl leading-[1.1] font-semibold">
+              {methodTab === "forex" ? "Add FOREX Broker" : "Add Payment Method"}
+            </div>
+            {filterByProviderName?.trim() && (
+              <p className="mt-1 text-sm text-[#1D8751] font-medium">
+                For: {filterByProviderName.trim()}
+              </p>
+            )}
           </div>
                      <button
              onClick={(e) => {
@@ -848,36 +883,32 @@ const PaymentMethodsModal: React.FC<PaymentMethodsModalProps> = ({
                
                {/* Provider Preview with Logo */}
               {provider && (
-                 <div className="mt-2 p-3 rounded-lg bg-[#F8FAFC] dark:bg-[#171C2A] border border-[#E3E6F0] dark:border-[#2A2F40]">
+                 <div className="mt-2 p-3 rounded-2xl bg-[#F8FAFC] dark:bg-[#171C2A] border border-[#E3E6F0] dark:border-[#2A2F40]">
                    <div className="flex items-center gap-3">
                      {(() => {
                        const selectedProvider = providers.find(
                          (p: any) => p.provider_name === provider
                        );
+                       const selectedProviderLogoSize = 32;
                        return (
                          <>
-                          <span
-                            className="rounded-full overflow-hidden flex-shrink-0"
-                            style={{ width: PAYMENT_LOGO_SIZE, height: PAYMENT_LOGO_SIZE }}
-                          >
-                            <img
-                              src={getHighResPaymentLogo(
-                                selectedProvider?.logo,
-                                undefined,
-                                PAYMENT_LOGO_SIZE
-                              )}
-                              alt={`${provider} logo`}
-                              className="w-full h-full object-contain"
-                              onError={(e) => {
-                                e.currentTarget.src = "/default-provider-logo.svg";
-                              }}
-                            />
-                          </span>
-                           <div>
-                             <p className="text-sm font-medium text-gray-900 dark:text-white">
+                          <img
+                            src={getHighResPaymentLogo(
+                              selectedProvider?.logo,
+                              undefined,
+                              selectedProviderLogoSize
+                            )}
+                            alt={`${provider} logo`}
+                            className="w-8 h-8 flex-shrink-0 rounded-full object-cover"
+                            onError={(e) => {
+                              e.currentTarget.src = "/default-provider-logo.svg";
+                            }}
+                          />
+                           <div className="min-w-0">
+                             <p className="text-sm font-semibold text-gray-900 dark:text-white truncate">
                                {provider}
                              </p>
-                             <p className="text-xs text-[#788099]">
+                             <p className="text-xs text-[#788099] mt-0.5">
                                Selected Provider
                              </p>
                            </div>
@@ -985,7 +1016,11 @@ const PaymentMethodsModal: React.FC<PaymentMethodsModalProps> = ({
                 onChange={(e) => {
                   const raw = e.target.value;
                   const next =
-                    methodTab === "bank" ? sanitizeBankTabAccountInput(raw) : raw;
+                    methodTab === "bank"
+                      ? isMobileMethod
+                        ? sanitizeMobileAccountInput(raw)
+                        : sanitizeBankAccountInput(raw)
+                      : raw;
                   setAccount(next);
 
                   if (!shouldUseWalletAddressField) return;
@@ -1000,9 +1035,28 @@ const PaymentMethodsModal: React.FC<PaymentMethodsModalProps> = ({
                   void validateCryptoAddress(trimmed, "usdt", cryptoNetworkForValidation);
                 }}
                disabled={publicMethodsLoading || (shouldUseWalletAddressField && !isCryptoWalletProviderSelected)}
-               maxLength={shouldUseWalletAddressField ? 128 : BANK_TAB_ACCOUNT_MAX_DIGITS}
-               inputMode={methodTab === "bank" ? "numeric" : shouldUseWalletAddressField ? "text" : "numeric"}
-               pattern={methodTab === "bank" ? "[0-9]*" : undefined}
+               maxLength={
+                 shouldUseWalletAddressField
+                   ? 128
+                   : methodTab === "bank" && isMobileMethod
+                     ? MOBILE_ACCOUNT_MAX_DIGITS
+                     : BANK_ACCOUNT_MAX_LENGTH
+               }
+               inputMode={
+                 methodTab === "bank"
+                   ? isMobileMethod
+                     ? "numeric"
+                     : "text"
+                   : shouldUseWalletAddressField
+                     ? "text"
+                     : "numeric"
+               }
+               pattern={
+                 methodTab === "bank" && isMobileMethod ? "[0-9]*" : undefined
+               }
+               autoCapitalize={
+                 methodTab === "bank" && !isMobileMethod ? "characters" : "off"
+               }
              />
 
               {shouldUseWalletAddressField &&
@@ -1025,44 +1079,34 @@ const PaymentMethodsModal: React.FC<PaymentMethodsModalProps> = ({
            </div>
           )}
 
-          {methodTab !== "forex" && (methodTab || method) && (
-            <div className="rounded-2xl border border-[#1D8751] bg-[linear-gradient(90deg,rgba(29,135,81,0.14)_0%,rgba(29,135,81,0.02)_100%)] dark:bg-[linear-gradient(90deg,rgba(29,135,81,0.18)_0%,rgba(29,135,81,0.04)_100%)] p-4">
-              <div className="flex items-center gap-2">
-              <input
-                type="checkbox"
-                id="allowAutoSend"
-                checked={allowAutoSend}
-                onChange={(e) => {
-                  if (autoSendPreviouslyEnabled) {
-                    setAllowAutoSend(false);
-                    return;
-                  }
-                  setAllowAutoSend(e.target.checked);
-                }}
-                className="w-4 h-4 text-[#1D8751] bg-white dark:bg-[#23232B] border-[#C7D2E5] dark:border-[#35353E] rounded focus:ring-2 focus:ring-[#1D8751] cursor-pointer"
-                disabled={publicMethodsLoading || autoSendPreviouslyEnabled}
-              />
-              <label
-                htmlFor="allowAutoSend"
-                className={`text-lg leading-none ${
-                  autoSendPreviouslyEnabled
-                    ? "text-[#5f6576] cursor-not-allowed"
-                    : "text-gray-900 dark:text-white cursor-pointer"
-                }`}
-              >
-                Automatic Transaction
-              </label>
-            </div>
-              <p className="mt-3 text-sm text-gray-700 dark:text-[#D3D7E0]">
-                We will use this address for all your <span className="text-[#1D8751]">USDT DEPOSITS</span>, ensuring seamless automatic processing! <span className="text-[#1D8751]">learn more!</span>
-              </p>
-            </div>
-          )}
-          {(methodTab || method) && autoSendPreviouslyEnabled && (
-            <p className="mt-1 inline-flex items-center rounded-full bg-yellow-100 px-2.5 py-1 text-xs font-medium text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-300">
-              Auto send has already been used on your account and cannot be enabled again here.
-            </p>
-          )}
+          {methodTab !== "forex" &&
+            (methodTab || method) &&
+            !autoSendPreviouslyEnabled && (
+              <div className="rounded-2xl border border-[#1D8751] bg-[linear-gradient(90deg,rgba(29,135,81,0.14)_0%,rgba(29,135,81,0.02)_100%)] dark:bg-[linear-gradient(90deg,rgba(29,135,81,0.18)_0%,rgba(29,135,81,0.04)_100%)] p-4">
+                <div className="flex items-center gap-2">
+                  <input
+                    type="checkbox"
+                    id="allowAutoSend"
+                    checked={allowAutoSend}
+                    onChange={(e) => setAllowAutoSend(e.target.checked)}
+                    className="w-4 h-4 text-[#1D8751] bg-white dark:bg-[#23232B] border-[#C7D2E5] dark:border-[#35353E] rounded focus:ring-2 focus:ring-[#1D8751] cursor-pointer"
+                    disabled={publicMethodsLoading}
+                  />
+                  <label
+                    htmlFor="allowAutoSend"
+                    className="text-lg leading-none text-gray-900 dark:text-white cursor-pointer"
+                  >
+                    Automatic Transaction
+                  </label>
+                </div>
+                <p className="mt-3 text-sm text-gray-700 dark:text-[#D3D7E0]">
+                  Use this address for all your{" "}
+                  <span className="text-[#1D8751] font-medium">USDT deposits</span> so
+                  they are processed automatically. You can only enable this once per
+                  account.
+                </p>
+              </div>
+            )}
            
           {/* Error/Loading */}
           {publicMethodsError && <div className="text-red-500 text-sm">{publicMethodsError}</div>}

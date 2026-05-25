@@ -4,6 +4,7 @@ import { get } from "@/lib/apiClient";
 import { handleP2PError } from "@/lib/utils/errorHandler";
 import { API_CONFIG } from "@/lib/appConfig";
 import { TransactionSummary, TransactionSummaryState } from "../types";
+import { normalizeTransactionSummary } from "@/lib/utils/normalizeTransactionSummary";
 
 const initialState: TransactionSummaryState = {
   summary: null,
@@ -20,7 +21,7 @@ export const fetchTransactionSummary = createAsyncThunk<
     const response = await get<TransactionSummary>(
       API_CONFIG.P2P.TRANSACTION_SUMMARY
     );
-    return response.data;
+    return normalizeTransactionSummary(response.data);
   } catch (error) {
     try {
       handleP2PError(error);

@@ -77,7 +77,7 @@ const ResetPassword = () => {
         <div className="relative">
           <Image
             src="/images/iphone_vn7ejc.webp"
-            alt="OMAYA Exchange Mobile App"
+            alt="OMAYA.io Mobile App"
             width={350}
             height={650}
             className="mx-auto "

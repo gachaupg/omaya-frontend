@@ -33,6 +33,7 @@ import Exchanging from "@/features/express/home/components/moneyX/components/Exc
 import { checkKYCStatus, openKYCModal } from "@/features/auth/slices/authSlice";
 import { useBookmarkedAddresses } from "@/features/express/hooks/useBookmarkedAddresses";
 import { BookmarkDropdown } from "@/features/express/components/forms/BookmarkDropdown";
+import ProviderPaymentDetailsCard from "@/components/ui/ProviderPaymentDetailsCard";
 import { getHighResPaymentLogo } from "@/features/express/utils/imageHelpers";
 import {
   clampMoneyXAmountNumber,
@@ -49,9 +50,11 @@ const RATES_MONEYX_FORM_STATE_KEY = "rates_moneyx_form_state";
 /** Public payment payloads often nest logos under `provider` or `payment_details[0]`. */
 const resolvePaymentMethodLogo = (payment: any): string | undefined => {
   if (!payment || typeof payment !== "object") return undefined;
-  const d0 = Array.isArray(payment.payment_details)
-    ? payment.payment_details[0]
-    : undefined;
+  const d0 = Array.isArray(payment.admin_payment_details)
+    ? payment.admin_payment_details[0]
+    : Array.isArray(payment.payment_details)
+      ? payment.payment_details[0]
+      : undefined;
   const candidates = [
     payment.provider_logo,
     payment.logo,
@@ -237,7 +240,6 @@ const MoneyXRates = ({
   const [transactionData, setTransactionData] = useState<any>(null);
   const [apiCommission, setApiCommission] = useState<number | null>(null);
   const [apiCommissionIsPercentage, setApiCommissionIsPercentage] = useState(true);
-  const [accountNumberCopied, setAccountNumberCopied] = useState(false);
   const [isCalculatingFromPay, setIsCalculatingFromPay] = useState(true);
   const [isStateHydrated, setIsStateHydrated] = useState(false);
   const [bookmarkOpen, setBookmarkOpen] = useState(false);
@@ -1022,7 +1024,7 @@ const MoneyXRates = ({
 
   if (showExchanging && transactionData) {
     return (
-      <div className="bg-white dark:bg-[#18181D] p-3 sm:p-4 lg:p-6 rounded-xl sm:rounded-xl lg:rounded-2xl border-[1.5px] border-gray-200 dark:border-[#35353E] shadow-md container mx-auto">
+      <div className="bg-white dark:bg-[#18181D] p-3 sm:p-4 lg:p-6 rounded-xl sm:rounded-xl lg:rounded-2xl border-[1.5px] border-gray-200 dark:border-[#35353E] shadow-md container mx-auto w-full max-w-5xl flex flex-col items-center">
         <Exchanging
           transactionData={transactionData}
           onBackToTransfer={() => {
@@ -1055,7 +1057,7 @@ const MoneyXRates = ({
           "You confirm that the bank account details and beneficiary details you provide are accurate and belong to you.",
           "You agree to include the required transaction reference when sending funds so that processing is not delayed.",
           "Transactions submitted with incorrect details may be delayed, rejected, or returned after verification and compliance checks.",
-          "Omaya Exchange may pause, review, or request additional information to comply with security and regulatory obligations.",
+          "OMAYA.io may pause, review, or request additional information to comply with security and regulatory obligations.",
           "You understand exchange rates and processing times can change based on market conditions, liquidity, and partner availability.",
           "You accept responsibility for selecting the correct payment method, account details, and transfer amount before submission.",
           "If funds are sent from third-party accounts or with missing references, additional checks may apply before release or refund.",
@@ -1063,19 +1065,19 @@ const MoneyXRates = ({
         ]
       : legalModalType === "privacy"
         ? [
-            "Omaya Exchange collects the minimum personal and transaction information required to process your transfer.",
+            "OMAYA.io collects the minimum personal and transaction information required to process your transfer.",
             "Your data is used for transaction execution, fraud prevention, customer support, and legal compliance purposes only.",
             "We apply technical and organizational safeguards to protect your information from unauthorized access.",
             "By continuing, you acknowledge this processing and agree to our privacy practices for MoneyX transactions.",
             "We may share required transaction metadata with regulated payment providers and compliance partners for processing purposes.",
             "Your account and transaction records may be retained for legally required periods under applicable financial regulations.",
-            "You can request assistance for data-related inquiries through official Omaya Exchange support channels.",
+            "You can request assistance for data-related inquiries through official OMAYA.io support channels.",
             "We continuously monitor and improve security controls, but no online system can be guaranteed as fully risk-free.",
           ]
         : [];
 
   return (
-    <div className="bg-white dark:bg-[#18181D] p-3 sm:p-4 lg:p-6 rounded-xl sm:rounded-xl lg:rounded-2xl border-[1.5px] border-gray-200 dark:border-[#35353E] shadow-md container mx-auto">
+    <div className="bg-white dark:bg-[#18181D] p-3 sm:p-4 lg:p-6 rounded-xl sm:rounded-xl lg:rounded-2xl border-[1.5px] border-gray-200 dark:border-[#35353E] shadow-md container mx-auto w-full max-w-5xl">
       <div className="mb-2" />
 
       {/* Validation Errors */}
@@ -1493,72 +1495,21 @@ const MoneyXRates = ({
             <h2 className={`text-xl font-semibold mb-2 ${isDark ? "text-[#788099]" : "text-gray-900"} inline-flex items-center gap-2`}>
               1- {t("rates.accountDetails", "Account details")}
             </h2>
-            {(() => {
-              const accountName =
-                selectedFromPaymentDetail?.account_name ??
-                selectedFromPaymentDetail?.payment_details?.[0]?.account_name ??
-                getProviderName(selectedFromPaymentDetail) ??
-                "—";
-              const accountNumber =
-                selectedFromPaymentDetail?.account_number ??
-                selectedFromPaymentDetail?.payment_details?.[0]?.account_number ??
-                "—";
-              const copyAccountNumber = () => {
-                if (!accountNumber || accountNumber === "—") return;
-                navigator.clipboard.writeText(accountNumber).then(
-                  () => {
-                    setAccountNumberCopied(true);
-                    showToast.success("Account number copied");
-                    setTimeout(() => setAccountNumberCopied(false), 2000);
-                  },
-                  () => showToast.error("Failed to copy")
-                );
-              };
-              return (
-                <div className={`rounded-2xl p-4 mb-4 border ${isDark ? "bg-[#18181D] border-[#35353E]" : "bg-white border-[#E2E8F0]"}`}>
-                  <p className={`text-sm sm:text-base mb-4 ${isDark ? "text-[#788099]" : "text-[#475569]"}`}>
-                    {t("rates.copyAccountToDeposit", "Copy the following account to deposit the")}{" "}
-                    <span className={`font-semibold ${isDark ? "text-white" : "text-gray-900"}`}>${payAmount.toFixed(2)}</span>{" "}
-                    {t("rates.amount", "amount")}
-                  </p>
-                  <div className="space-y-3">
-                    <div className={`flex flex-col sm:flex-row sm:items-center sm:justify-between gap-1 p-3 rounded-xl border ${isDark ? "border-[#35353E]" : "border-[#E2E8F0]"}`}>
-                      <span className="text-[#788099] text-sm">{t("rates.accountName", "Account name")}</span>
-                      <span className={`font-medium text-sm truncate ${isDark ? "text-white" : "text-[#35353e]"}`}>
-                        {accountName}
-                      </span>
-                    </div>
-                    <div className={`flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 p-3 rounded-xl border ${isDark ? "border-[#35353E]" : "border-[#E2E8F0]"}`}>
-                      <span className="text-[#788099] text-sm">{t("rates.accountNumber", "Account number")}</span>
-                      <div className="flex items-center gap-2 min-w-0">
-                        <span className={`font-medium text-sm truncate ${isDark ? "text-white" : "text-[#35353e]"}`}>
-                          {accountNumber}
-                        </span>
-                        {accountNumber !== "—" && (
-                          <button
-                            type="button"
-                            onClick={copyAccountNumber}
-                            className="flex-shrink-0 p-1.5 rounded-lg bg-[#1D8751]/20 text-[#1D8751] hover:bg-[#1D8751]/30 transition-colors"
-                            title="Copy account number"
-                            aria-label="Copy account number"
-                          >
-                            {accountNumberCopied ? (
-                              <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-                              </svg>
-                            ) : (
-                              <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h2m8 0h2a2 2 0 012 2v2m2 4a2 2 0 01-2 2h-8a2 2 0 01-2-2v-8" />
-                              </svg>
-                            )}
-                          </button>
-                        )}
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              );
-            })()}
+            <ProviderPaymentDetailsCard
+              paymentDetail={selectedFromPaymentDetail}
+              fallbackProviderName={getProviderName(selectedFromPaymentDetail)}
+              className={`rounded-2xl p-4 mb-4 border ${isDark ? "bg-[#18181D] border-[#35353E]" : "bg-white border-[#E2E8F0]"}`}
+              rowClassName={`flex flex-col sm:flex-row sm:items-center sm:justify-between gap-1 sm:gap-2 p-3 rounded-xl border ${isDark ? "border-[#35353E]" : "border-[#E2E8F0]"}`}
+              instruction={
+                <>
+                  {t("rates.copyAccountToDeposit", "Copy the following account to deposit the")}{" "}
+                  <span className={`font-semibold ${isDark ? "text-white" : "text-gray-900"}`}>
+                    ${payAmount.toFixed(2)}
+                  </span>{" "}
+                  {t("rates.amount", "amount")}
+                </>
+              }
+            />
 
             {/* 2- Bank Account Address (user's receiving account) */}
             <div
@@ -1817,7 +1768,7 @@ const MoneyXRates = ({
                   </svg>
                 </div>
                 <span>
-                  I have read and agreed to Omaya Exchange{" "}
+                  I have read and agreed to OMAYA.io{" "}
                   <button
                     type="button"
                     onClick={() => setLegalModalType("terms")}

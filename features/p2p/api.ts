@@ -37,6 +37,7 @@ import { UnreadMessagesResponse } from "./slices/unreadMessagesSlice";
 import { API_CONFIG } from "@/lib/appConfig";
 
 import { logger } from '@/lib/utils/logger';
+import { normalizeTransactionSummary } from "@/lib/utils/normalizeTransactionSummary";
 
 // Deposit API calls
 export const getDeposits = async (): Promise<P2PListResponse> => {
@@ -475,7 +476,7 @@ export const getTransactionSummary = async (): Promise<TransactionSummary> => {
     const response = await get<TransactionSummary>(
       API_CONFIG.P2P.TRANSACTION_SUMMARY
     );
-    return response.data;
+    return normalizeTransactionSummary(response.data);
   });
 };
 

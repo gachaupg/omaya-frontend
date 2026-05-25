@@ -1,6 +1,7 @@
 import React from "react";
 import { FaCheckCircle } from "react-icons/fa";
 import { useRouter } from "next/navigation";
+import { formatSwapDisplayTicker } from "../utils/swapDisplayFormat";
 
 const GREEN = "#309A64";
 
@@ -73,7 +74,7 @@ const SwapStatusComponent: React.FC<SwapStatusProps> = ({
           <div>
             <div className="mb-1">You Paid</div>
             <div className="font-bold text-white text-sm sm:text-base">
-              {paidAmount} {paidCurrency}
+              {paidAmount} {formatSwapDisplayTicker(paidCurrency)}
             </div>
             {payinMethod && (
               <div className="text-xs text-white/60">Via {payinMethod}</div>
@@ -82,7 +83,7 @@ const SwapStatusComponent: React.FC<SwapStatusProps> = ({
           <div className="text-left sm:text-right mt-2 sm:mt-0">
             <div className="mb-1">You Received</div>
             <div className="font-bold text-sm sm:text-base" style={{ color: GREEN }}>
-              {receivedAmount} {receivedCurrency}
+              {receivedAmount} {formatSwapDisplayTicker(receivedCurrency)}
             </div>
             {payoutMethod && (
               <div className="text-xs text-white/60">to {payoutMethod}</div>
@@ -113,7 +114,7 @@ const SwapStatusComponent: React.FC<SwapStatusProps> = ({
         <div className="min-w-0">
           <div className="font-bold text-white text-sm sm:text-base">Transaction Completed</div>
           <div className="text-white/90 text-xs sm:text-sm">
-            Your {receivedCurrency} has been sent to your wallet. It may take a
+            Your {formatSwapDisplayTicker(receivedCurrency)} has been sent to your wallet. It may take a
             few minutes to reflect in your balance.
           </div>
         </div>
