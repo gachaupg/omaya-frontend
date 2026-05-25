@@ -35,8 +35,15 @@ import { logger } from "@/lib/utils/logger";
 import { useScrollAppToTopWhen } from "@/hooks/useScrollAppToTopWhen";
 import {
   normalizeSwapAmountOnChange,
+  isPositiveSwapAmount,
+  parseSwapAmountNumber,
   swapAmountToInputString,
 } from "@/lib/utils/swapAmountInput";
+import {
+  isSameSwapAssetPair,
+  resolveSwapCreateErrorMessage,
+  SWAP_SAME_COIN_MESSAGE,
+} from "@/lib/utils/swapAssetValidation";
 
 // Minimum swap value in USD/USDT - smaller amounts can disappear due to fees
 const MIN_SWAP_USD = 1;
@@ -50,8 +57,8 @@ const meetsMinimumSwap = (
   if (!fromAsset || !toAsset) return false;
   const fromTicker = (fromAsset.ticker || "").toUpperCase();
   const toTicker = (toAsset.ticker || "").toUpperCase();
-  const fromVal = parseFloat(fromAmount) || 0;
-  const toVal = parseFloat(toAmount) || 0;
+  const fromVal = parseSwapAmountNumber(fromAmount) || 0;
+  const toVal = parseSwapAmountNumber(toAmount) || 0;
 
   if (fromTicker === "USDT" || fromTicker === "USD") {
     if (fromVal < MIN_SWAP_USD) return false;
@@ -129,8 +136,8 @@ const SwapWidget = () => {
   }, [toAmount]);
 
   useEffect(() => {
-    const fromValue = parseFloat(fromAmount) || 0;
-    const toValue = parseFloat(toAmount) || 0;
+    const fromValue = parseSwapAmountNumber(fromAmount) || 0;
+    const toValue = parseSwapAmountNumber(toAmount) || 0;
     const exceeded = fromValue > 15000 || toValue > 15000;
     if (exceeded && !otcThresholdExceededRef.current) {
       setIsInfoModalOpen(true);
@@ -143,13 +150,11 @@ const SwapWidget = () => {
     if (estimateError == null || estimateError === "") return;
     if (typeof estimateError !== "string") return;
     if (activeInputField === "from") {
-      const n = parseFloat(fromAmount);
-      if (fromAmount === "" || Number.isNaN(n) || n <= 0) {
+      if (!isPositiveSwapAmount(fromAmount)) {
         dispatch(clearEstimateError());
       }
     } else {
-      const n = parseFloat(toAmount);
-      if (toAmount === "" || Number.isNaN(n) || n <= 0) {
+      if (!isPositiveSwapAmount(toAmount)) {
         dispatch(clearEstimateError());
       }
     }
@@ -304,7 +309,12 @@ const SwapWidget = () => {
     }
 
     // Wait for all required data to be available
-    if (!fromAsset || !toAsset || !fromAmount || parseFloat(fromAmount) <= 0) {
+    if (
+      !fromAsset ||
+      !toAsset ||
+      !isPositiveSwapAmount(fromAmount) ||
+      isSameSwapAssetPair(fromAsset, toAsset)
+    ) {
       return;
     }
 
@@ -338,23 +348,41 @@ const SwapWidget = () => {
     hasAutoExpanded,
   ]);
 
+  const sameCoinPair = isSameSwapAssetPair(fromAsset, toAsset);
+
+  useEffect(() => {
+    if (sameCoinPair) {
+      setLocalSwapError(SWAP_SAME_COIN_MESSAGE);
+      dispatch(clearEstimate());
+      dispatch(clearEstimateError());
+      return;
+    }
+    setLocalSwapError((prev) =>
+      prev === SWAP_SAME_COIN_MESSAGE ? "" : prev
+    );
+  }, [sameCoinPair, dispatch]);
+
   // Fetch swap estimate when assets or amount changes
   useEffect(() => {
+    if (sameCoinPair) {
+      dispatch(clearEstimate());
+      return;
+    }
     if (
       fromAsset &&
       toAsset &&
       ((activeInputField === "from" &&
         debouncedFromAmount &&
-        parseFloat(debouncedFromAmount) > 0) ||
+        isPositiveSwapAmount(debouncedFromAmount)) ||
         (activeInputField === "to" &&
           debouncedToAmount &&
-          parseFloat(debouncedToAmount) > 0))
+          isPositiveSwapAmount(debouncedToAmount)))
     ) {
       dispatch(resetErrorToastFlag());
       const amount =
         activeInputField === "from"
-          ? parseFloat(debouncedFromAmount)
-          : parseFloat(debouncedToAmount);
+          ? parseSwapAmountNumber(debouncedFromAmount)
+          : parseSwapAmountNumber(debouncedToAmount);
 
       // For reverse calculation (when user types in "to" field), swap the currencies
       const estimateParams =
@@ -400,6 +428,7 @@ const SwapWidget = () => {
     debouncedFromAmount,
     debouncedToAmount,
     activeInputField,
+    sameCoinPair,
   ]);
 
   // Update amounts when estimate is received
@@ -415,8 +444,7 @@ const SwapWidget = () => {
       setLastSuccessfulEstimate(estimate);
 
       if (activeInputField === "from") {
-        const p = parseFloat(fromAmount);
-        if (fromAmount === "" || Number.isNaN(p) || p <= 0) {
+        if (!isPositiveSwapAmount(fromAmount)) {
           return;
         }
         // User typed in "from" field, update "to" amount (normal flow)
@@ -429,8 +457,7 @@ const SwapWidget = () => {
           dispatch(setToAmount(swapAmountToInputString(toAmount)));
         }
       } else if (activeInputField === "to") {
-        const p = parseFloat(toAmount);
-        if (toAmount === "" || Number.isNaN(p) || p <= 0) {
+        if (!isPositiveSwapAmount(toAmount)) {
           return;
         }
         // User typed in "to" field, update "from" amount (reverse flow)
@@ -464,7 +491,7 @@ const SwapWidget = () => {
 
     const errMsg = estimateError.trim();
     const isValidationError =
-      /deposit_too_small|deposit_too_large|too small|too large|min amount|max amount/i.test(
+      /deposit_too_small|deposit_too_large|too small|too large|out of min amount|min amount|max amount/i.test(
         errMsg
       );
 
@@ -501,7 +528,7 @@ const SwapWidget = () => {
             fromAmount > 0
           ) {
             const rate = toAmount / fromAmount;
-            const calculatedFromAmount = parseFloat(debouncedToAmount) / rate;
+            const calculatedFromAmount = parseSwapAmountNumber(debouncedToAmount) / rate;
             dispatch(
               setFromAmount(swapAmountToInputString(calculatedFromAmount))
             );
@@ -543,8 +570,13 @@ const SwapWidget = () => {
   // Handle next step validation
   const handleNextStep = () => {
     setLocalSwapError("");
-    if (!fromAsset || !toAsset || !fromAmount || parseFloat(fromAmount) <= 0) {
+    if (!fromAsset || !toAsset || !isPositiveSwapAmount(fromAmount)) {
       setLocalSwapError("Please select assets and enter a valid amount.");
+      return;
+    }
+
+    if (isSameSwapAssetPair(fromAsset, toAsset)) {
+      setLocalSwapError(SWAP_SAME_COIN_MESSAGE);
       return;
     }
 
@@ -553,7 +585,10 @@ const SwapWidget = () => {
       return;
     }
 
-    if ((parseFloat(fromAmount) || 0) > 15000 || (parseFloat(toAmount) || 0) > 15000) {
+    if (
+      (parseSwapAmountNumber(fromAmount) || 0) > 15000 ||
+      (parseSwapAmountNumber(toAmount) || 0) > 15000
+    ) {
       setIsInfoModalOpen(true);
       return;
     }
@@ -661,6 +696,11 @@ const SwapWidget = () => {
       return;
     }
 
+    if (isSameSwapAssetPair(fromAsset, toAsset)) {
+      setLocalSwapError(SWAP_SAME_COIN_MESSAGE);
+      return;
+    }
+
     logger.debug("swap", "All fields present, creating swap...");
 
     try {
@@ -681,7 +721,9 @@ const SwapWidget = () => {
       setCurrentStep("copy-address");
     } catch (error: any) {
       console.error("Failed to create swap:", error);
+      const sameCoinMsg = resolveSwapCreateErrorMessage(error);
       const msg =
+        sameCoinMsg ||
         error?.response?.data?.message ||
         error?.message ||
         "Could not create swap. Please try again.";
@@ -689,6 +731,24 @@ const SwapWidget = () => {
         typeof msg === "string" ? msg : "Could not create swap. Please try again."
       );
     }
+  };
+
+  const handleFromAssetSelect = (asset: SupportedAsset) => {
+    if (toAsset && isSameSwapAssetPair(asset, toAsset)) {
+      setLocalSwapError(SWAP_SAME_COIN_MESSAGE);
+      return;
+    }
+    dispatch(setFromAsset(asset));
+    dispatch(clearEstimate());
+  };
+
+  const handleToAssetSelect = (asset: SupportedAsset) => {
+    if (fromAsset && isSameSwapAssetPair(fromAsset, asset)) {
+      setLocalSwapError(SWAP_SAME_COIN_MESSAGE);
+      return;
+    }
+    dispatch(setToAsset(asset));
+    dispatch(clearEstimate());
   };
 
   const handleCopyAddress = async () => {
@@ -718,8 +778,10 @@ const SwapWidget = () => {
 
   const handleSwapAssets = () => {
     dispatch(swapAssets());
-    // Clear the estimate when swapping assets
     dispatch(clearEstimate());
+    setLocalSwapError((prev) =>
+      prev === SWAP_SAME_COIN_MESSAGE ? "" : prev
+    );
   };
 
   const staleRefreshInFlightRef = React.useRef(false);
@@ -815,8 +877,9 @@ const SwapWidget = () => {
             isToAssetOpen={isToAssetOpen}
             searchTerm={searchTerm}
             toSearchTerm={toSearchTerm}
-            onFromAssetSelect={(asset) => dispatch(setFromAsset(asset))}
-            onToAssetSelect={(asset) => dispatch(setToAsset(asset))}
+            onFromAssetSelect={handleFromAssetSelect}
+            onToAssetSelect={handleToAssetSelect}
+            sameCoinPair={sameCoinPair}
             onFromAmountChange={handleFromAmountChange}
             onToAmountChange={handleToAmountChange}
             onFromAssetToggle={() => setIsFromAssetOpen(!isFromAssetOpen)}

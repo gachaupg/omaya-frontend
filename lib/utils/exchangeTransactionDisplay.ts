@@ -6,10 +6,22 @@ export type ExchangePaymentInfo = {
   methodLabel: string | null;
   /** Best user-facing payment label (provider + method fallbacks) */
   paymentLabel: string;
+  /** Bank account / mobile reference (not treated as on-chain wallet) */
+  paymentAccountReference: string | null;
   assetSymbol: string;
   assetNetwork: string;
   walletAddress: string | null;
   subType: "deposit" | "withdrawal" | string;
+};
+
+/** On-chain or external crypto wallet — not bank account numbers. */
+export function isLikelyOnChainWalletAddress(value: unknown): boolean {
+  const s = String(value ?? "").trim();
+  if (!s) return false;
+  if (/^0x[a-fA-F0-9]{20,}$/i.test(s)) return true;
+  if (/^[13][a-km-zA-HJ-NP-Z1-9]{25,}$/.test(s)) return true;
+  if (/^T[a-zA-Z0-9]{20,}$/.test(s)) return true;
+  return false;
 };
 
 export function normalizeExchangeSubType(value: unknown): string {
@@ -69,6 +81,87 @@ const parseAdditionalInfo = (raw: unknown): Record<string, unknown> | null => {
   }
 };
 
+function readPaymentMethodObject(tx: Record<string, unknown>): {
+  provider: string | null;
+  methodName: string | null;
+  logo: string | null;
+} {
+  const raw = tx?.payment_method;
+  if (!raw || typeof raw !== "object") {
+    return { provider: null, methodName: null, logo: null };
+  }
+  const pm = raw as Record<string, unknown>;
+  return {
+    provider: sanitizeValue(
+      String(
+        pm.provider ??
+          pm.provider_name ??
+          pm.payment_provider ??
+          pm.payment_provider_name ??
+          ""
+      ),
+      tx
+    ),
+    methodName: sanitizeValue(
+      String(
+        pm.name ??
+          pm.method_name ??
+          pm.payment_method_name ??
+          pm.display_name ??
+          ""
+      ),
+      tx
+    ),
+    logo:
+      String(pm.logo_url ?? pm.logo ?? pm.provider_logo ?? "").trim() || null,
+  };
+}
+
+/** True when the API includes a fiat/mobile bank destination (not crypto-only). */
+export function hasExchangePaymentDestination(
+  tx: Record<string, unknown>,
+  info?: Pick<
+    ExchangePaymentInfo,
+    "providerName" | "methodLabel" | "paymentAccountReference" | "paymentLabel"
+  >
+): boolean {
+  if (info?.providerName || info?.methodLabel || info?.paymentAccountReference) {
+    return true;
+  }
+  const paymentLabel = String(info?.paymentLabel ?? "").trim();
+  if (
+    paymentLabel &&
+    paymentLabel !== "Bank / Payment" &&
+    !isLikelyOnChainWalletAddress(paymentLabel)
+  ) {
+    return true;
+  }
+
+  const candidates = [
+    tx?.payment_provider,
+    tx?.payment_provider_display,
+    tx?.payment_provider_name,
+    tx?.receiver_provider,
+    tx?.sender_provider,
+    tx?.recipient_name,
+    tx?.recipient_account,
+    tx?.account_number,
+    tx?.mobile_number,
+  ];
+  if (
+    candidates.some(
+      (c) => !!sanitizeValue(c != null ? String(c) : null, tx)
+    )
+  ) {
+    return true;
+  }
+
+  const paymentDetails = Array.isArray(tx?.payment_details)
+    ? tx.payment_details
+    : [];
+  return paymentDetails.length > 0;
+}
+
 /** Same provider / wallet resolution as the Exchange tab (single source of truth). */
 export function extractExchangePaymentInfo(
   tx: Record<string, unknown>
@@ -81,22 +174,28 @@ export function extractExchangePaymentInfo(
     paymentDetails.find((detail) => detail?.provider_logo || detail?.logo) ||
     paymentDetails[0];
 
+  const paymentMethodObj = readPaymentMethodObject(tx);
+  const subType = normalizeExchangeSubType(tx?.sub_type || tx?.transaction_type || "");
+  const isWithdrawal = subType === "withdrawal";
+
   const displayImage =
     String(detailWithLogo?.provider_logo || detailWithLogo?.logo || "").trim() ||
+    paymentMethodObj.logo ||
     String(tx?.provider_logo || "").trim() ||
-    String(
-      (tx as { payment_method?: { logo_url?: string } })?.payment_method?.logo_url || ""
-    ).trim() ||
+    String(tx?.receiver_provider_logo || "").trim() ||
+    String(tx?.sender_provider_logo || "").trim() ||
     null;
 
   const rawProviderName =
+    (isWithdrawal ? tx?.receiver_provider : null) ||
     detailWithLogo?.provider_name ||
     detailWithLogo?.provider ||
+    paymentMethodObj.provider ||
     tx?.payment_provider ||
     tx?.payment_provider_display ||
+    tx?.payment_provider_name ||
     tx?.sender_provider ||
-    tx?.receiver_provider ||
-    (tx as { payment_method?: { provider?: string } })?.payment_method?.provider ||
+    (!isWithdrawal ? tx?.receiver_provider : null) ||
     null;
 
   const providerName = sanitizeValue(
@@ -105,11 +204,12 @@ export function extractExchangePaymentInfo(
   );
 
   const rawMethodLabel =
-    tx?.payment_method ||
+    paymentMethodObj.methodName ||
     tx?.payment_method_display ||
     detailWithLogo?.payment_method_name ||
     detailWithLogo?.payment_method ||
     detailWithLogo?.method ||
+    (typeof tx?.payment_method === "string" ? tx.payment_method : null) ||
     null;
 
   const methodLabel = sanitizeValue(
@@ -130,7 +230,6 @@ export function extractExchangePaymentInfo(
     sanitizeValue(tx?.network != null ? String(tx.network) : null, tx) ||
     "BSC";
 
-  const subType = normalizeExchangeSubType(tx?.sub_type || tx?.transaction_type || "");
   const additionalInfo = parseAdditionalInfo(tx?.additional_info);
 
   const prioritizedAddressCandidates =
@@ -158,8 +257,6 @@ export function extractExchangePaymentInfo(
     tx?.to_address,
     tx?.from_address,
     (paymentDetails[0] as Record<string, unknown> | undefined)?.wallet_address,
-    (paymentDetails[0] as Record<string, unknown> | undefined)?.account_number,
-    (paymentDetails[0] as Record<string, unknown> | undefined)?.mobile_number,
   ];
 
   const walletAddress =
@@ -167,11 +264,51 @@ export function extractExchangePaymentInfo(
       .map((candidate) =>
         sanitizeValue(candidate != null ? String(candidate) : null, tx)
       )
-      .find((candidate) => !!candidate) || null;
+      .filter((candidate): candidate is string => !!candidate)
+      .find((candidate) => isLikelyOnChainWalletAddress(candidate)) || null;
+
+  const paymentAccountReference =
+    sanitizeValue(
+      (paymentDetails[0] as Record<string, unknown> | undefined)?.account_number !=
+        null
+        ? String(
+            (paymentDetails[0] as Record<string, unknown>).account_number
+          )
+        : null,
+      tx
+    ) ||
+    sanitizeValue(
+      (paymentDetails[0] as Record<string, unknown> | undefined)?.mobile_number !=
+        null
+        ? String(
+            (paymentDetails[0] as Record<string, unknown>).mobile_number
+          )
+        : null,
+      tx
+    ) ||
+    sanitizeValue(
+      tx?.account_number != null ? String(tx.account_number) : null,
+      tx
+    ) ||
+    sanitizeValue(
+      tx?.mobile_number != null ? String(tx.mobile_number) : null,
+      tx
+    ) ||
+    sanitizeValue(
+      tx?.recipient_account != null ? String(tx.recipient_account) : null,
+      tx
+    ) ||
+    null;
 
   const paymentLabel =
     providerName ||
     methodLabel ||
+    sanitizeValue(
+      (isWithdrawal ? tx?.receiver_provider : tx?.sender_provider) != null
+        ? String(isWithdrawal ? tx?.receiver_provider : tx?.sender_provider)
+        : null,
+      tx
+    ) ||
     sanitizeValue(
       tx?.payment_provider_display != null
         ? String(tx.payment_provider_display)
@@ -183,12 +320,15 @@ export function extractExchangePaymentInfo(
       tx
     ) ||
     sanitizeValue(
-      tx?.payment_method_display != null
-        ? String(tx.payment_method_display) : null,
+      tx?.payment_provider_name != null ? String(tx.payment_provider_name) : null,
       tx
     ) ||
     sanitizeValue(
-      tx?.payment_method != null ? String(tx.payment_method) : null,
+      tx?.payment_method_display != null ? String(tx.payment_method_display) : null,
+      tx
+    ) ||
+    sanitizeValue(
+      tx?.recipient_name != null ? String(tx.recipient_name) : null,
       tx
     ) ||
     "Bank / Payment";
@@ -198,6 +338,7 @@ export function extractExchangePaymentInfo(
     providerName,
     methodLabel,
     paymentLabel,
+    paymentAccountReference,
     assetSymbol,
     assetNetwork,
     walletAddress,

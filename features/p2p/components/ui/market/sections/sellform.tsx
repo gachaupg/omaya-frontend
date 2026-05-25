@@ -33,6 +33,7 @@ import {
   isPendingAcceptanceStatus,
   isDeclinedLikeStatus,
   formatCountdownSeconds,
+  isTransactionCountdownActive,
   wsStatusPayloadMatchesTrade,
 } from "@/features/p2p/utils/tradeWsAcceptanceGate";
 
@@ -88,14 +89,13 @@ const FinalSell: React.FC<FinalSellProps> = ({ orderData }) => {
   const inPendingAcceptanceSeller =
     isPendingAcceptanceStatus(wsTradeSnapshot.rawStatus) ||
     isPendingAcceptanceStatus(String(confirmOrder?.status || ""));
-  /** Payment window timer arms only after trade-confirm WS has sent a status (REST flags alone must not start the clock). */
-  const tradeConfirmStatusFromWs =
-    String(wsTradeSnapshot.rawStatus || "").trim() !== "";
-  /** Matched-phase transaction timer counts down only after acceptance (never during pending_acceptance). */
-  const sellerMatchedTimerActive =
-    confirmOrder?.status === "matched" &&
-    tradeConfirmStatusFromWs &&
-    !inPendingAcceptanceSeller;
+  const sellerPaymentPhaseActive =
+    confirmOrder?.status === "matched" && !inPendingAcceptanceSeller;
+  const transactionTimerActive = isTransactionCountdownActive(
+    displaySeconds,
+    confirmOrder?.id,
+    confirmOrder?.status
+  );
 
   const [countdown, setCountdown] = useState(displaySeconds);
   const initialFetchDone = useRef(false);
@@ -423,44 +423,19 @@ const FinalSell: React.FC<FinalSellProps> = ({ orderData }) => {
     };
   }, [dispatch]);
 
-  // Handle countdown — only after trade acceptance (past pending_acceptance)
   useEffect(() => {
-    if (sellerMatchedTimerActive) {
+    if (displaySeconds > 0) {
       setCountdown(displaySeconds);
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [displaySeconds, sellerMatchedTimerActive]);
+  }, [displaySeconds, confirmOrder?.id]);
 
   useEffect(() => {
-    if (!sellerMatchedTimerActive) return;
-    if (countdown <= 0) return;
+    if (!transactionTimerActive) return;
     const timer = setInterval(() => {
       setCountdown((prev) => (prev > 0 ? prev - 1 : 0));
     }, 1000);
     return () => clearInterval(timer);
-  }, [sellerMatchedTimerActive, countdown]);
-
-  // Auto-cancel when countdown reaches 0
-  useEffect(() => {
-    if (sellerMatchedTimerActive && countdown === 0) {
-      handleCancelTransaction();
-      logger.debug('p2p', "Countdown reached 0, auto-cancelling transaction");
-      return;
-    }
-  }, [
-    sellerMatchedTimerActive,
-    countdown,
-    confirmOrder?.id,
-    dispatch,
-    isAuthenticated,
-  ]);
-
-  // Reset countdown when matched payment timer is not active
-  useEffect(() => {
-    if (!sellerMatchedTimerActive) {
-      setCountdown(displaySeconds);
-    }
-  }, [sellerMatchedTimerActive, displaySeconds]);
+  }, [transactionTimerActive]);
 
   // Use payment_details from singleOrder, confirmOrder, or URL - prefer source with most methods
   const fromSingle = Array.isArray(singleOrder?.payment_details) ? singleOrder.payment_details : [];
@@ -528,6 +503,20 @@ const FinalSell: React.FC<FinalSellProps> = ({ orderData }) => {
         });
     }
   };
+
+  useEffect(() => {
+    if (!transactionTimerActive || countdown !== 0 || !sellerPaymentPhaseActive) {
+      return;
+    }
+    logger.debug("p2p", "Countdown reached 0, auto-cancelling transaction");
+    handleCancelTransaction();
+  }, [
+    transactionTimerActive,
+    countdown,
+    sellerPaymentPhaseActive,
+    confirmOrder?.id,
+    isAuthenticated,
+  ]);
 
   const handleConfirmTrade = () => {
     if (isAuthenticated && confirmOrder?.id) {
@@ -648,7 +637,7 @@ const FinalSell: React.FC<FinalSellProps> = ({ orderData }) => {
                 {isAuthenticated ? (
                   <TimeDisplay
                     seconds={
-                      sellerMatchedTimerActive ? countdown : displaySeconds
+                      transactionTimerActive ? countdown : displaySeconds
                     }
                   />
                 ) : (
@@ -853,7 +842,7 @@ const FinalSell: React.FC<FinalSellProps> = ({ orderData }) => {
                 <span className="text-[#1D8751]">Transaction time:</span>
                 {isAuthenticated ? (
                   <TimeDisplay
-                    seconds={sellerMatchedTimerActive ? countdown : displaySeconds}
+                    seconds={transactionTimerActive ? countdown : displaySeconds}
                   />
                 ) : (
                   <span>--:--</span>

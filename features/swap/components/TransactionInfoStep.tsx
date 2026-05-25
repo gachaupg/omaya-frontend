@@ -4,8 +4,18 @@ import { SupportedAsset, SwapEstimate } from "../types";
 import { useTheme } from "@/context/theme";
 import { FaSearch } from "react-icons/fa";
 import { useSwapI18n } from "@/lib/useSwapI18n";
-import { isNonEmptyInvalidZeroSwapAmount } from "@/lib/utils/swapAmountInput";
-import { assetMatchesSearchTerm } from "@/lib/utils/assetSearch";
+import {
+  isNonEmptyInvalidZeroSwapAmount,
+  isPositiveSwapAmount,
+} from "@/lib/utils/swapAmountInput";
+import {
+  isSameSwapAssetPair,
+  SWAP_SAME_COIN_MESSAGE,
+} from "@/lib/utils/swapAssetValidation";
+import {
+  assetMatchesSearchTerm,
+  sortAssetsForDisplay,
+} from "@/lib/utils/assetSearch";
 import {
   handleSwapAssetIconError,
   resolveSwapAssetIconSrc,
@@ -49,6 +59,7 @@ interface TransactionInfoStepProps {
   meetsMinimumAmount?: boolean;
   minSwapUsd?: number;
   amountError?: string;
+  sameCoinPair?: boolean;
 }
 
 const strongBorder =
@@ -60,10 +71,7 @@ const labelCopy = "text-sm sm:text-[17px] font-semibold dark:text-[#ffffff] text
 const headerCopy = labelCopy;
 
 /** User may type "0" while editing — don't show estimate API errors until amount is positive */
-const hasPositiveAmount = (s: string) => {
-  const n = parseFloat(s);
-  return s !== "" && !Number.isNaN(n) && n > 0;
-};
+const hasPositiveAmount = (s: string) => isPositiveSwapAmount(s);
 
 const inputBase =
   `rounded-2xl bg-transparent dark:bg-transparent ${strongBorder} dark:text-white text-[#35353e] px-4 py-2 pr-16 w-full ${SWAP_AMOUNT_TEXT} dark:placeholder:text-[#5f6070] placeholder:text-[#7e7e8f] focus:outline-none h-[44px]`;
@@ -101,7 +109,11 @@ const TransactionInfoStep: React.FC<TransactionInfoStepProps> = (props) => {
     meetsMinimumAmount = true,
     minSwapUsd = 1,
     amountError,
+    sameCoinPair = false,
   } = props;
+
+  const sameCoinBlocksSubmit =
+    sameCoinPair || isSameSwapAssetPair(fromAsset, toAsset);
 
   /** Don't block the form on stale API errors while amount is 0 / empty */
   const estimateErrorBlocksSubmit =
@@ -300,18 +312,28 @@ const TransactionInfoStep: React.FC<TransactionInfoStepProps> = (props) => {
 
   // Memoize filtered assets to prevent recalculation on every render
   const filteredFromAssets = useMemo(() => {
-    if (!searchTerm) return supportedAssets;
-    return supportedAssets.filter((option) =>
-      assetMatchesSearchTerm(option, searchTerm)
+    let list = supportedAssets;
+    if (toAsset) {
+      list = list.filter((option) => !isSameSwapAssetPair(option, toAsset));
+    }
+    if (!searchTerm) return list;
+    return sortAssetsForDisplay(
+      list.filter((option) => assetMatchesSearchTerm(option, searchTerm)),
+      searchTerm
     );
-  }, [supportedAssets, searchTerm]);
+  }, [supportedAssets, searchTerm, toAsset]);
 
   const filteredToAssets = useMemo(() => {
-    if (!toSearchTerm) return supportedAssets;
-    return supportedAssets.filter((option) =>
-      assetMatchesSearchTerm(option, toSearchTerm)
+    let list = supportedAssets;
+    if (fromAsset) {
+      list = list.filter((option) => !isSameSwapAssetPair(fromAsset, option));
+    }
+    if (!toSearchTerm) return list;
+    return sortAssetsForDisplay(
+      list.filter((option) => assetMatchesSearchTerm(option, toSearchTerm)),
+      toSearchTerm
     );
-  }, [supportedAssets, toSearchTerm]);
+  }, [supportedAssets, toSearchTerm, fromAsset]);
 
   const renderAssetDropdown = (
     asset: SupportedAsset | null,
@@ -604,7 +626,13 @@ const TransactionInfoStep: React.FC<TransactionInfoStepProps> = (props) => {
 
       {/* estimateError is shown under the relevant input */}
 
-      {!meetsMinimumAmount && fromAsset && toAsset && fromAmount && parseFloat(fromAmount) > 0 && toAmount && parseFloat(toAmount) > 0 && (
+      {sameCoinBlocksSubmit && (
+        <p className="text-red-600 dark:text-red-400 text-xs sm:text-sm mb-2">
+          {SWAP_SAME_COIN_MESSAGE}
+        </p>
+      )}
+
+      {!meetsMinimumAmount && fromAsset && toAsset && isPositiveSwapAmount(fromAmount) && isPositiveSwapAmount(toAmount) && (
         <p className="text-amber-600 dark:text-amber-400 text-xs sm:text-sm mb-2">
           Minimum swap value is {minSwapUsd} USD/USDT. Smaller amounts can disappear due to fees.
         </p>
@@ -616,25 +644,25 @@ const TransactionInfoStep: React.FC<TransactionInfoStepProps> = (props) => {
           disabled={
             !fromAsset ||
             !toAsset ||
-            !fromAmount ||
-            parseFloat(fromAmount) <= 0 ||
+            !isPositiveSwapAmount(fromAmount) ||
             invalidZeroBlocksSubmit ||
             !estimate ||
             estimateLoading ||
             swapLoading ||
             estimateErrorBlocksSubmit ||
-            !meetsMinimumAmount
+            !meetsMinimumAmount ||
+            sameCoinBlocksSubmit
           }
           className={`w-full text-white text-sm sm:text-base font-medium py-3 sm:py-2.5 rounded-3xl flex items-center justify-center gap-2 transition-colors min-h-[48px] mb-2 ${!fromAsset ||
             !toAsset ||
-            !fromAmount ||
-            parseFloat(fromAmount) <= 0 ||
+            !isPositiveSwapAmount(fromAmount) ||
             invalidZeroBlocksSubmit ||
             !estimate ||
             estimateLoading ||
             swapLoading ||
             estimateErrorBlocksSubmit ||
-            !meetsMinimumAmount
+            !meetsMinimumAmount ||
+            sameCoinBlocksSubmit
             ? "bg-gray-500 cursor-not-allowed"
             : "bg-[#1D8751] hover:bg-[#147043]"
             }`}

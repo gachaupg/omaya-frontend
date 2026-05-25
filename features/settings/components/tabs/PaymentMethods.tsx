@@ -472,7 +472,7 @@ const PaymentMethods = () => {
             className={`px-4 py-2 rounded-full border text-xs sm:text-sm font-semibold focus:outline-none transition-colors ${mainSection === "omaya-wallets" ? "bg-[#1D8751] text-white border-[#1D8751]" : "border-[#1D8751] text-[#1D8751] bg-transparent hover:bg-[#1D8751]/10"}`}
             onClick={() => setMainSection("omaya-wallets")}
           >
-            My Omaya Wallets
+            My OMAYA Wallets
           </button>
         </div>
         {mainSection === "payment-methods" && (

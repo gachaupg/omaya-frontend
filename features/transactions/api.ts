@@ -31,6 +31,23 @@ export interface AllTransactionItem {
   to_currency?: string;
   to_network?: string;
   to_amount?: string;
+  from_asset?: string;
+  to_asset?: string;
+  from_asset_logo?: string | null;
+  to_asset_logo?: string | null;
+  sender_provider_logo?: string | null;
+  receiver_provider_logo?: string | null;
+  payment_method?: {
+    provider?: string;
+    account_name?: string;
+    account_number?: string;
+    logo_url?: string | null;
+  };
+  from_address?: string | null;
+  to_address?: string | null;
+  payout_hash?: string | null;
+  referral_withdrawal_id?: string | null;
+  withdrawal_id?: string | null;
 }
 
 export interface AllTransactionsResponse {

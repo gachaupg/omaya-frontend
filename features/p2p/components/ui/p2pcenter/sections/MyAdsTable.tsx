@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef } from "react";
 import { createPortal } from "react-dom";
+import { useRouter } from "next/navigation";
 import { useDispatch, useSelector } from "react-redux";
 import {
   deleteP2POrderThunk,
@@ -8,8 +9,15 @@ import {
 } from "@/features/p2p/slices/orderSlice";
 import { fetchMyOrders } from "@/features/p2p/slices/myOrdersSlice";
 import { RootState } from "@/store/rootReducer";
-import { toast } from "sonner";
+import { showToast } from "@/lib/utils/toast";
+import {
+  buildMatchedTradeHref,
+  findActiveTradeForOrder,
+  isActiveTradeDeleteError,
+} from "@/features/p2p/utils/deleteAdHelpers";
+import { MatchedTrade } from "@/features/p2p/types";
 import EditAdModal from "./EditAdModal";
+import DeleteErrorModal from "./DeleteErrorModal";
 import { formatDate, formatNumber } from "@/utils/formatters";
 import { NoDataFound } from "@/components/dashboard/ui/Transactions";
 import { SortArrowsIcon } from "@/components/ui/SortArrowsIcon";
@@ -37,8 +45,12 @@ const ITEMS_PER_PAGE = 7;
 const MyAdsTable: React.FC<Props> = ({ trades, loading }) => {
   /** Hooks */
   const dispatch = useDispatch();
+  const router = useRouter();
   const isAuthenticated = useSelector(
     (state: RootState) => state.auth.isAuthenticated
+  );
+  const userEmail = useSelector(
+    (state: RootState) => state.auth.user?.email ?? null
   );
 
   /** Local state */
@@ -47,6 +59,10 @@ const MyAdsTable: React.FC<Props> = ({ trades, loading }) => {
   const [menuPosition, setMenuPosition] = useState<{ top: number; left: number } | null>(null);
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [selectedTrade, setSelectedTrade] = useState<any>(null);
+  const [deleteError, setDeleteError] = useState<string | null>(null);
+  const [showDeleteErrorModal, setShowDeleteErrorModal] = useState(false);
+  const [activeTradeForDelete, setActiveTradeForDelete] =
+    useState<MatchedTrade | null>(null);
   /** Refs */
   const menuRef = useRef<HTMLDivElement>(null);
   const toggleButtonRefs = useRef<Map<string, HTMLButtonElement>>(new Map());
@@ -164,29 +180,53 @@ const MyAdsTable: React.FC<Props> = ({ trades, loading }) => {
         default:
           return;
       }
-      // Only show success toast if the action was not rejected
       const actionPastTense =
         action === "Cancel"
           ? "cancelled"
           : `${action.toLowerCase()}d`;
       if (result?.error) {
-        toast.error(
-          result.payload ||
-            (action === "Cancel"
-              ? "Failed to cancel trade"
-              : `Failed to ${action.toLowerCase()} trade`)
+        const errorMsg =
+          (typeof result.payload === "string" ? result.payload : null) ||
+          (action === "Cancel"
+            ? "Failed to cancel ad"
+            : `Failed to ${action.toLowerCase()} ad`);
+
+        if (action === "Cancel") {
+          const linkedTrade = await findActiveTradeForOrder(String(trade.id));
+          const isActiveTradeBlock =
+            isActiveTradeDeleteError(errorMsg) || linkedTrade != null;
+          if (isActiveTradeBlock) {
+            setDeleteError(errorMsg);
+            setActiveTradeForDelete(linkedTrade);
+            setShowDeleteErrorModal(true);
+            return;
+          }
+        }
+
+        showToast.error(
+          action === "Cancel" ? "Could not cancel ad" : `Could not ${action.toLowerCase()} ad`,
+          errorMsg
         );
       } else {
         dispatch(fetchMyOrders(1) as any);
-        toast.success(`Trade ${actionPastTense} successfully`);
+        showToast.success(`Ad ${actionPastTense} successfully`);
       }
     } catch {
-      toast.error(
+      showToast.error(
         action === "Cancel"
-          ? "Failed to cancel trade"
-          : `Failed to ${action.toLowerCase()} trade`
+          ? "Could not cancel ad"
+          : `Could not ${action.toLowerCase()} ad`,
+        "Something went wrong. Please try again."
       );
     }
+  };
+
+  const handleViewActiveTrade = () => {
+    if (!activeTradeForDelete) {
+      router.push("/dashboard/p2p/?tab=orders");
+      return;
+    }
+    router.push(buildMatchedTradeHref(activeTradeForDelete, userEmail));
   };
 
   const handleEditSave = async (formData: any) => {
@@ -584,6 +624,21 @@ const MyAdsTable: React.FC<Props> = ({ trades, loading }) => {
         onClose={() => setIsEditModalOpen(false)}
         onSave={handleEditSave}
         initialData={selectedTrade}
+      />
+
+      <DeleteErrorModal
+        isOpen={showDeleteErrorModal}
+        onClose={() => {
+          setShowDeleteErrorModal(false);
+          setDeleteError(null);
+          setActiveTradeForDelete(null);
+        }}
+        error={deleteError}
+        onViewActiveTrade={
+          activeTradeForDelete || isActiveTradeDeleteError(deleteError ?? "")
+            ? handleViewActiveTrade
+            : undefined
+        }
       />
     </div>
   );

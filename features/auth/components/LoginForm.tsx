@@ -260,7 +260,7 @@ export default function LoginPage() {
         <div className="relative flex flex-col items-center">
           <Image
             src="/images/iphone_vn7ejc.webp"
-            alt="OMAYA Exchange Mobile App"
+            alt="OMAYA.io Mobile App"
             width={240}
             height={448}
             className="mx-auto w-[min(100%,200px)] sm:w-[min(100%,230px)] md:w-[min(100%,250px)] lg:w-[min(100%,270px)] h-auto"

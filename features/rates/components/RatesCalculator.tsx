@@ -53,7 +53,10 @@ import CopyButton from "@/components/ui/CopyButton";
 import { API_CONFIG } from "@/lib/appConfig";
 import { useValidateAddress } from "@/hooks/useValidateAddress";
 import { resolveForexDepositAdminPaymentDetailId } from "../../express/utils/forexDepositResolution";
-import { assetMatchesSearchTerm } from "@/lib/utils/assetSearch";
+import {
+  assetMatchesSearchTerm,
+  compareAssetsForDisplay,
+} from "@/lib/utils/assetSearch";
 import {
   ExpressBankWithdrawalTermsPanel,
   resolveExpressBankWithdrawalTermsFields,
@@ -68,6 +71,11 @@ import FrozenAccountModal from "@/components/ui/FrozenAccountModal";
 import { logger } from '@/lib/utils/logger';
 import { scrollAppToTop } from "@/lib/utils/scrollAppToTop";
 import { stripLeadingZerosFromDecimalInput } from "@/lib/utils/decimalAmountInput";
+import {
+  buildExpressMinAmountErrorText,
+  formatExpressMinAmountMessage,
+  isExpressBelowMinAmountError,
+} from "@/lib/utils/expressMinAmount";
 import { useChangeNowAssets } from "@/features/express/home/hooks/useChangeNowAssets";
 import {
   RatesAssetImage,
@@ -260,6 +268,153 @@ const toNonNegativeAmount = (value: unknown): number => {
   return Math.max(0, parsed);
 };
 
+/** Default crypto asset for Rates (crypto deposit is the primary flow). */
+const RATES_DEFAULT_USDT_ASSET = {
+  ticker: "USDT",
+  symbol: "USDT",
+  name: "Tether USD",
+  network: "BSC",
+  range_commissions: [{ commission: "2" }],
+  commission: "2",
+  fee_rate: "2",
+  image_url: "/images/tether.svg",
+  asset_id: "usdt-bsc-initial",
+};
+
+const getRatesProviderDisplayName = (provider: any): string =>
+  String(
+    provider?.provider_name || provider?.payment_provider_name || ""
+  ).trim();
+
+const isSalaamRatesProvider = (provider: any): boolean =>
+  /salaam/i.test(getRatesProviderDisplayName(provider));
+
+/** Salaam Somali Bank first in lists (matches Express deposit default). */
+const compareRatesProviderDefaultOrder = (a: any, b: any): number => {
+  const score = (name: string) => (/salaam/i.test(name.toLowerCase()) ? 0 : 50);
+  return (
+    score(getRatesProviderDisplayName(a)) -
+    score(getRatesProviderDisplayName(b))
+  );
+};
+
+const findRatesSalaamProvider = (providers: any[]) =>
+  providers.find(isSalaamRatesProvider) ?? providers[0] ?? null;
+
+const findRatesProviderByDisplayName = (
+  providers: any[],
+  name: string
+): any | null => {
+  const trimmed = name?.trim();
+  if (!trimmed || !Array.isArray(providers)) return null;
+  const lower = trimmed.toLowerCase();
+  return (
+    providers.find((p: any) => {
+      const display = getRatesProviderDisplayName(p);
+      const raw = String(
+        p?.provider_name || p?.payment_provider_name || ""
+      ).trim();
+      return (
+        display === trimmed ||
+        raw === trimmed ||
+        display.toLowerCase() === lower ||
+        raw.toLowerCase() === lower
+      );
+    }) ?? null
+  );
+};
+
+/** Payload for express exchanging — keep user-selected bank, not "direct". */
+const buildRatesExpressPaymentPayload = ({
+  isDepositMode,
+  selectedPaymentDetail,
+  selectedPaymentDetails,
+  selectedProviderData,
+  payBank,
+  selectedPaymentMethod,
+  publicProviders,
+}: {
+  isDepositMode: boolean;
+  selectedPaymentDetail: any;
+  selectedPaymentDetails: UserPaymentDetail[];
+  selectedProviderData: any;
+  payBank: string;
+  selectedPaymentMethod: string;
+  publicProviders: any[];
+}): { paymentDetail: any; paymentDetails?: UserPaymentDetail[] } => {
+  if (isDepositMode) {
+    if (selectedPaymentDetail) {
+      return { paymentDetail: selectedPaymentDetail };
+    }
+    return {
+      paymentDetail: {
+        provider_name: "direct",
+        payment_method_type: "crypto",
+      },
+    };
+  }
+
+  const userDetail = selectedPaymentDetails[0];
+  const providerName =
+    payBank?.trim() ||
+    selectedPaymentMethod?.trim() ||
+    userDetail?.payment_provider_name ||
+    userDetail?.provider_name ||
+    getRatesProviderDisplayName(selectedProviderData) ||
+    "";
+
+  const publicProvider =
+    selectedProviderData ||
+    findRatesProviderByDisplayName(publicProviders, providerName);
+  const logo =
+    publicProvider?.logo ||
+    publicProvider?.provider_logo ||
+    userDetail?.provider_logo;
+
+  const paymentDetail = {
+    ...(publicProvider && typeof publicProvider === "object" ? publicProvider : {}),
+    provider_name:
+      providerName ||
+      publicProvider?.provider_name ||
+      publicProvider?.payment_provider_name,
+    payment_provider_name:
+      providerName ||
+      publicProvider?.payment_provider_name ||
+      publicProvider?.provider_name,
+    provider_logo: logo,
+    logo: logo,
+    logo_url: logo,
+    ...(userDetail
+      ? {
+          account_name: userDetail.account_name,
+          account_number:
+            userDetail.account_number || userDetail.wallet_address,
+          payment_method_type:
+            (userDetail as any).payment_method_type ||
+            userDetail.payment_method_name,
+        }
+      : {}),
+  };
+
+  const paymentDetails = selectedPaymentDetails.map((detail) => ({
+    ...detail,
+    provider_name:
+      detail.provider_name ||
+      detail.payment_provider_name ||
+      providerName,
+    payment_provider_name:
+      detail.payment_provider_name ||
+      detail.provider_name ||
+      providerName,
+    provider_logo: detail.provider_logo || logo,
+  }));
+
+  return {
+    paymentDetail,
+    ...(paymentDetails.length > 0 ? { paymentDetails } : {}),
+  };
+};
+
 interface RatesCalculatorProps {
   activeTab?: 'crypto' | 'moneyx';
 }
@@ -314,6 +469,8 @@ const RatesCalculator = ({ activeTab = 'crypto' }: RatesCalculatorProps) => {
   const getNetworkDisplayName = (network: string) => {
     const networkMap: { [key: string]: string } = {
       bsc: "BSC",
+      bep20: "BSC",
+      bep2: "BSC",
       matic: "Polygon",
       avaxc: "Avalanche",
       eth: "Ethereum",
@@ -331,7 +488,9 @@ const RatesCalculator = ({ activeTab = 'crypto' }: RatesCalculatorProps) => {
 
     return networkMap[network?.toLowerCase()] || network || "Unknown";
   };
-  const [selectedAsset, setSelectedAsset] = useState<any | null>(null);
+  const [selectedAsset, setSelectedAsset] = useState<any | null>(
+    () => RATES_DEFAULT_USDT_ASSET
+  );
   const [isAssetDropdownOpen, setIsAssetDropdownOpen] = useState(false);
   const [assetSearchTerm, setAssetSearchTerm] = useState("");
   const [selectedPaymentMethod, setSelectedPaymentMethod] =
@@ -1186,11 +1345,15 @@ const getPaymentRestrictionMessage = (status?: string) =>
             errorMessage = errorMessage.replace("Exchange service error: ", "");
           }
 
-          if (errorMessage.includes("deposit_too_small") || errorDetails.includes("Out of min amount")) {
+          if (
+            isExpressBelowMinAmountError(errorMessage) ||
+            isExpressBelowMinAmountError(errorDetails)
+          ) {
             setApiValidationError(
-              `Amount entered is too small. Minimum amount is ${Number(
+              buildExpressMinAmountErrorText(
+                [responseData, responseInner, error],
                 EXPRESS_FIXED_MIN_AMOUNT
-              ).toFixed(8)}.`
+              )
             );
             setReceiveAmount("0");
             return;
@@ -1450,12 +1613,13 @@ const getPaymentRestrictionMessage = (status?: string) =>
             }
 
             if (
-              errorMessage.includes("deposit_too_small") ||
-              errorDetails.includes("Out of min amount")
+              isExpressBelowMinAmountError(errorMessage) ||
+              isExpressBelowMinAmountError(errorDetails)
             ) {
-              const text = `Amount entered is too small. Minimum amount is ${Number(
+              const text = buildExpressMinAmountErrorText(
+                [error?.response_data, error?.response?.data, error],
                 EXPRESS_FIXED_MIN_AMOUNT
-              ).toFixed(8)}.`;
+              );
               setApiValidationError(text);
               setEstimateError(null);
               setReceiveAmount("0");
@@ -1684,12 +1848,13 @@ const getPaymentRestrictionMessage = (status?: string) =>
             }
 
             if (
-              errorMessage.includes("deposit_too_small") ||
-              errorDetails.includes("Out of min amount")
+              isExpressBelowMinAmountError(errorMessage) ||
+              isExpressBelowMinAmountError(errorDetails)
             ) {
-              const text = `Amount entered is too small. Minimum amount is ${Number(
+              const text = buildExpressMinAmountErrorText(
+                [error?.response_data, error?.response?.data, error],
                 EXPRESS_FIXED_MIN_AMOUNT
-              ).toFixed(8)}.`;
+              );
               setApiValidationError(text);
               setEstimateError(null);
               setAmount("0");
@@ -1950,30 +2115,31 @@ const getPaymentRestrictionMessage = (status?: string) =>
 
   const handleModeSwitch = () => {
     const willBeWithdrawal = !isFieldsSwapped;
-    const firstProvider = publicPaymentProviders?.[0];
-    const secondProvider = publicPaymentProviders?.[1] || firstProvider;
-    const firstProviderName =
-      firstProvider?.provider_name || firstProvider?.payment_provider_name || "";
-    const secondProviderName =
-      secondProvider?.provider_name || secondProvider?.payment_provider_name || firstProviderName;
+    const providers = sortedPublicPaymentProviders || [];
+    const activeProviderName =
+      payBank?.trim() ||
+      selectedPaymentMethod?.trim() ||
+      getRatesProviderDisplayName(selectedProviderData) ||
+      getRatesProviderDisplayName(selectedPaymentDetail) ||
+      "";
+
+    const activeProvider =
+      selectedProviderData ||
+      selectedPaymentDetail ||
+      findRatesProviderByDisplayName(providers, activeProviderName);
+
     setIsFieldsSwapped(!isFieldsSwapped);
     setIsDepositMode(!willBeWithdrawal);
 
-    if (willBeWithdrawal) {
-      setSelectedPaymentDetail(null);
-      setPayBank(firstProviderName || selectedPaymentMethod || payBank || "");
-      setSelectedPaymentMethod(secondProviderName || selectedPaymentMethod || "");
-      setSelectedProviderData(firstProvider || (selectedPaymentDetail && typeof selectedPaymentDetail === 'object' ? selectedPaymentDetail : selectedProviderData));
-      setSelectedPaymentDetails([]);
-    } else {
-      if (firstProviderName) {
-        setPayBank(firstProviderName);
-        setSelectedPaymentMethod(secondProviderName || firstProviderName);
-        setSelectedProviderData(firstProvider);
-        setSelectedPaymentDetail(firstProvider);
+    if (activeProviderName) {
+      setPayBank(activeProviderName);
+      setSelectedPaymentMethod(activeProviderName);
+      if (activeProvider) {
+        setSelectedProviderData(activeProvider);
       }
-      setSelectedPaymentDetails([]);
+      setSelectedPaymentDetail(willBeWithdrawal ? null : activeProvider);
     }
+    setSelectedPaymentDetails([]);
 
     // Reset transaction state when switching
     setIsFirstCardSubmitted(false);
@@ -2019,7 +2185,7 @@ const getPaymentRestrictionMessage = (status?: string) =>
       payNum > 0 &&
       payNum < EXPRESS_FIXED_MIN_AMOUNT
     ) {
-      const minMsg = `Minimum amount for this asset is ${EXPRESS_FIXED_MIN_AMOUNT}.`;
+      const minMsg = formatExpressMinAmountMessage(EXPRESS_FIXED_MIN_AMOUNT);
       setReceiveAmountError(minMsg);
       showToast.error(minMsg);
       return;
@@ -2276,6 +2442,16 @@ const getPaymentRestrictionMessage = (status?: string) =>
       // Same payload shape as `features/express/components/forms/deposit.tsx` / `withdrwal.tsx` → `onExchange` → `exchnaging.tsx`
       const receiveNum = parseFloat(String(receiveAmount)) || 0;
       const payNum = parseFloat(String(amount)) || 0;
+      const { paymentDetail, paymentDetails: txPaymentDetails } =
+        buildRatesExpressPaymentPayload({
+          isDepositMode,
+          selectedPaymentDetail,
+          selectedPaymentDetails,
+          selectedProviderData,
+          payBank,
+          selectedPaymentMethod,
+          publicProviders: sortedPublicPaymentProviders,
+        });
       const transactionData: Record<string, unknown> = {
         type: isDepositMode ? ("deposit" as const) : ("withdrawal" as const),
         amount: payNum,
@@ -2290,10 +2466,8 @@ const getPaymentRestrictionMessage = (status?: string) =>
             pickRatesAssetImageRaw(selectedAsset) ?? ""
           ),
         },
-        paymentDetail: selectedPaymentDetail || {
-          provider_name: "direct",
-          payment_method_type: "crypto",
-        },
+        paymentDetail,
+        ...(txPaymentDetails?.length ? { paymentDetails: txPaymentDetails } : {}),
         walletAddress: isDepositMode
           ? isRatesFxpDeposit
             ? ""
@@ -2391,12 +2565,18 @@ const getPaymentRestrictionMessage = (status?: string) =>
     if (Array.isArray(publicMethodsData)) return publicMethodsData;
     return [];
   }, [publicMethodsData]);
+
+  const sortedPublicPaymentProviders = useMemo(
+    () => [...publicPaymentProviders].sort(compareRatesProviderDefaultOrder),
+    [publicPaymentProviders]
+  );
+
   const orderedProviderNames = useMemo(
     () =>
-      (publicPaymentProviders || [])
-        .map((provider: any) => (provider?.provider_name || provider?.payment_provider_name || "").trim())
+      sortedPublicPaymentProviders
+        .map((provider: any) => getRatesProviderDisplayName(provider))
         .filter((name: string) => Boolean(name)),
-    [publicPaymentProviders]
+    [sortedPublicPaymentProviders]
   );
 
   const publicPaymentArray = Array.isArray(publicPaymentMethods)
@@ -2511,35 +2691,92 @@ const getPaymentRestrictionMessage = (status?: string) =>
     )
     : [];
 
-  // Deterministic defaults from API order:
-  // first select -> index 0, second select -> index 1 (or index 0 if missing).
+  // Initial defaults only — do not overwrite user-selected provider on swap/reverse.
   useEffect(() => {
-    if (!Array.isArray(publicPaymentProviders) || publicPaymentProviders.length === 0) return;
-    const firstProvider = publicPaymentProviders[0];
-    const secondProvider = publicPaymentProviders[1] || firstProvider;
-    const firstName = orderedProviderNames[0] || "";
+    if (
+      !Array.isArray(sortedPublicPaymentProviders) ||
+      sortedPublicPaymentProviders.length === 0
+    ) {
+      return;
+    }
+    const salaamProvider = findRatesSalaamProvider(sortedPublicPaymentProviders);
+    const firstProvider = salaamProvider || sortedPublicPaymentProviders[0];
+    const secondProvider =
+      sortedPublicPaymentProviders.find((p) => p !== firstProvider) ||
+      sortedPublicPaymentProviders[1] ||
+      firstProvider;
+    const firstName = getRatesProviderDisplayName(firstProvider);
     if (!firstName) return;
-    const secondName = orderedProviderNames[1] || firstName;
+    const secondName =
+      getRatesProviderDisplayName(secondProvider) ||
+      orderedProviderNames[1] ||
+      firstName;
+
+    const hasPayBank = Boolean(payBank?.trim());
+    const hasSelectedMethod = Boolean(selectedPaymentMethod?.trim());
+
+    const applySalaamWithdrawalDefault = () => {
+      setPayBank(firstName);
+      setSelectedPaymentMethod(firstName);
+      setSelectedProviderData(firstProvider);
+    };
 
     if (!isFieldsSwapped) {
       if (isDepositMode) {
+        if (!hasPayBank) {
+          setPayBank(firstName);
+          setSelectedProviderData(firstProvider);
+          setSelectedPaymentDetail(firstProvider);
+        }
+        if (!hasSelectedMethod) {
+          setSelectedPaymentMethod(secondName);
+        }
+      } else if (!hasPayBank && !hasSelectedMethod) {
+        applySalaamWithdrawalDefault();
+      } else if (!hasPayBank) {
         setPayBank(firstName);
-        setSelectedPaymentMethod(secondName);
         setSelectedProviderData(firstProvider);
-        setSelectedPaymentDetail(firstProvider);
-      } else {
-        // Withdrawal: keep registered-account provider in sync with visible selector
-        setPayBank(secondName);
-        setSelectedPaymentMethod(secondName);
-        setSelectedProviderData(secondProvider || firstProvider);
+        if (!hasSelectedMethod) {
+          setSelectedPaymentMethod(firstName);
+        }
+      } else if (!hasSelectedMethod) {
+        setSelectedPaymentMethod(payBank);
+        if (!selectedProviderData) {
+          setSelectedProviderData(
+            findRatesProviderByDisplayName(
+              sortedPublicPaymentProviders,
+              payBank
+            ) || firstProvider
+          );
+        }
       }
-    } else {
-      // When swapped, show second provider in the visible selector.
-      setSelectedPaymentMethod(secondName);
-      setPayBank(secondName);
-      setSelectedProviderData(secondProvider || firstProvider);
+    } else if (!hasPayBank && !hasSelectedMethod) {
+      if (isDepositMode) {
+        setSelectedPaymentMethod(secondName);
+        setPayBank(secondName);
+        setSelectedProviderData(secondProvider || firstProvider);
+      } else {
+        applySalaamWithdrawalDefault();
+      }
+    } else if (!isDepositMode) {
+      if (!hasPayBank) {
+        setPayBank(selectedPaymentMethod || firstName);
+        setSelectedProviderData(
+          findRatesProviderByDisplayName(
+            sortedPublicPaymentProviders,
+            selectedPaymentMethod || firstName
+          ) || firstProvider
+        );
+      } else if (!hasSelectedMethod) {
+        setSelectedPaymentMethod(payBank);
+      }
     }
-  }, [isFieldsSwapped, publicPaymentProviders, orderedProviderNames, isDepositMode]);
+  }, [
+    sortedPublicPaymentProviders,
+    orderedProviderNames,
+    isDepositMode,
+    isFieldsSwapped,
+  ]);
 
   // Keep selected account synced to the currently selected provider.
   // When provider changes, always reset to that provider's first account.
@@ -2597,65 +2834,9 @@ const getPaymentRestrictionMessage = (status?: string) =>
       assetMatchesSearchTerm(asset, assetSearchTerm)
     ) || [];
 
-  // Sort assets: USDT on BSC, then rest in original order
-  const sortedAssets = [...filteredAssets].sort((a, b) => {
-    // Ensure tickers exist and are strings (using ticker as primary, fallback to symbol/name)
-    const tickerA = (a?.ticker || a?.symbol || a?.name || "")
-      .toString()
-      .toLowerCase();
-    const tickerB = (b?.ticker || b?.symbol || b?.name || "")
-      .toString()
-      .toLowerCase();
-    const legacyA = (a?.legacyTicker || a?.legacy_ticker || a?.original_ticker || a?.change_now_ticker || "")
-      .toString()
-      .toLowerCase();
-    const legacyB = (b?.legacyTicker || b?.legacy_ticker || b?.original_ticker || b?.change_now_ticker || "")
-      .toString()
-      .toLowerCase();
-    const networkA = (a?.network || "").toString().toLowerCase();
-    const networkB = (b?.network || "").toString().toLowerCase();
-
-    // Priority 1: USDT on BSC
-    if (
-      tickerA === "usdt" &&
-      networkA === "bsc" &&
-      !(tickerB === "usdt" && networkB === "bsc")
-    ) {
-      return -1;
-    }
-    if (
-      tickerB === "usdt" &&
-      networkB === "bsc" &&
-      !(tickerA === "usdt" && networkA === "bsc")
-    ) {
-      return 1;
-    }
-
-    // Priority 2: USDC on BSC
-    if (
-      (tickerA === "usdc" || legacyA.includes("usdc")) &&
-      networkA === "bsc" &&
-      !((tickerB === "usdc" || legacyB.includes("usdc")) && networkB === "bsc")
-    ) {
-      return -1;
-    }
-    if (
-      (tickerB === "usdc" || legacyB.includes("usdc")) &&
-      networkB === "bsc" &&
-      !((tickerA === "usdc" || legacyA.includes("usdc")) && networkA === "bsc")
-    ) {
-      return 1;
-    }
-
-    // Priority 3: FXP / FXPRIMUS (forex)
-    const isFxpA = tickerA === "fxp" || tickerA === "fxprimus";
-    const isFxpB = tickerB === "fxp" || tickerB === "fxprimus";
-    if (isFxpA && !isFxpB) return -1;
-    if (isFxpB && !isFxpA) return 1;
-
-    // Default: preserve original order (no change)
-    return 0;
-  });
+  const sortedAssets = [...filteredAssets].sort((a, b) =>
+    compareAssetsForDisplay(a, b, assetSearchTerm)
+  );
 
   const normalizePopularTicker = (value: unknown) => {
     const t = String(value || "").trim().toUpperCase();
@@ -3252,7 +3433,7 @@ const getPaymentRestrictionMessage = (status?: string) =>
       payNum > 0 &&
       payNum < EXPRESS_FIXED_MIN_AMOUNT
     ) {
-      const minMsg = `Minimum amount for this asset is ${EXPRESS_FIXED_MIN_AMOUNT}.`;
+      const minMsg = formatExpressMinAmountMessage(EXPRESS_FIXED_MIN_AMOUNT);
       setReceiveAmountError(minMsg);
       showToast.error(minMsg);
       return;
@@ -3698,7 +3879,7 @@ const getPaymentRestrictionMessage = (status?: string) =>
                           newAmount < EXPRESS_FIXED_MIN_AMOUNT
                         ) {
                           setReceiveAmountError(
-                            `Minimum amount for this asset is ${EXPRESS_FIXED_MIN_AMOUNT}.`
+                            formatExpressMinAmountMessage(EXPRESS_FIXED_MIN_AMOUNT)
                           );
                         } else {
                           setReceiveAmountError(null);
@@ -3795,8 +3976,8 @@ const getPaymentRestrictionMessage = (status?: string) =>
                     {(() => {
                       let paymentMethodOptions: Array<{ value: string; label: string; subtitle?: string; logo?: string }> = [];
 
-                      if (publicPaymentProviders.length > 0) {
-                        paymentMethodOptions = publicPaymentProviders.map((provider: any) => {
+                      if (sortedPublicPaymentProviders.length > 0) {
+                        paymentMethodOptions = sortedPublicPaymentProviders.map((provider: any) => {
                           const providerName = provider.provider_name || provider.payment_provider_name || "Unknown";
                           const methodName = provider.method_display || provider.method || provider.method?.method_name || provider.method?.method_display || provider.method_name || null;
                           
@@ -3826,7 +4007,7 @@ const getPaymentRestrictionMessage = (status?: string) =>
                           logoClassName={`${PAYMENT_LOGO_BASE_CLASS} rounded-full`}
                           sizeMode="card"
                           onChange={(value) => {
-                            const selectedProvider = publicPaymentProviders.find((p: any) => (p.provider_name || p.payment_provider_name) === value);
+                            const selectedProvider = sortedPublicPaymentProviders.find((p: any) => (p.provider_name || p.payment_provider_name) === value);
                             setPayBank(value);
                             setSelectedProviderData(selectedProvider);
                             setSelectedPaymentDetail(selectedProvider || null);
@@ -3927,8 +4108,8 @@ const getPaymentRestrictionMessage = (status?: string) =>
                                   const isFrozen = isFrozenPaymentStatus(status);
                                   let providerName = detail.payment_provider_name || detail.provider_name || "Unknown Provider";
                                   let providerLogo = detail.provider_logo;
-                                  if (publicPaymentProviders.length > 0) {
-                                    const pub = publicPaymentProviders.find(
+                                  if (sortedPublicPaymentProviders.length > 0) {
+                                    const pub = sortedPublicPaymentProviders.find(
                                       (p: any) =>
                                         (p.provider_name || p.payment_provider_name) === detail.payment_provider_name ||
                                         (p.provider_name || p.payment_provider_name) === detail.provider_name
@@ -4298,8 +4479,8 @@ const getPaymentRestrictionMessage = (status?: string) =>
                   <div className="relative z-0">
                     {(() => {
                       let paymentMethodOptions: Array<{ value: string; label: string; subtitle?: string; logo?: string }> = [];
-                      if (publicPaymentProviders.length > 0) {
-                        paymentMethodOptions = publicPaymentProviders.map((provider: any) => {
+                      if (sortedPublicPaymentProviders.length > 0) {
+                        paymentMethodOptions = sortedPublicPaymentProviders.map((provider: any) => {
                           const providerName = provider.provider_name || provider.payment_provider_name || "Unknown";
                           const methodName = provider.method_display || provider.method || provider.method?.method_name || provider.method?.method_display || provider.method_name || null;
                           
@@ -4327,7 +4508,7 @@ const getPaymentRestrictionMessage = (status?: string) =>
                           logoClassName={`${PAYMENT_LOGO_BASE_CLASS} rounded-full`}
                           sizeMode="card"
                           onChange={(value) => {
-                            const selectedProvider = publicPaymentProviders.find((p: any) => (p.provider_name || p.payment_provider_name) === value);
+                            const selectedProvider = sortedPublicPaymentProviders.find((p: any) => (p.provider_name || p.payment_provider_name) === value);
                             setSelectedPaymentMethod(value);
                             setPayBank(value);
                             setSelectedProviderData(selectedProvider);
@@ -4398,7 +4579,7 @@ const getPaymentRestrictionMessage = (status?: string) =>
                                 const normalizedDetailProvider = normalizeProviderName(
                                   detail.payment_provider_name || detail.provider_name || (detail as any).payment_provider
                                 );
-                                const pub = publicPaymentProviders.find((p: any) => {
+                                const pub = sortedPublicPaymentProviders.find((p: any) => {
                                   const providerName = p.provider_name || p.payment_provider_name || p.provider;
                                   return normalizeProviderName(providerName) === normalizedDetailProvider;
                                 });
@@ -4894,6 +5075,35 @@ const getPaymentRestrictionMessage = (status?: string) =>
             ) : (
               // Deposit Mode: Input field for wallet address (non–FX Primus)
               <>
+                {selectedAsset && (
+                  <div className="mb-4 p-3 sm:p-4 bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800/50 rounded-xl">
+                    <div className="flex items-start gap-2 sm:gap-3">
+                      <span className="text-yellow-600 dark:text-yellow-500 mt-0.5 flex-shrink-0">
+                        <svg width="18" height="18" fill="none" viewBox="0 0 24 24">
+                          <path
+                            d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"
+                            stroke="currentColor"
+                            strokeWidth="2"
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                          />
+                        </svg>
+                      </span>
+                      <p className="text-xs sm:text-sm text-yellow-800 dark:text-yellow-200 font-medium">
+                        <span className="font-bold">Important:</span> Ensure your wallet address is for{" "}
+                        <span className="font-bold text-yellow-900 dark:text-yellow-100">
+                          {selectedAsset?.symbol || selectedAsset?.ticker || "the selected asset"}
+                        </span>{" "}
+                        on the{" "}
+                        <span className="font-bold text-yellow-900 dark:text-yellow-100">
+                          {getNetworkDisplayName(getAssetNetwork(selectedAsset) || "")}
+                        </span>{" "}
+                        network. Providing an incorrect address or network may result in{" "}
+                        <span className="font-bold">permanent loss of funds</span>.
+                      </p>
+                    </div>
+                  </div>
+                )}
                 <label className="block text-[17px] text-[#7e7e8f] mb-2 font-semibold">
                   {t("rates.walletAccountAddress", "Wallet/Account Address")}
                 </label>
@@ -5043,7 +5253,7 @@ const getPaymentRestrictionMessage = (status?: string) =>
                   </h3>
                   {shouldShowTemporaryWalletAddressNotice && (
                     <p className="text-xs sm:text-sm text-amber-600 dark:text-amber-400 mb-3">
-                      This wallet address is temporary and may change if you repeat this process. Please use the latest generated address.
+                      This wallet address is temporary and may change if you repeat the process. Always use the most recently generated address.
                     </p>
                   )}
                   <div className="border border-[#1D8751] rounded-xl p-3 sm:p-4">
@@ -5232,6 +5442,7 @@ const getPaymentRestrictionMessage = (status?: string) =>
       <PaymentMethodsModal
         open={isPaymentModalOpen}
         onClose={() => setIsPaymentModalOpen(false)}
+        filterByProviderName={payBank?.trim() || undefined}
         onAdd={async () => {
           try {
             await Promise.all([

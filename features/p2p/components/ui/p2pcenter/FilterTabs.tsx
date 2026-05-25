@@ -7,6 +7,12 @@ import { ThumbsDown, ThumbsUp } from "lucide-react";
 import { useDispatch, useSelector } from "react-redux";
 import { RootState, AppDispatch } from "@/store/rootReducer";
 import { fetchFeedback } from "@/features/p2p/slices/feedbackSlice";
+import {
+  MY_ADS_DATE_FILTER_OPTIONS,
+  formatMyAdsCustomRangeLabel,
+  matchesMyAdsDateFilter,
+  type MyAdsDateFilterValue,
+} from "@/features/p2p/utils/myAdsDateFilter";
 
 interface FilterTabsProps {
   transformedTrades: any[];
@@ -27,8 +33,13 @@ const FilterTabs: React.FC<FilterTabsProps> = ({
     token: "Tether",
     type: "All",
     status: "All",
-    date: "Date",
+    date: "All Time" as MyAdsDateFilterValue,
+    customDateFrom: "" as string,
+    customDateTo: "" as string,
   });
+  const [showCustomDatePicker, setShowCustomDatePicker] = useState(false);
+  const [draftCustomDateFrom, setDraftCustomDateFrom] = useState("");
+  const [draftCustomDateTo, setDraftCustomDateTo] = useState("");
 
   /** Store */
   const dispatch = useDispatch<AppDispatch>();
@@ -122,65 +133,57 @@ const FilterTabs: React.FC<FilterTabsProps> = ({
         if (selected === "pending" && s !== "pending") return false;
         if (selected === "offline" && s !== "offline") return false;
       }
-      if (filters.date !== "Date" && filters.date !== "All" && trade.created_on) {
-        try {
-          const tradeDate = new Date(trade.created_on);
-          if (isNaN(tradeDate.getTime())) return false; // Invalid date
-
-          const today = new Date();
-          today.setHours(0, 0, 0, 0);
-          switch (filters.date) {
-            case "Today": {
-              const d = new Date(tradeDate);
-              d.setHours(0, 0, 0, 0);
-              if (d.getTime() !== today.getTime()) return false;
-              break;
-            }
-            case "Yesterday": {
-              const y = new Date(today);
-              y.setDate(today.getDate() - 1);
-              const d = new Date(tradeDate);
-              d.setHours(0, 0, 0, 0);
-              if (d.getTime() !== y.getTime()) return false;
-              break;
-            }
-            case "Last 7 Days": {
-              const weekAgo = new Date(today);
-              weekAgo.setDate(today.getDate() - 7);
-              if (tradeDate < weekAgo) return false;
-              break;
-            }
-            case "Last 30 Days": {
-              const mAgo = new Date(today);
-              mAgo.setDate(today.getDate() - 30);
-              if (tradeDate < mAgo) return false;
-              break;
-            }
-            case "Last 90 Days": {
-              const qAgo = new Date(today);
-              qAgo.setDate(today.getDate() - 90);
-              if (tradeDate < qAgo) return false;
-              break;
-            }
-            case "Last 180 Days": {
-              const hAgo = new Date(today);
-              hAgo.setDate(today.getDate() - 180);
-              if (tradeDate < hAgo) return false;
-              break;
-            }
-          }
-        } catch (e) {
-          // If date parsing fails, skip this trade
-          return false;
-        }
+      if (
+        !matchesMyAdsDateFilter(
+          trade.created_on,
+          filters.date,
+          filters.customDateFrom || undefined,
+          filters.customDateTo || undefined
+        )
+      ) {
+        return false;
       }
       return true;
     });
   }, [myOrders, filters]);
 
+  const handleDateFilterChange = (value: string) => {
+    if (value === "Custom Range") {
+      setDraftCustomDateFrom(filters.customDateFrom || "");
+      setDraftCustomDateTo(filters.customDateTo || "");
+      setShowCustomDatePicker(true);
+      return;
+    }
+    setShowCustomDatePicker(false);
+    setFilters((p) => ({
+      ...p,
+      date: value as MyAdsDateFilterValue,
+      customDateFrom: "",
+      customDateTo: "",
+    }));
+  };
+
+  const handleCustomDateApply = () => {
+    if (!draftCustomDateFrom || !draftCustomDateTo) return;
+    if (draftCustomDateFrom > draftCustomDateTo) return;
+    setFilters((p) => ({
+      ...p,
+      date: "Custom Range",
+      customDateFrom: draftCustomDateFrom,
+      customDateTo: draftCustomDateTo,
+    }));
+    setShowCustomDatePicker(false);
+  };
+
+  const dateSelectDisplayValue =
+    filters.date === "Custom Range" && filters.customDateFrom && filters.customDateTo
+      ? formatMyAdsCustomRangeLabel(filters.customDateFrom, filters.customDateTo)
+      : filters.date;
+
   /** My-Ads filter bar */
   const MyAdsFilterBar = () => (
-    <div className="flex flex-col mb-6 sm:flex-row gap-4 items-start sm:items-center justify-between w-full">
+    <div className="flex flex-col mb-6 w-full gap-3">
+    <div className="flex flex-col sm:flex-row gap-4 items-start sm:items-center justify-between w-full">
       {/* Token */}
       <div className="flex items-center bg-gray-100 dark:bg-[var(--card-color)] rounded-full px-5 py-2.5 w-full sm:w-auto">
         <img
@@ -220,18 +223,34 @@ const FilterTabs: React.FC<FilterTabsProps> = ({
       </select>
       {/* Date */}
       <select
-        className="bg-gray-100 dark:bg-[var(--card-color)] rounded-full px-5 py-2.5 text-gray-900 dark:text-white outline-none w-full sm:w-auto text-base font-semibold"
+        className="bg-gray-100 dark:bg-[var(--card-color)] rounded-full px-5 py-2.5 text-gray-900 dark:text-white outline-none w-full sm:w-auto text-base font-semibold min-w-[140px]"
         value={filters.date}
-        onChange={(e) => setFilters((p) => ({ ...p, date: e.target.value }))}
+        onChange={(e) => handleDateFilterChange(e.target.value)}
+        aria-label="Filter ads by date"
       >
-        <option>All</option>
-        <option>Today</option>
-        <option>Yesterday</option>
-        <option>Last 7 Days</option>
-        <option>Last 30 Days</option>
-        <option>Last 90 Days</option>
-        <option>Last 180 Days</option>
+        {MY_ADS_DATE_FILTER_OPTIONS.map((opt) => (
+          <option key={opt.value} value={opt.value}>
+            {filters.date === "Custom Range" &&
+            opt.value === "Custom Range" &&
+            filters.customDateFrom &&
+            filters.customDateTo
+              ? formatMyAdsCustomRangeLabel(
+                  filters.customDateFrom,
+                  filters.customDateTo
+                )
+              : opt.label}
+          </option>
+        ))}
       </select>
+      {filters.date !== "All Time" && (
+        <button
+          type="button"
+          onClick={() => handleDateFilterChange("All Time")}
+          className="text-sm font-medium text-[#1D8751] hover:underline whitespace-nowrap"
+        >
+          Clear date
+        </button>
+      )}
       {/* Actions */}
       {/* <div className="flex flex-col sm:flex-row gap-2 w-full sm:w-auto">
         <button className="w-full sm:w-auto px-4 py-2 rounded-full bg-[#1D8751] text-white">
@@ -241,6 +260,81 @@ const FilterTabs: React.FC<FilterTabsProps> = ({
           Put Offline
         </button>
       </div> */}
+    </div>
+
+    {(showCustomDatePicker || filters.date === "Custom Range") && (
+      <div className="w-full rounded-2xl border border-gray-200 dark:border-[#35353E] bg-white dark:bg-[var(--card-color)] p-4 shadow-sm">
+        <p className="text-sm font-semibold text-gray-900 dark:text-white mb-3">
+          Custom date range
+          {dateSelectDisplayValue !== "Custom Range" &&
+          dateSelectDisplayValue !== "Custom Date Range"
+            ? ` · ${dateSelectDisplayValue}`
+            : ""}
+        </p>
+        <div className="flex flex-col sm:flex-row gap-3 items-end">
+          <div className="flex-1 w-full">
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+              From
+            </label>
+            <input
+              type="date"
+              value={draftCustomDateFrom}
+              onChange={(e) => setDraftCustomDateFrom(e.target.value)}
+              className="w-full px-3 py-2 rounded-lg border border-gray-300 dark:border-[#35353E] bg-white dark:bg-[#1D1D23] text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-[#1D8751] [&::-webkit-calendar-picker-indicator]:cursor-pointer [&::-webkit-calendar-picker-indicator]:dark:invert"
+            />
+          </div>
+          <div className="flex-1 w-full">
+            <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
+              To
+            </label>
+            <input
+              type="date"
+              value={draftCustomDateTo}
+              onChange={(e) => setDraftCustomDateTo(e.target.value)}
+              min={draftCustomDateFrom || undefined}
+              className="w-full px-3 py-2 rounded-lg border border-gray-300 dark:border-[#35353E] bg-white dark:bg-[#1D1D23] text-gray-900 dark:text-white focus:outline-none focus:ring-2 focus:ring-[#1D8751] [&::-webkit-calendar-picker-indicator]:cursor-pointer [&::-webkit-calendar-picker-indicator]:dark:invert"
+            />
+          </div>
+          <div className="flex gap-2 w-full sm:w-auto">
+            <button
+              type="button"
+              onClick={() => {
+                setShowCustomDatePicker(false);
+                if (filters.date === "Custom Range") {
+                  setDraftCustomDateFrom(filters.customDateFrom);
+                  setDraftCustomDateTo(filters.customDateTo);
+                } else {
+                  setDraftCustomDateFrom("");
+                  setDraftCustomDateTo("");
+                }
+              }}
+              className="px-4 py-2 rounded-lg border border-gray-300 dark:border-[#35353E] text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-[#35353E] transition-colors"
+            >
+              Cancel
+            </button>
+            <button
+              type="button"
+              onClick={handleCustomDateApply}
+              disabled={
+                !draftCustomDateFrom ||
+                !draftCustomDateTo ||
+                draftCustomDateFrom > draftCustomDateTo
+              }
+              className="px-4 py-2 rounded-lg bg-[#1D8751] text-white hover:bg-[#16663d] transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+            >
+              Apply
+            </button>
+          </div>
+        </div>
+        {draftCustomDateFrom &&
+          draftCustomDateTo &&
+          draftCustomDateFrom > draftCustomDateTo && (
+            <p className="text-red-500 text-sm mt-2">
+              End date must be on or after start date.
+            </p>
+          )}
+      </div>
+    )}
     </div>
   );
 

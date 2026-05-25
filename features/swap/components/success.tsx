@@ -3,6 +3,7 @@ import { FaCheckCircle } from "react-icons/fa";
 import { useRouter } from "next/navigation";
 import CopyButton from "@/components/ui/CopyButton";
 import { useTheme } from "@/context/theme";
+import { formatSwapDisplayTicker } from "../utils/swapDisplayFormat";
 
 const formatDateTimeEastAfrica = (input: Date | number | string): string => {
   const d = input instanceof Date ? input : new Date(input);
@@ -344,7 +345,7 @@ const SuccessPage: React.FC<SuccessPageProps> = ({
               }`}>You Received</div>
               <div className="font-bold flex items-center justify-start sm:justify-end gap-2 text-sm sm:text-base" style={{ color: GREEN }}>
                 <span>{realData.receivedAmount} </span>
-                <span>{realData.receivedCurrency}</span>
+                <span>{formatSwapDisplayTicker(realData.receivedCurrency)}</span>
               </div>
             </div>
           </div>
@@ -387,7 +388,7 @@ const SuccessPage: React.FC<SuccessPageProps> = ({
                   />
                 )}
                 <span>{realData.netAmount}</span>
-                <span>{realData.receivedCurrency}</span>
+                <span>{formatSwapDisplayTicker(realData.receivedCurrency)}</span>
               </div>
             </div>
           </div>

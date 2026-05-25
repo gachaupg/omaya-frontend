@@ -1,4 +1,8 @@
 import { TransactionSummary } from "@/components/types";
+import {
+  parseSummaryNumber,
+  sanitizeExchangeSummaryUsd,
+} from "@/lib/utils/normalizeTransactionSummary";
 
 // Types for chart data
 export type LineChartData = {
@@ -11,6 +15,36 @@ export type DonutChartData = {
   value: number;
   color: string;
 };
+
+function getExchangeOverviewLegendAmounts(
+  transactionSummary: TransactionSummary
+) {
+  const deposits = sanitizeExchangeSummaryUsd(
+    transactionSummary.total_approved_exchange_deposits
+  );
+  const withdrawals = sanitizeExchangeSummaryUsd(
+    transactionSummary.total_approved_exchange_withdrawals
+  );
+  const pendingDeposits = sanitizeExchangeSummaryUsd(
+    transactionSummary.total_pending_exchange_deposits
+  );
+  const pendingWithdrawals = sanitizeExchangeSummaryUsd(
+    transactionSummary.total_pending_exchange_withdrawals
+  );
+  const exchangeNet = sanitizeExchangeSummaryUsd(
+    transactionSummary.total_approved_exchange_volume ??
+      transactionSummary.total_approved_exchange_net ??
+      transactionSummary.total_approved_exchange_combined
+  );
+
+  return {
+    deposits,
+    withdrawals,
+    pendingDeposits,
+    pendingWithdrawals,
+    exchangeNet: exchangeNet > 0 ? exchangeNet : deposits + withdrawals,
+  };
+}
 
 // Dummy data for Exchange Overview (USD)
 export const exchangeOverviewData: LineChartData = {
@@ -111,12 +145,25 @@ export const overviewTotalData = (
     ];
   }
   if (type === "swap") {
-    // Dashboard swap: show only completed swaps
     return [
       {
         label: "Completed",
-        value: transactionSummary.total_completed_changenow_swaps ?? 0,
+        value: parseSummaryNumber(
+          transactionSummary.total_completed_changenow_swaps
+        ),
         color: "#1D8751",
+      },
+      {
+        label: "Pending",
+        value: parseSummaryNumber(
+          transactionSummary.total_pending_changenow_swaps
+        ),
+        color: "#facc15",
+      },
+      {
+        label: "Failed",
+        value: parseSummaryNumber(transactionSummary.total_failed_changenow_swaps),
+        color: "#ef4444",
       },
     ];
   }
@@ -142,32 +189,28 @@ export const overviewTotalData = (
       },
     ];
   }
+  const { deposits, withdrawals, pendingDeposits, pendingWithdrawals, exchangeNet } =
+    getExchangeOverviewLegendAmounts(transactionSummary);
+
   return [
     {
       label: "Deposits",
-      value: Math.abs(transactionSummary.total_approved_exchange_deposits || 0),
+      value: deposits,
       color: "#1D8751",
     },
     {
       label: "Withdrawals",
-      value: Math.abs(transactionSummary.total_approved_exchange_withdrawals || 0),
+      value: withdrawals,
       color: "#ef4444",
     },
     {
       label: "In Progress",
-      value: Math.abs(
-        (transactionSummary.total_pending_exchange_deposits || 0) +
-        (transactionSummary.total_pending_exchange_withdrawals || 0)
-      ),
+      value: pendingDeposits + pendingWithdrawals,
       color: "#facc15",
     },
     {
       label: "Exchange",
-      value: Math.abs(
-        transactionSummary.total_approved_exchange_net ??
-          transactionSummary.total_approved_exchange_combined ??
-          0
-      ),
+      value: exchangeNet,
       color: "#386AB5",
     },
   ];
@@ -268,8 +311,18 @@ export const overviewTotalSummary = (
     };
   }
   if (type === "swap") {
+    const completed = parseSummaryNumber(
+      transactionSummary.total_completed_changenow_swaps
+    );
+    const pending = parseSummaryNumber(
+      transactionSummary.total_pending_changenow_swaps
+    );
+    const failed = parseSummaryNumber(transactionSummary.total_failed_changenow_swaps);
+    const total =
+      parseSummaryNumber(transactionSummary.total_changenow_swaps) ||
+      completed + pending + failed;
     return {
-      total: Math.abs(transactionSummary.total_completed_changenow_swaps ?? 0),
+      total: Math.abs(total),
       currency: "USD",
     };
   }
@@ -303,12 +356,7 @@ export const overviewTotalSummary = (
       currency: "USD",
     };
   }
-  // For Exchange Overview center value, show the approved exchange net amount from API.
-  const exchangeNet = Math.abs(
-    transactionSummary.total_approved_exchange_net ??
-      transactionSummary.total_approved_exchange_combined ??
-      0
-  );
+  const { exchangeNet } = getExchangeOverviewLegendAmounts(transactionSummary);
   return {
     total: exchangeNet,
     currency: "USD",

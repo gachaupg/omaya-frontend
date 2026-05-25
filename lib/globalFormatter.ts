@@ -251,3 +251,63 @@ export const formatDateTimeEastAfrica = (
     timeStyle: "short",
   }).format(d);
 };
+
+/** Show relative “When” labels only for transactions within this window. */
+export const TRANSACTION_WHEN_RELATIVE_MAX_DAYS = 7;
+
+const TRANSACTION_WHEN_RELATIVE_MAX_MS =
+  TRANSACTION_WHEN_RELATIVE_MAX_DAYS * 24 * 60 * 60 * 1000;
+
+function formatTransactionAbsoluteDate(d: Date): string {
+  return new Intl.DateTimeFormat("en-GB", {
+    timeZone: EAST_AFRICA_TZ,
+    day: "numeric",
+    month: "short",
+    year: "numeric",
+  }).format(d);
+}
+
+function formatTransactionRelativeWhen(d: Date, now: Date): string {
+  const diffInSeconds = Math.floor((now.getTime() - d.getTime()) / 1000);
+  if (diffInSeconds < 60) return "now";
+  if (diffInSeconds < 3600) {
+    const minutes = Math.floor(diffInSeconds / 60);
+    return `${minutes} min ago`;
+  }
+  if (diffInSeconds < 86400) {
+    const hours = Math.floor(diffInSeconds / 3600);
+    return `${hours} hour${hours > 1 ? "s" : ""} ago`;
+  }
+  const days = Math.floor(diffInSeconds / 86400);
+  return `${days} day${days > 1 ? "s" : ""} ago`;
+}
+
+/** Dashboard Recent Transactions (All, Exchange, Swap, P2P, MoneyX) — always exact date. */
+export const formatDashboardTransactionWhen = (
+  input: Date | number | string | null | undefined
+): string => {
+  if (input == null || input === "") return "-";
+  const d = input instanceof Date ? input : new Date(input);
+  if (Number.isNaN(d.getTime())) return "-";
+  return formatTransactionAbsoluteDate(d);
+};
+
+/**
+ * OMAYA / live feeds: relative time up to 7 days, then exact date (EAT).
+ */
+export const formatRecentTransactionWhen = (
+  input: Date | number | string | null | undefined
+): string => {
+  if (input == null || input === "") return "-";
+  const d = input instanceof Date ? input : new Date(input);
+  if (Number.isNaN(d.getTime())) return "-";
+
+  const now = new Date();
+  const diffMs = now.getTime() - d.getTime();
+
+  if (diffMs > TRANSACTION_WHEN_RELATIVE_MAX_MS || diffMs < 0) {
+    return formatTransactionAbsoluteDate(d);
+  }
+
+  return formatTransactionRelativeWhen(d, now);
+};

@@ -59,8 +59,8 @@ const steps = [
 // Static fallback achievements (used while loading or on error)
 const fallbackAchievements = [
   {
-    value: "50M+",
-    label: "USD Total Transactions",
+    value: "100M+",
+    label: "Total Volume",
   },
   {
     value: "5500+",
@@ -240,7 +240,7 @@ export default function MarketingPage() {
     ? [
         {
           value: statistics.total_transactions_usdt,
-          label: t("marketing.achievements.usdTotal", "USD Total Transactions"),
+          label: t("marketing.achievements.usdTotal", "Total Volume"),
         },
         {
           value: statistics.satisfied_clients,
@@ -258,7 +258,7 @@ export default function MarketingPage() {
     : fallbackAchievements.map((item, index) => ({
         ...item,
         label: [
-          t("marketing.achievements.usdTotal", "USD Total Transactions"),
+          t("marketing.achievements.usdTotal", "Total Volume"),
           t("marketing.achievements.clients", "Satisfied Clients"),
           t("marketing.achievements.transactions", "Successful Transactions"),
           t("marketing.achievements.years", "Years Of Experience"),
@@ -386,7 +386,7 @@ export default function MarketingPage() {
   const heroStats = useMemo(
     () => [
       {
-        label: t("marketing.hero.stat.volume", "Trading Volume"),
+        label: t("marketing.hero.stat.volume", "Total Volume"),
         value: "100M+",
         icon: BarChart3,
         gradient: "from-[#2B7FFF] to-[#00B8DB]",
@@ -986,7 +986,7 @@ export default function MarketingPage() {
               </div>
             </div>
 
-            {/* $2M+ Daily Volume */}
+            {/* 100M+ Total Volume */}
             <div
               className="bg-gray-50 dark:bg-[#1D1D23] rounded-lg p-4 sm:p-5 md:p-6 border border-gray-200 dark:border-[#2A2A2A] hover:border-[#1D8751]/40 transition-colors flex flex-col items-center relative overflow-hidden"
             >
@@ -1002,8 +1002,10 @@ export default function MarketingPage() {
                 <div className="w-8 h-8 sm:w-10 sm:h-10 mb-3 flex items-center justify-center">
                   <DollarSign className="w-full h-full text-[#13B562]" />
                 </div>
-                <div className="text-gray-900 dark:text-white text-2xl sm:text-3xl md:text-4xl font-bold mb-2 text-center">$2M+</div>
-                <div className="text-gray-700 dark:text-white text-xs sm:text-sm md:text-base text-center">Daily Volume</div>
+                <div className="text-gray-900 dark:text-white text-2xl sm:text-3xl md:text-4xl font-bold mb-2 text-center">100M+</div>
+                <div className="text-gray-700 dark:text-white text-xs sm:text-sm md:text-base text-center">
+                  {t("marketing.hero.stat.volume", "Total Volume")}
+                </div>
               </div>
             </div>
 
@@ -1254,7 +1256,7 @@ export default function MarketingPage() {
 
           {/* Description */}
           <p className="text-center text-gray-700 dark:text-[#788099] text-sm sm:text-base md:text-lg mb-12 max-w-2xl mx-auto">
-            Begin your crypto journey in 4 simple steps. Join thousands of traders who trust OMAYA Exchange.
+            Begin your crypto journey in 4 simple steps. Join thousands of traders who trust OMAYA.io.
           </p>
 
           {/* Steps Cards */}
@@ -1459,7 +1461,7 @@ export default function MarketingPage() {
               <div className="relative z-10">
                 <Image
                   src="/assets/iPhone_13_Mockup_1_wnbmqk.png"
-                  alt="OMAYA Exchange Mobile App"
+                  alt="OMAYA.io Mobile App"
                   width={350}
                   height={700}
                   priority
@@ -2138,7 +2140,7 @@ export default function MarketingPage() {
 
             {/* Subtitle */}
             <p className="text-gray-700 dark:text-[#788099] text-base md:text-lg max-w-3xl mx-auto">
-              Find answers to common questions about OMAYA Exchange, trading, security, and more
+              Find answers to common questions about OMAYA.io, trading, security, and more
             </p>
           </div>
 

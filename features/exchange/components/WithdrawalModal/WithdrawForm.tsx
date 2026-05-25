@@ -87,7 +87,7 @@ const WithdrawForm: React.FC<WithdrawFormProps> = (props) => {
       <Toaster />
       {/* Wallet Details Section (Crypto) */}
         <div className="mb-8">
-          <h2 className="text-lg font-semibold mb-4 text-white">2- OMAYA Exchange Account Detail</h2>
+          <h2 className="text-lg font-semibold mb-4 text-white">2- OMAYA.io Account Detail</h2>
           <div className="bg-[#1D1D23] border border-[#35353E] p-4 rounded-xl">
             <label className="block text-sm mb-2 text-[#788099]">Address</label>
             <div className="flex flex-col sm:flex-row items-center gap-2">

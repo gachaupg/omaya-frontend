@@ -42,7 +42,14 @@ import {
   normalizeSwapAmountOnChange,
   swapAmountToInputString,
   isBadPersistedSwapSendAmount,
+  isPositiveSwapAmount,
+  parseSwapAmountNumber,
 } from "@/lib/utils/swapAmountInput";
+import {
+  isSameSwapAssetPair,
+  resolveSwapCreateErrorMessage,
+  SWAP_SAME_COIN_MESSAGE,
+} from "@/lib/utils/swapAssetValidation";
 
 interface SwapWidgetProps {
   usePublicApi?: boolean;
@@ -194,8 +201,8 @@ const SwapWidget: React.FC<SwapWidgetProps> = ({ usePublicApi = false }) => {
   }, [toAmount]);
 
   useEffect(() => {
-    const fromValue = parseFloat(fromAmount) || 0;
-    const toValue = parseFloat(toAmount) || 0;
+    const fromValue = parseSwapAmountNumber(fromAmount) || 0;
+    const toValue = parseSwapAmountNumber(toAmount) || 0;
     const exceeded = fromValue > 15000 || toValue > 15000;
     if (exceeded && !otcThresholdExceededRef.current) {
       setIsInfoModalOpen(true);
@@ -208,13 +215,11 @@ const SwapWidget: React.FC<SwapWidgetProps> = ({ usePublicApi = false }) => {
     if (estimateError == null || estimateError === "") return;
     if (typeof estimateError !== "string") return;
     if (activeInputField === "from") {
-      const n = parseFloat(fromAmount);
-      if (fromAmount === "" || Number.isNaN(n) || n <= 0) {
+      if (!isPositiveSwapAmount(fromAmount)) {
         dispatch(clearEstimateError());
       }
     } else {
-      const n = parseFloat(toAmount);
-      if (toAmount === "" || Number.isNaN(n) || n <= 0) {
+      if (!isPositiveSwapAmount(toAmount)) {
         dispatch(clearEstimateError());
       }
     }
@@ -239,9 +244,28 @@ const SwapWidget: React.FC<SwapWidgetProps> = ({ usePublicApi = false }) => {
     // });
   }, [dispatch]);
 
+  const sameCoinPair = isSameSwapAssetPair(fromAsset, toAsset);
+
+  useEffect(() => {
+    if (sameCoinPair) {
+      setLocalSwapError(SWAP_SAME_COIN_MESSAGE);
+      dispatch(clearEstimate());
+      dispatch(clearEstimateError());
+      return;
+    }
+    setLocalSwapError((prev) =>
+      prev === SWAP_SAME_COIN_MESSAGE ? "" : prev
+    );
+  }, [sameCoinPair, dispatch]);
+
   // Fetch swap estimate when assets or amount changes (runs on load for default amount — no need to wait for user tap)
   useEffect(() => {
     if (!isAuthenticated && !usePublicApi) {
+      return;
+    }
+
+    if (sameCoinPair) {
+      dispatch(clearEstimate());
       return;
     }
 
@@ -250,16 +274,16 @@ const SwapWidget: React.FC<SwapWidgetProps> = ({ usePublicApi = false }) => {
       toAsset &&
       ((activeInputField === "from" &&
         debouncedFromAmount &&
-        parseFloat(debouncedFromAmount) > 0) ||
+        isPositiveSwapAmount(debouncedFromAmount)) ||
         (activeInputField === "to" &&
           debouncedToAmount &&
-          parseFloat(debouncedToAmount) > 0))
+          isPositiveSwapAmount(debouncedToAmount)))
     ) {
       dispatch(resetErrorToastFlag());
       const amount =
         activeInputField === "from"
-          ? parseFloat(debouncedFromAmount)
-          : parseFloat(debouncedToAmount);
+          ? parseSwapAmountNumber(debouncedFromAmount)
+          : parseSwapAmountNumber(debouncedToAmount);
 
       // For reverse calculation (when user types in "to" field), swap the currencies
       const estimateParams =
@@ -312,6 +336,7 @@ const SwapWidget: React.FC<SwapWidgetProps> = ({ usePublicApi = false }) => {
     activeInputField,
     isAuthenticated,
     usePublicApi,
+    sameCoinPair,
   ]);
 
   // Update amounts when estimate is received
@@ -328,8 +353,7 @@ const SwapWidget: React.FC<SwapWidgetProps> = ({ usePublicApi = false }) => {
 
       if (activeInputField === "from") {
         // Don't apply stale fulfilled estimates while You Send is empty / zero (user typing "0")
-        const p = parseFloat(fromAmount);
-        if (fromAmount === "" || Number.isNaN(p) || p <= 0) {
+        if (!isPositiveSwapAmount(fromAmount)) {
           return;
         }
         // User typed in "from" field, update "to" amount (normal flow)
@@ -342,8 +366,7 @@ const SwapWidget: React.FC<SwapWidgetProps> = ({ usePublicApi = false }) => {
           dispatch(setToAmount(swapAmountToInputString(toAmount)));
         }
       } else if (activeInputField === "to") {
-        const p = parseFloat(toAmount);
-        if (toAmount === "" || Number.isNaN(p) || p <= 0) {
+        if (!isPositiveSwapAmount(toAmount)) {
           return;
         }
         // User typed in "to" field, update "from" amount (reverse flow)
@@ -413,7 +436,7 @@ const SwapWidget: React.FC<SwapWidgetProps> = ({ usePublicApi = false }) => {
             fromAmount > 0
           ) {
             const rate = toAmount / fromAmount;
-            const calculatedFromAmount = parseFloat(debouncedToAmount) / rate;
+            const calculatedFromAmount = parseSwapAmountNumber(debouncedToAmount) / rate;
             dispatch(
               setFromAmount(swapAmountToInputString(calculatedFromAmount))
             );
@@ -462,8 +485,13 @@ const SwapWidget: React.FC<SwapWidgetProps> = ({ usePublicApi = false }) => {
     }
 
     setLocalSwapError("");
-    if (!fromAsset || !toAsset || !fromAmount || parseFloat(fromAmount) <= 0) {
+    if (!fromAsset || !toAsset || !isPositiveSwapAmount(fromAmount)) {
       setLocalSwapError("Please select assets and enter a valid amount.");
+      return;
+    }
+
+    if (isSameSwapAssetPair(fromAsset, toAsset)) {
+      setLocalSwapError(SWAP_SAME_COIN_MESSAGE);
       return;
     }
 
@@ -472,7 +500,7 @@ const SwapWidget: React.FC<SwapWidgetProps> = ({ usePublicApi = false }) => {
       return;
     }
 
-    if ((parseFloat(fromAmount) || 0) > 15000 || (parseFloat(toAmount) || 0) > 15000) {
+    if ((parseSwapAmountNumber(fromAmount) || 0) > 15000 || (parseSwapAmountNumber(toAmount) || 0) > 15000) {
       setIsInfoModalOpen(true);
       return;
     }
@@ -663,6 +691,11 @@ const SwapWidget: React.FC<SwapWidgetProps> = ({ usePublicApi = false }) => {
       return;
     }
 
+    if (isSameSwapAssetPair(fromAsset, toAsset)) {
+      setLocalSwapError(SWAP_SAME_COIN_MESSAGE);
+      return;
+    }
+
     logger.debug("swap", "All fields present, creating swap...");
 
     try {
@@ -683,7 +716,9 @@ const SwapWidget: React.FC<SwapWidgetProps> = ({ usePublicApi = false }) => {
       setCurrentStep("copy-address");
     } catch (error: any) {
       console.error("Failed to create swap:", error);
+      const sameCoinMsg = resolveSwapCreateErrorMessage(error);
       const msg =
+        sameCoinMsg ||
         error?.response?.data?.message ||
         error?.message ||
         "Could not create swap. Please try again.";
@@ -691,6 +726,26 @@ const SwapWidget: React.FC<SwapWidgetProps> = ({ usePublicApi = false }) => {
         typeof msg === "string" ? msg : "Could not create swap. Please try again."
       );
     }
+  };
+
+  const handleFromAssetSelect = (asset: SupportedAsset) => {
+    if (toAsset && isSameSwapAssetPair(asset, toAsset)) {
+      setLocalSwapError(SWAP_SAME_COIN_MESSAGE);
+      return;
+    }
+    setHasUserInteracted(true);
+    dispatch(setFromAsset(asset));
+    dispatch(clearEstimate());
+  };
+
+  const handleToAssetSelect = (asset: SupportedAsset) => {
+    if (fromAsset && isSameSwapAssetPair(fromAsset, asset)) {
+      setLocalSwapError(SWAP_SAME_COIN_MESSAGE);
+      return;
+    }
+    setHasUserInteracted(true);
+    dispatch(setToAsset(asset));
+    dispatch(clearEstimate());
   };
 
   const handleCopyAddress = async () => {
@@ -721,8 +776,10 @@ const SwapWidget: React.FC<SwapWidgetProps> = ({ usePublicApi = false }) => {
 
   const handleSwapAssets = () => {
     dispatch(swapAssets());
-    // Clear the estimate when swapping assets
     dispatch(clearEstimate());
+    setLocalSwapError((prev) =>
+      prev === SWAP_SAME_COIN_MESSAGE ? "" : prev
+    );
     setHasUserInteracted(true);
 
     // Trigger re-estimate after swap
@@ -731,7 +788,7 @@ const SwapWidget: React.FC<SwapWidgetProps> = ({ usePublicApi = false }) => {
         fromAsset &&
         toAsset &&
         fromAmount &&
-        parseFloat(fromAmount) > 0
+        parseSwapAmountNumber(fromAmount) > 0
       ) {
         dispatch(
           fetchSwapEstimate({
@@ -739,7 +796,7 @@ const SwapWidget: React.FC<SwapWidgetProps> = ({ usePublicApi = false }) => {
             fromNetwork: toAsset.network,
             toCurrency: fromAsset.ticker,
             toNetwork: fromAsset.network,
-            amount: parseFloat(toAmount),
+            amount: parseSwapAmountNumber(toAmount),
             usePublicApi: !!usePublicApi,
           })
         );
@@ -849,14 +906,9 @@ const SwapWidget: React.FC<SwapWidgetProps> = ({ usePublicApi = false }) => {
             isToAssetOpen={isToAssetOpen}
             searchTerm={searchTerm}
             toSearchTerm={toSearchTerm}
-          onFromAssetSelect={(asset) => {
-            setHasUserInteracted(true);
-            dispatch(setFromAsset(asset));
-          }}
-          onToAssetSelect={(asset) => {
-            setHasUserInteracted(true);
-            dispatch(setToAsset(asset));
-          }}
+          onFromAssetSelect={handleFromAssetSelect}
+          onToAssetSelect={handleToAssetSelect}
+          sameCoinPair={sameCoinPair}
             onFromAmountChange={handleFromAmountChange}
             onToAmountChange={handleToAmountChange}
             onFromAssetToggle={() => setIsFromAssetOpen(!isFromAssetOpen)}

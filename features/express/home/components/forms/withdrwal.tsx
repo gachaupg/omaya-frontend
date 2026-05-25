@@ -25,6 +25,20 @@ import {
 } from "../../../../swap/slices/swapSlice";
 import { validateWalletAddress } from "../../../../../lib/addressValidaion";
 import { showToast } from "../../../../../lib/utils/toast";
+import {
+  enforceExpressAmountDigitLimit,
+  EXPRESS_AMOUNT_DIGIT_LIMIT_MESSAGE,
+  getExpressAmountFieldErrorsFromResponse,
+  mapExpressAmountApiMessages,
+  resolveExpressAmountInlineError,
+} from "@/lib/utils/expressAmountValidation";
+import {
+  buildExpressMinAmountErrorText,
+  formatExpressMinAmountMessage,
+  isExpressBelowMinAmountError,
+  normalizeExpressApiErrorMessage,
+  resolveExpressMinAmountDisplayError,
+} from "@/lib/utils/expressMinAmount";
 import { reportAssetLoadIssue } from "@/lib/utils/assetLoadNotice";
 import { useExpressI18n } from "@/lib/useExpressI18n";
 import { DepositResponse } from "../../../../exchange/types";
@@ -74,7 +88,10 @@ import {
   AssetDropdownVirtualized,
   buildAssetDropdownRows,
 } from "@/features/express/components/forms/AssetDropdownVirtualized";
-import { assetMatchesSearchTerm } from "@/lib/utils/assetSearch";
+import {
+  assetMatchesSearchTerm,
+  compareAssetsForDisplay,
+} from "@/lib/utils/assetSearch";
 import {
   ExpressBankWithdrawalTermsPanel,
   resolveExpressBankWithdrawalTermsFields,
@@ -1937,7 +1954,10 @@ export default function WithdrawalForm({
     if (error.response?.data) {
       const responseData = error.response.data;
       if (responseData.error === "deposit_too_small") {
-        return "Amount is too small. Please enter a larger amount to proceed.";
+        return buildExpressMinAmountErrorText([
+          responseData,
+          responseData.response_data,
+        ]);
       }
       if (responseData.message) {
         return responseData.message;
@@ -1960,6 +1980,17 @@ export default function WithdrawalForm({
 
   // Helper function to handle API validation errors
   const handleApiValidationError = (error: any): void => {
+    const responseData = error.response?.data;
+    const fieldErrors = getExpressAmountFieldErrorsFromResponse(responseData);
+    if (fieldErrors) {
+      const mapped = mapExpressAmountApiMessages(fieldErrors);
+      if (mapped) {
+        setApiValidationError(mapped);
+        setReceiveAmountError(mapped);
+        return;
+      }
+    }
+
     if (error.response?.data?.error) {
       const errorData = error.response.data.error;
 
@@ -2041,7 +2072,7 @@ export default function WithdrawalForm({
   const validateReceiveAmount = (amount: number, asset: any) => {
     const minAmount = getMinimumAmount(asset);
     if (minAmount > 0 && amount > 0 && amount < minAmount) {
-      return `Minimum amount for this asset is ${minAmount}.`;
+      return formatExpressMinAmountMessage(minAmount);
     }
     return null;
   };
@@ -2120,6 +2151,22 @@ export default function WithdrawalForm({
             const responseData = error?.response_data ?? error?.response?.data?.response_data ?? error?.response?.data;
             const errorData = responseData?.error ?? error?.response?.data?.error;
 
+            const minAmountMessage = resolveExpressMinAmountDisplayError(
+              actionOrError,
+              error,
+              responseData,
+              error?.response?.data
+            );
+            if (minAmountMessage) {
+              setApiValidationError(minAmountMessage);
+              setReceiveAmountError(minAmountMessage);
+              setCalculationError(minAmountMessage);
+              setEstimateLoading(false);
+              setIsCalculating(false);
+              setIsCalculatingReceive(false);
+              return;
+            }
+
             if (responseData?.error || error?.response?.data?.error) {
               const errorData = responseData?.error ?? error?.response?.data?.error;
 
@@ -2153,15 +2200,11 @@ export default function WithdrawalForm({
                 }
                 if (
                   amountErrors.some((err: string) =>
-                    err.includes("12 digits before the decimal point")
+                    err.includes("12 digits") || err.includes("20 digits")
                   )
                 ) {
-                  setApiValidationError(
-                    "Ensure that there are no more than 12 digits before the decimal point."
-                  );
-                  setReceiveAmountError(
-                    "Ensure that there are no more than 12 digits before the decimal point."
-                  );
+                  setApiValidationError(EXPRESS_AMOUNT_DIGIT_LIMIT_MESSAGE);
+                  setReceiveAmountError(EXPRESS_AMOUNT_DIGIT_LIMIT_MESSAGE);
                   // Stop loading states and show error
                   setEstimateLoading(false);
                   setIsCalculating(false);
@@ -2220,10 +2263,10 @@ export default function WithdrawalForm({
                 responseData?.error === "deposit_too_small"
               ) {
                 const innerData = responseData?.response_data ?? responseData;
-                const minAmount = innerData?.payload?.range?.minAmount ?? responseData?.payload?.range?.minAmount;
-                const errorMessage = minAmount != null && !Number.isNaN(minAmount)
-                  ? `Amount entered is too small. Minimum amount is ${Number(minAmount).toFixed(8)}.`
-                  : (innerData?.message || responseData?.message || "Amount is too small. Please enter a larger amount to proceed.");
+                const errorMessage = buildExpressMinAmountErrorText([
+                  innerData,
+                  responseData,
+                ]);
                 setApiValidationError(errorMessage);
                 setReceiveAmountError(errorMessage);
                 setCalculationError(errorMessage);
@@ -2247,8 +2290,13 @@ export default function WithdrawalForm({
                   errorMessage = responseData.message;
                 }
 
-                setApiValidationError(errorMessage);
-                setReceiveAmountError(errorMessage);
+                const displayMessage = normalizeExpressApiErrorMessage(
+                  errorMessage,
+                  responseData,
+                  error
+                );
+                setApiValidationError(displayMessage);
+                setReceiveAmountError(displayMessage);
                 // Stop loading states and show error
                 setEstimateLoading(false);
                 setIsCalculating(false);
@@ -2277,8 +2325,14 @@ export default function WithdrawalForm({
               fallbackErrorMessage = error.message;
             }
 
-            setApiValidationError(fallbackErrorMessage);
-            setReceiveAmountError(fallbackErrorMessage);
+            const displayFallback = normalizeExpressApiErrorMessage(
+              fallbackErrorMessage,
+              rawData,
+              responseData,
+              error
+            );
+            setApiValidationError(displayFallback);
+            setReceiveAmountError(displayFallback);
             setEstimateLoading(false);
             setIsCalculating(false);
             setIsCalculatingReceive(false);
@@ -2467,15 +2521,11 @@ export default function WithdrawalForm({
               }
               if (
                 amountErrors.some((err: string) =>
-                  err.includes("12 digits before the decimal point")
+                  err.includes("12 digits") || err.includes("20 digits")
                 )
               ) {
-                setApiValidationError(
-                  "Ensure that there are no more than 12 digits before the decimal point."
-                );
-                setReceiveAmountError(
-                  "Ensure that there are no more than 12 digits before the decimal point."
-                );
+                setApiValidationError(EXPRESS_AMOUNT_DIGIT_LIMIT_MESSAGE);
+                setReceiveAmountError(EXPRESS_AMOUNT_DIGIT_LIMIT_MESSAGE);
                 // Stop loading states and show error
                 setEstimateLoading(false);
                 setIsCalculating(false);
@@ -2531,10 +2581,10 @@ export default function WithdrawalForm({
               responseData?.error === "deposit_too_small"
             ) {
               const innerData = responseData?.response_data ?? responseData;
-              const minAmount = innerData?.payload?.range?.minAmount ?? responseData?.payload?.range?.minAmount;
-              const errorMessage = minAmount != null && !Number.isNaN(minAmount)
-                ? `Amount entered is too small. Minimum amount is ${Number(minAmount).toFixed(8)}.`
-                : (innerData?.message || responseData?.message || "Amount is too small. Please enter a larger amount to proceed.");
+              const errorMessage = buildExpressMinAmountErrorText([
+                innerData,
+                responseData,
+              ]);
               setApiValidationError(errorMessage);
               setReceiveAmountError(errorMessage);
               setCalculationError(errorMessage);
@@ -2610,9 +2660,25 @@ export default function WithdrawalForm({
               setEstimateLoading(false);
               return;
             }
+            const minMsg = resolveExpressMinAmountDisplayError(err, resData, error);
+            if (minMsg) {
+              setApiValidationError(minMsg);
+              setReceiveAmountError(minMsg);
+              setEstimateError(null);
+              setIsCalculating(false);
+              setIsCalculatingReceive(false);
+              setEstimateLoading(false);
+              return;
+            }
             if (maybeMsg) {
-              setApiValidationError(maybeMsg);
-              setReceiveAmountError(maybeMsg);
+              const displayMsg = normalizeExpressApiErrorMessage(
+                maybeMsg,
+                resData,
+                err,
+                error
+              );
+              setApiValidationError(displayMsg);
+              setReceiveAmountError(displayMsg);
             }
             setEstimateError(null);
             setIsCalculating(false);
@@ -2626,12 +2692,16 @@ export default function WithdrawalForm({
           setEstimateLoading(false);
 
           // Handle deposit_too_small error (show min amount from API to user; support 400 body with nested response_data)
-          if (errorMessage.includes("deposit_too_small") || errorDetails.includes("Out of min amount")) {
+          if (
+            isExpressBelowMinAmountError(errorMessage) ||
+            isExpressBelowMinAmountError(errorDetails)
+          ) {
             const innerResData = resData?.response_data ?? resData;
-            const minAmount = innerResData?.payload?.range?.minAmount ?? resData?.payload?.range?.minAmount;
-            const errorText = minAmount != null && !Number.isNaN(minAmount)
-              ? `Amount entered is too small. Minimum amount is ${Number(minAmount).toFixed(8)}.`
-              : "Amount entered is too small. Please enter a larger amount.";
+            const errorText = buildExpressMinAmountErrorText([
+              innerResData,
+              resData,
+              error,
+            ]);
 
             setApiValidationError(errorText);
             setEstimateError(null);
@@ -2815,63 +2885,13 @@ export default function WithdrawalForm({
     return filtered;
   }, [assetsDisplay.displayData, assetSearchTerm, assetFilterTab, isHomePage]);
 
-  // Sort assets: USDT on BSC, USDC on BSC, fxprimus, then rest in original order
-  const sortedSwapAssets = useMemo(() => [...filteredSwapAssets].sort((a, b) => {
-    // Ensure tickers exist and are strings (using ticker as primary, fallback to symbol/name)
-    const tickerA = (a?.ticker || a?.symbol || a?.name || "")
-      .toString()
-      .toLowerCase();
-    const tickerB = (b?.ticker || b?.symbol || b?.name || "")
-      .toString()
-      .toLowerCase();
-    const networkA = (a?.network || "").toString().toLowerCase();
-    const networkB = (b?.network || "").toString().toLowerCase();
-
-    // Priority 1: USDT on BSC
-    if (
-      tickerA === "usdt" &&
-      networkA === "bsc" &&
-      !(tickerB === "usdt" && networkB === "bsc")
-    ) {
-      return -1;
-    }
-    if (
-      tickerB === "usdt" &&
-      networkB === "bsc" &&
-      !(tickerA === "usdt" && networkA === "bsc")
-    ) {
-      return 1;
-    }
-
-    // Priority 2: USDC on BSC
-    if (
-      tickerA === "usdc" &&
-      networkA === "bsc" &&
-      !(tickerB === "usdc" && networkB === "bsc")
-    ) {
-      return -1;
-    }
-    if (
-      tickerB === "usdc" &&
-      networkB === "bsc" &&
-      !(tickerA === "usdc" && networkA === "bsc")
-    ) {
-      return 1;
-    }
-
-    // Priority 3: FX Primus (match ticker, name, legacy fields)
-    const isFxpA = isForexPrimusAsset(a);
-    const isFxpB = isForexPrimusAsset(b);
-    if (isFxpA && !isFxpB) {
-      return -1;
-    }
-    if (isFxpB && !isFxpA) {
-      return 1;
-    }
-
-    // Default: preserve original order (no change)
-    return 0;
-  }), [filteredSwapAssets]);
+  const sortedSwapAssets = useMemo(
+    () =>
+      [...filteredSwapAssets].sort((a, b) =>
+        compareAssetsForDisplay(a, b, assetSearchTerm)
+      ),
+    [filteredSwapAssets, assetSearchTerm]
+  );
 
   const getAssetKeyForGrouping = (asset: any): string => {
     return `${(asset?.ticker || asset?.symbol || asset?.name || "")
@@ -3739,6 +3759,16 @@ export default function WithdrawalForm({
           "Failed to submit withdrawal request"
         );
 
+        const amountInline =
+          resolveExpressAmountInlineError(error) ||
+          resolveExpressAmountInlineError(errorMessage);
+        if (amountInline) {
+          setApiValidationError(amountInline);
+          setReceiveAmountError(amountInline);
+          setValidationErrors([]);
+          return;
+        }
+
         showToast.error(errorMessage);
         setValidationErrors([errorMessage]);
         setIsTransactionSubmitted(false);
@@ -4055,8 +4085,17 @@ export default function WithdrawalForm({
         `Failed to submit ${mode} request`
       );
 
-      showToast.error(errorMessage);
-      setValidationErrors([errorMessage]);
+      const amountInline =
+        resolveExpressAmountInlineError(error) ||
+        resolveExpressAmountInlineError(errorMessage);
+      if (amountInline) {
+        setApiValidationError(amountInline);
+        setReceiveAmountError(amountInline);
+        setValidationErrors([]);
+      } else {
+        showToast.error(errorMessage);
+        setValidationErrors([errorMessage]);
+      }
       // Reset transaction state on error
       setIsTransactionSubmitted(false);
       setWithdrawalAddress("");
@@ -4125,12 +4164,16 @@ export default function WithdrawalForm({
                       inputMode="decimal"
                       value={payAmountInput}
                       onChange={(e) => {
-                        const inputValue = stripLeadingZerosFromDecimalInput(
+                        const rawInput = stripLeadingZerosFromDecimalInput(
                           e.target.value
                         );
+                        const inputValue = enforceExpressAmountDigitLimit(rawInput);
 
                         // Allow any numeric input including negative numbers and 0
                         if (inputValue === "" || /^-?\d*\.?\d*$/.test(inputValue)) {
+                          if (inputValue !== rawInput) {
+                            setApiValidationError(EXPRESS_AMOUNT_DIGIT_LIMIT_MESSAGE);
+                          }
                           // Check for decimal places validation
                           if (inputValue.includes(".")) {
                             const decimalPart = inputValue.split(".")[1];
@@ -5181,7 +5224,7 @@ export default function WithdrawalForm({
                   </h3>
                   {shouldShowTemporaryWalletAddressNotice && (
                     <p className="text-xs sm:text-sm text-amber-600 dark:text-amber-400 mb-3">
-                      This wallet address is temporary and may change if you repeat this process. Please use the latest generated address.
+                      This wallet address is temporary and may change if you repeat the process. Always use the most recently generated address.
                     </p>
                   )}
                   {withdrawalAddress ? (
@@ -5554,6 +5597,7 @@ export default function WithdrawalForm({
           <PaymentMethodsModal
             open={isPaymentModalOpen}
             onClose={() => setIsPaymentModalOpen(false)}
+            filterByProviderName={payBank?.trim() || undefined}
             onAdd={async () => {
               try {
                 // Refresh both user and admin payment details after adding (force refresh)

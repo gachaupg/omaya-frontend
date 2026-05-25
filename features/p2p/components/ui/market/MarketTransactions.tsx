@@ -44,112 +44,153 @@ const getCurrencyOptions = (orders: any): Option[] => {
   return options;
 };
 
-const getProviderOptions = (orders: any): Option[] => {
-  // Predefined providers that should always be available
-  const predefinedProviders = [
-    { label: "All Banks/Providers", value: "" },
-    { label: "Salaam Bank", value: "salaam_bank" },
-    { label: "EVC Plus", value: "evc_plus" },
-    { label: "Equity Premier Bank", value: "equity_premier_bank" },
-    { label: "Hormuud", value: "hormuud" },
-    { label: "Somtel", value: "somtel" },
-    { label: "Golis", value: "golis" },
-    { label: "Amal Bank", value: "amal_bank" },
-    { label: "Premier Bank", value: "premier_bank" },
-    { label: "Other", value: "other" },
-  ];
+type MarketOrdersBundle = {
+  buy_orders?: { results?: unknown[] };
+  sell_orders?: { results?: unknown[] };
+} | null | undefined;
 
-  const providers = new Set<string>();
-
-  if (orders?.buy_orders?.results) {
-    orders.buy_orders.results.forEach((order: any) => {
-      if (order.payment_details) {
-        order.payment_details.forEach((detail: any) => {
-          if (detail.provider) {
-            providers.add(detail.provider);
-          }
-        });
-      }
-    });
+/** Same order list as the market table for the active Buy / Sell tab. */
+const collectMarketOrderResultsForTab = (
+  orders: MarketOrdersBundle,
+  activeTab: string
+): any[] => {
+  if (!orders) return [];
+  if (activeTab === "buy") {
+    return Array.isArray(orders.sell_orders?.results)
+      ? orders.sell_orders.results
+      : [];
   }
-
-  // Format provider names to be more user-friendly
-  const formatProviderName = (provider: string): string => {
-    return provider
-      .split(" ")
-      .map((word) => word.charAt(0).toUpperCase() + word.slice(1).toLowerCase())
-      .join(" ");
-  };
-
-  // Add predefined providers first, then add any additional providers from data
-  const additionalProviders = Array.from(providers)
-    .filter(
-      (provider) => !predefinedProviders.some((pre) => pre.value === provider)
-    )
-    .map((provider) => ({
-      label: formatProviderName(provider),
-      value: provider,
-    }));
-
-  return [...predefinedProviders, ...additionalProviders];
+  if (activeTab === "sell") {
+    return Array.isArray(orders.buy_orders?.results)
+      ? orders.buy_orders.results
+      : [];
+  }
+  const buy = Array.isArray(orders.buy_orders?.results)
+    ? orders.buy_orders.results
+    : [];
+  const sell = Array.isArray(orders.sell_orders?.results)
+    ? orders.sell_orders.results
+    : [];
+  return [...buy, ...sell];
 };
 
-const getPaymentMethodOptions = (orders: any): Option[] => {
-  // Predefined payment methods that should always be available
-  const predefinedPaymentMethods = [
-    { label: "All Payment Methods", value: "" },
-    { label: "Bank Transfer", value: "bank_transfer" },
-    { label: "Mobile Money", value: "mobile_money" },
-  ];
-
-  const paymentMethods = new Set<string>();
-
-  // Check buy orders
-  if (orders?.buy_orders?.results) {
-    orders.buy_orders.results.forEach((order: any) => {
-      if (order.payment_details) {
-        order.payment_details.forEach((detail: any) => {
-          if (detail.payment_method) {
-            paymentMethods.add(detail.payment_method);
-          }
-        });
-      }
-    });
+const getMarketSideFilterCopy = (activeTab: string) => {
+  if (activeTab === "buy") {
+    return {
+      providerAll: "All providers (Buy)",
+      paymentAll: "All payment methods (Buy)",
+      providerPlaceholder: "Provider (Buy)",
+      paymentPlaceholder: "Payment method (Buy)",
+    };
   }
-
-  // Check sell orders
-  if (orders?.sell_orders?.results) {
-    orders.sell_orders.results.forEach((order: any) => {
-      if (order.payment_details) {
-        order.payment_details.forEach((detail: any) => {
-          if (detail.payment_method) {
-            paymentMethods.add(detail.payment_method);
-          }
-        });
-      }
-    });
+  if (activeTab === "sell") {
+    return {
+      providerAll: "All providers (Sell)",
+      paymentAll: "All payment methods (Sell)",
+      providerPlaceholder: "Provider (Sell)",
+      paymentPlaceholder: "Payment method (Sell)",
+    };
   }
-
-  // Format payment method names to be more user-friendly
-  const formatPaymentMethod = (method: string): string => {
-    return method
-      .toLowerCase()
-      .split("_")
-      .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
-      .join(" ");
+  return {
+    providerAll: "All Banks/Providers",
+    paymentAll: "All Payment Methods",
+    providerPlaceholder: "Select Provider",
+    paymentPlaceholder: "Payment Method",
   };
+};
 
-  // Add predefined methods first, then add any additional methods from data
-  const additionalMethods = Array.from(paymentMethods)
-    .filter(
-      (method) => !predefinedPaymentMethods.some((pre) => pre.value === method)
-    )
-    .map((method) => ({
-      label: formatPaymentMethod(method),
-      value: method,
-    }));
+const normalizeMarketFilterKey = (value: string): string =>
+  value.trim().toLowerCase().replace(/\s+/g, " ");
 
-  return [...predefinedPaymentMethods, ...additionalMethods];
+const getProviderNameFromDetail = (detail: {
+  provider?: string;
+  payment_provider_name?: string;
+  provider_name?: string;
+}): string | null => {
+  const name = String(
+    detail?.provider ||
+      detail?.payment_provider_name ||
+      detail?.provider_name ||
+      ""
+  ).trim();
+  return name || null;
+};
+
+const formatPaymentMethodLabel = (method: string): string =>
+  method
+    .toLowerCase()
+    .split("_")
+    .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
+    .join(" ");
+
+/** Providers on ads visible for the current Buy / Sell tab only. */
+const getProviderOptions = (orders: any, activeTab: string): Option[] => {
+  const copy = getMarketSideFilterCopy(activeTab);
+  const byKey = new Map<string, string>();
+
+  for (const order of collectMarketOrderResultsForTab(orders, activeTab)) {
+    const details = Array.isArray(order?.payment_details)
+      ? order.payment_details
+      : [];
+    for (const detail of details) {
+      const name = getProviderNameFromDetail(detail);
+      if (!name) continue;
+      const key = normalizeMarketFilterKey(name);
+      if (!byKey.has(key)) {
+        byKey.set(key, name);
+      }
+    }
+  }
+
+  const fromOrders = Array.from(byKey.entries())
+    .sort((a, b) => a[1].localeCompare(b[1], undefined, { sensitivity: "base" }))
+    .map(([value, label]) => ({ label, value }));
+
+  return [{ label: copy.providerAll, value: "" }, ...fromOrders];
+};
+
+/** Payment methods on ads visible for the current Buy / Sell tab only. */
+const getPaymentMethodOptions = (orders: any, activeTab: string): Option[] => {
+  const copy = getMarketSideFilterCopy(activeTab);
+  const byKey = new Map<string, string>();
+
+  for (const order of collectMarketOrderResultsForTab(orders, activeTab)) {
+    const details = Array.isArray(order?.payment_details)
+      ? order.payment_details
+      : [];
+    for (const detail of details) {
+      const method = String(detail?.payment_method ?? "").trim();
+      if (!method) continue;
+      const key = normalizeMarketFilterKey(method);
+      if (!byKey.has(key)) {
+        byKey.set(key, formatPaymentMethodLabel(method));
+      }
+    }
+  }
+
+  const fromOrders = Array.from(byKey.entries())
+    .sort((a, b) => a[1].localeCompare(b[1], undefined, { sensitivity: "base" }))
+    .map(([value, label]) => ({ label, value }));
+
+  return [{ label: copy.paymentAll, value: "" }, ...fromOrders];
+};
+
+const detailMatchesProviderFilter = (
+  detail: { provider?: string; payment_provider_name?: string; provider_name?: string },
+  selectedKey: string
+): boolean => {
+  const name = getProviderNameFromDetail(detail);
+  if (!name) return false;
+  return normalizeMarketFilterKey(name) === selectedKey;
+};
+
+const detailMatchesPaymentMethodFilter = (
+  detail: { payment_method?: string },
+  selectedKey: string
+): boolean => {
+  const method = String(detail?.payment_method ?? "").trim();
+  if (!method) return false;
+  return normalizeMarketFilterKey(method) === selectedKey;
 };
 
 const formatSelectionSummary = (
@@ -230,19 +271,56 @@ const MarketTransactions = memo(({ activeTab }: { activeTab: string }) => {
   }, [dispatch, isAuthenticated, currentPage]);
 
 
-  const providerOptions = useMemo(() => getProviderOptions(orders), [orders]);
-  const paymentMethodOptions = useMemo(
-    () => getPaymentMethodOptions(orders),
-    [orders]
+  const filterCopy = useMemo(
+    () => getMarketSideFilterCopy(activeTab),
+    [activeTab]
   );
+
+  const providerOptions = useMemo(
+    () => getProviderOptions(orders, activeTab),
+    [orders, activeTab]
+  );
+  const paymentMethodOptions = useMemo(
+    () => getPaymentMethodOptions(orders, activeTab),
+    [orders, activeTab]
+  );
+
+  useEffect(() => {
+    setProviders([]);
+    setPaymentTypes([]);
+  }, [activeTab]);
+
+  useEffect(() => {
+    const validProviders = new Set(
+      providerOptions.map((o) => o.value).filter(Boolean)
+    );
+    setProviders((prev) => prev.filter((p) => validProviders.has(p)));
+  }, [providerOptions]);
+
+  useEffect(() => {
+    const validMethods = new Set(
+      paymentMethodOptions.map((o) => o.value).filter(Boolean)
+    );
+    setPaymentTypes((prev) => prev.filter((m) => validMethods.has(m)));
+  }, [paymentMethodOptions]);
   const currencyOptions = useMemo(() => getCurrencyOptions(orders), [orders]);
   const paymentSummary = useMemo(
-    () => formatSelectionSummary(paymentTypes, paymentMethodOptions, "Payment Method"),
-    [paymentTypes, paymentMethodOptions]
+    () =>
+      formatSelectionSummary(
+        paymentTypes,
+        paymentMethodOptions,
+        filterCopy.paymentPlaceholder
+      ),
+    [paymentTypes, paymentMethodOptions, filterCopy.paymentPlaceholder]
   );
   const providerSummary = useMemo(
-    () => formatSelectionSummary(providers, providerOptions, "Select Provider"),
-    [providers, providerOptions]
+    () =>
+      formatSelectionSummary(
+        providers,
+        providerOptions,
+        filterCopy.providerPlaceholder
+      ),
+    [providers, providerOptions, filterCopy.providerPlaceholder]
   );
   const isPaymentSummaryDefault = paymentTypes.length === 0;
   const isProviderSummaryDefault = providers.length === 0;
@@ -471,61 +549,21 @@ const MarketTransactions = memo(({ activeTab }: { activeTab: string }) => {
           return false;
         }
 
-        // Filter by payment method - check if any payment detail has the selected payment method(s)
         if (paymentTypes.length > 0) {
-          const hasPaymentMethod = row.payment_details?.some((detail: any) => {
-            return paymentTypes.some((method) => {
-              if (
-                method === "bank_transfer" &&
-                (detail.payment_method?.toLowerCase().includes("bank") ||
-                  detail.payment_method?.toLowerCase().includes("transfer"))
-              ) {
-                return true;
-              }
-              if (
-                method === "mobile_money" &&
-                (detail.payment_method?.toLowerCase().includes("mobile") ||
-                  detail.payment_method?.toLowerCase().includes("money"))
-              ) {
-                return true;
-              }
-              return detail.payment_method === method;
-            });
-          });
+          const hasPaymentMethod = row.payment_details?.some((detail: any) =>
+            paymentTypes.some((method) =>
+              detailMatchesPaymentMethodFilter(detail, method)
+            )
+          );
           if (!hasPaymentMethod) return false;
         }
 
-        // Filter by provider - check if any payment detail has the selected provider(s)
         if (providers.length > 0) {
-          const hasProvider = row.payment_details?.some((detail: any) => {
-            return providers.some((selectedProvider) => {
-              if (
-                selectedProvider === "salaam_bank" &&
-                detail.provider?.toLowerCase().includes("salaam")
-              ) {
-                return true;
-              }
-              if (
-                selectedProvider === "evc_plus" &&
-                detail.provider?.toLowerCase().includes("evc")
-              ) {
-                return true;
-              }
-              if (
-                selectedProvider === "equity_premier_bank" &&
-                detail.provider?.toLowerCase().includes("equity")
-              ) {
-                return true;
-              }
-              if (
-                selectedProvider === "premier_bank" &&
-                detail.provider?.toLowerCase().includes("premier")
-              ) {
-                return true;
-              }
-              return detail.provider === selectedProvider;
-            });
-          });
+          const hasProvider = row.payment_details?.some((detail: any) =>
+            providers.some((selectedProvider) =>
+              detailMatchesProviderFilter(detail, selectedProvider)
+            )
+          );
           if (!hasProvider) return false;
         }
 

@@ -9,7 +9,19 @@ import {
   CreateSwapRequest,
   CreateSwapResponse,
 } from "../types";
-import { getSupportedAssets, getEstimateSwap, getPublicEstimateSwap, createSwap } from "../api";
+import {
+  getSupportedAssets,
+  getEstimateSwap,
+  getPublicEstimateSwap,
+  createSwap,
+  buildSwapEstimateDisplayMessage,
+  formatSwapMinAmountMessage,
+  isSwapBelowMinAmountError,
+} from "../api";
+import {
+  isExpressBelowMinAmountError,
+  resolveExpressMinAmountDisplayError,
+} from "@/lib/utils/expressMinAmount";
 import { sliceCache } from "@/lib/utils/sliceCache";
 
 import { logger } from '@/lib/utils/logger';
@@ -17,14 +29,24 @@ import { logger } from '@/lib/utils/logger';
 /** Backend validation (min/max amount, etc.) – not a real failure; avoid console noise */
 function isSwapEstimateValidationError(error: any): boolean {
   const msg = String(error?.message ?? "");
-  if (/deposit_too_small|deposit_too_large|too small|too large/i.test(msg)) return true;
+  if (
+    /deposit_too_small|deposit_too_large|too small|too large|out of min amount/i.test(
+      msg
+    )
+  )
+    return true;
   const rd =
     error?.response_data ??
     (error?.response?.data && typeof error.response.data === "object"
       ? (error.response.data as any)?.response_data ?? error.response.data
       : undefined);
   const errVal = rd?.error;
-  if (typeof errVal === "string" && /deposit_too_small|deposit_too_large/i.test(errVal)) return true;
+  if (
+    typeof errVal === "string" &&
+    /deposit_too_small|deposit_too_large|out of min amount/i.test(errVal)
+  )
+    return true;
+  if (typeof rd?.message === "string" && isSwapBelowMinAmountError(rd.message)) return true;
   return false;
 }
 
@@ -34,24 +56,36 @@ function estimateErrorStringFromRejectAction(action: {
   error: { message?: string };
 }): string {
   const p = action.payload as any;
+  const minFromPayload = resolveExpressMinAmountDisplayError(
+    action.payload,
+    p?.response_data,
+    action
+  );
+  if (minFromPayload) return minFromPayload;
   const fromResponseData = (rd: unknown): string => {
     if (!rd || typeof rd !== "object") return "";
     const o = rd as Record<string, unknown>;
-    if (typeof o.message === "string" && o.message.trim()) return o.message.trim();
-    if (typeof o.error === "string" && o.error.trim()) return o.error.trim();
     const range = (o.range ?? (o.payload as any)?.range) as
       | { minAmount?: string; min_amount?: string }
       | undefined;
     const min = range?.minAmount ?? range?.min_amount;
     const err = typeof o.error === "string" ? o.error : "";
-    if (min != null && String(min).trim() && /deposit_too_small|too_small/i.test(err))
-      return `Amount below minimum. Minimum: ${min}.`;
+    const message = typeof o.message === "string" ? o.message : "";
+    if (isSwapBelowMinAmountError(err) || isSwapBelowMinAmountError(message)) {
+      if (min != null && String(min).trim()) return formatSwapMinAmountMessage(min);
+      return "Minimum amount required for this pair.";
+    }
+    if (typeof o.message === "string" && o.message.trim()) return o.message.trim();
+    if (typeof o.error === "string" && o.error.trim()) return o.error.trim();
     return "";
   };
 
   if (typeof p === "string" && p.trim()) {
     if (/request failed with status code/i.test(p)) {
       return "Could not get a swap estimate. Please adjust amount or pair.";
+    }
+    if (isSwapBelowMinAmountError(p)) {
+      return "Minimum amount required for this pair.";
     }
     return p.trim();
   }
@@ -63,6 +97,18 @@ function estimateErrorStringFromRejectAction(action: {
         const alt = fromResponseData(rd);
         if (alt) return alt;
         return "Could not get a swap estimate. Please adjust amount or pair.";
+      }
+      const friendly = buildSwapEstimateDisplayMessage(
+        { response_data: p.response_data, message: m },
+        m.trim()
+      );
+      if (friendly && friendly !== m.trim()) return friendly;
+      if (isSwapBelowMinAmountError(m)) {
+        const rd = p.response_data;
+        const range = (rd as any)?.range ?? (rd as any)?.payload?.range;
+        const min = range?.minAmount ?? range?.min_amount;
+        if (min != null && String(min).trim()) return formatSwapMinAmountMessage(min);
+        return "Minimum amount required for this pair.";
       }
       return m.trim();
     }
@@ -77,16 +123,27 @@ function estimateErrorStringFromRejectAction(action: {
         const e = (rd as any).error.trim();
         const min =
           (rd as any).range?.minAmount ?? (rd as any).range?.min_amount;
-        if (/deposit_too_small/i.test(e) && min != null)
-          return `Amount below minimum. Minimum: ${min}.`;
+        if (isSwapBelowMinAmountError(e) || isExpressBelowMinAmountError(e)) {
+          const minMsg = resolveExpressMinAmountDisplayError(rd, p, min);
+          if (minMsg) return minMsg;
+        }
         return e;
       }
     }
   }
   const em = action.error?.message;
   if (typeof em === "string" && em.trim() && em !== "Rejected") {
-    if (/request failed with status code/i.test(em))
+    if (
+      /request failed with status code|unable to calculate swap estimate/i.test(
+        em
+      )
+    ) {
+      const minMsg = resolveExpressMinAmountDisplayError(p, p?.response_data, action);
+      if (minMsg) return minMsg;
       return "Could not get a swap estimate. Please adjust amount or pair.";
+    }
+    const minFromEm = resolveExpressMinAmountDisplayError(em, p, p?.response_data);
+    if (minFromEm) return minFromEm;
     return em.trim();
   }
   return "Failed to fetch swap estimate";

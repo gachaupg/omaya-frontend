@@ -73,7 +73,7 @@ const ExchangePage = () => {
   }
 
   return (
-    <div className="w-full max-w-full overflow-x-hidden">
+    <div className="w-full overflow-x-hidden container mx-auto flex flex-col items-center">
       {showExchanging && transactionData ? (
         <Exchanging 
           transactionData={transactionData}

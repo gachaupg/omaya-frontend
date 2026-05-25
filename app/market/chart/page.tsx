@@ -25,7 +25,7 @@ const MarketTable = dynamic(
     ssr: false,
     loading: () => (
       <div className="w-full rounded-xl border border-[#E8EFF5] dark:border-[#35353E] bg-white dark:bg-[#1D1D23] p-6 text-center text-sm sm:text-base lg:text-base text-[#788099]">
-        Loading Omaya transactions...
+        Loading OMAYA transactions...
       </div>
     ),
   }
@@ -407,7 +407,7 @@ const MarketChartContent = () => {
         <div className="mt-8 sm:mt-10 lg:mt-12">
           <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2 mb-4 sm:mb-6 lg:mb-8">
             <h2 className="text-lg sm:text-xl lg:text-2xl font-bold text-[#051015] dark:text-white">
-              Omaya Transactions
+              OMAYA Transactions
             </h2>
             <Link
               href="/market/live-transactions"

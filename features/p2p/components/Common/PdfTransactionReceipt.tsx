@@ -64,7 +64,7 @@ const PdfTransactionReceipt: React.FC<PdfTransactionReceiptProps> = ({
       </div>
       {/* Footer */}
       <div className="mt-8 text-center text-xs text-gray-500">
-        Powered by Omaya Exchange
+        Powered by OMAYA.io
       </div>
     </div>
   );

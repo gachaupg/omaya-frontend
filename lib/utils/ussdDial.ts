@@ -12,3 +12,18 @@ export function toUssdTelHref(code: string): string {
   if (!trimmed) return "";
   return `tel:${trimmed.replace(/#/g, "%23")}`;
 }
+
+/** Raw string encoded inside QR images so scanners open the dialer for USSD. */
+export function toQrScanPayload(value: string): string {
+  const trimmed = String(value || "").trim();
+  if (!trimmed) return "";
+  if (isUssdDialable(trimmed)) {
+    return toUssdTelHref(trimmed);
+  }
+  return trimmed;
+}
+
+/** URL-safe encoding for external QR image APIs (`data` query param). */
+export function encodeQrScanData(value: string): string {
+  return encodeURIComponent(toQrScanPayload(value));
+}

@@ -30,7 +30,10 @@ import {
   WithdrawalAddressesResponse,
   PaymentDetail,
 } from "../types";
-import { handleP2PErrorSafe } from "../../../lib/utils/errorHandler";
+import {
+  getMessageFromApiError,
+  handleP2PErrorSafe,
+} from "../../../lib/utils/errorHandler";
 import { fetchWallets } from "./walletSlice";
 import { logger } from "@/lib/logger";
 
@@ -337,9 +340,9 @@ export const deleteP2POrderThunk = createAsyncThunk(
   async (id: string, { rejectWithValue }) => {
     try {
       return await deleteP2POrder(id);
-    } catch (error: any) {
-      const msg = handleP2PErrorSafe(error);
-      return rejectWithValue(msg || error.message || "An error occurred");
+    } catch (error: unknown) {
+      const msg = getMessageFromApiError(error);
+      return rejectWithValue(msg || "An error occurred");
     }
   }
 );
@@ -353,9 +356,9 @@ export const toggleP2POrderStatusThunk = createAsyncThunk(
     try {
       const response = await toggleP2POrderStatus(id, status);
       return response;
-    } catch (error: any) {
-      const msg = handleP2PErrorSafe(error);
-      return rejectWithValue(msg || error.message || "An error occurred");
+    } catch (error: unknown) {
+      const msg = getMessageFromApiError(error);
+      return rejectWithValue(msg || "An error occurred");
     }
   }
 );
@@ -366,9 +369,9 @@ export const duplicateP2POrderThunk = createAsyncThunk(
     try {
       const response = await duplicateP2POrder(id);
       return response;
-    } catch (error: any) {
-      const msg = handleP2PErrorSafe(error);
-      return rejectWithValue(msg || error.message || "An error occurred");
+    } catch (error: unknown) {
+      const msg = getMessageFromApiError(error);
+      return rejectWithValue(msg || "An error occurred");
     }
   }
 );

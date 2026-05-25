@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from "react";
+import React, { useState, useEffect, useRef, useId } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import {
   sendPasswordResetOTP,
@@ -13,6 +13,10 @@ import { Lock, Eye, EyeOff, Mail, CheckCircle2 } from "lucide-react";
 const PasswordSection: React.FC = () => {
   const dispatch = useDispatch<AppDispatch>();
   const { updating } = useSelector((state: RootState) => state.settings);
+  const autofillGuardId = useId().replace(/:/g, "");
+  const currentPasswordInputId = `settings-current-password-${autofillGuardId}`;
+  const [currentPasswordFieldActive, setCurrentPasswordFieldActive] =
+    useState(false);
 
   const [passwordSuccess, setPasswordSuccess] = useState(false);
   const [sendingOtp, setSendingOtp] = useState(false);
@@ -120,6 +124,7 @@ const PasswordSection: React.FC = () => {
     setOtp("");
     setMaskedEmail(null);
     setErrors({});
+    setCurrentPasswordFieldActive(false);
     clearActionMessages();
     dispatch(clearError());
   };
@@ -273,26 +278,57 @@ const PasswordSection: React.FC = () => {
         Password
       </div>
 
-      <section className="dark:bg-card bg-card rounded-xl dark:border-accent border-border border p-3 sm:p-4">
+      <section className="dark:bg-card bg-card rounded-xl dark:border-accent border-border border p-3 sm:p-4 relative">
+        {/*
+          Browsers fill the first password field when autocomplete=current-password.
+          Decoy fields + readonly-until-focus keep saved credentials out until the user types.
+        */}
+        <div
+          className="absolute w-px h-px p-0 -m-px overflow-hidden whitespace-nowrap border-0"
+          aria-hidden
+        >
+          <input
+            type="text"
+            name="fakeusernameremembered"
+            tabIndex={-1}
+            autoComplete="username"
+            readOnly
+          />
+          <input
+            type="password"
+            name="fakepasswordremembered"
+            tabIndex={-1}
+            autoComplete="current-password"
+            readOnly
+          />
+        </div>
+
         <div className="flex flex-col sm:grid sm:grid-cols-2 gap-2 sm:gap-3">
           <div>
-            <label className="block text-xs dark:text-white text-[#051015] mb-1">
+            <label
+              htmlFor={currentPasswordInputId}
+              className="block text-xs dark:text-white text-[#051015] mb-1"
+            >
               Current password*
             </label>
 
             <div className="flex items-center dark:bg-card bg-card rounded-[18px] px-3 sm:px-4 py-1 sm:py-2.5 border dark:border-accent border-border">
               <Lock size={16} stroke="#1D8751" strokeWidth={2} />
-
               <input
+                id={currentPasswordInputId}
+                name={`verify_current_password_${autofillGuardId}`}
                 type={showPasswords.old ? "text" : "password"}
                 className="bg-transparent flex-1 min-w-0 ml-2 outline-none text-sm sm:text-base text-[#788099] dark:text-white"
-                placeholder="Enter current login password"
+                placeholder="Enter current password"
                 value={formData.old_password}
                 onChange={(e) => handleInputChange("old_password", e.target.value)}
-                autoComplete="current-password"
+                onFocus={() => setCurrentPasswordFieldActive(true)}
+                readOnly={!currentPasswordFieldActive}
+                autoComplete="off"
+                autoCorrect="off"
+                spellCheck={false}
                 disabled={verifyingOtp || sendingOtp}
               />
-
               <button
                 type="button"
                 onClick={() => togglePasswordVisibility("old")}

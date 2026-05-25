@@ -10,6 +10,7 @@ import QRCode from "qrcode";
 import FailureStatusModal from "@/features/express/components/FailureStatusModal";
 
 import { logger } from '@/lib/utils/logger';
+import { formatSwapDisplayTicker } from "../utils/swapDisplayFormat";
 
 interface CopyAddressStepProps {
   swapResponse: CreateSwapResponse | null;
@@ -302,9 +303,17 @@ const CopyAddressStep: React.FC<CopyAddressStepProps> = ({
         transactionId={statusObj?.swap_id || statusObj?.id || swapResponse?.id || ""}
         date={new Date().toLocaleString()}
         paidAmount={statusObj?.amount_from || swapResponse?.fromAmount || statusObj?.expectedAmountFrom || ""}
-        paidCurrency={statusObj?.from_currency || swapResponse?.fromCurrency || statusObj?.fromCurrency || ""}
+        paidCurrency={formatSwapDisplayTicker(
+          statusObj?.from_currency ||
+            swapResponse?.fromCurrency ||
+            statusObj?.fromCurrency
+        )}
         receivedAmount={statusObj?.amount_to || swapResponse?.toAmount || statusObj?.expectedAmountTo || ""}
-        receivedCurrency={statusObj?.to_currency || swapResponse?.toCurrency || statusObj?.toCurrency || ""}
+        receivedCurrency={formatSwapDisplayTicker(
+          statusObj?.to_currency ||
+            swapResponse?.toCurrency ||
+            statusObj?.toCurrency
+        )}
         payinMethod={statusObj?.from_currency || swapResponse?.fromNetwork || statusObj?.fromNetwork || ""}
         payoutMethod={statusObj?.to_currency || swapResponse?.toNetwork || statusObj?.toNetwork || ""}
         transactionHash={statusObj?.payout_hash || statusObj?.payin_hash || statusObj?.payinHash || statusObj?.payoutHash || ""}
@@ -328,7 +337,11 @@ const CopyAddressStep: React.FC<CopyAddressStepProps> = ({
               </div>
               <div className="text-gray-900 dark:text-white text-sm sm:text-base font-semibold mb-1 flex flex-col sm:flex-row sm:items-center gap-1 sm:gap-0">
                 <span>{statusObj?.amount_from || swapResponse.fromAmount}</span>
-                <span className='uppercase sm:ml-4'>{statusObj?.from_currency || swapResponse.fromCurrency}</span>
+                <span className="sm:ml-4">
+                  {formatSwapDisplayTicker(
+                    statusObj?.from_currency || swapResponse.fromCurrency
+                  )}
+                </span>
               </div>
              
               <div className="mt-3 sm:mt-4">
@@ -496,7 +509,10 @@ const CopyAddressStep: React.FC<CopyAddressStepProps> = ({
         </div>
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 sm:gap-0 mt-2">
           <div className="text-gray-900 dark:text-white text-sm sm:text-base font-mono font-semibold">
-            {statusObj?.amount_to || swapResponse.toAmount} {statusObj?.to_currency || swapResponse.toCurrency}
+            {statusObj?.amount_to || swapResponse.toAmount}{" "}
+            {formatSwapDisplayTicker(
+              statusObj?.to_currency || swapResponse.toCurrency
+            )}
           </div>
           <div className="flex items-center gap-2">
             <span className="text-gray-600 dark:text-[#7e7e8f] text-xs sm:text-sm font-mono break-all">
@@ -533,7 +549,12 @@ const CopyAddressStep: React.FC<CopyAddressStepProps> = ({
             <div className="flex items-start gap-2 sm:gap-3">
               <span className="text-yellow-900 dark:text-white text-lg sm:text-xl font-bold mt-0.5">•</span>
               <p className="text-yellow-900 dark:text-white text-xs sm:text-sm flex-1">
-                Only send {statusObj?.from_currency || swapResponse?.fromCurrency || ""} ({statusObj?.fromNetwork || swapResponse?.fromNetwork || "TRC20"}) to this address
+                Only send{" "}
+                {formatSwapDisplayTicker(
+                  statusObj?.from_currency || swapResponse?.fromCurrency
+                )}{" "}
+                ({statusObj?.fromNetwork || swapResponse?.fromNetwork || "TRC20"})
+                to this address
               </p>
             </div>
             

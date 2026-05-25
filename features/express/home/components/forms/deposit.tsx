@@ -22,6 +22,18 @@ import {
 } from "../../../../swap/slices/swapSlice";
 
 import { showToast } from "../../../../../lib/utils/toast";
+import {
+  applyExpressAmountSubmitError,
+  enforceExpressAmountDigitLimit,
+  EXPRESS_AMOUNT_DIGIT_LIMIT_MESSAGE,
+  mapExpressAmountApiMessages,
+} from "@/lib/utils/expressAmountValidation";
+import {
+  buildExpressMinAmountErrorText,
+  isExpressBelowMinAmountError,
+  normalizeExpressApiErrorMessage,
+  resolveExpressMinAmountDisplayError,
+} from "@/lib/utils/expressMinAmount";
 import { reportAssetLoadIssue } from "@/lib/utils/assetLoadNotice";
 import { useExpressI18n } from "@/lib/useExpressI18n";
 import { DepositResponse } from "../../../../exchange/types";
@@ -72,7 +84,12 @@ import {
   AssetDropdownVirtualized,
   buildAssetDropdownRows,
 } from "@/features/express/components/forms/AssetDropdownVirtualized";
-import { assetMatchesSearchTerm } from "@/lib/utils/assetSearch";
+import ExpressDepositPaymentDetails from "@/features/express/components/ExpressDepositPaymentDetails";
+import { resolvePaymentSendToReference } from "@/features/express/utils/paymentDetailDisplay";
+import {
+  assetMatchesSearchTerm,
+  compareAssetsForDisplay,
+} from "@/lib/utils/assetSearch";
 
 interface DepositFormProps {
   onExchange?: (transactionData: {
@@ -165,6 +182,34 @@ const extractSubmitErrorMessage = (error: any, fallback: string): string => {
 
   return fallback;
 };
+
+const handleExpressEstimateAmountFieldErrors = (
+  error: any,
+  responseData: any,
+  setApiValidationError: (message: string | null) => void,
+  onHandled: () => void
+): boolean => {
+  const requestedAmountErrors =
+    (Array.isArray(error?.error?.requested_amount) &&
+      error.error.requested_amount) ||
+    (Array.isArray(responseData?.requested_amount) &&
+      responseData.requested_amount) ||
+    (Array.isArray(responseData?.error?.requested_amount) &&
+      responseData.error.requested_amount);
+
+  if (requestedAmountErrors?.length) {
+    const mapped = mapExpressAmountApiMessages(
+      requestedAmountErrors.map(String)
+    );
+    if (mapped) {
+      setApiValidationError(mapped);
+      onHandled();
+      return true;
+    }
+  }
+  return false;
+};
+
 const getNetworkMatchKeys = (network: string): string[] => {
   const n = (network || "").toLowerCase();
   return NETWORK_ALIASES[n] ? [...NETWORK_ALIASES[n], n] : [n];
@@ -185,6 +230,8 @@ const getAssetDropdownIcon = (asset: any): string => {
 const getNetworkDisplayName = (network: string) => {
   const networkMap: { [key: string]: string } = {
     'bsc': 'BSC',
+    'bep20': 'BSC',
+    'bep2': 'BSC',
     'matic': 'Polygon',
     'avaxc': 'Avalanche',
     'eth': 'Ethereum',
@@ -1834,6 +1881,22 @@ export default function DepositForm({
               // response_data can be on payload (from thunk) or on raw error
               const responseData = error?.response_data ?? actionOrError?.response_data;
 
+              const minMsgEarly = resolveExpressMinAmountDisplayError(
+                error,
+                responseData,
+                actionOrError
+              );
+              if (minMsgEarly) {
+                setApiValidationError(minMsgEarly);
+                setEstimateError(null);
+                setGetAmount(0);
+                setGetAmountInput("0");
+                setIsCalculating(false);
+                setIsCalculatingReceive(false);
+                setEstimateLoading(false);
+                return;
+              }
+
               let errorMessage = "";
               let errorDetails = "";
 
@@ -1852,11 +1915,14 @@ export default function DepositForm({
               }
 
               // Always show deposit_too_small to user in red (min amount from API when present)
-              if (errorMessage.includes("deposit_too_small") || errorDetails.includes("Out of min amount")) {
-                const minAmount = responseData?.payload?.range?.minAmount;
-                const errorText = minAmount != null && !isNaN(minAmount)
-                  ? `Amount entered is too small. Minimum amount is ${Number(minAmount).toFixed(8)}.`
-                  : "Amount entered is too small. Please enter a larger amount.";
+              if (
+                isExpressBelowMinAmountError(errorMessage) ||
+                isExpressBelowMinAmountError(errorDetails)
+              ) {
+                const errorText = buildExpressMinAmountErrorText([
+                  responseData,
+                  error,
+                ]);
 
                 setApiValidationError(errorText);
                 setEstimateError(null);
@@ -1885,6 +1951,22 @@ export default function DepositForm({
                 return;
               }
 
+              if (
+                handleExpressEstimateAmountFieldErrors(
+                  error,
+                  responseData,
+                  setApiValidationError,
+                  () => {
+                    setEstimateError(null);
+                    setIsCalculating(false);
+                    setIsCalculatingReceive(false);
+                    setEstimateLoading(false);
+                  }
+                )
+              ) {
+                return;
+              }
+
               // Handle DRF-style field validation errors
               const amountErrorsFromRoot =
                 (Array.isArray(error?.error?.amount) && error.error.amount) ||
@@ -1892,10 +1974,13 @@ export default function DepositForm({
 
               if (amountErrorsFromRoot && amountErrorsFromRoot.length > 0) {
                 const firstMessage = String(amountErrorsFromRoot[0]);
-                setApiValidationError(firstMessage);
+                const mapped = mapExpressAmountApiMessages([firstMessage]);
+                setApiValidationError(mapped || firstMessage);
                 setEstimateError(null);
-                setGetAmount(0);
-                setGetAmountInput("0");
+                if (!mapped) {
+                  setGetAmount(0);
+                  setGetAmountInput("0");
+                }
                 setIsCalculating(false);
                 setIsCalculatingReceive(false);
                 setEstimateLoading(false);
@@ -1905,11 +1990,13 @@ export default function DepositForm({
               // Any other backend error (e.g. not_valid_params / unsupported currency):
               // show the message and stop loading.
               const genericText =
-                (typeof errorDetails === "string" && errorDetails.trim())
-                  ? errorDetails.trim()
-                  : (typeof errorMessage === "string" && errorMessage.trim())
-                    ? errorMessage.trim()
-                    : "Could not calculate estimate for this pair.";
+                normalizeExpressApiErrorMessage(
+                  (typeof errorDetails === "string" && errorDetails.trim()) ||
+                    (typeof errorMessage === "string" && errorMessage.trim()) ||
+                    "",
+                  responseData,
+                  error
+                ) || "Could not calculate estimate for this pair.";
 
               setApiValidationError(genericText);
               setEstimateError(null);
@@ -1943,10 +2030,22 @@ export default function DepositForm({
             setIsCalculatingReceive(false);
             setEstimateLoading(false);
 
+            const responseData = error?.response_data ?? actionOrError?.response_data;
+            const minMsgEarly = resolveExpressMinAmountDisplayError(
+              error,
+              responseData,
+              actionOrError
+            );
+            if (minMsgEarly) {
+              setApiValidationError(minMsgEarly);
+              setEstimateError(null);
+              setGetAmount(0);
+              setGetAmountInput("0");
+              return;
+            }
+
             let errorMessage = "";
             let errorDetails = "";
-            // response_data can be on payload (from thunk) or on raw error
-            const responseData = error?.response_data ?? actionOrError?.response_data;
 
             if (responseData?.error) {
               errorMessage = responseData.error;
@@ -1963,11 +2062,14 @@ export default function DepositForm({
             }
 
             // Always show deposit_too_small to user in red (min amount from API when present)
-            if (errorMessage.includes("deposit_too_small") || errorDetails.includes("Out of min amount")) {
-              const minAmount = responseData?.payload?.range?.minAmount;
-              const errorText = minAmount != null && !isNaN(minAmount)
-                ? `Amount entered is too small. Minimum amount is ${Number(minAmount).toFixed(8)}.`
-                : "Amount entered is too small. Please enter a larger amount.";
+            if (
+              isExpressBelowMinAmountError(errorMessage) ||
+              isExpressBelowMinAmountError(errorDetails)
+            ) {
+              const errorText = buildExpressMinAmountErrorText([
+                responseData,
+                error,
+              ]);
 
               setApiValidationError(errorText);
               setEstimateError(null);
@@ -1996,6 +2098,22 @@ export default function DepositForm({
               return;
             }
 
+            if (
+              handleExpressEstimateAmountFieldErrors(
+                error,
+                responseData,
+                setApiValidationError,
+                () => {
+                  setEstimateError(null);
+                  setIsCalculating(false);
+                  setIsCalculatingReceive(false);
+                  setEstimateLoading(false);
+                }
+              )
+            ) {
+              return;
+            }
+
             // Handle DRF-style field validation errors
             const amountErrorsFromRoot =
               (Array.isArray(error?.error?.amount) && error.error.amount) ||
@@ -2003,10 +2121,13 @@ export default function DepositForm({
 
             if (amountErrorsFromRoot && amountErrorsFromRoot.length > 0) {
               const firstMessage = String(amountErrorsFromRoot[0]);
-              setApiValidationError(firstMessage);
+              const mapped = mapExpressAmountApiMessages([firstMessage]);
+              setApiValidationError(mapped || firstMessage);
               setEstimateError(null);
-              setGetAmount(0);
-              setGetAmountInput("0");
+              if (!mapped) {
+                setGetAmount(0);
+                setGetAmountInput("0");
+              }
               setIsCalculating(false);
               setIsCalculatingReceive(false);
               setEstimateLoading(false);
@@ -2142,29 +2263,51 @@ export default function DepositForm({
             setIsCalculatingReceive(false);
             setEstimateLoading(false);
 
-            // Handle DRF-style field validation errors
-            const amountErrorsFromRoot =
-              (Array.isArray(error?.error?.amount) && error.error.amount) ||
-              (Array.isArray(responseData?.error?.amount) && responseData.error.amount);
+              if (
+                handleExpressEstimateAmountFieldErrors(
+                  error,
+                  responseData,
+                  setApiValidationError,
+                  () => {
+                    setEstimateError(null);
+                    setIsCalculating(false);
+                    setIsCalculatingReceive(false);
+                    setEstimateLoading(false);
+                  }
+                )
+              ) {
+                return;
+              }
 
-            if (amountErrorsFromRoot && amountErrorsFromRoot.length > 0) {
-              const firstMessage = String(amountErrorsFromRoot[0]);
-              setApiValidationError(firstMessage);
-              setEstimateError(null);
-              setPayAmount(0);
-              setPayAmountInput("0");
-              setIsCalculating(false);
-              setIsCalculatingReceive(false);
-              setEstimateLoading(false);
-              return;
-            }
+              // Handle DRF-style field validation errors
+              const amountErrorsFromRoot =
+                (Array.isArray(error?.error?.amount) && error.error.amount) ||
+                (Array.isArray(responseData?.error?.amount) && responseData.error.amount);
+
+              if (amountErrorsFromRoot && amountErrorsFromRoot.length > 0) {
+                const firstMessage = String(amountErrorsFromRoot[0]);
+                const mapped = mapExpressAmountApiMessages([firstMessage]);
+                setApiValidationError(mapped || firstMessage);
+                setEstimateError(null);
+                if (!mapped) {
+                  setPayAmount(0);
+                  setPayAmountInput("0");
+                }
+                setIsCalculating(false);
+                setIsCalculatingReceive(false);
+                setEstimateLoading(false);
+                return;
+              }
 
             // Handle deposit_too_small error (show min amount from API)
-            if (errorMessage.includes("deposit_too_small") || errorDetails.includes("Out of min amount")) {
-              const minAmount = responseData?.payload?.range?.minAmount;
-              const errorText = minAmount != null && !isNaN(minAmount)
-                ? `Amount entered is too small. Minimum amount is ${Number(minAmount).toFixed(8)}.`
-                : "Amount entered is too small. Please enter a larger amount.";
+            if (
+              isExpressBelowMinAmountError(errorMessage) ||
+              isExpressBelowMinAmountError(errorDetails)
+            ) {
+              const errorText = buildExpressMinAmountErrorText([
+                responseData,
+                error,
+              ]);
               setApiValidationError(errorText);
               setEstimateError(null);
               setPayAmount(0);
@@ -2377,63 +2520,9 @@ export default function DepositForm({
     return filtered;
   }, [assetsDisplay.displayData, assetSearchTerm, assetFilterTab, isHomePage]);
 
-  // Sort assets: USDT on BSC, USDC on BSC, fxprimus, then rest in original order
-  const sortedSwapAssets = [...filteredSwapAssets].sort((a, b) => {
-    // Ensure tickers exist and are strings (using ticker as primary, fallback to symbol/name)
-    const tickerA = (a?.ticker || a?.symbol || a?.name || "")
-      .toString()
-      .toLowerCase();
-    const tickerB = (b?.ticker || b?.symbol || b?.name || "")
-      .toString()
-      .toLowerCase();
-    const networkA = (a?.network || "").toString().toLowerCase();
-    const networkB = (b?.network || "").toString().toLowerCase();
-
-    // Priority 1: USDT on BSC
-    if (
-      tickerA === "usdt" &&
-      networkA === "bsc" &&
-      !(tickerB === "usdt" && networkB === "bsc")
-    ) {
-      return -1;
-    }
-    if (
-      tickerB === "usdt" &&
-      networkB === "bsc" &&
-      !(tickerA === "usdt" && networkA === "bsc")
-    ) {
-      return 1;
-    }
-
-    // Priority 2: USDC on BSC
-    if (
-      tickerA === "usdc" &&
-      networkA === "bsc" &&
-      !(tickerB === "usdc" && networkB === "bsc")
-    ) {
-      return -1;
-    }
-    if (
-      tickerB === "usdc" &&
-      networkB === "bsc" &&
-      !(tickerA === "usdc" && networkA === "bsc")
-    ) {
-      return 1;
-    }
-
-    // Priority 3: FX Primus (match ticker, name, legacy fields)
-    const isFxpA = isForexPrimusAsset(a);
-    const isFxpB = isForexPrimusAsset(b);
-    if (isFxpA && !isFxpB) {
-      return -1;
-    }
-    if (isFxpB && !isFxpA) {
-      return 1;
-    }
-
-    // Default: preserve original order (no change)
-    return 0;
-  });
+  const sortedSwapAssets = [...filteredSwapAssets].sort((a, b) =>
+    compareAssetsForDisplay(a, b, assetSearchTerm)
+  );
 
   const getAssetKeyForGrouping = (asset: any): string => {
     return `${(asset?.ticker || asset?.symbol || asset?.name || "")
@@ -3233,8 +3322,21 @@ export default function DepositForm({
           errorMessage = "Your wallet address doesn't match the asset requested";
         }
 
-        showToast.error(errorMessage);
-        setValidationErrors([errorMessage]);
+        if (
+          !applyExpressAmountSubmitError(
+            error,
+            setApiValidationError,
+            setValidationErrors
+          ) &&
+          !applyExpressAmountSubmitError(
+            errorMessage,
+            setApiValidationError,
+            setValidationErrors
+          )
+        ) {
+          showToast.error(errorMessage);
+          setValidationErrors([errorMessage]);
+        }
       } finally {
         setIsSubmitting(false);
       }
@@ -3750,8 +3852,21 @@ export default function DepositForm({
         errorMessage = "Your wallet address doesn't match the asset requested";
       }
 
-      showToast.error(errorMessage);
-      setValidationErrors([errorMessage]);
+      if (
+        !applyExpressAmountSubmitError(
+          error,
+          setApiValidationError,
+          setValidationErrors
+        ) &&
+        !applyExpressAmountSubmitError(
+          errorMessage,
+          setApiValidationError,
+          setValidationErrors
+        )
+      ) {
+        showToast.error(errorMessage);
+        setValidationErrors([errorMessage]);
+      }
     } finally {
       setIsSubmitting(false);
     }
@@ -3813,12 +3928,18 @@ export default function DepositForm({
                     }
 
                     const truncatedDecimals = normalizeToFiveDecimals(value);
-                    const normalizedValue =
-                      stripLeadingZerosFromDecimalInput(truncatedDecimals);
+                    const normalizedValue = enforceExpressAmountDigitLimit(
+                      stripLeadingZerosFromDecimalInput(truncatedDecimals)
+                    );
                     // Only allow numbers and decimals (including 0.006 format)
                     if (normalizedValue === "" || /^\d*\.?\d*$/.test(normalizedValue)) {
                       if (truncatedDecimals !== value) {
                         setApiValidationError("Number cannot have more than 5 decimal places.");
+                      } else if (
+                        stripLeadingZerosFromDecimalInput(truncatedDecimals) !==
+                        normalizedValue
+                      ) {
+                        setApiValidationError(EXPRESS_AMOUNT_DIGIT_LIMIT_MESSAGE);
                       }
                       // Check for decimal places validation
                       if (normalizedValue.includes(".")) {
@@ -3837,8 +3958,13 @@ export default function DepositForm({
                         setPayAmount(newAmount);
                         setIsCalculatingFromPay(true);
 
-                        // Clear API validation error when user changes amount
-                        setApiValidationError(null);
+                        if (
+                          truncatedDecimals === value &&
+                          stripLeadingZerosFromDecimalInput(truncatedDecimals) ===
+                            normalizedValue
+                        ) {
+                          setApiValidationError(null);
+                        }
 
                         // Mark that user has manually modified the amount
                         setIsUserModifiedAmount(true);
@@ -4537,58 +4663,11 @@ export default function DepositForm({
                     </div>
                   </div>
                   <div className={`${isDark ? "border-[#39394A]" : "border-[#E2E8F0]"} border-t border-dashed mb-2`}></div>
-                  {/* Account Name */}
-                  <div className="flex items-center justify-between mb-2">
-                    <span className={`${isDark ? "text-[#788099]" : "text-[#475569]"} text-base font-medium`}>
-                      Account Name :
-                    </span>
-                    <span className={`${isDark ? "text-[#D1D5DB]" : "text-[#1F2937]"} text-base font-medium`}>
-                      {effectiveSelectedPaymentDetail.account_name}
-                    </span>
-                  </div>
-                  <div className={`${isDark ? "border-[#39394A]" : "border-[#E2E8F0]"} border-t border-dashed mb-2`}></div>
-                  {/* Account Number */}
-                  <div className="flex items-center justify-between">
-                    <span className={`${isDark ? "text-[#788099]" : "text-[#475569]"} text-base font-medium`}>
-                      Account Number :
-                    </span>
-                    <div className="flex items-center gap-2">
-                      <span className={`${isDark ? "text-[#D1D5DB]" : "text-[#1F2937]"} text-base font-medium`}>
-                        {effectiveSelectedPaymentDetail.account_number}
-                      </span>
-                      <button
-                        onClick={() => {
-                          navigator.clipboard.writeText(
-                            effectiveSelectedPaymentDetail.account_number
-                          );
-                          showToast.success("Account number copied!");
-                        }}
-                        className="text-[#F79330] hover:text-white transition-colors p-1 rounded"
-                        title="Copy Account Number"
-                      >
-                        <svg width="18" height="18" fill="none" viewBox="0 0 24 24">
-                          <rect
-                            x="9"
-                            y="9"
-                            width="13"
-                            height="13"
-                            rx="2"
-                            stroke="currentColor"
-                            strokeWidth="2"
-                          />
-                          <rect
-                            x="3"
-                            y="3"
-                            width="13"
-                            height="13"
-                            rx="2"
-                            stroke="currentColor"
-                            strokeWidth="2"
-                          />
-                        </svg>
-                      </button>
-                    </div>
-                  </div>
+                  <ExpressDepositPaymentDetails
+                    paymentDetail={effectiveSelectedPaymentDetail}
+                    fallbackProviderName={effectiveSelectedPaymentDetail?.provider_name}
+                    isDark={isDark}
+                  />
                 </div>
               </>
             )}
@@ -4833,58 +4912,11 @@ export default function DepositForm({
                 </div>
               </div>
               <div className={`${isDark ? "border-[#39394A]" : "border-[#E2E8F0]"} border-t border-dashed mb-2`}></div>
-              {/* Account Name */}
-              <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2 sm:gap-0 mb-2">
-                <span className={`${isDark ? "text-[#788099]" : "text-[#475569]"} text-sm sm:text-base font-medium`}>
-                  Account Name :
-                </span>
-                <span className={`${isDark ? "text-[#D1D5DB]" : "text-[#1F2937]"} text-sm sm:text-base font-medium break-words text-right sm:text-left`}>
-                  {selectedPaymentDetail.account_name}
-                </span>
-              </div>
-              <div className={`${isDark ? "border-[#39394A]" : "border-[#E2E8F0]"} border-t border-dashed mb-2`}></div>
-              {/* Account Number */}
-              <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2 sm:gap-0">
-                <span className={`${isDark ? "text-[#788099]" : "text-[#475569]"} text-sm sm:text-base font-medium`}>
-                  Account Number :
-                </span>
-                <div className="flex items-center gap-2 w-full sm:w-auto justify-end sm:justify-start">
-                  <span className={`${isDark ? "text-[#D1D5DB]" : "text-[#1F2937]"} text-sm sm:text-base font-medium break-all sm:break-normal`}>
-                    {selectedPaymentDetail.account_number}
-                  </span>
-                  <button
-                    onClick={() => {
-                      navigator.clipboard.writeText(
-                        selectedPaymentDetail.account_number
-                      );
-                      showToast.success("copied!");
-                    }}
-                    className="text-[#F79330] hover:text-white transition-colors p-1 rounded"
-                    title="Copy Account Number"
-                  >
-                    <svg width="18" height="18" fill="none" viewBox="0 0 24 24">
-                      <rect
-                        x="9"
-                        y="9"
-                        width="13"
-                        height="13"
-                        rx="2"
-                        stroke="currentColor"
-                        strokeWidth="2"
-                      />
-                      <rect
-                        x="3"
-                        y="3"
-                        width="13"
-                        height="13"
-                        rx="2"
-                        stroke="currentColor"
-                        strokeWidth="2"
-                      />
-                    </svg>
-                  </button>
-                </div>
-              </div>
+              <ExpressDepositPaymentDetails
+                paymentDetail={selectedPaymentDetail}
+                fallbackProviderName={selectedPaymentDetail?.provider_name}
+                isDark={isDark}
+              />
             </div>
           </div>
 
@@ -5011,7 +5043,7 @@ export default function DepositForm({
                   </svg>
                 </span>
                 <p className="text-xs sm:text-sm text-yellow-800 dark:text-yellow-200 font-medium">
-                  <span className="font-bold">Important:</span> Please send only <span className="font-bold text-yellow-900 dark:text-yellow-100">{selectedAsset?.symbol || selectedAsset?.ticker || "crypto"}</span> on <span className="font-bold text-yellow-900 dark:text-yellow-100">{currentNetwork || selectedAsset?.network || "the selected network"}</span>. Any other Crypto or Network will be <span className="font-bold">lost Permanently</span>.
+                  <span className="font-bold">Important:</span> Ensure your wallet address is for <span className="font-bold text-yellow-900 dark:text-yellow-100">{selectedAsset?.symbol || selectedAsset?.ticker || "the selected asset"}</span> on the <span className="font-bold text-yellow-900 dark:text-yellow-100">{getNetworkDisplayName(currentNetwork || getAssetNetwork(selectedAsset) || "")}</span> network. Providing an incorrect address or network may result in <span className="font-bold">permanent loss of funds</span>.
                 </p>
               </div>
             </div>
@@ -5246,7 +5278,7 @@ export default function DepositForm({
                   <div className="flex items-start gap-2 sm:gap-3">
                     <span className="text-[#1D8751] font-bold text-sm sm:text-base flex-shrink-0">1.</span>
                     <p className={`text-xs sm:text-sm ${isDark ? "text-[#788099]" : "text-[#475569]"}`}>
-                      <span className="font-semibold">Send from your own account only:</span> Please send money from your own account only to <span className="font-semibold text-[#1D8751]">{selectedPaymentDetail?.provider_name || payBank || "the selected provider"}</span> account <span className="font-semibold text-[#1D8751]">{selectedPaymentDetail?.account_number || selectedPaymentDetail?.payment_details?.[0]?.account_number || selectedPaymentDetail?.payment_details?.[0]?.mobile_number || "—"}</span> for Asset <span className="font-semibold text-[#1D8751]">{selectedAsset?.ticker || selectedAsset?.symbol || "crypto"}</span>.
+                      <span className="font-semibold">Send from your own account only:</span> Please send money from your own account only to <span className="font-semibold text-[#1D8751]">{selectedPaymentDetail?.provider_name || payBank || "the selected provider"}</span> account <span className="font-semibold text-[#1D8751]">{resolvePaymentSendToReference(selectedPaymentDetail) || "—"}</span> for Asset <span className="font-semibold text-[#1D8751]">{selectedAsset?.ticker || selectedAsset?.symbol || "crypto"}</span>.
                     </p>
                   </div>
                   <div className="flex items-start gap-2 sm:gap-3">

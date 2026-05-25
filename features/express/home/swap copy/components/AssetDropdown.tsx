@@ -1,6 +1,9 @@
 import React from "react";
 import { SupportedAsset } from "../types";
-import { assetMatchesSearchTerm } from "@/lib/utils/assetSearch";
+import {
+  assetMatchesSearchTerm,
+  sortAssetsForDisplay,
+} from "@/lib/utils/assetSearch";
 import {
   handleSwapAssetIconError,
   resolveSwapAssetIconSrc,
@@ -110,9 +113,10 @@ const AssetDropdown: React.FC<AssetDropdownProps> = ({
             />
           </div>
           <div className="py-2">
-            {assets
-              .filter((asset) => assetMatchesSearchTerm(asset, searchTerm))
-              .map((asset, index) => (
+            {sortAssetsForDisplay(
+              assets.filter((asset) => assetMatchesSearchTerm(asset, searchTerm)),
+              searchTerm
+            ).map((asset, index) => (
                 <div
                   key={asset.asset_id || `asset-${index}`}
                   onClick={() => handleAssetSelect(asset)}

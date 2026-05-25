@@ -36,6 +36,7 @@ import {
   isPendingAcceptanceStatus,
   isDeclinedLikeStatus,
   formatCountdownSeconds,
+  isTransactionCountdownActive,
   wsStatusPayloadMatchesTrade,
 } from "@/features/p2p/utils/tradeWsAcceptanceGate";
 
@@ -228,46 +229,31 @@ function FinalBuy({ orderData }: FinalBuyProps) {
     (!inPendingAcceptanceBuyer ||
       confirmOrder?.can_confirm_payment === true ||
       wsTradeSnapshot.can_confirm_payment === true);
-  /** Payment window timer arms only after trade-confirm WS has sent a status (REST flags alone must not start the clock). */
-  const tradeConfirmStatusFromWs =
-    String(wsTradeSnapshot.rawStatus || "").trim() !== "";
-  /** Matched-phase payment window counts down only after seller acceptance (past pending_acceptance). */
-  const buyerPaymentTimerActive =
-    confirmOrder?.status === "matched" &&
-    tradeConfirmStatusFromWs &&
-    !inPendingAcceptanceBuyer &&
-    buyerMayMarkMoneySent;
+  /** Payment actions (mark paid, etc.) — still gated on acceptance; timer is not. */
+  const buyerPaymentPhaseActive =
+    confirmOrder?.status === "matched" && !inPendingAcceptanceBuyer;
+  const transactionTimerActive = isTransactionCountdownActive(
+    displaySeconds,
+    confirmOrder?.id,
+    confirmOrder?.status
+  );
 
-  // Remove this line - we'll get tradeId from localStorage inside useEffect
-  // Local countdown state for auto-cancel logic
   const [countdown, setCountdown] = useState(displaySeconds);
   const prevStatus = useRef(confirmOrder?.status);
 
-  // When the payment window is active, (re)start from full limit_duration
   useEffect(() => {
-    if (buyerPaymentTimerActive) {
+    if (displaySeconds > 0) {
       setCountdown(displaySeconds);
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [displaySeconds, buyerPaymentTimerActive]);
+  }, [displaySeconds, confirmOrder?.id]);
 
-  // Countdown effect — only while payment timer is active (after acceptance)
   useEffect(() => {
-    if (!buyerPaymentTimerActive) return;
-    if (countdown <= 0) return;
+    if (!transactionTimerActive) return;
     const timer = setInterval(() => {
-      setCountdown((prev) => {
-        if (prev <= 1) {
-          // When countdown reaches 0, auto-cancel the transaction
-          logger.debug('p2p', "Countdown reached 0, auto-cancelling transaction");
-          handleCancelTransaction();
-          return 0;
-        }
-        return prev - 1;
-      });
+      setCountdown((prev) => (prev > 0 ? prev - 1 : 0));
     }, 1000);
     return () => clearInterval(timer);
-  }, [buyerPaymentTimerActive, countdown]);
+  }, [transactionTimerActive]);
 
   useEffect(() => {
     // Use trade_id from localStorage first, then fallback to params
@@ -318,13 +304,6 @@ function FinalBuy({ orderData }: FinalBuyProps) {
   useEffect(() => {
     setIsClient(true);
   }, []);
-
-  // Reset countdown to displaySeconds when payment timer is not active
-  useEffect(() => {
-    if (!buyerPaymentTimerActive) {
-      setCountdown(displaySeconds);
-    }
-  }, [buyerPaymentTimerActive, displaySeconds]);
 
   // Reset modal and previous status when switching to a different trade
   useEffect(() => {
@@ -511,6 +490,20 @@ function FinalBuy({ orderData }: FinalBuyProps) {
     }
   };
 
+  useEffect(() => {
+    if (!transactionTimerActive || countdown !== 0 || !buyerPaymentPhaseActive) {
+      return;
+    }
+    logger.debug("p2p", "Countdown reached 0, auto-cancelling transaction");
+    handleCancelTransaction();
+  }, [
+    transactionTimerActive,
+    countdown,
+    buyerPaymentPhaseActive,
+    confirmOrder?.id,
+    isAuthenticated,
+  ]);
+
   // Add handler for confirming trade
   const handleConfirmTrade = () => {
     if (isAuthenticated && confirmOrder?.id) {
@@ -640,7 +633,7 @@ function FinalBuy({ orderData }: FinalBuyProps) {
                 {isClient ? (
                   <TimeDisplay
                     seconds={
-                      buyerPaymentTimerActive ? countdown : displaySeconds
+                      transactionTimerActive ? countdown : displaySeconds
                     }
                   />
                 ) : (
@@ -848,7 +841,7 @@ function FinalBuy({ orderData }: FinalBuyProps) {
                 <span className="text-[#1D8751]">Transaction time:</span>
                 {isClient ? (
                   <TimeDisplay
-                    seconds={buyerPaymentTimerActive ? countdown : displaySeconds}
+                    seconds={transactionTimerActive ? countdown : displaySeconds}
                   />
                 ) : (
                   <span>--:--</span>
@@ -953,7 +946,7 @@ function FinalBuy({ orderData }: FinalBuyProps) {
                     </div>
                   </div>
                   <div className="flex-1">
-                    {(!buyerPaymentTimerActive || countdown === 0) && (
+                    {(!buyerPaymentPhaseActive || countdown === 0) && (
                       <div className="mt-4 mb-2 text-lg">
                         <span className="text-gray-900 dark:text-white">
                           I have an issue with transaction.{" "}

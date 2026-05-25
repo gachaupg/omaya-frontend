@@ -1237,7 +1237,7 @@ export const Table = forwardRef<TableExportRef, TableProps>(({
               <X size={18} />
             </button>
 
-            {/* Omaya.io Logo at the top */}
+            {/* OMAYA.io Logo at the top */}
             <div className="flex items-center justify-center mb-3 sm:mb-4">
               <img
                 src="/assets/bad9edd9da5201cb8f8f9cea35bf46f4fb541bd6_lplbyc.png"

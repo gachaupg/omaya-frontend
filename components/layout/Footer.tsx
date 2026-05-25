@@ -137,7 +137,7 @@ export default function Footer() {
             <Link href="/">
               <Image
                 src="/images/logo.webp"
-                alt="OMAYA Exchange"
+                alt="OMAYA.io"
                 width={150}
                 height={40}
                 style={{ width: 'auto', height: 'auto' }}

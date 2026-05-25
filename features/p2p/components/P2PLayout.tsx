@@ -57,7 +57,7 @@ const handleTabChange = (tab: string) => {
   };
   // Determine the back text based on active tab (translated)
   const getBackToText = () => {
-    if (activeTab === "market") return t("back.backToMarket", "Back to Market");
+    if (activeTab === "market") return t("back.backToMarket", "Back to P2P Market");
     if (activeTab === "orders") return t("back.backToOrders", "Back to Orders");
     return t("back.back", "Back");
   };

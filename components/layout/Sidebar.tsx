@@ -324,9 +324,10 @@ export default function Sidebar() {
                             className="w-5 h-5 object-contain"
                             src={isActive
 
-                              ? isDark ? "/assets/Group_7_ichuyz.png"
-                                : "/images/x.png"
-                              : "/images/x.png"
+                              ? isDark
+                                ? "/assets/Group_7_ichuyz.png"
+                                : "/images/moneyx-x-light.png"
+                              : "/images/moneyx-x-light.png"
                             }
                             alt=""
                           />

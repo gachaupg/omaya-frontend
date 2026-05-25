@@ -2,6 +2,7 @@
 import React from "react";
 import Link from "next/link";
 import RatesCalculator from "./RatesCalculator";
+import { MoneyXLabel } from "@/components/ui/MoneyXLabel";
 import RatesTransactionHistory from "./RatesTransactionHistory";
 import { useRatesI18n } from "@/lib/useRatesI18n";
 
@@ -22,10 +23,10 @@ const Rates = () => {
     if (typeof window === "undefined") return;
     try {
       const savedTab = window.localStorage.getItem(RATES_ACTIVE_TAB_KEY);
-      const savedMoneyXState = window.localStorage.getItem(RATES_MONEYX_FORM_STATE_KEY);
-      if (savedTab === "moneyx" || savedMoneyXState) {
+      // Default to Crypto; only restore MoneyX when the user last chose that tab.
+      if (savedTab === "moneyx") {
         setActiveTab("moneyx");
-      } else if (savedTab === "crypto") {
+      } else {
         setActiveTab("crypto");
       }
     } catch {
@@ -121,13 +122,12 @@ const Rates = () => {
               : 'bg-transparent text-gray-600 dark:text-[#788099]'
             }`}
         >
-          <span>{t("rates.money", "Money")}</span>
-          <img
-            src="/assets/Group_7_ichuyz.png"
-            alt="X"
-            className={`h-5 -mb-1 w-auto transition-opacity ${
-              activeTab === "moneyx" ? "opacity-100" : "opacity-60"
-            }`}
+          <MoneyXLabel
+            moneyText={t("rates.money", "Money")}
+            moneyClassName="text-inherit"
+            xClassName="h-5 -mb-1 w-auto"
+            active={activeTab === "moneyx"}
+            onColoredBackground={activeTab === "moneyx"}
           />
         </button>
       </div>

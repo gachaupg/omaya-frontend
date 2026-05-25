@@ -20,6 +20,7 @@ import SuccessPage from "./success";
 import FailureStatusModal from "@/features/express/components/FailureStatusModal";
 import { resolveExpressTransactionFailureMessage } from "@/lib/utils/websocketUtils";
 import { useScrollAppToTopWhen } from "@/hooks/useScrollAppToTopWhen";
+import { encodeQrScanData } from "@/lib/utils/ussdDial";
 import { P2P_STATUS_SCROLL_FRACTION } from "@/lib/utils/scrollAppToTop";
 
 interface ExchangingProps {
@@ -1276,7 +1277,7 @@ export default function Exchanging({ transactionData }: ExchangingProps) {
               );
             }
 
-            const encodedData = encodeURIComponent(qrData);
+            const encodedData = encodeQrScanData(qrData);
             return (
               <div className="w-36 h-36 bg-white rounded-lg flex items-center justify-center">
                 <img

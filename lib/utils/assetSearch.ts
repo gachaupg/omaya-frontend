@@ -107,3 +107,164 @@ export function assetMatchesSearchTerm(asset: any, searchTerm: string): boolean 
 
   return tokens.every((token) => tokenMatchesHaystack(token, haystack));
 }
+
+/** Primary ticker for sorting (uppercase). */
+export function getAssetTickerNormalized(asset: any): string {
+  return String(asset?.ticker || asset?.symbol || asset?.name || "")
+    .trim()
+    .toUpperCase();
+}
+
+function normalizeNetworkKey(network: string): string {
+  return network.trim().toLowerCase();
+}
+
+function networkMatchesSearchToken(
+  network: string,
+  networkDisplay: string,
+  token: string
+): boolean {
+  const t = token.toUpperCase();
+  const n = network.toUpperCase();
+  const nd = networkDisplay.toUpperCase();
+  if (!t) return true;
+  if (n.includes(t) || nd.includes(t)) return true;
+
+  const aliases = SEARCH_ALIASES[t];
+  if (aliases?.some((alias) => n.includes(alias) || nd.includes(alias))) {
+    return true;
+  }
+
+  for (const [key, vals] of Object.entries(SEARCH_ALIASES)) {
+    if (key === t && vals.some((v) => n.includes(v) || nd.includes(v))) return true;
+    if (vals.includes(t) && (n.includes(key) || nd.includes(key))) return true;
+  }
+
+  return false;
+}
+
+/**
+ * Lower rank = higher in dropdown when searching.
+ * 0 exact ticker (+ network tokens if any), 1 ticker prefix, 2 same-network matches,
+ * 3 exact ticker on other networks, 4 other haystack matches.
+ */
+export function getAssetSearchPriority(asset: any, searchTerm: string): number {
+  const raw = searchTerm.trim();
+  if (!raw) return 100;
+
+  const tokens = raw.split(/\s+/).map((t) => t.toUpperCase()).filter(Boolean);
+  if (!tokens.length) return 100;
+
+  const primaryToken = tokens[0];
+  const networkTokens = tokens.slice(1);
+  const ticker = getAssetTickerNormalized(asset);
+  const legacy = resolveLegacyTicker(asset).toUpperCase();
+  const network = resolveAssetNetwork(asset);
+  const networkDisplay = getNetworkDisplayName(network);
+
+  const tickerExact = ticker === primaryToken || legacy === primaryToken;
+  const tickerPrefix =
+    !tickerExact &&
+    primaryToken.length >= 2 &&
+    (ticker.startsWith(primaryToken) || legacy.startsWith(primaryToken));
+
+  const allNetworkTokensMatch =
+    networkTokens.length === 0 ||
+    networkTokens.every((t) =>
+      networkMatchesSearchToken(network, networkDisplay, t)
+    );
+
+  if (tickerExact && allNetworkTokensMatch) return 0;
+  if (tickerPrefix && allNetworkTokensMatch) return 1;
+
+  if (
+    !tickerExact &&
+    !tickerPrefix &&
+    networkTokens.length === 0 &&
+    networkMatchesSearchToken(network, networkDisplay, primaryToken)
+  ) {
+    return 2;
+  }
+
+  if (tickerExact && !allNetworkTokensMatch) return 3;
+
+  return 4;
+}
+
+/** Default Express ordering when the dropdown search is empty. */
+export function compareAssetsDefaultPopular(a: any, b: any): number {
+  const tickerA = (a?.ticker || a?.symbol || a?.name || "")
+    .toString()
+    .toLowerCase();
+  const tickerB = (b?.ticker || b?.symbol || b?.name || "")
+    .toString()
+    .toLowerCase();
+  const networkA = normalizeNetworkKey(
+    resolveAssetNetwork(a) || String(a?.network || "")
+  );
+  const networkB = normalizeNetworkKey(
+    resolveAssetNetwork(b) || String(b?.network || "")
+  );
+
+  if (
+    tickerA === "usdt" &&
+    networkA === "bsc" &&
+    !(tickerB === "usdt" && networkB === "bsc")
+  ) {
+    return -1;
+  }
+  if (
+    tickerB === "usdt" &&
+    networkB === "bsc" &&
+    !(tickerA === "usdt" && networkA === "bsc")
+  ) {
+    return 1;
+  }
+
+  if (
+    tickerA === "usdc" &&
+    networkA === "bsc" &&
+    !(tickerB === "usdc" && networkB === "bsc")
+  ) {
+    return -1;
+  }
+  if (
+    tickerB === "usdc" &&
+    networkB === "bsc" &&
+    !(tickerA === "usdc" && networkA === "bsc")
+  ) {
+    return 1;
+  }
+
+  const isFxpA = tickerA === "fxp" || tickerA === "fxprimus";
+  const isFxpB = tickerB === "fxp" || tickerB === "fxprimus";
+  if (isFxpA && !isFxpB) return -1;
+  if (isFxpB && !isFxpA) return 1;
+
+  return 0;
+}
+
+/** Sort comparator: search-aware when term is set, popular default otherwise. */
+export function compareAssetsForDisplay(a: any, b: any, searchTerm: string): number {
+  const term = searchTerm.trim();
+  if (term) {
+    const pa = getAssetSearchPriority(a, term);
+    const pb = getAssetSearchPriority(b, term);
+    if (pa !== pb) return pa - pb;
+
+    const tickerCmp = getAssetTickerNormalized(a).localeCompare(
+      getAssetTickerNormalized(b)
+    );
+    if (tickerCmp !== 0) return tickerCmp;
+
+    return normalizeNetworkKey(resolveAssetNetwork(a)).localeCompare(
+      normalizeNetworkKey(resolveAssetNetwork(b))
+    );
+  }
+
+  return compareAssetsDefaultPopular(a, b);
+}
+
+export function sortAssetsForDisplay<T>(assets: T[], searchTerm: string): T[] {
+  return [...assets].sort((a, b) => compareAssetsForDisplay(a, b, searchTerm));
+}

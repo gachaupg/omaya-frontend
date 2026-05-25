@@ -24,6 +24,108 @@ const getPaymentLogo = (provider?: string | null) => {
   return PAYMENT_LOGOS[normalized] || DUMMY_PAYMENT_LOGO;
 };
 
+const PAYMENT_PREVIEW_COUNT = 2;
+
+type PaymentDetailChip = {
+  id?: number;
+  provider?: string;
+  provider_logo?: string | null;
+};
+
+function PaymentMethodChip({
+  method,
+  compact = false,
+}: {
+  method: PaymentDetailChip;
+  compact?: boolean;
+}) {
+  const imageUrl =
+    (typeof method.provider_logo === "string" && method.provider_logo.trim()) ||
+    getPaymentLogo(method.provider);
+  const label = method.provider?.trim() || "Payment";
+
+  return (
+    <span
+      className={`inline-flex items-center gap-1.5 font-medium text-gray-900 dark:text-white ${
+        compact ? "text-xs" : "text-sm"
+      }`}
+    >
+      <img
+        src={imageUrl}
+        alt={label}
+        className={`rounded-full object-cover shrink-0 ${
+          compact ? "w-4 h-4" : "w-5 h-5"
+        }`}
+        loading="lazy"
+        onError={(e) => {
+          if (e.currentTarget.src !== DUMMY_PAYMENT_LOGO) {
+            e.currentTarget.src = DUMMY_PAYMENT_LOGO;
+          }
+        }}
+      />
+      <span className="truncate max-w-[140px] sm:max-w-[180px]">{label}</span>
+    </span>
+  );
+}
+
+function PaymentMethodsCell({
+  paymentDetails,
+  rowIndex,
+  expandedRowIndex,
+  onToggleExpand,
+  compact = false,
+}: {
+  paymentDetails?: PaymentDetailChip[];
+  rowIndex: number;
+  expandedRowIndex: number | null;
+  onToggleExpand: (rowIndex: number, event: React.MouseEvent) => void;
+  compact?: boolean;
+}) {
+  const list = (paymentDetails ?? []).filter(
+    (m) => m && typeof m === "object"
+  );
+  if (!list.length) {
+    return (
+      <span className="text-xs text-gray-400 dark:text-[#8C8CA1]">—</span>
+    );
+  }
+
+  const expanded = expandedRowIndex === rowIndex;
+  const hiddenCount = Math.max(0, list.length - PAYMENT_PREVIEW_COUNT);
+  const displayList = expanded ? list : list.slice(0, PAYMENT_PREVIEW_COUNT);
+
+  return (
+    <div data-payment-expand>
+      <div className="flex flex-wrap gap-2 items-center">
+        {displayList.map((method, i) => (
+          <PaymentMethodChip
+            key={method.id ?? `${method.provider}-${i}`}
+            method={method}
+            compact={compact}
+          />
+        ))}
+        {hiddenCount > 0 && (
+          <button
+            type="button"
+            onClick={(e) => onToggleExpand(rowIndex, e)}
+            className={`inline-flex items-center gap-1 font-semibold text-[#1D8751] hover:opacity-80 transition-opacity shrink-0 ${
+              compact ? "text-xs" : "text-[11px]"
+            } ${expanded ? "underline" : "bg-gray-100 dark:bg-accent px-2 py-0.5 rounded-full text-muted-foreground"}`}
+            aria-expanded={expanded}
+            aria-label={
+              expanded
+                ? "Hide extra payment methods"
+                : `Show ${hiddenCount} more payment methods`
+            }
+          >
+            {expanded ? "Show less" : `+${hiddenCount}`}
+          </button>
+        )}
+      </div>
+    </div>
+  );
+}
+
 const MarketTable: React.FC<MarketTableProps> = ({
   data = [],
   currentPage = 1,
@@ -33,6 +135,8 @@ const MarketTable: React.FC<MarketTableProps> = ({
   activeTab = "buy",
 }) => {
   const [selectedRowIndex, setSelectedRowIndex] = useState<number | null>(null);
+  const [expandedPaymentsRowIndex, setExpandedPaymentsRowIndex] =
+    useState<number | null>(null);
   const [sortConfig, setSortConfig] = useState<{
     key: string;
     direction: "asc" | "desc";
@@ -116,7 +220,30 @@ const MarketTable: React.FC<MarketTableProps> = ({
   const dataIds = data.map((r) => r?.id).join(",");
   useEffect(() => {
     setSelectedRowIndex(null);
+    setExpandedPaymentsRowIndex(null);
   }, [dataIds]);
+
+  const handleTogglePaymentExpand = (
+    rowIndex: number,
+    event: React.MouseEvent
+  ) => {
+    event.stopPropagation();
+    setExpandedPaymentsRowIndex((current) =>
+      current === rowIndex ? null : rowIndex
+    );
+  };
+
+  useEffect(() => {
+    if (expandedPaymentsRowIndex === null) return;
+    const handleOutside = (event: MouseEvent) => {
+      const target = event.target as HTMLElement;
+      if (!target.closest("[data-payment-expand]")) {
+        setExpandedPaymentsRowIndex(null);
+      }
+    };
+    document.addEventListener("mousedown", handleOutside);
+    return () => document.removeEventListener("mousedown", handleOutside);
+  }, [expandedPaymentsRowIndex]);
 
   // Build pagination pages with ellipsis when there are many pages
   // Ensures current page is always visible and stays active when selected
@@ -256,50 +383,13 @@ const MarketTable: React.FC<MarketTableProps> = ({
                     </span>
                   </div>
                   {/* Payment */}
-                  <div className="flex flex-wrap gap-2 min-w-[200px] items-center">
-                    {/* Show all when expanded, otherwise show 2 */}
-                    {row.payment_details?.slice(0, selectedRowIndex === idx ? undefined : 2).map((method, i) => {
-                      // Safely check if method exists before accessing properties
-                      if (!method || typeof method !== 'object') {
-                        return null;
-                      }
-
-                      const imageUrl =
-                        (typeof method.provider_logo === "string" &&
-                          method.provider_logo.trim()) ||
-                        getPaymentLogo(method.provider);
-
-                      return (
-                        <span
-                          key={i}
-                          className="flex items-center gap-1.5 text-sm font-medium text-gray-900 dark:text-white w-1/2"
-                        >
-                          <img
-                            src={imageUrl}
-                            alt={method.provider || ''}
-                            className="w-5 h-5 rounded-full object-cover shrink-0"
-                            style={{
-                              width: '20px',
-                              height: '20px',
-                              display: 'block'
-                            }}
-                            loading="lazy"
-                            onError={(e) => {
-                              if (e.currentTarget.src !== DUMMY_PAYMENT_LOGO) {
-                                e.currentTarget.src = DUMMY_PAYMENT_LOGO;
-                              }
-                            }}
-                          />
-                          {method.provider || ''}
-                        </span>
-                      );
-                    })}
-                    {/* Show +X only when row is NOT expanded */}
-                    {selectedRowIndex !== idx && row.payment_details && row.payment_details.length > 2 && (
-                      <span className="text-[11px] font-semibold text-muted-foreground bg-gray-100 dark:bg-accent px-2 py-0.5 rounded-full">
-                        +{row.payment_details.length - 2}
-                      </span>
-                    )}
+                  <div className="min-w-[200px]">
+                    <PaymentMethodsCell
+                      paymentDetails={row.payment_details}
+                      rowIndex={idx}
+                      expandedRowIndex={expandedPaymentsRowIndex}
+                      onToggleExpand={handleTogglePaymentExpand}
+                    />
                   </div>
 
                   {/* Trade */}
@@ -391,51 +481,13 @@ const MarketTable: React.FC<MarketTableProps> = ({
                   {/* Payment Methods */}
                   <div className="flex flex-col gap-2 pt-2 border-t border-gray-200 dark:border-accent">
                     <span className="text-xs text-gray-500 dark:text-[#8C8CA1]">Payment Methods</span>
-                    <div className="flex flex-wrap gap-2">
-                      {/* Show all when expanded, otherwise show 2 */}
-                      {row.payment_details?.slice(0, selectedRowIndex === idx ? undefined : 2).map((method, i) => {
-                        // Safely check if method exists before accessing properties
-                        if (!method || typeof method !== 'object') {
-                          return null;
-                        }
-
-                        const imageUrl =
-                          (typeof method.provider_logo === "string" &&
-                            method.provider_logo.trim()) ||
-                          getPaymentLogo(method.provider);
-
-                        return (
-                          <span
-                            key={i}
-                            className="flex items-center gap-1.5 text-xs font-medium text-gray-900 dark:text-white"
-                          >
-                            <img
-                              src={imageUrl}
-                              alt={method.provider || ''}
-                              className="w-4 h-4 rounded-full object-cover shrink-0"
-                              style={{
-                                width: '16px',
-                                height: '16px',
-                                display: 'block'
-                              }}
-                              loading="lazy"
-                              onError={(e) => {
-                                if (e.currentTarget.src !== DUMMY_PAYMENT_LOGO) {
-                                  e.currentTarget.src = DUMMY_PAYMENT_LOGO;
-                                }
-                              }}
-                            />
-                            {method.provider || ''}
-                          </span>
-                        );
-                      })}
-                      {/* Show +X only when row is NOT expanded */}
-                      {selectedRowIndex !== idx && row.payment_details && row.payment_details.length > 2 && (
-                        <span className="text-xs text-gray-500 dark:text-[#8C8CA1]">
-                          +{row.payment_details.length - 2} more
-                        </span>
-                      )}
-                    </div>
+                    <PaymentMethodsCell
+                      paymentDetails={row.payment_details}
+                      rowIndex={idx}
+                      expandedRowIndex={expandedPaymentsRowIndex}
+                      onToggleExpand={handleTogglePaymentExpand}
+                      compact
+                    />
                   </div>
 
                   {/* Trade Button */}

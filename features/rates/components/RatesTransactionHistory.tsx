@@ -12,10 +12,10 @@ import { AllSystemTransactionsWebSocket } from "@/features/markets/services/allS
 import { cookieUtils } from "@/lib/utils/cookieUtils";
 import { Transaction } from "../types";
 import {
-  formatTransactionType,
   formatAmount,
   formatTimeAgo,
-  getStatusColor,
+  getTransactionFromTo,
+  normalizeSystemTransaction,
 } from "../utils/transactionUtils";
 
 // Pagination constant
@@ -43,10 +43,11 @@ function Avatar({
   name: string;
   className?: string;
 }) {
-  const [useInitials, setUseInitials] = React.useState(!src || !src.startsWith("http"));
+  const isValidSrc = !!src && (src.startsWith("http") || src.startsWith("/"));
+  const [useInitials, setUseInitials] = React.useState(!isValidSrc);
   const initials = getInitials(name);
 
-  if (useInitials || !src || !src.startsWith("http")) {
+  if (useInitials || !isValidSrc) {
     return (
       <div
         className={`${className} flex items-center justify-center bg-[#2D2D37] text-gray-300 dark:text-gray-400 text-xs font-semibold overflow-hidden`}
@@ -66,116 +67,8 @@ function Avatar({
   );
 }
 
-// Map WebSocket message data to Transaction format
-const mapWsDataToTransaction = (data: any): Transaction => {
-  const id = data.id || data.transaction_id || `tx-${Date.now()}-${Math.random()}`;
-  const amount = data.amount || data.total_amount || data.total_amount_due || "0";
-  const timestamp = data.timestamp || data.created_at || new Date().toISOString();
-  
-  // Get the payment provider name from various possible fields
-  const providerName = data.payment_provider || data.from_provider || data.from_bank || data.bank_name || data.provider_name || "";
-  
-  // Get the provider logo from various possible fields
-  const providerLogo = data.payment_provider_logo || data.provider_logo || data.bank_logo || data.from_logo || null;
-  
-  return {
-    transaction_type: data.transaction_type || data.type || "transaction",
-    transaction_id: id,
-    user: {
-      id: data.user_id || 0,
-      name: data.user_name || data.from || data.from_bank || providerName || "User",
-      email: "",
-      photo: providerLogo,
-    },
-    amount,
-    currency: data.currency || "USD",
-    asset_image: data.asset_image || data.currency_logo || data.to_logo || null,
-    total_amount_due: amount,
-    payment_provider: providerName,
-    status: data.status || "completed",
-    stages: "",
-    timestamp,
-    // Store additional fields for logo usage
-    photo: providerLogo,
-  };
-};
-
-// Logo type: use actual URL or null (null => show initials, no dummy image)
-// Helper function to determine From and To based on transaction type
-const getFromTo = (tx: Transaction): { from: { name: string; logo: string | null }; to: { name: string; logo: string | null } } => {
-  const transactionType = tx.transaction_type?.toLowerCase() || "";
-  
-  // Helper to check if a name is likely a crypto asset (USDT, BTC, ETH, etc.)
-  const isCryptoAsset = (name: string) => {
-    const cryptoAssets = ['usdt', 'btc', 'eth', 'usd', 'usdc', 'bnb', 'trx', 'aurora_eth'];
-    return cryptoAssets.some(crypto => name.toLowerCase().includes(crypto));
-  };
-  
-  // Get the actual provider name - try multiple sources
-  const getProviderName = (): string => {
-    if (tx.payment_provider && tx.payment_provider.trim()) return tx.payment_provider;
-    if (tx.user?.name && tx.user.name !== "User" && tx.user.name.trim()) return tx.user.name;
-    return tx.currency || "Unknown";
-  };
-  
-  // Get the provider logo - actual URL or null (no dummy)
-  const getProviderLogo = (): string | null => {
-    if (tx.photo && tx.photo.startsWith('http')) return tx.photo;
-    if (tx.user?.photo && tx.user.photo.startsWith('http')) return tx.user.photo;
-    return null;
-  };
-  
-  const assetLogo = tx.asset_image && tx.asset_image.startsWith("http") ? tx.asset_image : null;
-  
-  // For deposits: From = payment provider (bank), To = crypto asset
-  if (transactionType === "deposit" || transactionType === "moneyx") {
-    const providerName = getProviderName();
-    const assetName = tx.currency || "USD";
-    
-    return {
-      from: { name: providerName, logo: getProviderLogo() },
-      to: { name: assetName, logo: assetLogo },
-    };
-  }
-  
-  // For withdrawals: From = crypto asset, To = payment provider (bank)
-  if (transactionType === "withdrawal") {
-    const assetName = tx.currency || "USD";
-    const providerName = getProviderName();
-    
-    return {
-      from: { name: assetName, logo: assetLogo },
-      to: { name: providerName, logo: getProviderLogo() },
-    };
-  }
-  
-  // For P2P: From = seller/buyer (counterparty), To = crypto asset
-  if (transactionType.includes("p2p")) {
-    const providerName = getProviderName();
-    const assetName = tx.currency || "USD";
-    
-    return {
-      from: { name: providerName, logo: getProviderLogo() },
-      to: { name: assetName, logo: assetLogo },
-    };
-  }
-  
-  // Default: Determine based on names
-  const firstName = getProviderName();
-  const secondName = tx.currency || "Destination";
-  
-  if (isCryptoAsset(firstName)) {
-    return {
-      from: { name: firstName, logo: assetLogo },
-      to: { name: secondName, logo: getProviderLogo() },
-    };
-  }
-  
-  return {
-    from: { name: firstName, logo: getProviderLogo() },
-    to: { name: secondName, logo: assetLogo },
-  };
-};
+const mapWsDataToTransaction = (data: Record<string, unknown>): Transaction =>
+  normalizeSystemTransaction(data);
 
 const RatesTransactionHistory = () => {
   const dispatch = useDispatch<AppDispatch>();
@@ -215,12 +108,16 @@ const RatesTransactionHistory = () => {
     const unsubMessage = wsRef.current.onMessage((message) => {
       try {
         if (message.type === "initial" && Array.isArray(message.data?.transactions)) {
-          const mapped = (message.data.transactions as any[]).map(mapWsDataToTransaction);
+          const mapped = (message.data.transactions as Record<string, unknown>[]).map(
+            mapWsDataToTransaction
+          );
           dispatch(setTransactionsFromWebSocket(mapped.slice(0, ITEMS_PER_PAGE)));
           return;
         }
         if (message.type === "transaction" || message.type === "new_transaction") {
-          const tx = mapWsDataToTransaction(message.data || message);
+          const tx = mapWsDataToTransaction(
+            (message.data || message) as Record<string, unknown>
+          );
           dispatch(prependTransaction(tx));
         }
       } catch (err) {
@@ -282,7 +179,7 @@ const RatesTransactionHistory = () => {
       {/* Mobile: Card-based layout */}
       <div className="block sm:hidden space-y-4">
         {paginatedTransactions.map((tx: Transaction, index: number) => {
-          const { from, to } = getFromTo(tx);
+          const { from, to } = getTransactionFromTo(tx);
           const amountColor = index % 2 === 0 ? "text-[#13B562]" : "text-red-500";
           
           return (
@@ -334,7 +231,7 @@ const RatesTransactionHistory = () => {
         </thead>
         <tbody>
           {paginatedTransactions.map((tx: Transaction, index: number) => {
-            const { from, to } = getFromTo(tx);
+            const { from, to } = getTransactionFromTo(tx);
             // Alternate colors for amount (green/red)
             const amountColor = index % 2 === 0 ? "text-[#13B562]" : "text-red-500";
             
