@@ -9,7 +9,18 @@ import {
   fetchUserPaymentDetails,
   deleteUserPaymentDetail,
 } from "@/features/p2p/slices/paymentMethodsSlice";
-import { ChevronLeft, ChevronRight, ChevronDown, ChevronUp, CreditCard, Wallet } from "lucide-react";
+import {
+  AlertCircle,
+  ChevronLeft,
+  ChevronRight,
+  ChevronDown,
+  ChevronUp,
+  CreditCard,
+  Inbox,
+  Plus,
+  SearchX,
+  Wallet,
+} from "lucide-react";
 import {
   fetchP2PDepositAddresses,
   createP2PDepositAddress,
@@ -140,6 +151,55 @@ const AddressQrImage: React.FC<{ value: string }> = ({ value }) => {
   );
 };
 
+function SettingsEmptyState({
+  icon: Icon,
+  title,
+  description,
+  actionLabel,
+  onAction,
+  tone = "neutral",
+}: {
+  icon: React.ComponentType<{ className?: string }>;
+  title: string;
+  description: string;
+  actionLabel?: string;
+  onAction?: () => void;
+  tone?: "neutral" | "success" | "warning" | "danger";
+}) {
+  const toneRing =
+    tone === "danger"
+      ? "bg-red-500/10 text-red-600 dark:text-red-400"
+      : tone === "warning"
+        ? "bg-amber-500/10 text-amber-600 dark:text-amber-400"
+        : tone === "success"
+          ? "bg-[#1D8751]/10 text-[#1D8751]"
+          : "bg-gray-100 dark:bg-[#23232B] text-gray-500 dark:text-[#8B90A5]";
+
+  return (
+    <div className="rounded-2xl border border-dashed border-[#E3E6F0] dark:border-[#2A2A35] bg-gray-50/80 dark:bg-[#14141B]/80 px-6 py-10 text-center">
+      <div
+        className={`mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-2xl ${toneRing}`}
+      >
+        <Icon className="h-7 w-7" aria-hidden />
+      </div>
+      <h3 className="text-base font-semibold text-gray-900 dark:text-white">{title}</h3>
+      <p className="mt-2 text-sm text-gray-500 dark:text-[#8B90A5] max-w-md mx-auto leading-relaxed">
+        {description}
+      </p>
+      {actionLabel && onAction ? (
+        <button
+          type="button"
+          onClick={onAction}
+          className="mt-5 inline-flex items-center justify-center gap-2 rounded-full bg-[#1D8751] px-5 py-2.5 text-sm font-semibold text-white hover:bg-[#166b3e] transition-colors"
+        >
+          <Plus className="h-4 w-4" aria-hidden />
+          {actionLabel}
+        </button>
+      ) : null}
+    </div>
+  );
+}
+
 const WalletAddressCard = ({
   addr,
   onDelete,
@@ -257,6 +317,42 @@ const PaymentMethods = () => {
   const [deleteTarget, setDeleteTarget] = useState<{ type: 'payment' | 'wallet', id: string } | null>(null);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [walletSearchQuery, setWalletSearchQuery] = useState("");
+
+  const filteredUserWalletAddresses = useMemo(() => {
+    if (!walletSearchQuery.trim()) return userWalletAddresses;
+    const q = walletSearchQuery.toLowerCase();
+    return userWalletAddresses.filter((addr: UserWalletAddress) => {
+      const label = addr.account_name || addr.label || "";
+      return (
+        addr.address.toLowerCase().includes(q) || label.toLowerCase().includes(q)
+      );
+    });
+  }, [userWalletAddresses, walletSearchQuery]);
+
+  const paymentMethodsEmptyCopy = useMemo(() => {
+    if (bankTab === "pending") {
+      return {
+        title: "No pending payment methods",
+        description:
+          "Accounts you add appear here while our team reviews them. This usually takes a short time.",
+        tone: "warning" as const,
+      };
+    }
+    if (bankTab === "rejected") {
+      return {
+        title: "No rejected payment methods",
+        description:
+          "Rejected accounts show up here with the reason why. You can remove them or submit a new payment method.",
+        tone: "neutral" as const,
+      };
+    }
+    return {
+      title: "No payment methods yet",
+      description:
+        "Link a bank account, mobile money, forex, or crypto wallet so you can deposit and withdraw on OMAYA.",
+      tone: "neutral" as const,
+    };
+  }, [bankTab]);
 
   const isForexDetail = (p: UserPaymentDetail) => {
     const method = String(p?.payment_method_name || "").toLowerCase();
@@ -592,28 +688,32 @@ const PaymentMethods = () => {
                         className="w-full rounded-full border border-[#E3E6F0] dark:border-[#2A2A35] bg-white dark:bg-[var(--card-color)] px-4 py-2 text-xs sm:text-sm text-gray-900 dark:text-white placeholder:text-gray-400 dark:placeholder:text-[#5C6175] focus:outline-none"
                       />
                     </div>
-                    {userWalletAddresses.length > 0 &&
-                      userWalletAddresses
-                        .filter((addr: UserWalletAddress) => {
-                          if (!walletSearchQuery.trim()) return true;
-                          const q = walletSearchQuery.toLowerCase();
-                          const label =
-                            addr.account_name ||
-                            addr.label ||
-                            "";
-                          return (
-                            addr.address.toLowerCase().includes(q) ||
-                            label.toLowerCase().includes(q)
-                          );
-                        })
-                        .map((addr: UserWalletAddress) => (
+                    {userWalletAddresses.length === 0 ? (
+                      <SettingsEmptyState
+                        icon={Wallet}
+                        title="No addresses yet"
+                        description="Save external wallet addresses you use often. They will appear here for quick access when you trade or withdraw."
+                        actionLabel="Add New Address"
+                        onAction={() => setShowAddWalletModal(true)}
+                        tone="neutral"
+                      />
+                    ) : filteredUserWalletAddresses.length === 0 ? (
+                      <SettingsEmptyState
+                        icon={SearchX}
+                        title="No matching addresses"
+                        description={`Nothing matches "${walletSearchQuery.trim()}". Try another label or address.`}
+                        tone="neutral"
+                      />
+                    ) : (
+                      filteredUserWalletAddresses.map((addr: UserWalletAddress) => (
                         <WalletAddressCard
                           key={addr.user_wallet_address_id}
                           addr={addr}
                           onDelete={() => handleDeleteUserWallet(addr.user_wallet_address_id)}
                           isDeleting={userWalletDeleteLoading === addr.user_wallet_address_id}
                         />
-                      ))}
+                      ))
+                    )}
                   </div>
                 </div>
               )}
@@ -628,14 +728,35 @@ const PaymentMethods = () => {
                 <button className={`px-3 py-1.5 rounded-full border border-[#1D8751] text-[#1D8751] text-xs sm:text-sm font-semibold focus:outline-none ${bankTab === "pending" ? "bg-[#1D8751] text-white" : "bg-transparent"}`} onClick={() => setBankTab("pending")}>
                   Pending
                 </button>
-                <button className={`px-3 py-1.5 rounded-full border border-[#1D8751] text-[#1D8751] text-xs sm:text-sm font-semibold focus:outline-none ${bankTab === "rejected" ? "bg-[#1D8751] text-white" : "bg-transparent"}`} onClick={() => setBankTab("rejected")}>
+                <button
+                  className={`px-3 py-1.5 rounded-full border text-xs sm:text-sm font-semibold focus:outline-none transition-colors ${
+                    bankTab === "rejected"
+                      ? "bg-red-600 text-white border-red-600"
+                      : "border-red-300 dark:border-red-800/60 text-red-600 dark:text-red-400 bg-transparent hover:bg-red-50 dark:hover:bg-red-950/30"
+                  }`}
+                  onClick={() => setBankTab("rejected")}
+                >
                   Rejected
+                  {bankRejected.length > 0 ? (
+                    <span className="ml-1.5 opacity-90">({bankRejected.length})</span>
+                  ) : null}
                 </button>
               </div>
               {bankByTab.length === 0 && (
-                <div className="rounded-2xl border border-dashed border-[#E3E6F0] dark:border-[#2A2A35] py-10 text-center text-sm text-gray-500 dark:text-[#7B819C]">
-                  No payment methods yet. Add one via Linked Accounts.
-                </div>
+                <SettingsEmptyState
+                  icon={bankTab === "rejected" ? AlertCircle : Inbox}
+                  title={paymentMethodsEmptyCopy.title}
+                  description={paymentMethodsEmptyCopy.description}
+                  tone={paymentMethodsEmptyCopy.tone}
+                  actionLabel={
+                    bankTab === "approved" ? "New Payment Method" : undefined
+                  }
+                  onAction={
+                    bankTab === "approved"
+                      ? () => setShowPaymentModal(true)
+                      : undefined
+                  }
+                />
               )}
               {paginatedBankPayments.map((payment: UserPaymentDetail) => {
                 const statusCategory = getStatusCategory(payment);
@@ -666,11 +787,17 @@ const PaymentMethods = () => {
                 return (
                   <div
                     key={payment.id}
-                    className="flex flex-col gap-3 rounded-[28px] border border-[#E3E6F0] dark:border-[#2A2A35] bg-gray-50 dark:bg-[var(--card-color)] px-4 py-4"
+                    className={`flex flex-col gap-3 rounded-[28px] border px-4 py-4 ${
+                      isRejected
+                        ? "border-red-200 dark:border-red-900/50 bg-red-50/60 dark:bg-red-950/20 border-l-4 border-l-red-500"
+                        : isPending
+                          ? "border-amber-200 dark:border-amber-900/40 bg-amber-50/40 dark:bg-amber-950/15 border-[#E3E6F0] dark:border-[#2A2A35]"
+                          : "border-[#E3E6F0] dark:border-[#2A2A35] bg-gray-50 dark:bg-[var(--card-color)]"
+                    }`}
                   >
                     <div className="flex items-start gap-4">
                       <div className="relative">
-                        <span className=" overflow-hidden flex-shrink-0 bg-white dark:bg-[#1F2432]">
+                        <span className="overflow-hidden flex-shrink-0 bg-white dark:bg-[#1F2432] rounded-full">
                           <img
                             src={
                               isCryptoWallet(payment)
@@ -724,9 +851,28 @@ const PaymentMethods = () => {
                             </p>
                           ) : null}
                           {isRejected && (
-                            <p className="mt-2 text-xs text-red-600 dark:text-red-400 max-w-[520px]">
-                              {rejectionMessage}
-                            </p>
+                            <div className="mt-3 space-y-2 max-w-[520px]">
+                              <div className="rounded-xl border border-red-200/80 dark:border-red-800/50 bg-white/70 dark:bg-[#1a1214]/80 px-3 py-2.5">
+                                <div className="flex items-start gap-2">
+                                  <AlertCircle className="h-4 w-4 shrink-0 text-red-600 dark:text-red-400 mt-0.5" aria-hidden />
+                                  <div className="min-w-0 text-left">
+                                    <p className="text-[11px] font-semibold uppercase tracking-wide text-red-700 dark:text-red-300">
+                                      Reason for rejection
+                                    </p>
+                                    <p className="mt-1 text-xs text-red-800 dark:text-red-200/90 leading-relaxed break-words">
+                                      {rejectionMessage}
+                                    </p>
+                                  </div>
+                                </div>
+                              </div>
+                              <button
+                                type="button"
+                                onClick={() => setShowPaymentModal(true)}
+                                className="text-xs font-semibold text-[#1D8751] hover:text-[#166b3e] hover:underline"
+                              >
+                                Submit a new payment method →
+                              </button>
+                            </div>
                           )}
                         </div>
                         <button

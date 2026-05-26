@@ -88,6 +88,8 @@ interface PaymentMethodsModalProps {
   onAdd?: () => void;
   /** When set (e.g. from trade preview "Add new X payment method"), only show payment methods/providers matching this name */
   filterByProviderName?: string;
+  /** Prefill account / mobile / wallet field when opened from MoneyX whitelist flow */
+  initialAccountNumber?: string;
   /** When provided, called on success instead of onClose - allows parent to show OTP modal etc. */
   onAddSuccess?: () => void;
 }
@@ -97,6 +99,7 @@ const PaymentMethodsModal: React.FC<PaymentMethodsModalProps> = ({
   onClose,
   onAdd,
   filterByProviderName,
+  initialAccountNumber,
   onAddSuccess,
 }) => {
   const dispatch = useDispatch<AppDispatch>();
@@ -194,14 +197,14 @@ const PaymentMethodsModal: React.FC<PaymentMethodsModalProps> = ({
          ? `${user.first_name || ""} ${user.last_name || ""}`.trim()
          : "";
        setName(fullName);
-       setAccount("");
+       setAccount(String(initialAccountNumber || "").trim());
        setAllowAutoSend(false);
        setStep("form");
        setOtpCode("");
        setPendingPayload(null);
        dispatch(clearPostStatus());
      }
-   }, [open, dispatch, isClient, user, isAuthenticated]);
+   }, [open, dispatch, isClient, user, isAuthenticated, initialAccountNumber]);
 
   // A user that has already had auto-send enabled should not re-enable it
   // while adding a new payment method.

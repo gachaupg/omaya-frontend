@@ -26,6 +26,10 @@ interface BookmarkDropdownProps {
   saveError?: string | null;
   /** Remove a saved whitelist address (user bookmarks only; not approved-payment rows) */
   onDelete?: (bookmark: BookmarkedAddress) => void | Promise<void>;
+  /** Open linked-accounts flow (PaymentMethodsModal) for the current provider */
+  onAddPaymentMethod?: () => void;
+  /** Provider label for save CTAs (e.g. "Sahal Golis") */
+  providerDisplayName?: string;
 }
 
 function canDeleteBookmark(b: BookmarkedAddress): boolean {
@@ -37,6 +41,12 @@ function canDeleteBookmark(b: BookmarkedAddress): boolean {
 function stopBubble(e: React.SyntheticEvent) {
   e.stopPropagation();
 }
+
+/** Saved whitelist row — stable colors on hover (no flash/lift). */
+const whitelistAddressCardClass = (isDark: boolean) =>
+  isDark
+    ? "bg-[#0a0a0c] border-[#2a2a34] hover:bg-[#0a0a0c] hover:border-[#2a2a34]"
+    : "bg-[#e4e6ea] border-[#d1d5db] hover:bg-[#e4e6ea] hover:border-[#d1d5db]";
 
 function BookmarkLabelBadge({
   children,
@@ -52,11 +62,11 @@ function BookmarkLabelBadge({
   const styles =
     variant === "primary"
       ? isDark
-        ? "bg-[#1D8751]/25 text-[#86efac] border border-[#1D8751]/55 group-hover:bg-[#1D8751]/35 group-hover:text-[#bbf7d0]"
-        : "bg-[#1D8751] text-white border border-[#166b3e] shadow-sm group-hover:bg-[#166b3e]"
+        ? "bg-[#1D8751]/25 text-[#86efac] border border-[#1D8751]/55"
+        : "bg-[#1D8751] text-white border border-[#166b3e] shadow-sm"
       : isDark
-        ? "bg-[#1c1c24] text-[#c8ccd6] border border-[#3d3d48] group-hover:bg-[#26262f] group-hover:text-[#eceef2] group-hover:border-[#52525e]"
-        : "bg-white text-[#14532d] border border-gray-200 group-hover:bg-[#f0fdf4] group-hover:border-[#1D8751]/40";
+        ? "bg-[#141418] text-[#c8ccd6] border border-[#3d3d48]"
+        : "bg-[#f3f4f6] text-[#374151] border border-[#d1d5db]";
   return <span className={`${base} ${styles}`}>{children}</span>;
 }
 
@@ -78,6 +88,8 @@ export function BookmarkDropdown({
   hideSaveButton = false,
   saveError = null,
   onDelete,
+  onAddPaymentMethod,
+  providerDisplayName,
 }: BookmarkDropdownProps) {
   const dropdownRef = useRef<HTMLDivElement>(null);
   const labelInputId = useId();
@@ -89,10 +101,10 @@ export function BookmarkDropdown({
 
   useEffect(() => {
     if (isOpen) {
-      setLabel("");
+      setLabel(defaultLabel?.trim() || "");
       setLabelError(null);
     }
-  }, [isOpen]);
+  }, [isOpen, defaultLabel]);
 
   useEffect(() => {
     if (!isOpen) return;
@@ -222,10 +234,66 @@ export function BookmarkDropdown({
                   <path d="M12 4v16m8-8H4" strokeLinecap="round" />
                 </svg>
               )}
-              Whitelist address
+              {labelKind === "account" ? "Save account" : "Whitelist address"}
             </button>
+            {onAddPaymentMethod ? (
+              <>
+                <p
+                  className={`text-[11px] leading-snug ${
+                    isDark ? "text-[#8B90A5]" : "text-gray-500"
+                  }`}
+                >
+                  Or add as a linked payment method
+                  {providerDisplayName ? ` (${providerDisplayName})` : ""} — same
+                  flow as Accounts → Payment Methods.
+                </p>
+                <button
+                  type="button"
+                  onClick={() => {
+                    onAddPaymentMethod();
+                    onClose();
+                  }}
+                  className={`w-full rounded-lg border px-3 py-2 text-sm font-semibold transition-colors ${
+                    isDark
+                      ? "border-[#35353E] bg-[#18181f] text-white hover:bg-[#23232B]"
+                      : "border-gray-200 bg-white text-gray-900 hover:bg-gray-50"
+                  }`}
+                >
+                  Add payment method
+                </button>
+              </>
+            ) : null}
           </div>
         )}
+        {onAddPaymentMethod &&
+        currentAddress.trim() &&
+        !saveDisabled &&
+        hideSaveButton ? (
+          <div className="space-y-2 mb-2">
+            <p
+              className={`text-xs font-medium ${
+                isDark ? "text-[#A3A3A3]" : "text-gray-600"
+              }`}
+            >
+              Account not saved yet
+              {providerDisplayName ? ` — ${providerDisplayName}` : ""}
+            </p>
+            <button
+              type="button"
+              onClick={() => {
+                onAddPaymentMethod();
+                onClose();
+              }}
+              className={`w-full rounded-lg border px-3 py-2.5 text-sm font-semibold transition-colors ${
+                isDark
+                  ? "bg-[#1D8751] hover:bg-[#166b3e] text-white border-[#1D8751]"
+                  : "bg-[#1D8751] hover:bg-[#166b3e] text-white border-[#1D8751]"
+              }`}
+            >
+              Add payment method
+            </button>
+          </div>
+        ) : null}
         <div className={`border-t my-1 ${isDark ? "border-[#2a2a34]" : "border-gray-200/90"}`} />
         <div
           className={`text-xs font-semibold px-2 py-1 ${
@@ -252,11 +320,7 @@ export function BookmarkDropdown({
               return (
               <div
                 key={rowKey}
-                className={`group flex items-stretch gap-0.5 rounded-lg border transition-colors ${
-                  isDark
-                    ? "bg-[#16161d] border-[#2a2a34] hover:bg-[#1e1e26] hover:border-[#40404c]"
-                    : "bg-white border-gray-200/90 hover:bg-[#f5f5f5] hover:border-[#1D8751]/30 hover:shadow-sm"
-                }`}
+                className={`group flex items-stretch gap-0.5 rounded-lg border ${whitelistAddressCardClass(isDark)}`}
               >
                 <button
                   type="button"
@@ -284,10 +348,8 @@ export function BookmarkDropdown({
                     ) : null}
                   </div>
                   <span
-                    className={`text-xs font-mono truncate w-full transition-colors ${
-                      isDark
-                        ? "text-[#c4c8d4] group-hover:text-[#f3f4f6]"
-                        : "text-gray-700 group-hover:text-gray-900"
+                    className={`text-xs font-mono truncate w-full ${
+                      isDark ? "text-[#c4c8d4]" : "text-gray-700"
                     }`}
                   >
                     {!addr
@@ -314,8 +376,8 @@ export function BookmarkDropdown({
                     }}
                     className={`shrink-0 self-center mr-1.5 p-1.5 rounded-md border border-transparent transition-colors ${
                       isDark
-                        ? "text-[#9ca3af] group-hover:text-[#d1d5db] hover:!text-red-400 hover:border-red-500/30 hover:bg-red-500/15"
-                        : "text-gray-500 group-hover:text-gray-700 hover:!text-red-600 hover:border-red-200 hover:bg-red-50"
+                        ? "text-[#9ca3af] hover:!text-red-400 hover:border-red-500/30 hover:bg-red-500/15"
+                        : "text-gray-500 hover:!text-red-600 hover:border-red-200 hover:bg-red-50"
                     } ${isDeleting ? "opacity-50 cursor-not-allowed" : ""}`}
                   >
                     {isDeleting ? (

@@ -20,6 +20,7 @@ import { showToast } from "@/lib/utils/toast";
 import { useExpressI18n } from "@/lib/useExpressI18n";
 import { useBookmarkedAddresses } from "@/features/express/hooks/useBookmarkedAddresses";
 import { BookmarkDropdown } from "@/features/express/components/forms/BookmarkDropdown";
+import PaymentMethodsModal from "@/features/p2p/components/ui/p2pdashboard/sections/PaymentMethodsModal";
 import ProviderPaymentDetailsCard from "@/components/ui/ProviderPaymentDetailsCard";
 import { usePaymentMethodsDisplay } from "@/features/express/hooks/useDataDisplay";
 import { setAuthRedirectPath, buildMoneyXRedirectPath, setMoneyXPrefillState } from "@/lib/utils/authRedirect";
@@ -232,6 +233,7 @@ export default function TransferForm({ isHomePage = false, onTransfer, commissio
   const [selectedFromPaymentDetail, setSelectedFromPaymentDetail] = useState<any>(null);
   const [selectedToPaymentDetail, setSelectedToPaymentDetail] = useState<any>(null);
   const [bookmarkOpen, setBookmarkOpen] = useState(false);
+  const [showAddPaymentModal, setShowAddPaymentModal] = useState(false);
   const bookmarkAnchorRef = useRef<HTMLSpanElement>(null);
   const [validationErrors, setValidationErrors] = useState<string[]>([]);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -440,6 +442,10 @@ export default function TransferForm({ isHomePage = false, onTransfer, commissio
     });
     return Array.from(deduped.values());
   }, [userPaymentDetails, currentBankAsset, bookmarks]);
+
+  const currentProviderLabel = selectedToPaymentDetail
+    ? getProviderName(selectedToPaymentDetail)
+    : "";
 
   // Helper function to check if a payment method is a bank
   const isBankMethod = useCallback((method: any) => {
@@ -1412,9 +1418,12 @@ export default function TransferForm({ isHomePage = false, onTransfer, commissio
                     return;
                   }
                   setBookmarkOpen(true);
-                  await fetchBookmarks();
+                  await Promise.all([
+                    fetchBookmarks(),
+                    dispatch(fetchUserPaymentDetails() as any),
+                  ]);
                 }}
-                title="Load from bookmarks"
+                title="Saved accounts & payment methods"
               >
                 <svg width="20" height="20" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                   <path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z" />
@@ -1445,12 +1454,14 @@ export default function TransferForm({ isHomePage = false, onTransfer, commissio
                     } catch { /* handled by hook */ }
                   }}
                   labelKind="account"
+                  defaultLabel={currentProviderLabel}
                   saveError={saveBookmarkError}
                   onDelete={(b) => deleteBookmark(b.id)}
                   anchorRef={bookmarkAnchorRef}
                   isDark={isDark}
-                  saveDisabled={!!bankAddressError}
-                  hideSaveButton={true}
+                  saveDisabled={!!bankAddressError || !bankAccountAddress.trim()}
+                  providerDisplayName={currentProviderLabel}
+                  onAddPaymentMethod={() => setShowAddPaymentModal(true)}
                 />
               </span>
               {/* Paste button */}
@@ -1780,6 +1791,17 @@ export default function TransferForm({ isHomePage = false, onTransfer, commissio
           </div>
         </>
       )}
+      <PaymentMethodsModal
+        open={showAddPaymentModal}
+        onClose={() => setShowAddPaymentModal(false)}
+        filterByProviderName={currentProviderLabel || undefined}
+        initialAccountNumber={bankAccountAddress.trim()}
+        onAddSuccess={() => {
+          setShowAddPaymentModal(false);
+          dispatch(fetchUserPaymentDetails() as any);
+          fetchBookmarks();
+        }}
+      />
     </div>
   );
 }

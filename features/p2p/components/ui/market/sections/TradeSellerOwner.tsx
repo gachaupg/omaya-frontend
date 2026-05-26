@@ -29,6 +29,7 @@ import {
 import { Dialog } from "@headlessui/react";
 import { useTradeStatusWebSocket } from "@/features/p2p/hooks/useTradeStatusWebSocket";
 import { useP2pTradeCanceledRedirect } from "@/features/p2p/hooks/useP2pTradeCanceledRedirect";
+import { useMarketTradeStatusWsHandler } from "@/features/p2p/hooks/useMarketTradeStatusWsHandler";
 
 import { logger } from '@/lib/utils/logger';
 
@@ -67,41 +68,11 @@ const FinalSell: React.FC<FinalSellProps> = ({ orderData }) => {
     enabled: isAuthenticated && !!confirmOrder?.id,
   });
 
-  // WebSocket status update callback - use useCallback to prevent reconnections
-  const handleStatusUpdate = React.useCallback((status: any) => {
-    logger.debug('p2p', "🔔 Trade status update received in TradeSellerOwner:", status);
-    logger.debug('p2p', "📊 Current confirmOrder:", confirmOrder);
-    logger.debug('p2p', "📊 Current confirmOrder.id:", confirmOrder?.id);
-    logger.debug('p2p', "📊 Current confirmOrder.status:", confirmOrder?.status);
-    logger.debug('p2p', "📊 New status:", status.status);
-
-    const payload = status as Record<string, unknown>;
-    if (handleWsStatusPayload(payload)) {
-      return;
-    }
-
-    const oldStatus = confirmOrder?.status;
-    const newStatus = status.status;
-
-    const tradeId = String(confirmOrder?.id ?? "").trim();
-    const normalizedNew = String(newStatus ?? "").trim();
-
-    if (tradeId && normalizedNew && oldStatus !== normalizedNew) {
-      logger.debug('p2p', `📢 Status changed: ${oldStatus} → ${normalizedNew}`);
-      dispatch(fetchConfirmOrder(tradeId))
-        .unwrap()
-        .catch((error) => {
-          console.error("❌ fetchConfirmOrder FAILED:", error);
-        });
-    } else if (!tradeId || !normalizedNew) {
-      console.warn("❌ Conditions NOT met:", {
-        hasConfirmOrderId: !!confirmOrder?.id,
-        hasNewStatus: !!newStatus,
-        confirmOrderId: confirmOrder?.id,
-        newStatus: newStatus
-      });
-    }
-  }, [confirmOrder?.id, confirmOrder?.status, dispatch, handleWsStatusPayload]);
+  const handleStatusUpdate = useMarketTradeStatusWsHandler({
+    confirmOrder,
+    logLabel: "TradeSellerOwner",
+    onCanceledPayload: handleWsStatusPayload,
+  });
 
   // WebSocket for real-time trade status updates
   const { isConnected: statusWsConnected } = useTradeStatusWebSocket({
@@ -709,7 +680,7 @@ const FinalSell: React.FC<FinalSellProps> = ({ orderData }) => {
                       <button
                         className={`w-full md:w-auto flex-1 py-2 rounded-2xl text-lg  ${confirmOrder?.status === "half-matched"
                           ? "bg-gray-100 dark:bg-[var(--card-color)] text-gray-400 dark:text-[#888]"
-                          : "bg-[#E23D3A] text-white"
+                          : "bg-[#1D8751] text-white hover:bg-[#167a45] transition-colors"
                           } ${confirmTradeLoading
                             ? "opacity-60 cursor-not-allowed"
                             : ""

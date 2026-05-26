@@ -23,18 +23,19 @@ import dynamic from "next/dynamic";
 import { RefreshCw, Copy, MessageCircle } from "lucide-react";
 import { FaChevronRight } from "react-icons/fa";
 import { useTradeStatusWebSocket } from "@/features/p2p/hooks/useTradeStatusWebSocket";
+import { useMarketTradeStatusWsHandler } from "@/features/p2p/hooks/useMarketTradeStatusWsHandler";
 import { handleCopyToClipboard, parseDurationToSeconds, formatDurationForDisplay } from "@/features/p2p/components/Common/utils";
 
 import { logger } from '@/lib/utils/logger';
 import {
   PENDING_ACCEPTANCE_AUTO_CANCEL_MS,
   type TradeLifecycleBanner,
-  wsPayloadToSnapshot,
+  getEffectiveConfirmFlags,
+  getEffectiveTradeStatus,
   isPendingAcceptanceStatus,
-  isDeclinedLikeStatus,
   formatCountdownSeconds,
   isTransactionCountdownActive,
-  wsStatusPayloadMatchesTrade,
+  type WsTradeSnapshot,
 } from "@/features/p2p/utils/tradeWsAcceptanceGate";
 
 interface FinalSellProps {
@@ -86,15 +87,20 @@ const FinalSell: React.FC<FinalSellProps> = ({ orderData }) => {
 
   // Use limit_duration from order only (e.g. "00:00:05" = 5 min) - never use trade's limit (30 min default)
   const displaySeconds = parseDurationToSeconds(singleOrder?.limit_duration);
+  const effectiveStatus = getEffectiveTradeStatus(
+    confirmOrder?.status,
+    wsTradeSnapshot
+  );
+  const effectiveFlags = getEffectiveConfirmFlags(confirmOrder, wsTradeSnapshot);
   const inPendingAcceptanceSeller =
     isPendingAcceptanceStatus(wsTradeSnapshot.rawStatus) ||
     isPendingAcceptanceStatus(String(confirmOrder?.status || ""));
   const sellerPaymentPhaseActive =
-    confirmOrder?.status === "matched" && !inPendingAcceptanceSeller;
+    effectiveStatus === "matched" && !inPendingAcceptanceSeller;
   const transactionTimerActive = isTransactionCountdownActive(
     displaySeconds,
     confirmOrder?.id,
-    confirmOrder?.status
+    effectiveStatus
   );
 
   const [countdown, setCountdown] = useState(displaySeconds);
@@ -131,79 +137,42 @@ const FinalSell: React.FC<FinalSellProps> = ({ orderData }) => {
     [dispatch, isAuthenticated, router]
   );
 
-  // WebSocket status update callback - use useCallback to prevent reconnections
-  const handleStatusUpdate = React.useCallback((status: any) => {
-    logger.debug('p2p', "🔔 Trade status update received in sellform:", status);
-    logger.debug('p2p', "📊 Current confirmOrder:", confirmOrder);
-    logger.debug('p2p', "📊 Current confirmOrder.id:", confirmOrder?.id);
-    logger.debug('p2p', "📊 Current confirmOrder.status:", confirmOrder?.status);
-    logger.debug('p2p', "📊 New status:", status.status);
+  const mapSellerWsSnapshot = (snap: WsTradeSnapshot) => ({
+    rawStatus: snap.rawStatus,
+    can_confirm_receipt: snap.can_confirm_receipt ?? snap.can_confirm_payment,
+    can_confirm_payment: snap.can_confirm_payment,
+  });
 
-    const payload = status as Record<string, unknown>;
-    const pageTradeId = String(confirmOrder?.id ?? confirmOrderIdRef.current ?? "").trim();
-    if (pageTradeId && !wsStatusPayloadMatchesTrade(payload, pageTradeId)) {
-      logger.debug("p2p", "sellform: skip WS status (different trade than current page)", {
-        pageTradeId,
-      });
-      return;
-    }
-
-    const snap = wsPayloadToSnapshot(payload);
-    const sellerSnap = {
-      rawStatus: snap.rawStatus,
-      can_confirm_receipt: snap.can_confirm_receipt ?? snap.can_confirm_payment,
-      can_confirm_payment: snap.can_confirm_payment,
-    };
-    setWsTradeSnapshot(sellerSnap);
-    wsSnapshotRef.current = sellerSnap;
-
-    const lowered = snap.rawStatus.toLowerCase();
-    if (lowered === "cancelled" || lowered === "canceled") {
+  const handleStatusUpdate = useMarketTradeStatusWsHandler({
+    confirmOrder,
+    logLabel: "sellform",
+    onSnapshot: (snap) => {
+      const sellerSnap = mapSellerWsSnapshot(snap);
+      setWsTradeSnapshot(sellerSnap);
+      wsSnapshotRef.current = sellerSnap;
+    },
+    onCanceled: () => {
       setTradeLifecycleBanner({
         tone: "warning",
         message: "This trade was cancelled. Returning you to P2P.",
       });
       void performExitToP2p();
-      return;
-    }
-
-    if (isDeclinedLikeStatus(payload)) {
+    },
+    onDeclined: () => {
       setTradeLifecycleBanner({
         tone: "danger",
         message: "The other party declined this trade. Cancelling and returning you to P2P.",
       });
       void performExitToP2p();
-      return;
-    }
-
-    if (isPendingAcceptanceStatus(sellerSnap.rawStatus)) {
-      setPendingAcceptanceStartedAt((prev) => prev ?? Date.now());
-    } else {
-      setPendingAcceptanceStartedAt(null);
-    }
-
-    const oldStatus = confirmOrder?.status;
-    const newStatus = status.status;
-
-    const tradeId = String(confirmOrderIdRef.current ?? confirmOrder?.id ?? "").trim();
-    const normalizedNew = String(newStatus ?? sellerSnap.rawStatus ?? "").trim();
-
-    if (tradeId && normalizedNew && oldStatus !== normalizedNew) {
-      logger.debug('p2p', `📢 Status changed: ${oldStatus} → ${normalizedNew}`);
-      dispatch(fetchConfirmOrder(tradeId))
-        .unwrap()
-        .catch((error) => {
-          console.error("❌ fetchConfirmOrder FAILED:", error);
-        });
-    } else if (!tradeId || !normalizedNew) {
-      console.warn("❌ Conditions NOT met:", {
-        hasConfirmOrderId: !!confirmOrder?.id,
-        hasNewStatus: !!newStatus,
-        confirmOrderId: confirmOrder?.id,
-        newStatus: newStatus
-      });
-    }
-  }, [confirmOrder?.id, confirmOrder?.status, dispatch, performExitToP2p]);
+    },
+    onPendingAcceptance: (active) => {
+      if (active) {
+        setPendingAcceptanceStartedAt((prev) => prev ?? Date.now());
+      } else {
+        setPendingAcceptanceStartedAt(null);
+      }
+    },
+  });
 
   // WebSocket for real-time trade status updates
   logger.debug('p2p', "🔌 WebSocket Config (sellform):", {
@@ -561,12 +530,9 @@ const FinalSell: React.FC<FinalSellProps> = ({ orderData }) => {
   };
 
   const sellerMayMarkReceived =
-    confirmOrder?.status === "half-matched" &&
-    confirmOrder?.can_confirm_receipt !== false &&
-    wsTradeSnapshot.can_confirm_receipt !== false &&
-    (!inPendingAcceptanceSeller ||
-      confirmOrder?.can_confirm_receipt === true ||
-      wsTradeSnapshot.can_confirm_receipt === true);
+    effectiveStatus === "half-matched" &&
+    effectiveFlags.can_confirm_receipt !== false &&
+    (!inPendingAcceptanceSeller || effectiveFlags.can_confirm_receipt === true);
 
   const pendingAcceptanceSecondsLeft =
     pendingAcceptanceStartedAt != null
@@ -1009,7 +975,7 @@ const FinalSell: React.FC<FinalSellProps> = ({ orderData }) => {
                       <button
                         className={`w-full md:w-auto flex-1 py-2 rounded-2xl text-lg ${confirmOrder?.status === "matched" || !sellerMayMarkReceived
                           ? "bg-gray-100 dark:bg-[var(--card-color)] text-gray-400 dark:text-[#888]"
-                          : "bg-[#F79330] text-white"
+                          : "bg-[#1D8751] text-white hover:bg-[#167a45] transition-colors"
                           } ${(() => {
                             const isThisTradeLoading =
                               confirmTradeLoading &&
@@ -1159,7 +1125,7 @@ const FinalSell: React.FC<FinalSellProps> = ({ orderData }) => {
                 <div className="flex flex-col gap-3">
                   <button
                     onClick={() => setShowFeedbackModal(true)}
-                    className="w-full bg-[#F79330] text-white rounded-lg px-6 py-3 font-semibold hover:bg-[#e6821a] transition-colors"
+                    className="w-full bg-[#1D8751] text-white rounded-lg px-6 py-3 font-semibold hover:bg-[#167a45] transition-colors"
                   >
                     Provide Feedback
                   </button>
@@ -1189,7 +1155,7 @@ const FinalSell: React.FC<FinalSellProps> = ({ orderData }) => {
             <div className="bg-white dark:bg-[var(--card-color)] rounded-2xl p-8 max-w-md w-full mx-4 border border-gray-200 dark:border-[#35353E]">
               <div className="text-center">
                 {/* Feedback Icon */}
-                <div className="w-16 h-16 bg-[#F79330] rounded-full flex items-center justify-center mx-auto mb-6">
+                <div className="w-16 h-16 bg-[#1D8751] rounded-full flex items-center justify-center mx-auto mb-6">
                   <svg
                     className="w-8 h-8 text-white"
                     fill="none"

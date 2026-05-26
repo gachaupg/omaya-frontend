@@ -48,15 +48,14 @@ export function P2PWalletBalanceProvider({
 
   const state = useP2PWalletBalanceWebSocket(isAuthenticated);
 
-  /**
-   * Safety fallback so summary never crashes UI
-   */
+  // Keep balance/available/escrow null until WS sends data so REST/persisted
+  // values show immediately instead of flashing 0.
   const safeState: P2PWalletBalanceWsState = {
-    balance: state.balance ?? 0,
-    available: state.available ?? 0,
-    escrow: state.escrow ?? 0,
-    currency: state.currency ?? "",
-    connected: state.connected ?? false,
+    balance: state.balance,
+    available: state.available,
+    escrow: state.escrow,
+    currency: state.currency || "USDT",
+    connected: state.connected,
 
     summary: {
       total_approved_p2p_deposits:

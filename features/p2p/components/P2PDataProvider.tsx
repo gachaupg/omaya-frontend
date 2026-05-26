@@ -1,12 +1,11 @@
 "use client";
-import { useEffect, ReactNode, useState } from "react";
+import { useEffect, ReactNode } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import { AppDispatch, RootState } from "@/store";
 import { fetchWallets } from "../slices/walletSlice";
 import { fetchMatchedTrades } from "../slices/matchedTradesSlice";
 import { fetchTransactionSummary } from "../slices/transactionSummarySlice";
 import { logger } from "@/lib/logger";
-import { P2PDashboardSkeleton } from "@/components/ui/Skeletons";
 
 interface P2PDataProviderProps {
   children: ReactNode;
@@ -15,23 +14,14 @@ interface P2PDataProviderProps {
 /**
  * P2PDataProvider - Centralized data fetching for P2P feature
  *
- * This provider fetches all common P2P data once at the parent level,
- * preventing duplicate API calls from child components.
- *
- * Benefits:
- * - Eliminates duplicate API calls (was 10-15, now 3-5)
- * - Parallel API calls for faster loading
- * - Single source of truth for P2P data
- * - Child components just consume from Redux
+ * Fetches common P2P data once at the layout level. Never blocks the UI:
+ * wallet and dashboard render immediately (persisted Redux + REST/WS fallbacks).
+ * Slow matched-trades or transaction-summary calls must not hide the wallet.
  */
 export const P2PDataProvider = ({ children }: P2PDataProviderProps) => {
   const dispatch = useDispatch<AppDispatch>();
   const { isAuthenticated } = useSelector((state: RootState) => state.auth);
 
-  // Track if this is initial load (no data at all)
-  const [initialLoadComplete, setInitialLoadComplete] = useState(false);
-
-  // Check if data is already loaded to avoid unnecessary refetches
   const { data: walletsData, loading: walletsLoading } = useSelector(
     (state: RootState) => state.wallets
   );
@@ -44,15 +34,6 @@ export const P2PDataProvider = ({ children }: P2PDataProviderProps) => {
   const summaryData = transactionSummary.summary;
   const summaryLoading = transactionSummary.loading;
 
-  // If we have any data, initial load is complete (either from Redux Persist or fetch)
-  const hasAnyData = walletsData || tradesData || summaryData;
-
-  useEffect(() => {
-    if (hasAnyData) {
-      setInitialLoadComplete(true);
-    }
-  }, [hasAnyData]);
-
   useEffect(() => {
     if (!isAuthenticated) {
       logger.debug(
@@ -61,62 +42,66 @@ export const P2PDataProvider = ({ children }: P2PDataProviderProps) => {
       return;
     }
 
-    // Only fetch if we don't have data AND we're not already loading
-    // This prevents refetch on tab switches and duplicate calls
     const needsWallets = !walletsData && !walletsLoading;
     const needsTrades = !tradesData && !tradesLoading;
     const needsSummary = !summaryData && !summaryLoading;
 
-    if (needsWallets || needsTrades || needsSummary) {
-      logger.info("[P2PDataProvider] Fetching P2P data...", {
-        fetchingWallets: needsWallets,
-        fetchingTrades: needsTrades,
-        fetchingSummary: needsSummary,
-      });
-
-      // Parallel API calls for maximum speed (3x faster than sequential!)
-      // Use Promise.allSettled to prevent one failure from blocking others
-      const promises = [];
-
-      if (needsWallets) {
-        promises.push(
-          dispatch(fetchWallets())
-            .catch((error) => {
-              // Log but don't throw - allow app to continue even if wallets fail
-              logger.error("[P2PDataProvider] Wallet fetch failed (non-blocking)", error);
-              return null; // Return null to indicate failure without throwing
-            })
-        );
-      }
-      if (needsTrades) {
-        promises.push(
-          dispatch(fetchMatchedTrades(1))
-            .catch((error) => {
-              logger.error("[P2PDataProvider] Trades fetch failed (non-blocking)", error);
-              return null;
-            })
-        );
-      }
-      if (needsSummary) {
-        promises.push(
-          dispatch(fetchTransactionSummary())
-            .catch((error) => {
-              logger.error("[P2PDataProvider] Summary fetch failed (non-blocking)", error);
-              return null;
-            })
-        );
-      }
-
-      Promise.allSettled(promises)
-        .then((results) => {
-          const successful = results.filter((r) => r.status === 'fulfilled').length;
-          const failed = results.filter((r) => r.status === 'rejected').length;
-          logger.info(`[P2PDataProvider] Data fetch completed: ${successful} succeeded, ${failed} failed`);
-        });
-    } else {
+    if (!needsWallets && !needsTrades && !needsSummary) {
       logger.debug(
         "[P2PDataProvider] P2P data already available, using cached data"
       );
+      return;
+    }
+
+    logger.info("[P2PDataProvider] Fetching P2P data (non-blocking)...", {
+      fetchingWallets: needsWallets,
+      fetchingTrades: needsTrades,
+      fetchingSummary: needsSummary,
+    });
+
+    // Wallet first — dashboard wallet card should populate ASAP
+    if (needsWallets) {
+      dispatch(fetchWallets()).catch((error) => {
+        logger.error(
+          "[P2PDataProvider] Wallet fetch failed (non-blocking)",
+          error
+        );
+      });
+    }
+
+    // Trades + summary in parallel; failures do not block layout
+    const secondary: Promise<unknown>[] = [];
+    if (needsTrades) {
+      secondary.push(
+        dispatch(fetchMatchedTrades(1)).catch((error) => {
+          logger.error(
+            "[P2PDataProvider] Trades fetch failed (non-blocking)",
+            error
+          );
+          return null;
+        })
+      );
+    }
+    if (needsSummary) {
+      secondary.push(
+        dispatch(fetchTransactionSummary()).catch((error) => {
+          logger.error(
+            "[P2PDataProvider] Summary fetch failed (non-blocking)",
+            error
+          );
+          return null;
+        })
+      );
+    }
+
+    if (secondary.length > 0) {
+      Promise.allSettled(secondary).then((results) => {
+        const successful = results.filter((r) => r.status === "fulfilled").length;
+        const failed = results.filter((r) => r.status === "rejected").length;
+        logger.info(
+          `[P2PDataProvider] Secondary fetch completed: ${successful} succeeded, ${failed} failed`
+        );
+      });
     }
   }, [
     isAuthenticated,
@@ -128,20 +113,6 @@ export const P2PDataProvider = ({ children }: P2PDataProviderProps) => {
     tradesLoading,
     summaryLoading,
   ]);
-
-  // Show skeleton only on very first load when NO data exists at all
-  // After Redux Persist, this will rarely happen (only first ever visit)
-  const isInitialLoading =
-    !initialLoadComplete &&
-    isAuthenticated &&
-    (walletsLoading || tradesLoading || summaryLoading);
-
-  if (isInitialLoading) {
-    logger.debug(
-      "[P2PDataProvider] Showing loading skeleton for initial data fetch"
-    );
-    return <P2PDashboardSkeleton />;
-  }
 
   return <>{children}</>;
 };

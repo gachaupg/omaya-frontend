@@ -16,6 +16,13 @@ export type DonutChartData = {
   color: string;
 };
 
+/** Approved P2P wallet deposits / funding (part of P2P volume, not exchange). */
+function getApprovedP2pDepositsVolume(
+  transactionSummary: TransactionSummary
+): number {
+  return parseSummaryNumber(transactionSummary.total_approved_p2p_deposits);
+}
+
 function getExchangeOverviewLegendAmounts(
   transactionSummary: TransactionSummary
 ) {
@@ -112,12 +119,15 @@ export const overviewTotalData = (
   if (type === "p2p") {
     const buyStatus = (transactionSummary as any).total_buy_trades_by_status || {};
     const sellStatus = (transactionSummary as any).total_sell_trades_by_status || {};
+    const p2pDeposits = getApprovedP2pDepositsVolume(transactionSummary);
 
     return [
       {
         label: "Completed",
         value: Math.abs(
-          getStatusValue(buyStatus, "completed") + getStatusValue(sellStatus, "completed")
+          getStatusValue(buyStatus, "completed") +
+            getStatusValue(sellStatus, "completed") +
+            p2pDeposits
         ),
         color: "#1D8751",
       },
@@ -298,15 +308,20 @@ export const overviewTotalSummary = (
   if (type === "p2p") {
     const buyStatus = (transactionSummary as any).total_buy_trades_by_status || {};
     const sellStatus = (transactionSummary as any).total_sell_trades_by_status || {};
-    const completed = Number(buyStatus.completed || 0) + Number(sellStatus.completed || 0);
+    const p2pDeposits = getApprovedP2pDepositsVolume(transactionSummary);
+    const completed =
+      Number(buyStatus.completed || 0) +
+      Number(sellStatus.completed || 0) +
+      p2pDeposits;
     const pending = Number(buyStatus.pending || 0) + Number(sellStatus.pending || 0);
     const canceled =
       Number(buyStatus.canceled ?? buyStatus.cancelled ?? 0) +
       Number(sellStatus.canceled ?? sellStatus.cancelled ?? 0);
     const offline = Number(buyStatus.offline || 0) + Number(sellStatus.offline || 0);
     const netValue = completed + pending + canceled + offline;
+    const totalFromApi = parseSummaryNumber(transactionSummary.total_volume);
     return {
-      total: Math.abs(netValue),
+      total: Math.abs(totalFromApi > 0 ? totalFromApi : netValue),
       currency: "USD",
     };
   }

@@ -53,12 +53,31 @@ const resolveTxAssetTicker = (tx: {
 const resolveTxNetworkLabel = (tx: {
   asset?: { network?: string };
   network?: { network_type?: string; network?: string; network_id?: string };
+  details?: { to_network?: string };
 }): string =>
   tx?.asset?.network ||
   tx?.network?.network_type ||
   tx?.network?.network ||
   tx?.network?.network_id ||
+  tx?.details?.to_network ||
   "BSC";
+
+const isDirectPaymentProvider = (name?: string | null): boolean =>
+  !name || String(name).trim().toLowerCase() === "direct";
+
+const formatNetworkDisplayLabel = (tx: Parameters<typeof resolveTxNetworkLabel>[0]): string => {
+  const raw = String(resolveTxNetworkLabel(tx) || "").trim();
+  const normalized = raw.toUpperCase().replace(/[\s_-]+/g, "");
+  if (
+    !normalized ||
+    normalized === "BSC" ||
+    normalized === "BEP20" ||
+    normalized.startsWith("BEP")
+  ) {
+    return "BEP 20";
+  }
+  return raw;
+};
 
 /** Match Exchange Deposit status page width and spacing */
 const STATUS_PAGE_MAX_W = "max-w-4xl";
@@ -1711,7 +1730,7 @@ export default function Exchanging({ transactionData }: ExchangingProps) {
           className={`border-t border-dashed ${isDark ? "border-[#7B7B7B]" : "border-gray-400"
             } mb-4 mt-4`}
         ></div>
-        {/* From (left) | To (from center to end) — minimal labels, no repeated "direct" */}
+        {/* From (left) | To (from center to end) — asset + network (e.g. USDT / BEP 20) */}
         <div className="flex mb-2">
           <div
             className={`flex-shrink-0 w-1/2 ${isDark ? "text-[#7B7B7B]" : "text-gray-600"
@@ -1727,23 +1746,27 @@ export default function Exchanging({ transactionData }: ExchangingProps) {
           </div>
         </div>
         <div className="flex mt-2 items-start gap-0">
-          {/* Left: From — icon + 2 lines only (method, USDT) */}
+          {/* Left: From — icon + asset (USDT) + network (BEP 20) */}
           <div className="flex items-start gap-3 min-w-0 w-1/2 flex-shrink-0 pr-2 sm:pr-4">
             {effectiveTransactionData?.type === "deposit" &&
-              effectiveTransactionData?.paymentDetail ? (
+              effectiveTransactionData?.paymentDetail &&
+              !isDirectPaymentProvider(
+                effectiveTransactionData.paymentDetail.provider_name
+              ) ? (
               <>
                 <img
                   src={
-                    effectiveTransactionData?.asset?.icon ||
-                    effectiveTransactionData?.asset?.icon_url ||
-                    effectiveTransactionData?.asset?.image_url ||
-                    effectiveTransactionData?.asset?.image ||
-                    "/images/tether.svg"
+                    effectiveTransactionData.paymentDetail.logo_url ||
+                    effectiveTransactionData.paymentDetail.logo ||
+                    effectiveTransactionData.paymentDetail.provider_logo ||
+                    "/assets/image_7_jijlik.png"
                   }
-                  alt={effectiveTransactionData?.asset?.symbol || "USDT"}
+                  alt={effectiveTransactionData.paymentDetail.provider_name}
                   className="w-8 h-8 rounded-full flex-shrink-0 mt-0.5"
                   onError={(e) => {
-                    e.currentTarget.src = "/images/tether.svg";
+                    if (e.currentTarget.src !== "/assets/image_7_jijlik.png") {
+                      e.currentTarget.src = "/assets/image_7_jijlik.png";
+                    }
                   }}
                 />
                 <div className="min-w-0 flex-1 space-y-0.5">
@@ -1751,13 +1774,13 @@ export default function Exchanging({ transactionData }: ExchangingProps) {
                     className={`${isDark ? "text-white" : "text-gray-900"
                       } text-sm sm:text-base font-semibold`}
                   >
-                    {effectiveTransactionData.paymentDetail.provider_name || "Direct"}
+                    {effectiveTransactionData.paymentDetail.provider_name}
                   </div>
                   <div
                     className={`${isDark ? "text-[#7B7B7B]" : "text-gray-600"
                       } text-xs sm:text-sm`}
                   >
-                    {effectiveTransactionData?.asset?.ticker || effectiveTransactionData?.asset?.symbol || "USDT"}
+                    {resolveTxAssetTicker(effectiveTransactionData)}
                   </div>
                 </div>
               </>
@@ -1771,7 +1794,7 @@ export default function Exchanging({ transactionData }: ExchangingProps) {
                     effectiveTransactionData?.asset?.image ||
                     "/images/tether.svg"
                   }
-                  alt={effectiveTransactionData?.asset?.symbol || "USDT"}
+                  alt={resolveTxAssetTicker(effectiveTransactionData)}
                   className="w-8 h-8 rounded-full flex-shrink-0 mt-0.5"
                   onError={(e) => {
                     e.currentTarget.src = "/images/tether.svg";
@@ -1780,21 +1803,21 @@ export default function Exchanging({ transactionData }: ExchangingProps) {
                 <div className="min-w-0 flex-1 space-y-0.5">
                   <div
                     className={`${isDark ? "text-white" : "text-gray-900"
-                      } text-sm sm:text-base font-semibold`}
+                      } text-sm sm:text-base font-semibold uppercase`}
                   >
-                    Direct
+                    {resolveTxAssetTicker(effectiveTransactionData)}
                   </div>
                   <div
                     className={`${isDark ? "text-[#7B7B7B]" : "text-gray-600"
                       } text-xs sm:text-sm`}
                   >
-                    {effectiveTransactionData?.asset?.ticker || effectiveTransactionData?.asset?.symbol || effectiveTransactionData?.asset?.name || "USDT"}
+                    {formatNetworkDisplayLabel(effectiveTransactionData)}
                   </div>
                 </div>
               </>
             )}
           </div>
-          {/* Right: To — from center to end; 2 lines (USDT, address) */}
+          {/* Right: To — asset (USDT) + deposit address */}
           <div className="flex items-start gap-3 min-w-0 flex-1 pl-2 sm:pl-4 border-l border-dashed border-gray-300 dark:border-[#35353E]">
             {effectiveTransactionData?.type === "deposit" ? (
               <>
@@ -1806,7 +1829,7 @@ export default function Exchanging({ transactionData }: ExchangingProps) {
                     effectiveTransactionData?.asset?.image ||
                     "/images/tether.svg"
                   }
-                  alt={effectiveTransactionData?.asset?.symbol || "USDT"}
+                  alt={resolveTxAssetTicker(effectiveTransactionData)}
                   className="w-8 h-8 rounded-full flex-shrink-0 mt-0.5"
                   onError={(e) => {
                     e.currentTarget.src = "/images/tether.svg";
@@ -1815,16 +1838,19 @@ export default function Exchanging({ transactionData }: ExchangingProps) {
                 <div className="min-w-0 flex-1 space-y-0.5">
                   <div
                     className={`${isDark ? "text-white" : "text-gray-900"
-                      } text-sm sm:text-base font-semibold`}
+                      } text-sm sm:text-base font-semibold uppercase`}
                   >
-                    {effectiveTransactionData?.asset?.ticker || effectiveTransactionData?.asset?.symbol || effectiveTransactionData?.asset?.name || "USDT"}
+                    {resolveTxAssetTicker(effectiveTransactionData)}
                   </div>
                   <div
                     className={`${isDark ? "text-[#7B7B7B]" : "text-gray-600"
                       } text-xs sm:text-sm font-mono break-all`}
                   >
-                    {effectiveTransactionData?.walletAddress ||
-                      "TQn9Y2khEsLJW1ChVWFM...RDow5oRP7bX"}
+                    {resolveCryptoPayinAddress(effectiveTransactionData) ||
+                      effectiveTransactionData?.walletAddress ||
+                      liveTransactionId ||
+                      effectiveTransactionData?.transactionId ||
+                      ""}
                   </div>
                 </div>
               </>
