@@ -2,6 +2,7 @@ import React, { useEffect, useState } from "react";
 import { tokens } from "@/styles/tokens";
 import Card from "../../Common/Card";
 import { formatCurrency } from "@/lib/globalFormatter";
+import { parseSummaryNumber } from "@/lib/utils/normalizeTransactionSummary";
 import { useDispatch, useSelector } from "react-redux";
 import { selectTransactionSummary } from "@/features/p2p/slices/transactionSummarySlice";
 import { fetchTransactionSummary } from "@/features/p2p/slices/transactionSummarySlice";
@@ -22,35 +23,43 @@ const Overview = () => {
     }
   }, [dispatch, isAuthenticated]);
 
-  // Parse total volume (e.g. "100.00 USD" -> 100)
-  const parseTotalVolume = (raw: string | undefined): number => {
-    if (!raw) return 0;
-    const cleaned = String(raw).replace(/\bUSD\b/gi, "").replace(/\s+/g, "").trim();
-    const num = parseFloat(cleaned.replace(/,/g, ""));
-    return isNaN(num) ? 0 : num;
-  };
-
-  // Calculate totals for the pie chart using API data (ensure numbers for correct sum)
-  const deposits =
-  Number(wsWallet?.summary?.total_approved_p2p_deposits ?? 0);
-    const withdrawals = Number(wsWallet.summary.total_approved_p2p_withdrawals ?? summary?.total_approved_p2p_withdrawals) || 0;
+  // Prefer HTTP summary (full API) — WS summary defaults missing fields to 0 and blocks ?? fallback
+  const p2pDeposits =
+    parseSummaryNumber(summary?.total_approved_p2p_deposits) ||
+    Number(wsWallet.summary.total_approved_p2p_deposits) ||
+    0;
+  const p2pTradeVolume =
+    parseSummaryNumber(summary?.total_approved_p2p_volume) ||
+    Number(wsWallet.summary.total_approved_p2p_volume) ||
+    0;
+  /** Trades + approved P2P deposits (funding); matches API total_volume */
+  const p2p = p2pTradeVolume + p2pDeposits;
+  const withdrawals =
+    parseSummaryNumber(summary?.total_approved_p2p_withdrawals) ||
+    Number(wsWallet.summary.total_approved_p2p_withdrawals) ||
+    0;
   const inProgress =
-    (Number(wsWallet.summary.total_pending_p2p_deposits ?? summary?.total_pending_p2p_deposits) || 0) +
-    (Number(wsWallet.summary.total_pending_p2p_withdrawals ?? summary?.total_pending_p2p_withdrawals) || 0);
-  const p2p = Number(wsWallet.summary.total_approved_p2p_volume ?? summary?.total_approved_p2p_volume ?? summary?.total_p2p_orders ?? 0) || 0;
-  const chartTotal = deposits + withdrawals + inProgress + p2p; // for pie segments
-  const totalVolume = summary?.total_approved_volume ?? parseTotalVolume(summary?.total_volume) ?? 0;
+    (parseSummaryNumber(summary?.total_pending_p2p_deposits) ||
+      Number(wsWallet.summary.total_pending_p2p_deposits) ||
+      0) +
+    (parseSummaryNumber(summary?.total_pending_p2p_withdrawals) ||
+      Number(wsWallet.summary.total_pending_p2p_withdrawals) ||
+      0);
+  const segmentTotal = withdrawals + inProgress + p2p;
+  /** API `total_volume` (e.g. "91.09 USD") is the canonical dashboard total. */
+  const totalVolume =
+    parseSummaryNumber(summary?.total_volume) ||
+    segmentTotal ||
+    0;
+  const chartTotal = segmentTotal > 0 ? segmentTotal : totalVolume || 1;
   const circumference = 2 * Math.PI * 90;
-  // Order: Pending, Deposits, Withdrawals, P2P
+  // Order: Pending, Withdrawals, P2P (deposits included in P2P)
   const pendingDash = (inProgress / chartTotal) * circumference;
-  const depositsDash = (deposits / chartTotal) * circumference;
   const withdrawalsDash = (withdrawals / chartTotal) * circumference;
   const p2pDash = (p2p / chartTotal) * circumference;
 
-
   // Calculate safe values to prevent NaN
   const safeTotal = chartTotal || 1; // Prevent division by zero
-  const safeDeposits = deposits || 0;
   const safeInProgress = inProgress || 0;
   const safeWithdrawals = withdrawals || 0;
 
@@ -82,7 +91,7 @@ const Overview = () => {
   const buyProgressPercentage = buyTotal > 0 ? (buyCompleted / buyTotal) * 100 : 0;
   const sellProgressPercentage = sellTotal > 0 ? (sellCompleted / sellTotal) * 100 : 0;
 
-  // Check if there's no data (chartTotal includes pending, deposits, withdrawals, p2p)
+  // Check if there's no data (chartTotal includes pending, withdrawals, p2p)
   const hasNoData = chartTotal === 0;
 
   return (
@@ -143,18 +152,6 @@ const Overview = () => {
                 strokeDashoffset="0"
                 strokeLinecap="butt"
               />
-              {/* Deposits - Green */}
-              <circle
-                cx="110"
-                cy="110"
-                r="90"
-                stroke="#1D8751"
-                strokeWidth="18"
-                fill="none"
-                strokeDasharray={`${depositsDash} ${circumference - depositsDash}`}
-                strokeDashoffset={`-${pendingDash}`}
-                strokeLinecap="butt"
-              />
               {/* Withdrawals - Red */}
               <circle
                 cx="110"
@@ -164,10 +161,10 @@ const Overview = () => {
                 strokeWidth="18"
                 fill="none"
                 strokeDasharray={`${withdrawalsDash} ${circumference - withdrawalsDash}`}
-                strokeDashoffset={`-${pendingDash + depositsDash}`}
+                strokeDashoffset={`-${pendingDash}`}
                 strokeLinecap="butt"
               />
-              {/* P2P - Blue */}
+              {/* P2P - Blue (trades + approved P2P deposits / funding) */}
               <circle
                 cx="110"
                 cy="110"
@@ -176,7 +173,7 @@ const Overview = () => {
                 strokeWidth="18"
                 fill="none"
                 strokeDasharray={`${p2pDash} ${circumference - p2pDash}`}
-                strokeDashoffset={`-${pendingDash + depositsDash + withdrawalsDash}`}
+                strokeDashoffset={`-${pendingDash + withdrawalsDash}`}
                 strokeLinecap="butt"
               />
             </svg>
@@ -185,15 +182,14 @@ const Overview = () => {
           <div className="absolute inset-0 flex flex-col items-center justify-center text-center gap-0.5 px-2">
             <div className="text-[10px] sm:text-xs md:text-[13px] leading-tight text-neutral-500 dark:text-gray-400">
               <span className="text-[#0D0D0D] dark:text-white/80 font-semibold">
-                {(deposits + withdrawals + p2p).toLocaleString()} USD
+                {formatCurrency(totalVolume, "USD")}
               </span>
             </div>
             <div className="text-[10px] sm:text-xs md:text-[13px] leading-tight text-neutral-500 dark:text-gray-400">
               <span className="text-[#0D0D0D] dark:text-white/80 font-semibold">
-                Total
+                Total Volume
               </span>
             </div>
-           
           </div>
         </div>
         <div className="mt-3 sm:mt-4 md:mt-6 w-full flex flex-col gap-1.5 sm:gap-2">
@@ -201,28 +197,21 @@ const Overview = () => {
             <span className="w-2 h-2 sm:w-2.5 sm:h-2.5 md:w-3 md:h-3 rounded-sm bg-[#FFD600] inline-block flex-shrink-0" />
             <span className="text-neutral-500 text-xs sm:text-sm md:text-base">Pending</span>
             <span className="text-right text-[#0D0D0D] dark:text-white/80 text-xs sm:text-sm">
-              {inProgress.toLocaleString()} USD
-            </span>
-          </div>
-          <div className="grid grid-cols-[auto_1fr_auto] items-center gap-3">
-            <span className="w-2 h-2 sm:w-2.5 sm:h-2.5 md:w-3 md:h-3 rounded-sm bg-[#1D8751] inline-block flex-shrink-0" />
-            <span className="text-neutral-500 text-xs sm:text-sm md:text-base">Deposits</span>
-            <span className="text-right text-[#0D0D0D] dark:text-white/80 text-xs sm:text-sm">
-              {deposits.toLocaleString()} USD
+              {formatCurrency(inProgress, "USD")}
             </span>
           </div>
           <div className="grid grid-cols-[auto_1fr_auto] items-center gap-3">
             <span className="w-2 h-2 sm:w-2.5 sm:h-2.5 md:w-3 md:h-3 rounded-sm bg-[#E23D3A] inline-block flex-shrink-0" />
             <span className="text-neutral-500 text-xs sm:text-sm md:text-base truncate max-w-20 sm:max-w-[120px]">Withdrawals</span>
             <span className="text-[#0D0D0D] dark:text-white/80 text-xs sm:text-sm">
-              {withdrawals.toLocaleString()} USD
+              {formatCurrency(withdrawals, "USD")}
             </span>
           </div>
           <div className="grid grid-cols-[auto_1fr_auto] items-center gap-3">
             <span className="w-2 h-2 sm:w-2.5 sm:h-2.5 md:w-3 md:h-3 rounded-sm bg-[#386AB5] inline-block flex-shrink-0" />
             <span className="text-neutral-500 text-xs sm:text-sm md:text-base">P2P</span>
             <span className="text-[#0D0D0D] dark:text-white/80 text-xs sm:text-sm">
-              {p2p.toLocaleString()} USD
+              {formatCurrency(p2p, "USD")}
             </span>
           </div>
         </div>

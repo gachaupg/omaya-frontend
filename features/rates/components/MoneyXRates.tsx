@@ -33,6 +33,7 @@ import Exchanging from "@/features/express/home/components/moneyX/components/Exc
 import { checkKYCStatus, openKYCModal } from "@/features/auth/slices/authSlice";
 import { useBookmarkedAddresses } from "@/features/express/hooks/useBookmarkedAddresses";
 import { BookmarkDropdown } from "@/features/express/components/forms/BookmarkDropdown";
+import PaymentMethodsModal from "@/features/p2p/components/ui/p2pdashboard/sections/PaymentMethodsModal";
 import ProviderPaymentDetailsCard from "@/components/ui/ProviderPaymentDetailsCard";
 import { getHighResPaymentLogo } from "@/features/express/utils/imageHelpers";
 import {
@@ -243,6 +244,7 @@ const MoneyXRates = ({
   const [isCalculatingFromPay, setIsCalculatingFromPay] = useState(true);
   const [isStateHydrated, setIsStateHydrated] = useState(false);
   const [bookmarkOpen, setBookmarkOpen] = useState(false);
+  const [showAddPaymentModal, setShowAddPaymentModal] = useState(false);
   const bookmarkAnchorRef = useRef<HTMLSpanElement>(null);
   const commissionFetchTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const paymentDetailsRef = useRef<HTMLDivElement>(null);
@@ -451,6 +453,7 @@ const MoneyXRates = ({
     loading: bookmarksLoading,
     saving: bookmarkSaving,
     fetchBookmarks,
+    saveBookmark,
     deleteBookmark,
     saveBookmarkError,
     clearSaveBookmarkError,
@@ -511,6 +514,10 @@ const MoneyXRates = ({
     });
     return Array.from(deduped.values());
   }, [userPaymentDetails, currentBankAsset, bookmarks]);
+
+  const currentProviderLabel = selectedToPaymentDetail
+    ? getProviderName(selectedToPaymentDetail)
+    : "";
 
   // Helper function to check if a payment method is a bank
   const isBankMethod = useCallback(
@@ -1627,13 +1634,28 @@ const MoneyXRates = ({
                       setBankAccountAddress(addr);
                       setBankAddressError(null);
                     }}
-                    onSaveCurrent={async (_label) => {}}
+                    onSaveCurrent={async (label) => {
+                      try {
+                        if (!bankAccountAddress.trim() || !currentBankAsset) return;
+                        await saveBookmark({
+                          address: bankAccountAddress.trim(),
+                          label,
+                          network: "BANK",
+                          asset: currentBankAsset,
+                        });
+                      } catch {
+                        /* handled by hook */
+                      }
+                    }}
                     saveError={saveBookmarkError}
                     onDelete={(b) => deleteBookmark(b.id)}
                     anchorRef={bookmarkAnchorRef}
                     isDark={isDark}
-                    saveDisabled={true}
-                    hideSaveButton={true}
+                    saveDisabled={!!bankAddressError || !bankAccountAddress.trim()}
+                    providerDisplayName={currentProviderLabel}
+                    defaultLabel={currentProviderLabel}
+                    onAddPaymentMethod={() => setShowAddPaymentModal(true)}
+                    labelKind="account"
                   />
                 </span>
                 {/* Paste button */}
@@ -1819,6 +1841,18 @@ const MoneyXRates = ({
           </>
         )}
       </div>
+
+      <PaymentMethodsModal
+        open={showAddPaymentModal}
+        onClose={() => setShowAddPaymentModal(false)}
+        filterByProviderName={currentProviderLabel || undefined}
+        initialAccountNumber={bankAccountAddress.trim()}
+        onAddSuccess={() => {
+          setShowAddPaymentModal(false);
+          dispatch(fetchUserPaymentDetails() as any);
+          fetchBookmarks();
+        }}
+      />
 
       {legalModalType && (
         <div

@@ -2,20 +2,20 @@
 
 export const TOAST_COLORS = {
   success: {
-    bg: "rgba(29, 135, 81, 0.3)",
-    border: "rgba(29, 135, 81, 0.62)",
-    text: "#E8F8EE",
-    description: "#B8E6C8",
-    iconPrimary: "#1D8751",
-    iconSecondary: "#E8F8EE",
+    bg: "#1D8751",
+    border: "#166B40",
+    text: "#FFFFFF",
+    description: "#E8F8EE",
+    iconPrimary: "#FFFFFF",
+    iconSecondary: "#1D8751",
   },
   error: {
-    bg: "rgba(226, 61, 58, 0.3)",
-    border: "rgba(226, 61, 58, 0.62)",
-    text: "#FDE8E8",
-    description: "#F5BCBA",
-    iconPrimary: "#E23D3A",
-    iconSecondary: "#FDE8E8",
+    bg: "#E23D3A",
+    border: "#C93330",
+    text: "#FFFFFF",
+    description: "#FDE8E8",
+    iconPrimary: "#FFFFFF",
+    iconSecondary: "#E23D3A",
   },
   default: {
     bg: "#35353E",
@@ -34,8 +34,8 @@ export const sonnerToastClassNames = {
     "group-[.toast]:!text-xs group-[.toast]:!leading-snug group-[.toast]:!mt-0.5 group-[.toast]:opacity-90",
   closeButton:
     "group-[.toast]:!bg-white/10 group-[.toast]:!border-0 group-[.toast]:!text-inherit group-[.toast]:!opacity-80 hover:group-[.toast]:!opacity-100 group-[.toast]:!left-auto group-[.toast]:!right-2 group-[.toast]:!top-2 group-[.toast]:!transform-none group-[.toast]:!w-5 group-[.toast]:!h-5",
-  success: `${sonnerToastBase} !bg-[#1D8751]/30 !border-[#1D8751]/60 !text-white [&_[data-title]]:!text-[#E8F8EE] [&_[data-description]]:!text-[#B8E6C8]`,
-  error: `${sonnerToastBase} !bg-[#E23D3A]/30 !border-[#E23D3A]/60 !text-white [&_[data-title]]:!text-[#FDE8E8] [&_[data-description]]:!text-[#F5BCBA]`,
+  success: `${sonnerToastBase} !bg-[#1D8751] !border-[#166B40] !text-white [&_[data-title]]:!text-white [&_[data-description]]:!text-[#E8F8EE]`,
+  error: `${sonnerToastBase} !bg-[#E23D3A] !border-[#C93330] !text-white [&_[data-title]]:!text-white [&_[data-description]]:!text-[#FDE8E8]`,
   warning: `${sonnerToastBase} !bg-[#F79330]/28 !border-[#F79330]/58 !text-white [&_[data-title]]:!text-[#FFF4E8] [&_[data-description]]:!text-[#F5D9B8]`,
   info: `${sonnerToastBase} !bg-[#3B82F6]/22 !border-[#3B82F6]/52 !text-white [&_[data-title]]:!text-[#E8F0FF] [&_[data-description]]:!text-[#BFDBFE]`,
   actionButton: "group-[.toast]:bg-[#1D8751] group-[.toast]:text-white !text-xs !py-1 !px-2",

@@ -6,13 +6,8 @@ import Overview from "../ui/p2pdashboard/Overview";
 import P2pWallet from "../ui/p2pdashboard/P2pWallet";
 import UserCard from "../ui/p2pdashboard/UserCard";
 import Express from "../ui/express/components/express";
-import { useSelector, useDispatch } from "react-redux";
-import { RootState } from "../../../../store";
-import { fetchWallets } from "../../slices/walletSlice";
-import { fetchMatchedTrades } from "../../slices/matchedTradesSlice";
-import { fetchTransactionSummary } from "../../slices/transactionSummarySlice";
+import { useSelector } from "react-redux";
 import { selectP2PWalletAmounts, selectTransactionSummary } from "../../selectors";
-import { AppDispatch } from "../../../../store";
 import {
   P2PWalletBalanceProvider,
   useP2PWalletBalanceContext,
@@ -23,7 +18,6 @@ const RETURNING_FROM_LEGAL_KEY = "omaya_returning_from_legal";
 
 function P2PDashboardContent() {
   const [isOpenForm, setIsOpenForm] = useState("");
-  const dispatch = useDispatch<AppDispatch>();
   const wsWallet = useP2PWalletBalanceContext();
 
   const handleBeforeLegalNavigate = useCallback(() => {
@@ -62,15 +56,6 @@ function P2PDashboardContent() {
       sessionStorage.removeItem(P2P_EXPRESS_STATE_KEY);
     }
   }, []);
-
-  const { isAuthenticated } = useSelector((state: RootState) => state.auth);
-  useEffect(() => {
-    if (isAuthenticated) {
-      dispatch(fetchWallets()).catch(() => {});
-      dispatch(fetchMatchedTrades(1)).catch(() => {});
-      dispatch(fetchTransactionSummary()).catch(() => {});
-    }
-  }, [dispatch, isAuthenticated]);
 
   const summary = useSelector(selectTransactionSummary);
   const { availableAmount } = useSelector(selectP2PWalletAmounts);

@@ -877,19 +877,8 @@ const LineCharts = React.memo(
       getFilteredDataset,
     ]);
 
-    const exchangeDepositTotal = React.useMemo(
-      () => exchangeSeries.deposits.data.reduce((sum, v) => sum + v, 0),
-      [exchangeSeries.deposits.data]
-    );
-    const exchangeWithdrawalTotal = React.useMemo(
-      () => exchangeSeries.withdrawals.data.reduce((sum, v) => sum + v, 0),
-      [exchangeSeries.withdrawals.data]
-    );
-    const showExchangeDeposits =
-      (filter === "All" || filter === "Deposits") && exchangeDepositTotal > 0;
-    const showExchangeWithdrawals =
-      (filter === "All" || filter === "Withdrawals") &&
-      exchangeWithdrawalTotal > 0;
+    const showExchangeDeposits = filter === "All" || filter === "Deposits";
+    const showExchangeWithdrawals = filter === "All" || filter === "Withdrawals";
 
     const p2pSeries = React.useMemo(() => {
       const primary = getFilteredDataset(
@@ -974,20 +963,14 @@ const LineCharts = React.memo(
                 />
               </div>
             </div>
-            <div className="w-full min-h-[200px] sm:min-h-[240px]">
-              {showExchangeDeposits || showExchangeWithdrawals ? (
-                <GradientLineChart
-                  data1={exchangeSeries.deposits}
-                  data2={exchangeSeries.withdrawals}
-                  labels={exchangeSeries.labels}
-                  showData1={showExchangeDeposits}
-                  showData2={showExchangeWithdrawals}
-                />
-              ) : (
-                <div className="flex items-center justify-center h-[200px] sm:h-[240px] text-sm text-gray-500 dark:text-gray-400">
-                  No exchange activity for this period
-                </div>
-              )}
+            <div className="w-full">
+              <GradientLineChart
+                data1={exchangeSeries.deposits}
+                data2={exchangeSeries.withdrawals}
+                labels={exchangeSeries.labels}
+                showData1={showExchangeDeposits}
+                showData2={showExchangeWithdrawals}
+              />
             </div>
           </Card>
           {/* P2P Overview */}

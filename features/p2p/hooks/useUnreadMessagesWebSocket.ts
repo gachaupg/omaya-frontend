@@ -168,23 +168,18 @@ export const useUnreadMessagesWebSocket = (
     // Handle connection errors
     const unsubscribeError = ws.onError((error) => {
       if (!mountedRef.current) return;
-      logger.error("unread-messages", "WebSocket error event:", error);
       setConnectionError("Connection error");
     });
 
     // Log and connect to WebSocket (helps verify exact socket endpoint in runtime).
     try {
       const wsUrl = API_CONFIG.P2P.SOCKETS.RECENT_MESSAGES(token);
-      console.log("[P2P unread-messages WS] connecting URL:", wsUrl);
     } catch (e) {
-      console.warn("[P2P unread-messages WS] failed to build URL for logging");
     }
-    logger.debug("unread-messages", "🔌 Connecting to unread messages WebSocket...");
     ws.connect({ token });
 
     // Cleanup on unmount
     return () => {
-      logger.debug("unread-messages", "🧹 Cleaning up WebSocket connection");
       unsubscribeMessage();
       unsubscribeOpen();
       unsubscribeClose();

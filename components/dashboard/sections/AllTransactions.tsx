@@ -663,7 +663,7 @@ const AllTransactions = ({
         }}
         aria-label={t("transactions.viewDetailsRow", "View transaction details")}
       >
-        <td className="px-3 sm:px-4 lg:px-6 py-4 border-b border-gray-200 dark:border-[#35353E]">
+        <td className="px-3 sm:px-4 lg:px-6 py-4 border-b border-gray-200 dark:border-[#35353E] align-middle">
           <div className="flex items-center gap-2 sm:gap-3">
             {renderAssetIcon(tx)}
             <div className="flex flex-col min-w-0">
@@ -678,21 +678,21 @@ const AllTransactions = ({
             </div>
           </div>
         </td>
-        <td className="px-3 sm:px-4 lg:px-6 py-4 border-b border-gray-200 dark:border-[#35353E]">
+        <td className="px-3 sm:px-4 lg:px-6 py-4 border-b border-gray-200 dark:border-[#35353E] align-middle">
           <TransactionFromToCell
             label={fromCell.label}
             subLabel={fromCell.subLabel}
             iconUrl={fromCell.iconUrl}
           />
         </td>
-        <td className="px-3 sm:px-4 lg:px-6 py-4 border-b border-gray-200 dark:border-[#35353E]">
+        <td className="px-3 sm:px-4 lg:px-6 py-4 border-b border-gray-200 dark:border-[#35353E] align-middle">
           <TransactionFromToCell
             label={toCell.label}
             subLabel={toCell.subLabel}
             iconUrl={toCell.iconUrl}
           />
         </td>
-        <td className="px-3 sm:px-4 lg:px-6 py-4 border-b border-gray-200 dark:border-[#35353E] align-top whitespace-nowrap">
+        <td className="px-3 sm:px-4 lg:px-6 py-4 border-b border-gray-200 dark:border-[#35353E] align-middle whitespace-nowrap">
           <TransactionAmountCell
             tx={tx}
             variant="asset"
@@ -701,11 +701,11 @@ const AllTransactions = ({
             }
           />
         </td>
-        <td className="px-3 sm:px-4 lg:px-6 py-4 border-b border-gray-200 dark:border-[#35353E] align-top whitespace-nowrap">
+        <td className="px-3 sm:px-4 lg:px-6 py-4 border-b border-gray-200 dark:border-[#35353E] align-middle whitespace-nowrap">
           <TransactionAmountCell tx={tx} variant="usd" />
         </td>
         <td
-          className="px-3 sm:px-4 lg:px-6 py-4 border-b border-gray-200 dark:border-[#35353E]"
+          className="px-3 sm:px-4 lg:px-6 py-4 border-b border-gray-200 dark:border-[#35353E] align-middle"
           onClick={(e) => e.stopPropagation()}
         >
           <TransactionStatusCell
@@ -717,7 +717,7 @@ const AllTransactions = ({
             }
           />
         </td>
-        <td className="px-3 sm:px-4 lg:px-6 py-4 border-b border-gray-200 dark:border-[#35353E] text-sm sm:text-base text-gray-500 dark:text-[#A0A3BC]">
+        <td className="px-3 sm:px-4 lg:px-6 py-4 border-b border-gray-200 dark:border-[#35353E] text-sm sm:text-base text-gray-500 dark:text-[#A0A3BC] whitespace-nowrap align-middle">
           {formatDashboardTransactionWhen(tx.created_at)}
         </td>
         <td
@@ -787,21 +787,23 @@ const AllTransactions = ({
             </div>
           </div>
           <div
-            className="flex flex-wrap items-center gap-2 pt-2 border-t border-gray-200 dark:border-[#35353E]"
+            className="flex flex-nowrap items-center gap-2 pt-2 border-t border-gray-200 dark:border-[#35353E] overflow-x-auto scrollbar-thin"
             onClick={(e) => e.stopPropagation()}
           >
-            <span className="text-[11px] px-2.5 py-1 rounded-full font-semibold bg-[#1D8751]/10 text-[#1D8751]">
+            <span className="text-[11px] px-2.5 py-1 rounded-full font-semibold bg-[#1D8751]/10 text-[#1D8751] flex-shrink-0 whitespace-nowrap">
               {getTypeLabel(tx.type, tx.sub_type)}
             </span>
-            <TransactionStatusCell
-              status={tx.status}
-              transactionId={
-                (tx as any)?.referral_withdrawal_id ||
-                (tx as any)?.withdrawal_id ||
-                tx.id
-              }
-            />
-            <span className="text-xs font-medium text-gray-500 dark:text-[#A0A3BC] whitespace-nowrap">
+            <div className="flex-shrink-0">
+              <TransactionStatusCell
+                status={tx.status}
+                transactionId={
+                  (tx as any)?.referral_withdrawal_id ||
+                  (tx as any)?.withdrawal_id ||
+                  tx.id
+                }
+              />
+            </div>
+            <span className="text-xs font-medium text-gray-500 dark:text-[#A0A3BC] whitespace-nowrap flex-shrink-0">
               {formatDashboardTransactionWhen(tx.created_at)}
             </span>
           </div>
@@ -876,9 +878,9 @@ const AllTransactions = ({
               ].map((h) => (
                 <th
                   key={h}
-                  className={`px-3 sm:px-4 lg:px-6 py-3 text-left text-xs sm:text-sm font-medium text-gray-600 dark:text-[#788099] ${
+                  className={`px-3 sm:px-4 lg:px-6 py-3 text-left text-xs sm:text-sm font-medium text-gray-600 dark:text-[#788099] whitespace-nowrap ${
                     h === t("transactions.actions", "Actions")
-                      ? "min-w-[120px] whitespace-nowrap"
+                      ? "min-w-[120px]"
                       : ""
                   }`}
                 >

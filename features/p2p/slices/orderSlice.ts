@@ -668,13 +668,39 @@ const p2pMarketSlice = createSlice({
     // Action to update confirmOrder status from WebSocket
     updateConfirmOrderStatus: (state, action) => {
       const { status } = action.payload;
-      
+
       if (state.confirmOrder) {
         state.confirmOrder = {
           ...state.confirmOrder,
           status: status,
         };
       }
+    },
+    /** Merge p2p-trade-confirm WebSocket fields into confirmOrder for instant UI updates. */
+    patchConfirmOrderFromWs: (
+      state,
+      action: {
+        payload: {
+          status?: string;
+          can_confirm_payment?: boolean;
+          can_confirm_receipt?: boolean;
+        };
+      }
+    ) => {
+      if (!state.confirmOrder) return;
+      const p = action.payload;
+      state.confirmOrder = {
+        ...state.confirmOrder,
+        ...(p.status != null && String(p.status).trim() !== ""
+          ? { status: p.status as MatchedTrade["status"] }
+          : {}),
+        ...(typeof p.can_confirm_payment === "boolean"
+          ? { can_confirm_payment: p.can_confirm_payment }
+          : {}),
+        ...(typeof p.can_confirm_receipt === "boolean"
+          ? { can_confirm_receipt: p.can_confirm_receipt }
+          : {}),
+      };
     },
   },
   extraReducers: (builder) => {
@@ -911,5 +937,6 @@ export const {
   updateOrdersFromWS,
   removeOrderFromWS,
   updateConfirmOrderStatus,
+  patchConfirmOrderFromWs,
 } = p2pMarketSlice.actions;
 export default p2pMarketSlice.reducer;

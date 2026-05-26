@@ -1,8 +1,18 @@
 import React, { useState, useEffect, useLayoutEffect, useRef, useCallback } from "react";
 import { createPortal } from "react-dom";
 import { MarketRow } from "../types";
-import { validateBalance } from "@/utils/balanceValidator";
 import { useDispatch, useSelector } from "react-redux";
+import {
+  getBuyOrderLimits,
+  isBuyAvailableBelowAdMin,
+  isIncompleteTradeAmountInput,
+  parseTradeAmountInput,
+  validateBuyReceiveUsdt,
+  validateBuySendAmount,
+  validateSellReceiveFiat,
+  validateSellSendUsdt,
+  type AmountValidationResult,
+} from "./tradePreviewAmountValidation";
 import { AppDispatch } from "@/store";
 import { fetchWallets } from "@/features/p2p/slices/walletSlice";
 import { setConfirmOrderSnapshot } from "@/features/p2p/slices/orderSlice";
@@ -226,11 +236,21 @@ const TradePreview: React.FC<TradePreviewProps> = ({
           availableAmount * commissionRate
         ).toFixed(2)} KES)`
       : `${availableAmount.toFixed(2)} USDT`;
-  // Keep buy preview range aligned with active currency logic (not stale table text).
-  const displayedBuyRangeSuffix = rangeLimitSuffix === "KES" ? "KES" : "USDT";
-  const displayedLimitRange = `${buyRangeMin.toFixed(2)} - ${buyRangeMax.toFixed(
-    2
-  )} ${displayedBuyRangeSuffix}`;
+  const buyBelowAdMin =
+    tradeType === "buy" &&
+    isBuyAvailableBelowAdMin({
+      rangeMin: buyRangeMin,
+      rangeMax: buyRangeMax,
+      availableUsdt: availableAmount,
+      commissionRate,
+      rangeCurrency: rangeLimitSuffix,
+    });
+  const buyRemainderMaxFiat =
+    commissionRate > 0 ? availableAmount * commissionRate : availableAmount;
+  // When leftover USDT is below ad min, show remainder range instead of full order limits.
+  const displayedLimitRange = buyBelowAdMin
+    ? `Up to ${availableAmount.toFixed(2)} USDT (${buyRemainderMaxFiat.toFixed(2)} ${rangeLimitSuffix})`
+    : `${buyRangeMin.toFixed(2)} - ${buyRangeMax.toFixed(2)} ${rangeLimitSuffix}`;
   // Sell input and limits are both in USDT.
   const sellRangeMinUsdt = effectiveSellMinUsdt;
   const sellRangeMaxUsdt = effectiveSellMaxUsdt;
@@ -458,286 +478,133 @@ const TradePreview: React.FC<TradePreviewProps> = ({
     totalWalletBalance,
   ].filter((v) => Number.isFinite(v) && v >= 0);
   const walletBalance = Math.max(0, ...walletBalanceCandidates, 0);
-  const absoluteMinimumAmount = 10;
+  const sellAvailableBalance =
+    summaryAmounts?.availableAmount ?? walletBalance;
+
+  const buyOrderBounds = React.useMemo(
+    () => ({
+      rangeMin: buyRangeMin,
+      rangeMax: buyRangeMax,
+      availableUsdt: availableAmount,
+      commissionRate,
+      rangeCurrency: rangeLimitSuffix,
+    }),
+    [
+      buyRangeMin,
+      buyRangeMax,
+      availableAmount,
+      commissionRate,
+      rangeLimitSuffix,
+    ]
+  );
+
+  const sellOrderBounds = React.useMemo(
+    () => ({
+      minUsdt: sellRangeMinUsdt,
+      maxUsdt: sellRangeMaxUsdt,
+      walletBalance: sellAvailableBalance,
+      commissionRate,
+      rangeCurrency: rangeLimitSuffix,
+    }),
+    [
+      sellRangeMinUsdt,
+      sellRangeMaxUsdt,
+      sellAvailableBalance,
+      commissionRate,
+      rangeLimitSuffix,
+    ]
+  );
+
+  const applyAmountValidation = (result: AmountValidationResult) => {
+    setIsAmountValid(result.valid);
+    setErrorMessage(result.message);
+  };
+
   const handleSetMaxAmount = () => {
     if (tradeType === "sell") {
-      const sellMaxAmount = Math.max(0, walletBalance);
+      const sellMaxAmount = Math.min(sellRangeMaxUsdt, sellAvailableBalance);
       handleSendAmountChange(sellMaxAmount > 0 ? sellMaxAmount.toFixed(2) : "");
       return;
     }
 
-    const adAvailable = Math.max(0, advertiserData.availableAmount || 0);
-    const buyMaxInRangeCurrency = Math.max(0, adAvailable * commissionRate);
-    handleSendAmountChange(
-      buyMaxInRangeCurrency > 0 ? buyMaxInRangeCurrency.toFixed(2) : ""
-    );
+    const { maxSend } = getBuyOrderLimits(buyOrderBounds);
+    handleSendAmountChange(maxSend > 0 ? maxSend.toFixed(2) : "");
   };
 
   const handleSendAmountChange = (value: string) => {
     setActiveField("send");
+    setSendAmount(value);
 
-    if (!value) {
-      setSendAmount("");
+    if (!value.trim()) {
       setIsAmountValid(true);
       setErrorMessage("");
       setReceiveAmount("");
       return;
     }
 
-    // Handle invalid input (empty or just minus sign)
-    if (value === "-" || value === "." || value === ",") {
-      setSendAmount(value);
+    if (isIncompleteTradeAmountInput(value)) {
+      setIsAmountValid(true);
+      setErrorMessage("");
       return;
     }
 
-    let numericAmount = parseFloat(value);
+    const parsed = parseTradeAmountInput(value);
+    if (parsed === null) {
+      setIsAmountValid(false);
+      setErrorMessage("Enter a valid amount");
+      setReceiveAmount("");
+      return;
+    }
 
-    // Always set the input value (allow user to type anything)
-    setSendAmount(value);
-    setNumericAmount(numericAmount);
+    setNumericAmount(parsed);
+    const rate = commissionRate > 0 ? commissionRate : 1;
 
-    // Only validate balance for sell orders
     if (tradeType === "sell") {
-      const availableAmount = advertiserData.availableAmount || 0;
-
-      // Calculate receive amount first (always show it)
-      const calculatedReceive = (numericAmount * commissionRate).toFixed(2);
-      setReceiveAmount(calculatedReceive);
-
-      // Check balance first
-      if (numericAmount > walletBalance) {
-        setIsAmountValid(false);
-        const summaryAvailableForDisplay =
-          summaryAmounts?.availableAmount ?? walletBalance;
-        setErrorMessage(
-          `Insufficient balance. Available: ${summaryAvailableForDisplay.toFixed(
-            2
-          )} USDT`
-        );
-        return;
-      }
-
-      // Global minimum regardless of ad limits.
-      if (numericAmount < absoluteMinimumAmount) {
-        setIsAmountValid(false);
-        setErrorMessage(`Amount cannot be less than ${absoluteMinimumAmount.toFixed(2)} USDT`);
-        return;
-      }
-
-      // Same bounds as displayed "Range: … USDT" (fiat limits → USDT; do not mix fiat min with USDT remainder).
-      const minUsdt = sellRangeMinUsdt;
-      const maxUsdt = sellRangeMaxUsdt;
-
-      if (numericAmount < minUsdt) {
-        setIsAmountValid(false);
-        setErrorMessage(`Minimum amount is ${minUsdt.toFixed(2)} USDT`);
-        return;
-      }
-
-      if (numericAmount > maxUsdt) {
-        setIsAmountValid(false);
-        const maxFiat = maxUsdt * commissionRate;
-        setErrorMessage(
-          `Maximum allowed is ${maxUsdt.toFixed(2)} USDT (${maxFiat.toFixed(
-            2
-          )} ${rangeLimitSuffix})`
-        );
-        return;
-      }
-
-      // Validation passed
-      setIsAmountValid(true);
-      setErrorMessage("");
-      return;
-    } else {
-      // For buy orders: send is in range currency (KES/USD), receive is USDT
-      // Use buy-range currency limits (KES/USD), already converted for KES.
-      if (isNaN(numericAmount)) {
-        setReceiveAmount("");
-        setIsAmountValid(true);
-        setErrorMessage("");
-        return;
-      }
-
-      const availableAmount = advertiserData.availableAmount || 0;
-      const calculatedReceive = numericAmount / commissionRate;
-      const maxSendAmount = availableAmount * commissionRate;
-
-      // Global minimum regardless of ad limits.
-      if (numericAmount < absoluteMinimumAmount) {
-        setIsAmountValid(false);
-        setErrorMessage(`Amount cannot be less than ${absoluteMinimumAmount.toFixed(2)} ${rangeLimitSuffix}`);
-        return;
-      }
-
-      // Use the same min/max shown in the UI range for live validation.
-      const effectiveMin = buyRangeMin;
-      const effectiveMax = maxSendAmount;
-
-      if (numericAmount < effectiveMin) {
-        setIsAmountValid(false);
-        setErrorMessage(`Minimum amount is ${effectiveMin.toFixed(2)} ${rangeLimitSuffix}`);
-        return;
-      }
-
-      if (numericAmount > effectiveMax) {
-        setIsAmountValid(false);
-        const maxInRangeCurrency = effectiveMax;
-        setErrorMessage(
-          `Maximum available is ${availableAmount.toFixed(
-            2
-          )} USDT (${maxInRangeCurrency.toFixed(2)} ${rangeLimitSuffix})`
-        );
-        return;
-      }
-
-      // Validation passed - calculate and set receive amount
-      setIsAmountValid(true);
-      setErrorMessage("");
-      setReceiveAmount(calculatedReceive.toFixed(2));
+      setReceiveAmount((parsed * rate).toFixed(2));
+      applyAmountValidation(validateSellSendUsdt(parsed, sellOrderBounds));
       return;
     }
+
+    setReceiveAmount((parsed / rate).toFixed(2));
+    applyAmountValidation(validateBuySendAmount(parsed, buyOrderBounds));
   };
 
   const handleReceiveAmountChange = (value: string) => {
     setActiveField("receive");
-
-    if (!value) {
-      setReceiveAmount("");
-      setIsAmountValid(true);
-      setErrorMessage("");
-      setSendAmount("");
-      return;
-    }
-
-    // Handle invalid input (empty or just minus sign)
-    if (value === "-" || value === "." || value === ",") {
-      setReceiveAmount(value);
-      return;
-    }
-
-    let numericAmount = parseFloat(value);
-
-    // Always set the input value (allow user to type anything)
     setReceiveAmount(value);
-    setNumericAmount(numericAmount);
 
-    // Handle invalid number input
-    if (isNaN(numericAmount)) {
+    if (!value.trim()) {
       setIsAmountValid(true);
       setErrorMessage("");
       setSendAmount("");
       return;
     }
 
-    const availableAmount = advertiserData.availableAmount || 0;
+    if (isIncompleteTradeAmountInput(value)) {
+      setIsAmountValid(true);
+      setErrorMessage("");
+      return;
+    }
+
+    const parsed = parseTradeAmountInput(value);
+    if (parsed === null) {
+      setIsAmountValid(false);
+      setErrorMessage("Enter a valid amount");
+      setSendAmount("");
+      return;
+    }
+
+    setNumericAmount(parsed);
+    const rate = commissionRate > 0 ? commissionRate : 1;
 
     if (tradeType === "sell") {
-      // For sell: receiveAmount is USD, sendAmount is USDT.
-      // numericAmount is USD (what user typed), min/max are USDT
-      const calculatedSendUsdt = numericAmount / commissionRate;
-
-      // Always show the calculated amount
-      setSendAmount(calculatedSendUsdt.toFixed(2));
-
-      // Check balance first
-      if (calculatedSendUsdt > walletBalance) {
-        setIsAmountValid(false);
-        const summaryAvailableForDisplay =
-          summaryAmounts?.availableAmount ?? walletBalance;
-        setErrorMessage(
-          `Insufficient balance. Available: ${summaryAvailableForDisplay.toFixed(
-            2
-          )} USDT`
-        );
-        return;
-      }
-
-      // Global minimum for typed receive amount in the current range currency (USD/KES).
-      if (numericAmount < absoluteMinimumAmount) {
-        setIsAmountValid(false);
-        setErrorMessage(
-          `Amount cannot be less than ${absoluteMinimumAmount.toFixed(2)} ${rangeLimitSuffix}`
-        );
-        return;
-      }
-
-      // Global minimum regardless of ad limits (normalized to USDT).
-      if (calculatedSendUsdt < absoluteMinimumAmount) {
-        setIsAmountValid(false);
-        setErrorMessage(`Amount cannot be less than ${absoluteMinimumAmount.toFixed(2)} USDT`);
-        return;
-      }
-
-      const minUsdt = sellRangeMinUsdt;
-      const maxUsdt = sellRangeMaxUsdt;
-      const minUsd = minUsdt * commissionRate;
-      const maxUsd = maxUsdt * commissionRate;
-
-      if (numericAmount < minUsd) {
-        setIsAmountValid(false);
-        setErrorMessage(`Minimum receive amount is ${minUsd.toFixed(2)} ${rangeLimitSuffix}`);
-        return;
-      }
-
-      if (numericAmount > maxUsd) {
-        setIsAmountValid(false);
-        setErrorMessage(
-          `Maximum receive is ${maxUsd.toFixed(2)} ${rangeLimitSuffix} (${maxUsdt.toFixed(2)} USDT)`
-        );
-        return;
-      }
-
-      setIsAmountValid(true);
-      setErrorMessage("");
-    } else {
-      // For buy: receiveAmount is USDT, sendAmount is in range currency (KES/USD)
-      // numericAmount is USDT; compare send side against converted buy-range limits.
-      const calculatedSendKes = numericAmount * commissionRate;
-      const maxSendAmount = availableAmount * commissionRate;
-
-      // Global minimum regardless of ad limits.
-      if (numericAmount < absoluteMinimumAmount) {
-        setIsAmountValid(false);
-        setErrorMessage(`Amount cannot be less than ${absoluteMinimumAmount.toFixed(2)} USDT`);
-        setSendAmount("");
-        return;
-      }
-
-      if (numericAmount > availableAmount) {
-        setIsAmountValid(false);
-        setErrorMessage(`Amount cannot exceed available (${availableAmount.toFixed(2)} USDT)`);
-        setSendAmount("");
-        return;
-      }
-
-      // Use the same min/max shown in the UI range for live validation.
-      const effectiveMin = buyRangeMin;
-      const effectiveMax = maxSendAmount;
-
-      if (calculatedSendKes < effectiveMin) {
-        setIsAmountValid(false);
-        setErrorMessage(`Minimum amount is ${effectiveMin.toFixed(2)} ${rangeLimitSuffix}`);
-        setSendAmount("");
-        return;
-      }
-
-      if (calculatedSendKes > effectiveMax) {
-        setIsAmountValid(false);
-        const maxInRangeCurrency = effectiveMax;
-        setErrorMessage(
-          `Maximum available is ${availableAmount.toFixed(
-            2
-          )} USDT (${maxInRangeCurrency.toFixed(2)} ${rangeLimitSuffix})`
-        );
-        setSendAmount("");
-        return;
-      }
-
-      setIsAmountValid(true);
-      setErrorMessage("");
-      setSendAmount(calculatedSendKes.toFixed(2));
+      setSendAmount((parsed / rate).toFixed(2));
+      applyAmountValidation(validateSellReceiveFiat(parsed, sellOrderBounds));
+      return;
     }
+
+    setSendAmount((parsed * rate).toFixed(2));
+    applyAmountValidation(validateBuyReceiveUsdt(parsed, buyOrderBounds));
   };
 
   const isFormValid = () => {
@@ -994,7 +861,7 @@ const TradePreview: React.FC<TradePreviewProps> = ({
                         value={sendAmount}
                         onChange={(e) => handleSendAmountChange(e.target.value)}
                         placeholder="220"
-                        className={`flex-1 bg-transparent text-lg sm:text-xl font-semibold focus:outline-none rounded-xl px-3 sm:px-4 py-2 text-gray-900 dark:text-white placeholder:text-gray-400 dark:placeholder:text-[#788099] ${!isAmountValid && sendAmount ? "border border-red-500" : ""
+                        className={`flex-1 bg-transparent text-lg sm:text-xl font-semibold focus:outline-none rounded-xl px-3 sm:px-4 py-2 text-gray-900 dark:text-white placeholder:text-gray-400 dark:placeholder:text-[#788099] ${!isAmountValid && errorMessage && activeField === "send" ? "border border-red-500" : ""
                           }`}
                       />
                       <div className="relative w-full sm:w-auto">
@@ -1007,7 +874,7 @@ const TradePreview: React.FC<TradePreviewProps> = ({
                         </select>
                       </div>
                     </div>
-                    {!isAmountValid && sendAmount && activeField === "send" && (
+                    {!isAmountValid && errorMessage && activeField === "send" && (
                       <div className="text-sm text-red-500 pl-0 sm:pl-2 font-semibold">
                         {errorMessage}
                       </div>
@@ -1030,7 +897,7 @@ const TradePreview: React.FC<TradePreviewProps> = ({
                         onChange={(e) => handleReceiveAmountChange(e.target.value)}
                         placeholder={`220 ${rangeLimitSuffix}`}
                         max={advertiserData.availableAmount || 0}
-                        className={`flex-1 bg-transparent text-lg sm:text-xl font-semibold focus:outline-none rounded-xl px-3 sm:px-4 py-2 text-gray-900 dark:text-white placeholder:text-gray-400 dark:placeholder:text-[#788099] ${!isAmountValid && receiveAmount ? "border border-red-500" : ""
+                        className={`flex-1 bg-transparent text-lg sm:text-xl font-semibold focus:outline-none rounded-xl px-3 sm:px-4 py-2 text-gray-900 dark:text-white placeholder:text-gray-400 dark:placeholder:text-[#788099] ${!isAmountValid && errorMessage && activeField === "receive" ? "border border-red-500" : ""
                           }`}
                       />
                       <div className="relative w-full sm:w-auto">
@@ -1043,7 +910,7 @@ const TradePreview: React.FC<TradePreviewProps> = ({
                         </select>
                       </div>
                     </div>
-                    {!isAmountValid && receiveAmount && activeField === "receive" && (
+                    {!isAmountValid && errorMessage && activeField === "receive" && (
                       <div className="text-sm text-red-500 pl-0 sm:pl-2 font-semibold">
                         {errorMessage}
                       </div>
@@ -1085,7 +952,7 @@ const TradePreview: React.FC<TradePreviewProps> = ({
                             ? (advertiserData.availableAmount || 0) * commissionRate
                             : undefined
                         }
-                        className={`flex-1 bg-transparent text-lg sm:text-xl font-semibold focus:outline-none rounded-xl px-3 sm:px-4 py-2 text-gray-900 dark:text-white placeholder:text-gray-400 dark:placeholder:text-[#788099] ${!isAmountValid && sendAmount ? "border border-red-500" : ""
+                        className={`flex-1 bg-transparent text-lg sm:text-xl font-semibold focus:outline-none rounded-xl px-3 sm:px-4 py-2 text-gray-900 dark:text-white placeholder:text-gray-400 dark:placeholder:text-[#788099] ${!isAmountValid && errorMessage && activeField === "send" ? "border border-red-500" : ""
                           }`}
                       />
                       <div className="relative w-full sm:w-auto">
@@ -1098,7 +965,7 @@ const TradePreview: React.FC<TradePreviewProps> = ({
                         </select>
                       </div>
                     </div>
-                    {!isAmountValid && sendAmount && (
+                    {!isAmountValid && errorMessage && activeField === "send" && (
                       <div className="text-sm text-red-500 pl-0 sm:pl-2 font-semibold">
                         {errorMessage}
                       </div>
@@ -1121,11 +988,11 @@ const TradePreview: React.FC<TradePreviewProps> = ({
                         onChange={(e) => handleReceiveAmountChange(e.target.value)}
                         placeholder="220 USDT"
                         max={advertiserData.availableAmount || 0}
-                        className={`flex-1 bg-transparent text-lg sm:text-xl font-semibold focus:outline-none rounded-xl px-3 sm:px-4 py-2 text-gray-900 dark:text-white placeholder:text-gray-400 dark:placeholder:text-[#788099] ${!isAmountValid && receiveAmount ? "border border-red-500" : ""
+                        className={`flex-1 bg-transparent text-lg sm:text-xl font-semibold focus:outline-none rounded-xl px-3 sm:px-4 py-2 text-gray-900 dark:text-white placeholder:text-gray-400 dark:placeholder:text-[#788099] ${!isAmountValid && errorMessage && activeField === "receive" ? "border border-red-500" : ""
                           }`}
                       />
                     </div>
-                    {!isAmountValid && receiveAmount && (
+                    {!isAmountValid && errorMessage && activeField === "receive" && (
                       <div className="text-sm text-red-500 pl-0 sm:pl-2 font-semibold">
                         {errorMessage}
                       </div>

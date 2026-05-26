@@ -17,6 +17,71 @@ function str(v: unknown): string {
   return typeof v === "string" ? v.trim() : "";
 }
 
+/** Prefer live WS status over stale REST confirm snapshot for phase/button gates. */
+export function getEffectiveTradeStatus(
+  confirmStatus: string | undefined | null,
+  snap: WsTradeSnapshot
+): string {
+  const ws = snap.rawStatus.trim();
+  if (ws) return ws;
+  return String(confirmStatus ?? "").trim();
+}
+
+export function getEffectiveConfirmFlags(
+  order:
+    | {
+        can_confirm_payment?: boolean;
+        can_confirm_receipt?: boolean;
+      }
+    | null
+    | undefined,
+  snap: WsTradeSnapshot
+): {
+  can_confirm_payment?: boolean;
+  can_confirm_receipt?: boolean;
+} {
+  return {
+    can_confirm_payment:
+      snap.can_confirm_payment !== undefined
+        ? snap.can_confirm_payment
+        : order?.can_confirm_payment,
+    can_confirm_receipt:
+      snap.can_confirm_receipt !== undefined
+        ? snap.can_confirm_receipt
+        : order?.can_confirm_receipt,
+  };
+}
+
+/** Refetch confirm when status or confirm flags change on the wire (not only status string). */
+export function shouldRefreshConfirmOrderFromWs(
+  order:
+    | {
+        status?: string | null;
+        can_confirm_payment?: boolean;
+        can_confirm_receipt?: boolean;
+      }
+    | null
+    | undefined,
+  snap: WsTradeSnapshot
+): boolean {
+  const curStatus = String(order?.status ?? "").trim();
+  const newStatus = snap.rawStatus.trim();
+  if (newStatus && curStatus !== newStatus) return true;
+  if (
+    snap.can_confirm_payment !== undefined &&
+    snap.can_confirm_payment !== order?.can_confirm_payment
+  ) {
+    return true;
+  }
+  if (
+    snap.can_confirm_receipt !== undefined &&
+    snap.can_confirm_receipt !== order?.can_confirm_receipt
+  ) {
+    return true;
+  }
+  return false;
+}
+
 export function wsPayloadToSnapshot(payload: Record<string, unknown>): WsTradeSnapshot {
   const data = (payload?.data && typeof payload.data === "object"
     ? (payload.data as Record<string, unknown>)

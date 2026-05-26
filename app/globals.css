@@ -404,33 +404,33 @@ textarea:active {
   height: 12px !important;
 }
 
-/* Sonner toasts — green success / red error (all direct toast.* calls) */
+/* Sonner toasts — solid green success / solid red error (all direct toast.* calls) */
 [data-sonner-toast][data-type="success"] {
-  background: rgba(29, 135, 81, 0.3) !important;
-  border: 1px solid rgba(29, 135, 81, 0.62) !important;
-  color: #e8f8ee !important;
+  background: #1d8751 !important;
+  border: 1px solid #166b40 !important;
+  color: #ffffff !important;
 }
 
 [data-sonner-toast][data-type="error"] {
-  background: rgba(226, 61, 58, 0.3) !important;
-  border: 1px solid rgba(226, 61, 58, 0.62) !important;
-  color: #fde8e8 !important;
+  background: #e23d3a !important;
+  border: 1px solid #c93330 !important;
+  color: #ffffff !important;
 }
 
 [data-sonner-toast][data-type="success"] [data-title] {
-  color: #e8f8ee !important;
+  color: #ffffff !important;
 }
 
 [data-sonner-toast][data-type="error"] [data-title] {
-  color: #fde8e8 !important;
+  color: #ffffff !important;
 }
 
 [data-sonner-toast][data-type="success"] [data-description] {
-  color: #b8e6c8 !important;
+  color: #e8f8ee !important;
 }
 
 [data-sonner-toast][data-type="error"] [data-description] {
-  color: #f5bcba !important;
+  color: #fde8e8 !important;
 }
 
 /* react-hot-toast — compact */
@@ -472,23 +472,23 @@ textarea:active {
   opacity: 1 !important;
 }
 
-/* react-toastify — green success / red error */
+/* react-toastify — solid green success / solid red error */
 .Toastify__toast--success {
-  background: rgba(29, 135, 81, 0.3) !important;
-  border: 1px solid rgba(29, 135, 81, 0.62) !important;
-  color: #e8f8ee !important;
+  background: #1d8751 !important;
+  border: 1px solid #166b40 !important;
+  color: #ffffff !important;
 }
 
 .Toastify__toast--error {
-  background: rgba(226, 61, 58, 0.3) !important;
-  border: 1px solid rgba(226, 61, 58, 0.62) !important;
-  color: #fde8e8 !important;
+  background: #e23d3a !important;
+  border: 1px solid #c93330 !important;
+  color: #ffffff !important;
 }
 
 .Toastify__toast--success .Toastify__toast-icon svg {
-  fill: #1d8751 !important;
+  fill: #ffffff !important;
 }
 
 .Toastify__toast--error .Toastify__toast-icon svg {
-  fill: #e23d3a !important;
+  fill: #ffffff !important;
 }

@@ -81,15 +81,29 @@ export const useTradeStatusWebSocket = (options: UseTradeStatusWebSocketOptions)
 
           case "status_update":
           case "trade_update": {
-            const data = message.data || message;
-            if (data && data.status) {
-              const normalized = normalizeP2PTradeStatus(String(data.status));
+            const root = msgAny;
+            const nested =
+              root.data && typeof root.data === "object"
+                ? (root.data as Record<string, unknown>)
+                : null;
+            const data = {
+              ...root,
+              ...(nested ?? {}),
+            } as Record<string, unknown>;
+            const statusRaw =
+              data.status ?? root.status ?? nested?.status;
+            if (statusRaw != null && String(statusRaw).trim() !== "") {
+              const normalized = normalizeP2PTradeStatus(String(statusRaw));
               const tradeStatus: TradeStatus = {
-                id: data.id || data.trade_id || tradeId,
-                status: (normalized ?? data.status) as TradeStatus["status"],
-                amount: data.amount,
-                buyer: data.buyer || data.buyer_id,
-                seller: data.seller || data.seller_id,
+                id:
+                  (data.id as string) ||
+                  (data.trade_id as string) ||
+                  (root.trade_id as string) ||
+                  tradeId,
+                status: (normalized ?? String(statusRaw)) as TradeStatus["status"],
+                amount: data.amount as string | undefined,
+                buyer: (data.buyer as string) || (data.buyer_id as string),
+                seller: (data.seller as string) || (data.seller_id as string),
                 ...data,
               };
               const payloadTradeId = (data as { trade_id?: string; tradeId?: string }).trade_id

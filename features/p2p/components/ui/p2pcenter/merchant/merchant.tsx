@@ -7,6 +7,7 @@ import { submitMerchantApplicationThunk, clearMerchantError, clearMerchantSucces
 import { showToast } from '@/lib/utils/toast'
 import { selectTransactionSummary, fetchTransactionSummary } from '@/features/p2p/slices/transactionSummarySlice'
 import { formatCurrency } from '@/lib/globalFormatter'
+import { parseSummaryNumber } from '@/lib/utils/normalizeTransactionSummary'
 
 import { logger } from '@/lib/utils/logger';
 
@@ -409,7 +410,9 @@ const Merchant = () => {
               </div>
               <div className="flex items-start gap-3">
                 {(() => {
-                  const currentVolume = Number(summary?.total_approved_p2p_volume || summary?.total_volume || 0);
+                  const currentVolume =
+                    parseSummaryNumber(summary?.total_volume) ||
+                    Number(summary?.total_approved_p2p_volume || 0);
                   const requiredVolume = 10000;
                   const meetsRequirement = currentVolume >= requiredVolume;
 

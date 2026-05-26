@@ -23,6 +23,7 @@ import CopyButton from "@/components/ui/CopyButton";
 import { FaChevronRight } from "react-icons/fa";
 import { Dialog } from "@headlessui/react";
 import { useTradeStatusWebSocket } from "@/features/p2p/hooks/useTradeStatusWebSocket";
+import { useMarketTradeStatusWsHandler } from "@/features/p2p/hooks/useMarketTradeStatusWsHandler";
 
 import { logger } from '@/lib/utils/logger';
 import {
@@ -32,12 +33,11 @@ import {
 import {
   PENDING_ACCEPTANCE_AUTO_CANCEL_MS,
   type TradeLifecycleBanner,
-  wsPayloadToSnapshot,
+  getEffectiveConfirmFlags,
+  getEffectiveTradeStatus,
   isPendingAcceptanceStatus,
-  isDeclinedLikeStatus,
   formatCountdownSeconds,
   isTransactionCountdownActive,
-  wsStatusPayloadMatchesTrade,
 } from "@/features/p2p/utils/tradeWsAcceptanceGate";
 
 interface FinalBuyProps {
@@ -120,78 +120,35 @@ function FinalBuy({ orderData }: FinalBuyProps) {
     [dispatch, isAuthenticated, router]
   );
 
-  // WebSocket status update callback - use useCallback to prevent reconnections
-  const handleStatusUpdate = React.useCallback((status: any) => {
-    logger.debug('p2p', "🔔 Trade status update received in buyform:", status);
-    logger.debug('p2p', "📊 Current confirmOrder:", confirmOrder);
-    logger.debug('p2p', "📊 Current confirmOrder.id:", confirmOrder?.id);
-    logger.debug('p2p', "📊 Current confirmOrder.status:", confirmOrder?.status);
-    logger.debug('p2p', "📊 New status:", status.status);
-
-    const payload = status as Record<string, unknown>;
-    const pageTradeId = String(confirmOrder?.id ?? confirmOrderIdRef.current ?? "").trim();
-    if (pageTradeId && !wsStatusPayloadMatchesTrade(payload, pageTradeId)) {
-      logger.debug("p2p", "buyform: skip WS status (different trade than current page)", {
-        pageTradeId,
-      });
-      return;
-    }
-
-    const snap = wsPayloadToSnapshot(payload);
-    setWsTradeSnapshot(snap);
-    wsSnapshotRef.current = snap;
-
-    const lowered = snap.rawStatus.toLowerCase();
-    if (lowered === "cancelled" || lowered === "canceled") {
+  const handleStatusUpdate = useMarketTradeStatusWsHandler({
+    confirmOrder,
+    logLabel: "buyform",
+    onSnapshot: (snap) => {
+      setWsTradeSnapshot(snap);
+      wsSnapshotRef.current = snap;
+    },
+    onCanceled: () => {
       setTradeLifecycleBanner({
         tone: "warning",
         message: "This trade was cancelled. Returning you to P2P.",
       });
       void performExitToP2p();
-      return;
-    }
-
-    if (isDeclinedLikeStatus(payload)) {
+    },
+    onDeclined: () => {
       setTradeLifecycleBanner({
         tone: "danger",
         message: "The other party declined this trade. Cancelling and returning you to P2P.",
       });
       void performExitToP2p();
-      return;
-    }
-
-    if (isPendingAcceptanceStatus(snap.rawStatus)) {
-      setPendingAcceptanceStartedAt((prev) => prev ?? Date.now());
-    } else {
-      setPendingAcceptanceStartedAt(null);
-    }
-
-    const oldStatus = confirmOrder?.status;
-    const newStatus = status.status;
-
-    const tradeId = String(confirmOrderIdRef.current ?? confirmOrder?.id ?? "").trim();
-    const normalizedNew = String(newStatus ?? snap.rawStatus ?? "").trim();
-
-    // WS drives UI; only hit confirm REST when status actually changes (not every tick).
-    if (tradeId && normalizedNew && oldStatus !== normalizedNew) {
-      logger.debug('p2p', `📢 Status changed: ${oldStatus} → ${normalizedNew}`);
-      dispatch(fetchConfirmOrder(tradeId))
-        .unwrap()
-        .then((updatedOrder) => {
-          logger.debug('p2p', "✅ fetchConfirmOrder SUCCESS:", updatedOrder?.status);
-        })
-        .catch((error) => {
-          console.error("❌ fetchConfirmOrder FAILED:", error);
-        });
-    } else if (!tradeId || !normalizedNew) {
-      console.warn("❌ Conditions NOT met:", {
-        hasConfirmOrderId: !!confirmOrder?.id,
-        hasNewStatus: !!newStatus,
-        confirmOrderId: confirmOrder?.id,
-        newStatus: newStatus
-      });
-    }
-  }, [confirmOrder?.id, confirmOrder?.status, dispatch, performExitToP2p]);
+    },
+    onPendingAcceptance: (active) => {
+      if (active) {
+        setPendingAcceptanceStartedAt((prev) => prev ?? Date.now());
+      } else {
+        setPendingAcceptanceStartedAt(null);
+      }
+    },
+  });
 
   // WebSocket for real-time trade status updates
   const { isConnected: statusWsConnected } = useTradeStatusWebSocket({
@@ -207,23 +164,25 @@ function FinalBuy({ orderData }: FinalBuyProps) {
 
   // Use limit_duration from order only (e.g. "00:00:05" = 5 min) - never use trade's limit (30 min default)
   const displaySeconds = parseDurationToSeconds(singleOrder?.limit_duration);
+  const effectiveStatus = getEffectiveTradeStatus(
+    confirmOrder?.status,
+    wsTradeSnapshot
+  );
+  const effectiveFlags = getEffectiveConfirmFlags(confirmOrder, wsTradeSnapshot);
   const inPendingAcceptanceBuyer =
     isPendingAcceptanceStatus(wsTradeSnapshot.rawStatus) ||
     isPendingAcceptanceStatus(String(confirmOrder?.status || ""));
   const buyerMayMarkMoneySent =
-    confirmOrder?.status === "matched" &&
-    confirmOrder?.can_confirm_payment !== false &&
-    wsTradeSnapshot.can_confirm_payment !== false &&
-    (!inPendingAcceptanceBuyer ||
-      confirmOrder?.can_confirm_payment === true ||
-      wsTradeSnapshot.can_confirm_payment === true);
+    effectiveStatus === "matched" &&
+    effectiveFlags.can_confirm_payment !== false &&
+    (!inPendingAcceptanceBuyer || effectiveFlags.can_confirm_payment === true);
   /** Payment actions (mark paid, etc.) — still gated on acceptance; timer is not. */
   const buyerPaymentPhaseActive =
-    confirmOrder?.status === "matched" && !inPendingAcceptanceBuyer;
+    effectiveStatus === "matched" && !inPendingAcceptanceBuyer;
   const transactionTimerActive = isTransactionCountdownActive(
     displaySeconds,
     confirmOrder?.id,
-    confirmOrder?.status
+    effectiveStatus
   );
 
   const [countdown, setCountdown] = useState(displaySeconds);
@@ -963,7 +922,7 @@ function FinalBuy({ orderData }: FinalBuyProps) {
                       <button
                         className={`w-full md:w-auto flex-1 py-2 rounded-2xl text-lg  ${confirmOrder?.status === "half-matched" || !buyerMayMarkMoneySent
                           ? "bg-white dark:bg-[var(--card-color)] text-gray-400 dark:text-[#888]"
-                          : "bg-[#1D8751] text-white"
+                          : "bg-[#1D8751] text-white hover:bg-[#167a45] transition-colors"
                           } ${(() => {
                             const isThisTradeLoading =
                               confirmTradeLoading &&
@@ -1168,7 +1127,7 @@ function FinalBuy({ orderData }: FinalBuyProps) {
                         setShowSuccessModal(false);
                         setShowFeedbackModal(true);
                       }}
-                      className="w-full bg-[#F79330] text-white rounded-lg px-6 py-3 font-semibold hover:bg-[#e6821a] transition-colors"
+                      className="w-full bg-[#1D8751] text-white rounded-lg px-6 py-3 font-semibold hover:bg-[#167a45] transition-colors"
                     >
                       Provide Feedback
                     </button>
@@ -1196,7 +1155,7 @@ function FinalBuy({ orderData }: FinalBuyProps) {
           <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-[60] p-4" onClick={(e) => { if (e.target === e.currentTarget) { setShowFeedbackModal(false); setFeedbackRating(null); setFeedbackComment(""); } }}>
             <div className="bg-white dark:bg-[var(--card-color)] rounded-2xl p-4 sm:p-6 min-[900px]:p-8 max-w-md w-full mx-4 border border-gray-200 dark:border-[#35353E] max-h-[90vh] overflow-y-auto shadow-xl" onClick={(e) => e.stopPropagation()}>
               <div className="text-center">
-                <div className="w-12 h-12 sm:w-16 sm:h-16 bg-[#F79330] rounded-full flex items-center justify-center mx-auto mb-4 sm:mb-6">
+                <div className="w-12 h-12 sm:w-16 sm:h-16 bg-[#1D8751] rounded-full flex items-center justify-center mx-auto mb-4 sm:mb-6">
                   <svg className="w-6 h-6 sm:w-8 sm:h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 8h10M7 12h4m1 8l-4-4H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-3l-4 4z" />
                   </svg>
