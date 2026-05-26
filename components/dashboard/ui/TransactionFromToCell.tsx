@@ -182,7 +182,7 @@ export function TransactionFromToCell({
 
             alt={trimmed}
 
-            className="w-5 h-5 rounded-full shadow-sm flex-shrink-0 object-cover mt-0.5"
+            className="w-5 h-5 rounded-full shadow-sm flex-shrink-0 object-contain bg-white dark:bg-[#23232A] mt-0.5"
 
             onError={(e) => {
 
@@ -250,23 +250,15 @@ export function TransactionFromToCell({
 
       </div>
 
-      <div className="w-7 h-7 shrink-0 flex items-center justify-center mt-0.5">
-
-        {showCopy ? (
-
+      {showCopy ? (
+        <div className="w-7 h-7 shrink-0 flex items-center justify-center mt-0.5">
           <CopyButton
-
             value={fullCopy}
-
             className="text-gray-500 hover:text-gray-900 dark:text-[#A0A3BC] dark:hover:text-white"
-
             showInlineMessage={false}
-
           />
-
-        ) : null}
-
-      </div>
+        </div>
+      ) : null}
 
     </div>
 

@@ -362,6 +362,7 @@ export default function WithdrawalForm({
   const [walletError, setWalletError] = useState<string | null>(null);
   const [walletCopied, setWalletCopied] = useState(false);
   const [expandedTerms, setExpandedTerms] = useState(false);
+  const [isTermsAccepted, setIsTermsAccepted] = useState(false);
   const [isNetworkDropdownOpen, setIsNetworkDropdownOpen] = useState(false);
 
   // Network options - only Binance Smart Chain BEP20
@@ -2057,6 +2058,14 @@ export default function WithdrawalForm({
   };
 
   const handleFirstCardSubmit = async () => {
+    if (!isTermsAccepted) {
+      showToast.error(
+        "Terms required",
+        "Please accept the terms and conditions to continue."
+      );
+      return;
+    }
+
     // Validate amount first
     if (!payAmount || payAmount <= 0) {
       setBalanceError("Amount should be more than 0");
@@ -2444,7 +2453,7 @@ export default function WithdrawalForm({
         Transaction Info
       </h2>
 
-      <div className="w-full mx-auto text-white">
+      <div className="w-full mx-auto text-[#35353e] dark:text-[#E8E8E8]">
         {/* Single Outer Card Container */}
         <div className="bg-white dark:bg-[var(--card-color)] border border-[#D1D2D4FF] dark:border-[#35353E] rounded-xl sm:rounded-2xl p-3 sm:p-4 lg:p-6 mb-3 sm:mb-4">
           {/* Asset and Network Row */}
@@ -3023,13 +3032,52 @@ export default function WithdrawalForm({
           </div>
 
           {/* Terms & Conditions — P2P / USDT BEP20 (shows 3 items, Show More for 4–5) */}
-          <div className="mb-6 mt-4 sm:mt-6">
+          <div className="mb-4 mt-4 sm:mt-6">
             <ExpressP2PWithdrawalTermsPanel
               expandedTerms={expandedTerms}
               setExpandedTerms={setExpandedTerms}
               variant="dashboard"
               isDark={isDark}
             />
+
+            <div className="mt-4">
+              <style
+                dangerouslySetInnerHTML={{
+                  __html: `
+                  input[type="checkbox"].terms-checkbox-green:checked {
+                    background-image: url("data:image/svg+xml,%3csvg viewBox='0 0 16 16' fill='white' xmlns='http://www.w3.org/2000/svg'%3e%3cpath d='M12.207 4.793a1 1 0 010 1.414l-7 7a1 1 0 01-1.414 0l-3.5-3.5a1 1 0 011.414-1.414L4.5 10.586l6.293-6.293a1 1 0 011.414 0z'/%3e%3c/svg%3e") !important;
+                    background-size: 14px 14px !important;
+                    background-repeat: no-repeat !important;
+                    background-position: center !important;
+                  }
+                `,
+                }}
+              />
+              <label className="flex items-start cursor-pointer">
+                <input
+                  type="checkbox"
+                  id="p2p-withdrawal-terms-accepted"
+                  className="terms-checkbox-green mt-1 mr-3 w-4 h-4 rounded border-2 border-[#1D8751] focus:ring-[#1D8751] appearance-none bg-transparent checked:bg-[#1D8751] checked:border-[#1D8751] flex-shrink-0"
+                  checked={isTermsAccepted}
+                  onChange={(e) => setIsTermsAccepted(e.target.checked)}
+                />
+                <span className="text-[#35353e] dark:text-[#788099] text-sm">
+                  I confirm that I have read and accepted all the terms listed above
+                  and the{" "}
+                  <a
+                    href="/legal/terms-of-service"
+                    className="text-[#1D8751] cursor-pointer hover:underline"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      onBeforeLegalNavigate?.();
+                    }}
+                  >
+                    Terms of Service
+                  </a>
+                  .
+                </span>
+              </label>
+            </div>
           </div>
 
         </div>
@@ -3056,7 +3104,8 @@ export default function WithdrawalForm({
                   isInfoModalOpen ||
                   getAmount > 15000 ||
                   payAmount <= 0 ||
-                  !!balanceError
+                  !!balanceError ||
+                  !isTermsAccepted
                   ? "bg-gray-500 cursor-not-allowed"
                   : "bg-[#1D8751] hover:bg-[#166b3e]"
                   }`}
@@ -3067,7 +3116,8 @@ export default function WithdrawalForm({
                   isInfoModalOpen ||
                   getAmount > 15000 ||
                   payAmount <= 0 ||
-                  !!balanceError
+                  !!balanceError ||
+                  !isTermsAccepted
                 }
               >
                 {isSubmitting ? (
@@ -3090,11 +3140,11 @@ export default function WithdrawalForm({
                       />
                     </svg>
                     <span className="text-white">
-                      Withdrawal Addresses Generated
+                      Withdraw addresses generated
                     </span>
                   </div>
                 ) : (
-                  <span className="text-white">Withdrawal</span>
+                  <span className="text-white">Withdraw</span>
                 )}
               </button>
             </div>
@@ -3298,7 +3348,7 @@ export default function WithdrawalForm({
                   <span className="text-white">Submitting...</span>
                 </div>
               ) : (
-                <span className="text-white">Complete Withdrawal</span>
+                <span className="text-white">Confirm withdraw</span>
               )}
             </button>
           </div>

@@ -361,3 +361,134 @@ textarea:active {
 .blog-content a:hover {
   color: #167a47 !important;
 }
+
+/* Sonner — compact size + close button */
+[data-sonner-toast] {
+  padding: 8px 36px 8px 12px !important;
+  min-height: unset !important;
+  gap: 6px !important;
+  font-size: 13px !important;
+}
+
+[data-sonner-toast] [data-title] {
+  font-size: 13px !important;
+  line-height: 1.35 !important;
+}
+
+[data-sonner-toast] [data-description] {
+  font-size: 12px !important;
+  line-height: 1.35 !important;
+  margin-top: 2px !important;
+}
+
+[data-sonner-toast] [data-close-button] {
+  width: 18px !important;
+  height: 18px !important;
+  top: 8px !important;
+  right: 8px !important;
+  left: auto !important;
+  transform: none !important;
+  border: none !important;
+  background: rgba(255, 255, 255, 0.12) !important;
+  color: inherit !important;
+  opacity: 0.85 !important;
+}
+
+[data-sonner-toast] [data-close-button]:hover {
+  opacity: 1 !important;
+  background: rgba(255, 255, 255, 0.2) !important;
+}
+
+[data-sonner-toast] [data-close-button] svg {
+  width: 12px !important;
+  height: 12px !important;
+}
+
+/* Sonner toasts — green success / red error (all direct toast.* calls) */
+[data-sonner-toast][data-type="success"] {
+  background: rgba(29, 135, 81, 0.3) !important;
+  border: 1px solid rgba(29, 135, 81, 0.62) !important;
+  color: #e8f8ee !important;
+}
+
+[data-sonner-toast][data-type="error"] {
+  background: rgba(226, 61, 58, 0.3) !important;
+  border: 1px solid rgba(226, 61, 58, 0.62) !important;
+  color: #fde8e8 !important;
+}
+
+[data-sonner-toast][data-type="success"] [data-title] {
+  color: #e8f8ee !important;
+}
+
+[data-sonner-toast][data-type="error"] [data-title] {
+  color: #fde8e8 !important;
+}
+
+[data-sonner-toast][data-type="success"] [data-description] {
+  color: #b8e6c8 !important;
+}
+
+[data-sonner-toast][data-type="error"] [data-description] {
+  color: #f5bcba !important;
+}
+
+/* react-hot-toast — compact */
+.react-hot-toast {
+  max-width: 360px !important;
+}
+
+.react-hot-toast > div[role="status"] {
+  padding: 8px 28px 8px 10px !important;
+  min-height: auto !important;
+}
+
+/* react-toastify — compact + close */
+.Toastify__toast,
+.omaya-toastify-toast {
+  min-height: 40px !important;
+  padding: 8px 10px 8px 12px !important;
+  font-size: 13px !important;
+  line-height: 1.35 !important;
+  border-radius: 8px !important;
+  margin-bottom: 8px !important;
+}
+
+.Toastify__toast-body {
+  padding: 0 !important;
+  margin: 0 !important;
+  font-size: 13px !important;
+}
+
+.Toastify__close-button {
+  opacity: 0.75 !important;
+  align-self: center !important;
+  width: 18px !important;
+  height: 18px !important;
+  color: inherit !important;
+}
+
+.Toastify__close-button:hover {
+  opacity: 1 !important;
+}
+
+/* react-toastify — green success / red error */
+.Toastify__toast--success {
+  background: rgba(29, 135, 81, 0.3) !important;
+  border: 1px solid rgba(29, 135, 81, 0.62) !important;
+  color: #e8f8ee !important;
+}
+
+.Toastify__toast--error {
+  background: rgba(226, 61, 58, 0.3) !important;
+  border: 1px solid rgba(226, 61, 58, 0.62) !important;
+  color: #fde8e8 !important;
+}
+
+.Toastify__toast--success .Toastify__toast-icon svg {
+  fill: #1d8751 !important;
+}
+
+.Toastify__toast--error .Toastify__toast-icon svg {
+  fill: #e23d3a !important;
+}

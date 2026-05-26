@@ -4,11 +4,12 @@ import { useSelector, useDispatch } from "react-redux";
 import { RootState } from "@/store/rootReducer";
 import {
   setMessage,
-  setUploadedImages,
   clearMessage,
   TradeMessage,
   setMessages,
+  replaceOptimisticMessage,
 } from "@/features/p2p/slices/messageSlice";
+import { dedupeTradeMessages } from "@/features/p2p/utils/tradeMessageDedupe";
 import { getTradeMessages, postTradeMessage, GroupedMessage } from "@/features/p2p/api";
 import { MdAccountCircle } from "react-icons/md";
 import { useTradeMessagesWebSocket } from "@/features/p2p/hooks/useTradeMessagesWebSocket";
@@ -45,6 +46,30 @@ const extractImageUrl = (img: any): string => {
     );
   }
   return "";
+};
+
+/** API often returns the same attachment in both `images` and `uploaded_images` — show once. */
+const getMessageImageList = (msg: any): any[] => {
+  const primary = Array.isArray(msg?.images) ? msg.images : [];
+  const secondary = Array.isArray(msg?.uploaded_images) ? msg.uploaded_images : [];
+  const seen = new Set<string>();
+  const merged: any[] = [];
+
+  const pushUnique = (img: any) => {
+    const url = extractImageUrl(img).trim();
+    if (!url) {
+      merged.push(img);
+      return;
+    }
+    const key = url.split("?")[0].toLowerCase();
+    if (seen.has(key)) return;
+    seen.add(key);
+    merged.push(img);
+  };
+
+  for (const img of primary) pushUnique(img);
+  for (const img of secondary) pushUnique(img);
+  return merged;
 };
 
 const normalizeAudioList = (msg: any): Array<{ id?: string; audio_url: string; duration?: number }> => {
@@ -204,22 +229,18 @@ const ChatBox: React.FC<{
   }, [currentUserEmail, advertiserEmail, owner, seller_photo, buyer_photo, buyer, seller, buyerName, sellerName, userName, messageType, peerName]);
   const dispatch = useDispatch();
   const message = useSelector((state: RootState) => state.message.message);
-  const uploaded_images = useSelector(
-    (state: RootState) => state.message.uploaded_images
-  );
+  const [uploadedImages, setUploadedImages] = useState<File[]>([]);
 
   // Get messages from Redux (populated by WebSocket) and sort by timestamp
   const messagesFromRedux = useSelector(
     (state: RootState) => state.message.messages[tradeId] || []
   );
 
-  // Sort messages by timestamp and filter out duplicate optimistic messages
+  // Sort messages by timestamp; Redux already dedupes optimistic + WS/API echoes.
   const sortedMessages = React.useMemo(() => {
     const numericTradeId = Number(tradeId);
     const hasNumericTradeId = Number.isFinite(numericTradeId) && String(tradeId).trim() !== "";
 
-    // Keep this chat isolated to the current trade.
-    // We still allow optimistic temp rows that may not carry trade identifiers yet.
     const messages = [...messagesFromRedux].filter((msg: any) => {
       const messageId = String(msg?.id ?? "").trim();
       if (messageId.startsWith("temp-")) return true;
@@ -236,62 +257,7 @@ const ChatBox: React.FC<{
       return false;
     });
 
-    // Separate temp messages from real messages
-    const tempMessages = messages.filter(msg => msg.id.toString().startsWith('temp-'));
-    const realMessages = messages.filter(msg => !msg.id.toString().startsWith('temp-'));
-
-    // Remove temp messages that have a matching real message (same content and similar timestamp)
-    const normalize = (v: unknown) => String(v ?? "").trim().toLowerCase();
-    const currentUserNorm = normalize(currentUserEmail);
-    const isMine = (msg: any) => {
-      const senderName = normalize(msg?.sender_name);
-      const sender = normalize(msg?.sender);
-      return !!currentUserNorm && (senderName === currentUserNorm || sender === currentUserNorm);
-    };
-    const filteredTempMessages = tempMessages.filter((tempMsg) => {
-      const hasDuplicate = realMessages.some((realMsg) => {
-        const sameText = normalize(realMsg.message) === normalize(tempMsg.message);
-        const sameSender =
-          normalize(realMsg.sender_name) === normalize(tempMsg.sender_name) ||
-          normalize(realMsg.sender) === normalize(tempMsg.sender) ||
-          (isMine(realMsg) && isMine(tempMsg));
-        const sameMediaShape =
-          (Array.isArray((realMsg as any).images) ? (realMsg as any).images.length : 0) ===
-            (Array.isArray((tempMsg as any).images) ? (tempMsg as any).images.length : 0) &&
-          (Array.isArray((realMsg as any).audios) ? (realMsg as any).audios.length : 0) ===
-            (Array.isArray((tempMsg as any).audios) ? (tempMsg as any).audios.length : 0);
-        const timeDiff = Math.abs(
-          new Date(realMsg.timestamp).getTime() - new Date(tempMsg.timestamp).getTime()
-        );
-        // Treat optimistic + server-echo as duplicate within short send window.
-        return sameText && sameSender && sameMediaShape && timeDiff < 15000;
-      });
-      return !hasDuplicate;
-    });
-
-    // Combine and sort
-    const combined = [...realMessages, ...filteredTempMessages].sort((a, b) => {
-      return new Date(a.timestamp).getTime() - new Date(b.timestamp).getTime();
-    });
-
-    // Final dedupe pass for near-identical messages from WS + API races.
-    const seen = new Set<string>();
-    return combined.filter((msg) => {
-      const systemText = String((msg as any)?.message ?? "").trim().toLowerCase();
-      const senderName = String((msg as any)?.sender_name ?? "").trim().toLowerCase();
-      const isSystemConnectionRow =
-        systemText === "websocket connected for p2p trade messages" ||
-        systemText === "websocket connected" ||
-        (senderName === "unknown user" &&
-          (systemText.includes("websocket connected") ||
-            systemText.includes("connection established")));
-      if (isSystemConnectionRow) return false;
-
-      const key = `${msg.sender_name || ""}|${msg.message || ""}|${new Date(msg.timestamp).getTime()}`;
-      if (seen.has(key)) return false;
-      seen.add(key);
-      return true;
-    });
+    return dedupeTradeMessages(messages, currentUserEmail);
   }, [messagesFromRedux, tradeId, currentUserEmail]);
 
   const apiTradeId = React.useMemo(() => {
@@ -655,7 +621,7 @@ const ChatBox: React.FC<{
     if (!apiTradeId) return;
 
     const tempId = `temp-${Date.now()}-${Math.random()}`;
-    const optimisticMessage: any = {
+    const optimisticMessage: TradeMessage = {
       id: tempId,
       trade: parseInt(tradeId),
       sender: currentUserEmail || "",
@@ -713,7 +679,7 @@ const ChatBox: React.FC<{
     if (e.target.files) {
       const filesArray = Array.from(e.target.files);
       // Store File objects directly for FormData upload
-      dispatch(setUploadedImages(filesArray));
+      setUploadedImages(filesArray);
       // Clear the input to allow selecting the same files again
       e.target.value = '';
     }
@@ -722,14 +688,14 @@ const ChatBox: React.FC<{
   // Update handleSend to include images and sender email
   const handleSend = async () => {
     if (!apiTradeId) return;
-    if (!message.trim() && uploaded_images.length === 0) return;
+    if (!message.trim() && uploadedImages.length === 0) return;
 
     const messageContent = message;
-    const images = uploaded_images;
+    const images = uploadedImages;
 
-    // Create optimistic message to show immediately
+    const tempId = `temp-${Date.now()}`;
     const optimisticMessage: TradeMessage = {
-      id: `temp-${Date.now()}`,
+      id: tempId,
       trade: parseInt(tradeId),
       sender: currentUserEmail || '',
       sender_name: currentUserEmail || '',
@@ -746,7 +712,7 @@ const ChatBox: React.FC<{
 
     // Clear input and images immediately for better UX
     dispatch(clearMessage());
-    dispatch(setUploadedImages([]));
+    setUploadedImages([]);
 
     try {
       // Send via HTTP
@@ -756,14 +722,31 @@ const ChatBox: React.FC<{
         sender_name: currentUserEmail || ""
       });
 
+      const created = (response as any)?.id != null ? (response as TradeMessage) : null;
+      if (created?.id) {
+        dispatch(
+          replaceOptimisticMessage({
+            tradeId,
+            tempId,
+            message: {
+              ...created,
+              id: String(created.id),
+              sender_name: created.sender_name || currentUserEmail || "",
+              images:
+                Array.isArray(created.images) && created.images.length > 0
+                  ? created.images
+                  : optimisticMessage.images,
+            },
+          })
+        );
+      }
 
-
-      // Refresh immediately to get the real message with proper IDs and S3 URLs
+      // Refresh for final S3 URLs when uploads are still processing
       fetchMessages();
     } catch (e) {
       // On error, restore the message and images
       dispatch(setMessage(messageContent));
-      dispatch(setUploadedImages(images));
+      setUploadedImages(images);
 
       // Remove the optimistic message
       fetchMessages();
@@ -875,6 +858,8 @@ const ChatBox: React.FC<{
               }
             }
 
+            const messageImages = getMessageImageList(msg);
+
             return (
               <div
                 key={msg.id}
@@ -909,15 +894,10 @@ const ChatBox: React.FC<{
                   {msg.message && msg.message.trim() && <div className="text-xs sm:text-sm break-words mb-2">{msg.message}</div>}
 
                   {/* Image attachments */}
-                  {((msg as any).images?.length || (msg as any).uploaded_images?.length) > 0 && (
-                    <div className="text-xs text-gray-500 mb-1">
-                      Images: {((msg as any).images?.length || (msg as any).uploaded_images?.length || 0)}
-                    </div>
-                  )}
-                  {(((msg as any).images?.length || 0) > 0 || ((msg as any).uploaded_images?.length || 0) > 0) && (
+                  {messageImages.length > 0 && (
                     <div className={msg.message && msg.message.trim() ? "mt-0" : "mt-0"}>
                       <div className="flex gap-2 flex-wrap justify-start">
-                        {([...(Array.isArray((msg as any).images) ? (msg as any).images : []), ...(Array.isArray((msg as any).uploaded_images) ? (msg as any).uploaded_images : [])] as any[]).map((img: any, idx: number) => {
+                        {messageImages.map((img: any, idx: number) => {
                           const imageUrl = extractImageUrl(img);
 
                           const imageKey = (isMessageImage(img) && img.id) ? img.id : `img-${msg.id}-${idx}`;
@@ -1156,7 +1136,7 @@ const ChatBox: React.FC<{
           </div>
           <button
             onClick={handleSend}
-            disabled={!message.trim() && uploaded_images.length === 0}
+            disabled={!message.trim() && uploadedImages.length === 0}
             className="rounded-full h-8 w-8 sm:h-10 sm:w-10 flex items-center justify-center bg-[#1D8751] text-white disabled:opacity-50 disabled:cursor-not-allowed flex-shrink-0"
           >
             <svg
@@ -1177,9 +1157,9 @@ const ChatBox: React.FC<{
           </button>
         </div>
         {/* Preview selected images */}
-        {uploaded_images.length > 0 && (
+        {uploadedImages.length > 0 && (
           <div className="flex gap-2 mt-2 flex-wrap flex-shrink-0">
-            {uploaded_images.map((file, idx) => (
+            {uploadedImages.map((file, idx) => (
               <div key={idx} className="relative w-12 h-12">
                 <img
                   src={URL.createObjectURL(file)}
@@ -1189,8 +1169,7 @@ const ChatBox: React.FC<{
                 <button
                   type="button"
                   onClick={() => {
-                    const newImages = uploaded_images.filter((_, i) => i !== idx);
-                    dispatch(setUploadedImages(newImages));
+                    setUploadedImages((prev) => prev.filter((_, i) => i !== idx));
                   }}
                   className="absolute -top-1 -right-1 w-5 h-5 bg-red-500 text-white rounded-full flex items-center justify-center hover:bg-red-600 transition-colors"
                   title="Remove image"

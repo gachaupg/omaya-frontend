@@ -1,14 +1,24 @@
-import React, { useState, useEffect, useLayoutEffect, useRef } from "react";
+import React, { useState, useEffect, useLayoutEffect, useRef, useCallback } from "react";
 import { createPortal } from "react-dom";
 import { MarketRow } from "../types";
 import { validateBalance } from "@/utils/balanceValidator";
 import { useDispatch, useSelector } from "react-redux";
 import { AppDispatch } from "@/store";
 import { fetchWallets } from "@/features/p2p/slices/walletSlice";
-import { getTransactionSummary, getConfirmOrder, matchP2POrder } from "@/features/p2p/api";
+import { setConfirmOrderSnapshot } from "@/features/p2p/slices/orderSlice";
+import { getTransactionSummary, matchP2POrder } from "@/features/p2p/api";
 import { PresenceIndicator } from "./UserStatusBadge";
 import { PendingAcceptanceWaitModal } from "./PendingAcceptanceWaitModal";
 import { isTradeAcceptedFromConfirmOrder } from "@/features/p2p/utils/tradeWsAcceptanceGate";
+import {
+  extractTradeIdFromMatchResponse,
+  fetchP2PTradeConfirmOnce,
+  canonicalTradeIdFromConfirm,
+} from "@/features/p2p/utils/resolveP2PTradeId";
+import {
+  logTradePreview,
+  logTradePreviewSockets,
+} from "@/features/p2p/utils/tradePreviewDebug";
 import { TransactionSummary, OrderMatchRequest } from "@/features/p2p/types";
 import { getWalletAmountsFromSummary } from "@/features/p2p/walletAmounts";
 import { useRouter } from "next/navigation";
@@ -98,18 +108,62 @@ const TradePreview: React.FC<TradePreviewProps> = ({
   const [awaitingAcceptanceTradeId, setAwaitingAcceptanceTradeId] = useState<string | null>(null);
 
   const paymentDropdownRef = useRef<HTMLDivElement>(null);
+  const pendingTradeIdRef = useRef<string | null>(null);
 
-  const navigateToMatched = (tradeId: string) => {
-    const searchParams = new URLSearchParams();
-    searchParams.set(
-      "orderData",
-      JSON.stringify({
-        order_type: tradeType === "buy" ? "sell" : "buy",
-        commission: advertiserData.commission,
-      })
-    );
-    router.push(`/p2p/${tradeId}/matched?${searchParams.toString()}`);
-  };
+  const navigateToMatched = useCallback(
+    (tradeId: string) => {
+      const id =
+        tradeId?.trim() ||
+        pendingTradeIdRef.current?.trim() ||
+        (typeof window !== "undefined"
+          ? localStorage.getItem("p2p_trade_id")?.trim()
+          : null) ||
+        "";
+      if (!id) return;
+
+      try {
+        localStorage.setItem("p2p_trade_id", id);
+      } catch {
+        /* no-op */
+      }
+
+      const searchParams = new URLSearchParams();
+      searchParams.set(
+        "orderData",
+        JSON.stringify({
+          order_type: tradeType === "buy" ? "sell" : "buy",
+          commission: advertiserData.commission,
+        })
+      );
+      const path = `/p2p/${encodeURIComponent(id)}/matched/?${searchParams.toString()}`;
+
+      logTradePreview("navigate → matched page", { tradeId: id, path });
+
+      // Full navigation so market modal unmount / table refetch cannot cancel client routing.
+      if (typeof window !== "undefined") {
+        window.location.assign(path);
+        return;
+      }
+      router.replace(path);
+    },
+    [tradeType, advertiserData.commission, router]
+  );
+
+  const navigateToMatchedRef = useRef(navigateToMatched);
+  navigateToMatchedRef.current = navigateToMatched;
+
+  const handleNavigateToMatched = useCallback((resolvedTradeId: string) => {
+    const id =
+      resolvedTradeId?.trim() ||
+      pendingTradeIdRef.current?.trim() ||
+      (typeof window !== "undefined"
+        ? localStorage.getItem("p2p_trade_id")?.trim()
+        : null) ||
+      "";
+    if (!id) return;
+    pendingTradeIdRef.current = id;
+    navigateToMatchedRef.current(id);
+  }, []);
 
   const { userPaymentDetails, userDetailsLoading } = useSelector(
     (state: RootState) => state.paymentMethods || { userPaymentDetails: [], userDetailsLoading: false }
@@ -125,6 +179,26 @@ const TradePreview: React.FC<TradePreviewProps> = ({
     const normalized = Number(rawId);
     return Number.isFinite(normalized) ? normalized : null;
   };
+
+  // Log when user opens trade preview from market table
+  useEffect(() => {
+    logTradePreview("opened", {
+      marketOrderId: advertiserData.id,
+      advertiser: advertiserData.advertiser,
+      tradeType: tradeType ?? "(unknown)",
+      commission: advertiserData.commission,
+      limit: advertiserData.limit,
+      available: advertiserData.available,
+    });
+    logTradePreviewSockets(advertiserData.id, "preview-open (order id until match)");
+  }, [
+    advertiserData.id,
+    advertiserData.advertiser,
+    advertiserData.commission,
+    advertiserData.limit,
+    advertiserData.available,
+    tradeType,
+  ]);
 
   // Reset image error when advertiser data changes
   useEffect(() => {
@@ -701,6 +775,11 @@ const TradePreview: React.FC<TradePreviewProps> = ({
 
     try {
       setIsSubmitting(true);
+      logTradePreview("submit → match order", {
+        marketOrderId: advertiserData.id,
+        tradeType,
+        amount: tradeType === "sell" ? sendAmount : receiveAmount,
+      });
       // Create order data: API expects USDT amount (asset being traded)
       // For buy: receiveAmount is USDT. For sell: sendAmount is USDT.
       const orderData: OrderMatchRequest = {
@@ -715,31 +794,52 @@ const TradePreview: React.FC<TradePreviewProps> = ({
       }
 
       const response = await matchP2POrder(advertiserData.id, orderData);
+      logTradePreview("match API response", { response });
 
+      const tradeIdFromResponse = extractTradeIdFromMatchResponse(response);
+      const confirmHint = tradeIdFromResponse || advertiserData.id;
+      const confirm = await fetchP2PTradeConfirmOnce(confirmHint);
+      const tradeId = confirm
+        ? canonicalTradeIdFromConfirm(confirm)
+        : tradeIdFromResponse || advertiserData.id;
 
-      // Store trade_id in local storage
-      let tradeIdFromResponse = null;
-      if (response && 'trade_id' in response) {
-        tradeIdFromResponse = (response as any).trade_id;
-        localStorage.setItem('p2p_trade_id', tradeIdFromResponse);
-      } else {
+      if (confirm) {
+        dispatch(setConfirmOrderSnapshot(confirm));
       }
 
-      const urlId = tradeIdFromResponse || advertiserData.id;
-
-      let alreadyAccepted = false;
-      try {
-        const confirm = await getConfirmOrder(urlId);
-        alreadyAccepted = isTradeAcceptedFromConfirmOrder(confirm);
-      } catch {
-        alreadyAccepted = false;
+      pendingTradeIdRef.current = tradeId;
+      if (tradeId) {
+        try {
+          localStorage.setItem("p2p_trade_id", tradeId);
+        } catch {
+          /* no-op */
+        }
       }
+
+      const alreadyAccepted = confirm
+        ? isTradeAcceptedFromConfirmOrder(confirm)
+        : false;
+
+      logTradePreview("confirm fetched once after match", {
+        marketOrderId: advertiserData.id,
+        sell_order: confirm?.sell_order,
+        buy_order: confirm?.buy_order,
+        tradeIdFromResponse,
+        confirmId: confirm?.id,
+        tradeId,
+        status: confirm?.status,
+        alreadyAccepted,
+      });
+      logTradePreviewSockets(tradeId, "after-match");
+
       if (alreadyAccepted) {
-        navigateToMatched(urlId);
+        logTradePreview("already accepted → navigating immediately");
+        navigateToMatched(tradeId);
         setIsSubmitting(false);
         return;
       }
-      setAwaitingAcceptanceTradeId(urlId);
+      logTradePreview("showing wait modal (pending acceptance)", { tradeId });
+      setAwaitingAcceptanceTradeId(tradeId);
       setIsSubmitting(false);
     } catch (error: any) {
       let errorMessage = "";
@@ -1406,16 +1506,12 @@ const TradePreview: React.FC<TradePreviewProps> = ({
         <PendingAcceptanceWaitModal
           open
           tradeId={awaitingAcceptanceTradeId}
+          advertiserOrderId={advertiserData.id}
           advertiserName={advertiserData.advertiser}
           advertiserPhoto={advertiserData.advertiser_photo}
           advertiserInitials={advertiserData.advertiserInitials}
           isOnline={advertiserData.online}
-          onAccepted={() => {
-            const id = awaitingAcceptanceTradeId;
-            if (!id) return;
-            setAwaitingAcceptanceTradeId(null);
-            navigateToMatched(id);
-          }}
+          onNavigateToMatched={handleNavigateToMatched}
           onClose={() => {
             setAwaitingAcceptanceTradeId(null);
             onClose?.();

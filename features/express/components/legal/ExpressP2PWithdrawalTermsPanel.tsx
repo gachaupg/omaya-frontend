@@ -48,10 +48,10 @@ export function ExpressP2PWithdrawalTermsPanel({
   const outerClass =
     variant === "dashboard"
       ? `border border-[#1D8751] rounded-xl overflow-hidden transition-all duration-300 ${isDark ? "bg-[#1D1D23]" : "bg-[#F8FAFF]"}`
-      : "dark:bg-[#1D1D23] border border-[#1D8751] rounded-xl overflow-hidden transition-all duration-300";
+      : "bg-[#F8FAFF] dark:bg-[#1D1D23] border border-[#1D8751] rounded-xl overflow-hidden transition-all duration-300";
 
   return (
-    <>
+    <div className="text-[#475569] dark:text-[#C5C9D6]">
       <div className="flex items-center gap-2 mb-2">
         <svg className="w-5 h-5 text-[#1D8751]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
           <path
@@ -104,6 +104,6 @@ export function ExpressP2PWithdrawalTermsPanel({
           )}
         </div>
       </div>
-    </>
+    </div>
   );
 }

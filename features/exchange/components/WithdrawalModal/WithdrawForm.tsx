@@ -1,5 +1,4 @@
 import React from 'react';
-import { Toaster } from 'react-hot-toast';
 import AssetsSelector from './AssetsSelector';
 import { AlertCircle, Upload, Copy, QrCodeIcon, ChevronDown } from 'lucide-react';
 import { Asset, Network, PaymentMethod, PaymentProvider, UserPaymentDetail } from '../../types';
@@ -84,7 +83,6 @@ const WithdrawForm: React.FC<WithdrawFormProps> = (props) => {
 
   return (
     <>
-      <Toaster />
       {/* Wallet Details Section (Crypto) */}
         <div className="mb-8">
           <h2 className="text-lg font-semibold mb-4 text-white">2- OMAYA.io Account Detail</h2>

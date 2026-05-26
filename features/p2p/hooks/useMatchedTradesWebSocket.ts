@@ -1,12 +1,13 @@
 import { useEffect, useRef, useState } from "react";
 import { useDispatch } from "react-redux";
-import { AppDispatch } from "@/store";
+import { AppDispatch, RootState } from "@/store";
 import {
   updateMatchedTradesFromWS,
   addMatchedTradeFromWS,
   updateSingleTradeFromWS,
   removeMatchedTradeFromWS,
   removeMatchedTradeByStatusFromWS,
+  fetchLatestMatchedTradesPage,
   fetchMatchedTrades,
 } from "../slices/matchedTradesSlice";
 import { P2P_TRADE_CANCELED_EVENT } from "../constants/tradeSocketEvents";
@@ -38,6 +39,17 @@ export const useMatchedTradesWebSocket = (
   } = options;
 
   const dispatch = useDispatch<AppDispatch>();
+
+  const refreshMatchedTradesFromApi = () => {
+    dispatch((_, getState) => {
+      const { activePage, totalPages } = (getState() as RootState).matchedTrades;
+      if (activePage >= totalPages) {
+        dispatch(fetchLatestMatchedTradesPage());
+      } else {
+        dispatch(fetchMatchedTrades(activePage));
+      }
+    });
+  };
   const [isConnected, setIsConnected] = useState(false);
   const [connectionError, setConnectionError] = useState<string | null>(null);
   const wsRef = useRef(getMatchedTradesWebSocket());
@@ -141,13 +153,13 @@ export const useMatchedTradesWebSocket = (
                 updateMatchedTradesFromWS({
                   trades: message.data.trades,
                   count: message.data.count,
+                  replace: true,
                 })
               );
             }
             break;
 
           case "trades_update":
-            // Silent update - data will be logged by UserCard if needed
             if (message.data.trades) {
               dispatch(
                 updateMatchedTradesFromWS({
@@ -259,13 +271,11 @@ export const useMatchedTradesWebSocket = (
       return;
     }
     
-    // Fetch immediately
-    dispatch(fetchMatchedTrades(1));
+    refreshMatchedTradesFromApi();
 
-    // Then set up interval
     pollingIntervalRef.current = setInterval(() => {
       if (mountedRef.current && !wsRef.current.isConnected()) {
-        dispatch(fetchMatchedTrades(1));
+        refreshMatchedTradesFromApi();
       }
     }, pollingInterval);
   };

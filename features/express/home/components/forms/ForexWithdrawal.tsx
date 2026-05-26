@@ -205,7 +205,7 @@ export default function ForexWithdrawal({
                 <span>Creating Withdrawal...</span>
               </div>
             ) : (
-              <span>Submit FXP Withdrawal</span>
+              <span>Withdraw FXP</span>
             )}
           </button>
           {forexError && (

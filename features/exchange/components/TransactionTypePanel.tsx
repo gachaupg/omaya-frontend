@@ -7,7 +7,7 @@ import WithdrawModal from "./WithdrawalModal";
 
 import { Asset, Network } from "../types";
 import { fetchAssets, clearExchangeError } from "../slices/exchangeSlice";
-import toast, { Toaster } from 'react-hot-toast';
+import toast from 'react-hot-toast';
 
 
 // Define asset types based on the choices
@@ -76,7 +76,6 @@ const TransactionTypePanel: React.FC<Props> = ({
 
   return (
     <div className="w-full rounded-lg">
-      <Toaster />
       {showDepositModal && selectedAsset && (
         <DepositModal asset={selectedAsset} assetType={selectedType === 'crypto' ? 'Crypto' : 'Forex'} onClose={() => { setShowDepositModal(false); setSelectedAsset(null); }} />
       )}

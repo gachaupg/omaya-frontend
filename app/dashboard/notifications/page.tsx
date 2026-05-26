@@ -5,9 +5,10 @@ import { useSelector, useDispatch } from "react-redux";
 import { RootState, AppDispatch } from "@/store/rootReducer";
 import { FaUserCircle, FaChevronRight } from "react-icons/fa";
 import { useRouter } from "next/navigation";
-import { fetchMatchedTrades } from "@/features/p2p/slices/matchedTradesSlice";
-import { MatchedTradesResponse } from "@/features/p2p/types";
-import { useMatchedTradesWebSocket } from "@/features/p2p/hooks/useMatchedTradesWebSocket";
+import {
+  fetchMatchedTrades,
+  fetchLatestMatchedTradesPage,
+} from "@/features/p2p/slices/matchedTradesSlice";
 import { respondToP2PTrade } from "@/features/p2p/api";
 import { showToast } from "@/lib/utils/toast";
 import { getMessageFromApiError } from "@/lib/utils/errorHandler";
@@ -50,58 +51,34 @@ const isLoggedInUserAdvertiserOnTrade = (
 const Notifications = () => {
   const router = useRouter();
   const dispatch = useDispatch<AppDispatch>();
-  const { data: matchedTrades, loading } = useSelector(
+  const { loading, refreshing, hasLoaded, activePage, totalPages } = useSelector(
     (state: RootState) => state.matchedTrades
   );
   const pendingNotifications = useSelector(selectPendingMatchedTradeNotifications);
-  const { user } = useSelector((state: RootState) => state.auth);
-  const { isAuthenticated } = useSelector((state: RootState) => state.auth);
-  // Keep notifications in sync with the bell using the same matched-trades socket.
-  useMatchedTradesWebSocket({
-    enabled: isAuthenticated,
-    fallbackToPolling: true,
-    pollingInterval: 30000,
-  });
+  const { user, isAuthenticated } = useSelector((state: RootState) => state.auth);
 
-  const [currentPage, setCurrentPage] = useState(1);
-  const [totalPages, setTotalPages] = useState(1);
   const [respondingTradeId, setRespondingTradeId] = useState<string | null>(null);
 
+  // Matched-trades WebSocket + polling live in dashboard layout (MatchedTradesWebSocketProvider).
   useEffect(() => {
-    if (isAuthenticated) {
-      // First, get page 1 to determine total count and pages
-      dispatch(fetchMatchedTrades(1)).then((result) => {
-        const payload = result.payload as MatchedTradesResponse;
-        if (payload && payload.count) {
-          const itemsPerPage = 10; // Assuming 10 items per page based on the data
-          const calculatedTotalPages = Math.ceil(payload.count / itemsPerPage);
-          setTotalPages(calculatedTotalPages);
-
-          // Always start from the last page to show latest notifications
-          if (calculatedTotalPages > 0) {
-            setCurrentPage(calculatedTotalPages);
-            dispatch(fetchMatchedTrades(calculatedTotalPages));
-          }
-        }
-      });
-    }
+    if (!isAuthenticated) return;
+    dispatch(fetchLatestMatchedTradesPage());
   }, [dispatch, isAuthenticated]);
 
   const handlePageChange = (page: number) => {
-    setCurrentPage(page);
     dispatch(fetchMatchedTrades(page));
   };
 
   // Reverse pagination: Next = go to previous page, Previous = go to next page
   const handleNextPage = () => {
-    if (currentPage > 1) {
-      handlePageChange(currentPage - 1);
+    if (activePage > 1) {
+      handlePageChange(activePage - 1);
     }
   };
 
   const handlePreviousPage = () => {
-    if (currentPage < totalPages) {
-      handlePageChange(currentPage + 1);
+    if (activePage < totalPages) {
+      handlePageChange(activePage + 1);
     }
   };
   // console.log(user?.email);
@@ -118,7 +95,7 @@ const Notifications = () => {
         });
         if (liveStatus && isPendingAcceptanceStatus(liveStatus)) {
           await respondToP2PTrade(tradeId, "accept");
-          dispatch(fetchMatchedTrades(currentPage)).catch(() => {});
+          dispatch(fetchMatchedTrades(activePage)).catch(() => {});
         }
       } catch (error: unknown) {
         const detail = getMessageFromApiError(error);
@@ -174,17 +151,19 @@ const Notifications = () => {
     router.push(`/p2p/${trade.id}/matched?orderData=${orderData}`);
   };
 
-  if (loading)
+  const showInitialLoader = loading && !hasLoaded;
+
+  if (showInitialLoader) {
     return (
       <div className="flex items-center justify-center min-h-[400px]">
         <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-[#1D8751]"></div>
       </div>
     );
+  }
 
-  // Check for no notifications - handle both null/undefined and empty array cases
   const hasNotifications = pendingNotifications.length > 0;
 
-  if (!hasNotifications)
+  if (hasLoaded && !hasNotifications)
     return (
       <div className="w-full px-2">
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 sm:gap-4 mb-4 sm:mb-6">
@@ -256,7 +235,13 @@ const Notifications = () => {
         />
 
 
-        <span className="text-xs sm:text-sm text-gray-500 dark:text-[#A3A3C2] whitespace-nowrap">
+        <span className="text-xs sm:text-sm text-gray-500 dark:text-[#A3A3C2] whitespace-nowrap flex items-center gap-2">
+          {refreshing && (
+            <span
+              className="inline-block w-3 h-3 border-2 border-[#1D8751] border-t-transparent rounded-full animate-spin"
+              aria-hidden
+            />
+          )}
           {pendingNotifications.length}{" "}
           {pendingNotifications.length === 1
             ? "notification"
@@ -264,13 +249,7 @@ const Notifications = () => {
         </span>
       </div>
 
-      {[...pendingNotifications]
-        .sort((a: any, b: any) => {
-          const timeA = new Date(a.timestamp || 0).getTime();
-          const timeB = new Date(b.timestamp || 0).getTime();
-          return timeB - timeA; // Newest first
-        })
-        .map((trade: any) => {
+      {pendingNotifications.map((trade: any) => {
         const isOwner = trade.owner === user?.email;
         const orderType = getOrderType(trade.order_type, isOwner);
         const status = getMatchedTradeNotificationStatus(
@@ -381,8 +360,8 @@ const Notifications = () => {
         <div className="flex items-center justify-center mt-6 space-x-2">
           <button
             onClick={handlePreviousPage}
-            disabled={currentPage === totalPages}
-            className={`px-3 py-2 rounded-lg text-sm font-medium transition-colors duration-200 ${currentPage === totalPages
+            disabled={activePage === totalPages}
+            className={`px-3 py-2 rounded-lg text-sm font-medium transition-colors duration-200 ${activePage === totalPages
               ? "bg-gray-200 dark:bg-[#31313C] text-gray-400 dark:text-[#A3A3C2] cursor-not-allowed"
               : "bg-[#1D8751] text-white hover:bg-[#17693F]"
               }`}
@@ -395,19 +374,19 @@ const Notifications = () => {
               let pageNum;
               if (totalPages <= 5) {
                 pageNum = i + 1;
-              } else if (currentPage <= 3) {
+              } else if (activePage <= 3) {
                 pageNum = i + 1;
-              } else if (currentPage >= totalPages - 2) {
+              } else if (activePage >= totalPages - 2) {
                 pageNum = totalPages - 4 + i;
               } else {
-                pageNum = currentPage - 2 + i;
+                pageNum = activePage - 2 + i;
               }
 
               return (
                 <button
                   key={pageNum}
                   onClick={() => handlePageChange(pageNum)}
-                  className={`px-3 py-2 rounded-lg text-sm font-medium transition-colors duration-200 ${currentPage === pageNum
+                  className={`px-3 py-2 rounded-lg text-sm font-medium transition-colors duration-200 ${activePage === pageNum
                     ? "bg-[#1D8751] text-white"
                     : "bg-gray-100 dark:bg-[#31313C] text-gray-600 dark:text-[#A3A3C2] hover:bg-gray-200 dark:hover:bg-[#2A2A33]"
                     }`}
@@ -420,8 +399,8 @@ const Notifications = () => {
 
           <button
             onClick={handleNextPage}
-            disabled={currentPage === 1}
-            className={`px-3 py-2 rounded-lg text-sm font-medium transition-colors duration-200 ${currentPage === 1
+            disabled={activePage === 1}
+            className={`px-3 py-2 rounded-lg text-sm font-medium transition-colors duration-200 ${activePage === 1
               ? "bg-gray-200 dark:bg-[#31313C] text-gray-400 dark:text-[#A3A3C2] cursor-not-allowed"
               : "bg-[#1D8751] text-white hover:bg-[#17693F]"
               }`}

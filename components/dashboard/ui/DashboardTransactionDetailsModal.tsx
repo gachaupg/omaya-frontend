@@ -1,7 +1,7 @@
 "use client";
 
-import React, { useEffect } from "react";
-import { X } from "lucide-react";
+import React, { useEffect, useState } from "react";
+import { Download, Share2, X } from "lucide-react";
 import CopyButton from "@/components/ui/CopyButton";
 import { StatusBadge } from "@/components/ui/StatusBadge";
 import { TransactionFromToCell } from "@/components/dashboard/ui/TransactionFromToCell";
@@ -15,6 +15,12 @@ import {
   UsdFlagIcon,
   isUsdOrMoneyXTransaction,
 } from "@/components/dashboard/ui/UsdFlagIcon";
+import { getDashboardTransactionAmounts } from "@/lib/utils/dashboardTransactionAmounts";
+import {
+  downloadDashboardTransactionPdf,
+  shareDashboardTransaction,
+} from "@/lib/utils/dashboardTransactionReceipt";
+import { showToast } from "@/lib/utils/toast";
 
 export type DashboardTransactionDetailView = {
   tx: AllTransactionItem;
@@ -86,6 +92,8 @@ export function DashboardTransactionDetailsModal({
   detail,
 }: DashboardTransactionDetailsModalProps) {
   const { t } = useDashboardI18n();
+  const [pdfLoading, setPdfLoading] = useState(false);
+  const [shareLoading, setShareLoading] = useState(false);
 
   useEffect(() => {
     if (!open) return;
@@ -108,6 +116,7 @@ export function DashboardTransactionDetailsModal({
   const headerLogo = resolveDashboardTransactionAssetImage(tx);
 
   const whenLabel = formatDashboardTransactionWhen(tx.created_at);
+  const amountDisplay = getDashboardTransactionAmounts(tx);
   const transactionId = String(
     tx.referral_withdrawal_id || tx.withdrawal_id || tx.id || ""
   ).trim();
@@ -125,6 +134,41 @@ export function DashboardTransactionDetailsModal({
       value: tx.transaction_hash || tx.payout_hash,
     },
   ].filter((row) => String(row.value || "").trim());
+
+  const handleDownloadPdf = async () => {
+    if (!detail || pdfLoading) return;
+    setPdfLoading(true);
+    try {
+      await downloadDashboardTransactionPdf(detail);
+      showToast.success(
+        t("transactions.pdfDownloaded", "Receipt downloaded"),
+        t("transactions.pdfDownloadedHint", "Saved as PDF")
+      );
+    } catch {
+      showToast.error(
+        t("transactions.pdfDownloadFailed", "Download failed"),
+        t("transactions.pdfDownloadFailedHint", "Could not create PDF. Try again.")
+      );
+    } finally {
+      setPdfLoading(false);
+    }
+  };
+
+  const handleShare = async () => {
+    if (!detail || shareLoading) return;
+    setShareLoading(true);
+    try {
+      await shareDashboardTransaction(detail);
+    } catch (err) {
+      if ((err as Error)?.name === "AbortError") return;
+      showToast.error(
+        t("transactions.shareFailed", "Share failed"),
+        t("transactions.shareFailedHint", "Could not share this transaction")
+      );
+    } finally {
+      setShareLoading(false);
+    }
+  };
 
   return (
     <div
@@ -164,17 +208,19 @@ export function DashboardTransactionDetailsModal({
           <div className="rounded-xl border border-gray-200 dark:border-[#35353E] p-4 space-y-3">
             <div className="flex items-center gap-3 min-w-0">
               {showUsdFlag ? (
-                <UsdFlagIcon size={44} className="w-11 h-11" alt={assetTitle} />
+                <UsdFlagIcon size={44} className="w-11 h-11 shrink-0" alt={assetTitle} />
               ) : (
-                <img
-                  key={`${tx.id}-${headerLogo}`}
-                  src={headerLogo}
-                  alt={assetTitle}
-                  className="w-11 h-11 rounded-full object-contain bg-white dark:bg-[#23232A] shrink-0 border border-gray-200 dark:border-[#35353E] p-0.5"
-                  onError={(e) => {
-                    e.currentTarget.style.display = "none";
-                  }}
-                />
+                <div className="w-11 h-11 shrink-0 flex items-center justify-center rounded-full bg-white dark:bg-[#23232A] border border-gray-200 dark:border-[#35353E] overflow-hidden">
+                  <img
+                    key={`${tx.id}-${headerLogo}`}
+                    src={headerLogo}
+                    alt={assetTitle}
+                    className="max-w-[85%] max-h-[85%] w-auto h-auto object-contain"
+                    onError={(e) => {
+                      e.currentTarget.style.display = "none";
+                    }}
+                  />
+                </div>
               )}
               <div className="min-w-0 flex-1">
                 <p className="text-base font-semibold text-gray-900 dark:text-white uppercase truncate">
@@ -213,10 +259,24 @@ export function DashboardTransactionDetailsModal({
               label={t("transactions.when", "Date")}
               value={whenLabel !== "-" ? whenLabel : undefined}
             />
-            <DetailRow
-              label={t("transactions.amount", "Amount")}
-              value={formatAmount(tx.amount)}
-            />
+            {amountDisplay.assetAmount ? (
+              <DetailRow
+                label={t("transactions.assetAmount", "Asset amount")}
+                value={amountDisplay.assetAmount}
+              />
+            ) : null}
+            {amountDisplay.usdValue ? (
+              <DetailRow
+                label={t("transactions.usdValue", "USD value")}
+                value={amountDisplay.usdValue}
+              />
+            ) : null}
+            {!amountDisplay.assetAmount && !amountDisplay.usdValue ? (
+              <DetailRow
+                label={t("transactions.amount", "Amount")}
+                value={formatAmount(tx.amount)}
+              />
+            ) : null}
             <DetailRow
               label={t("transactions.netAmount", "Net amount")}
               value={formatAmount(tx.net_amount)}
@@ -318,6 +378,31 @@ export function DashboardTransactionDetailsModal({
               </p>
             </div>
           ) : null}
+        </div>
+
+        <div className="sticky bottom-0 flex flex-col sm:flex-row gap-2 px-4 sm:px-6 py-4 border-t border-gray-200 dark:border-[#35353E] bg-white dark:bg-[#18181D]">
+          <button
+            type="button"
+            onClick={() => void handleDownloadPdf()}
+            disabled={pdfLoading}
+            className="flex-1 inline-flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl text-sm font-semibold text-white bg-[#1D8751] hover:bg-[#17693F] disabled:opacity-60 transition-colors"
+          >
+            <Download className="w-4 h-4 shrink-0" aria-hidden />
+            {pdfLoading
+              ? t("transactions.downloadingPdf", "Downloading…")
+              : t("transactions.downloadPdf", "Download PDF")}
+          </button>
+          <button
+            type="button"
+            onClick={() => void handleShare()}
+            disabled={shareLoading}
+            className="flex-1 inline-flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl text-sm font-semibold text-[#1D8751] border border-[#1D8751] bg-[#1D8751]/10 hover:bg-[#1D8751]/20 dark:hover:bg-[#1D8751]/25 disabled:opacity-60 transition-colors"
+          >
+            <Share2 className="w-4 h-4 shrink-0" aria-hidden />
+            {shareLoading
+              ? t("transactions.sharing", "Sharing…")
+              : t("transactions.share", "Share")}
+          </button>
         </div>
       </div>
     </div>

@@ -7,6 +7,12 @@ import {
   normalizeExchangeSubType,
 } from "@/lib/utils/exchangeTransactionDisplay";
 import {
+  getExchangeFromAssetTicker,
+  getExchangePaymentProviderLabel,
+  getExchangeToAssetTicker,
+  isLikelyPaymentProviderName,
+} from "@/lib/utils/exchangeCurrencyDisplay";
+import {
   getHighResAssetIcon,
   resolveCurrencyOrAssetLogo,
 } from "@/features/express/utils/imageHelpers";
@@ -463,8 +469,12 @@ function buildExchangeFromToApiAssets(tx: Record<string, unknown>): {
 } {
   const sub = normalizeExchangeSubType(tx?.sub_type);
   const isDeposit = sub === "deposit";
-  const fromLabel = String(tx.from_asset ?? "").trim() || "—";
-  const toLabel = String(tx.to_asset ?? "").trim() || "—";
+  const txItem = tx as unknown as import("@/features/transactions/api").AllTransactionItem;
+  const paymentLabel = getExchangePaymentProviderLabel(txItem);
+  const fromRaw = String(tx.from_asset ?? "").trim();
+  const toRaw = String(tx.to_asset ?? "").trim();
+  const cryptoFromTicker = getExchangeFromAssetTicker(txItem) || "—";
+  const cryptoToTicker = getExchangeToAssetTicker(txItem) || "—";
   const pm =
     tx.payment_method && typeof tx.payment_method === "object"
       ? (tx.payment_method as Record<string, unknown>)
@@ -486,34 +496,45 @@ function buildExchangeFromToApiAssets(tx: Record<string, unknown>): {
   ).trim();
   const fromAddr = String(tx.from_address || "").trim();
 
+  const depositFromLabel =
+    paymentLabel ||
+    (isLikelyPaymentProviderName(fromRaw) ? fromRaw : "") ||
+    "Bank / Payment";
+
   if (isDeposit) {
     return {
       from: providerDetailFromToCell(
-        fromLabel,
+        depositFromLabel,
         accountRef || (fromAddr && !isLikelyOnChainWalletAddress(fromAddr) ? fromAddr : null),
         fromLogo || resolvePaymentMethodLogo(tx) || DEFAULT_PROVIDER_LOGO
       ),
       to: {
-        label: toLabel,
+        label: cryptoToTicker,
         subLabel:
           networkLine ||
           (toAddr && isLikelyOnChainWalletAddress(toAddr)
             ? formatAddressForDisplay(toAddr)
             : undefined),
         copyValue: toAddr && isLikelyOnChainWalletAddress(toAddr) ? toAddr : null,
-        iconUrl: toLogo || assetImage || resolveAssetIconForLabel(toLabel),
+        iconUrl:
+          toLogo ||
+          assetImage ||
+          resolveAssetIconForLabel(cryptoToTicker),
       },
     };
   }
 
   return {
     from: {
-      label: fromLabel,
+      label: cryptoFromTicker,
       subLabel: networkLine,
-      iconUrl: fromLogo || assetImage || resolveAssetIconForLabel(fromLabel),
+      iconUrl:
+        fromLogo || assetImage || resolveAssetIconForLabel(cryptoFromTicker),
     },
     to: providerDetailFromToCell(
-      toLabel,
+      paymentLabel ||
+        (isLikelyPaymentProviderName(toRaw) ? toRaw : "") ||
+        "Bank / Payment",
       accountRef || (toAddr && !isLikelyOnChainWalletAddress(toAddr) ? toAddr : null),
       toLogo || resolvePaymentMethodLogo(tx) || DEFAULT_PROVIDER_LOGO
     ),

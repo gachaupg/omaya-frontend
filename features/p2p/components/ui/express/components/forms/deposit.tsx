@@ -31,7 +31,10 @@ import { useBookmarkedAddresses } from "@/features/express/hooks/useBookmarkedAd
 import { BookmarkDropdown } from "@/features/express/components/forms/BookmarkDropdown";
 import { useValidateAddress } from "@/hooks/useValidateAddress";
 import { showToast } from "@/lib/utils/toast";
-import { reportAssetLoadIssue } from "@/lib/utils/assetLoadNotice";
+import {
+  reportAssetLoadIssue,
+  shouldSkipAssetFetchError,
+} from "@/lib/utils/assetLoadNotice";
 import { createExpressDeposit, fetchCommission, getCommissionApiAsset, fetchDepositStatus } from "../../api";
 import { ExpressDepositResponse } from "../../types";
 
@@ -757,9 +760,10 @@ export default function DepositForm({
         return data;
       })
       .catch((error: unknown) => {
-        console.error("Failed to fetch assets from cache, trying force refresh:", error);
+        if (shouldSkipAssetFetchError(error)) return;
         return withTimeout(dispatch(fetchAssets(true)).unwrap(), 15_000).catch(
           (refreshError: unknown) => {
+            if (shouldSkipAssetFetchError(refreshError)) return;
             reportAssetLoadIssue("p2p-express-deposit:exchange-assets", refreshError);
             throw refreshError;
           }
@@ -2122,7 +2126,7 @@ export default function DepositForm({
 
       {/* Network Status Indicator */}
       {estimateError && !estimateLoading && (
-        <div className="mb-3 sm:mb-4 p-2 sm:p-3 bg-[#F79330] bg-opacity-10 border border-[#F79330] rounded-lg">
+        <div className="mb-3 sm:mb-4 p-2 sm:p-3 bg-[#F79330]/10 border border-[#F79330]/50 rounded-lg">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-2 text-[#F79330]">
               <svg width="20" height="20" fill="none" viewBox="0 0 24 24">
@@ -2145,7 +2149,7 @@ export default function DepositForm({
           </p>
         </div>
       )}
-      <div className="w-full mx-auto text-white">
+      <div className="w-full mx-auto text-[#35353e] dark:text-[#E8E8E8]">
         {/* Transaction Info Card with Asset and Network selects only */}
         <div className="relative mb-3 sm:mb-4">
           {/* Transaction Info Card Container */}
@@ -2703,13 +2707,19 @@ export default function DepositForm({
               </p>
             )} */}
 
-                {/* Terms and Conditions Summary - same layout as swap */}
+              </div>
+
+              {/* Terms and Conditions Summary - same layout as swap */}
+              <div className="w-full px-2 mb-4 sm:mb-6">
                 <TermsAndConditionsSummary
                   asset={selectedAsset?.ticker || selectedAsset?.symbol || "USDT"}
+                  accountName={
+                    selectedPaymentDetail?.provider_name ||
+                    payBank ||
+                    "the selected provider"
+                  }
                   onBeforeLegalNavigate={onBeforeLegalNavigate}
                 />
-
-
               </div>
 
               {/* Validation Errors Display */}

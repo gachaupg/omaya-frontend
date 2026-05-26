@@ -49,6 +49,13 @@ const TERMINAL_REJECT_STATUSES = new Set([
   "refused",
 ]);
 
+const ACCEPTED_TRADE_STATUSES = new Set([
+  "matched",
+  "half-matched",
+  "half_matched",
+  "accepted",
+]);
+
 /** True when owner has accepted — via status or confirm flags from REST/WS. */
 export function isTradeAcceptedFromWsSnapshot(snap: WsTradeSnapshot): boolean {
   if (snap.can_confirm_payment === true || snap.can_confirm_receipt === true) {
@@ -70,9 +77,13 @@ export function isTradeAcceptedFromConfirmOrder(order: {
     return true;
   }
   const st = String(order.status ?? "").trim();
-  if (!st || isPendingAcceptanceStatus(st)) return false;
+  if (!st) {
+    return false;
+  }
+  if (isPendingAcceptanceStatus(st)) return false;
   const lowered = st.toLowerCase();
   if (TERMINAL_REJECT_STATUSES.has(lowered)) return false;
+  if (ACCEPTED_TRADE_STATUSES.has(lowered)) return true;
   return true;
 }
 
@@ -102,6 +113,22 @@ export function wsStatusPayloadMatchesTrade(
   if (!cur) return false;
   if (!tid) return true;
   return tid === cur;
+}
+
+/** Match WS payloads while resolving trade id from a market order id (preview wait modal). */
+export function wsStatusPayloadMatchesTradeOrOrder(
+  payload: Record<string, unknown>,
+  tradeId: string | null | undefined,
+  orderId?: string | null | undefined
+): boolean {
+  const tid = getTradeIdFromWsStatusPayload(payload);
+  const cur = String(tradeId ?? "").trim();
+  const order = String(orderId ?? "").trim();
+  if (!cur && !order) return false;
+  if (!tid) return true;
+  if (cur && tid === cur) return true;
+  if (order && tid === order) return true;
+  return false;
 }
 
 export function formatCountdownSeconds(totalSeconds: number): string {

@@ -3978,20 +3978,14 @@ const getPaymentRestrictionMessage = (status?: string) =>
 
                       if (sortedPublicPaymentProviders.length > 0) {
                         paymentMethodOptions = sortedPublicPaymentProviders.map((provider: any) => {
-                          const providerName = provider.provider_name || provider.payment_provider_name || "Unknown";
-                          const methodName = provider.method_display || provider.method || provider.method?.method_name || provider.method?.method_display || provider.method_name || null;
-                          
-                          // Extract account details (account_name and account_number)
-                          const details = provider.payment_details?.[0];
-                          const accountInfo = details ? `${details.account_name || ''} - ${details.account_number || ''}` : null;
-                          
-                          // Use account details as subtitle if available, otherwise fall back to method name
-                          const subtitle = accountInfo || (methodName ? `${providerName} - ${methodName}` : null);
-                          
+                          const providerName =
+                            provider.provider_name ||
+                            provider.payment_provider_name ||
+                            "Unknown";
+
                           return {
                             value: providerName,
                             label: providerName,
-                            subtitle: subtitle || undefined,
                             logo: provider.logo || provider.provider_logo || undefined,
                           };
                         }).filter((opt: any) => opt.value && opt.value.trim());
@@ -4481,20 +4475,14 @@ const getPaymentRestrictionMessage = (status?: string) =>
                       let paymentMethodOptions: Array<{ value: string; label: string; subtitle?: string; logo?: string }> = [];
                       if (sortedPublicPaymentProviders.length > 0) {
                         paymentMethodOptions = sortedPublicPaymentProviders.map((provider: any) => {
-                          const providerName = provider.provider_name || provider.payment_provider_name || "Unknown";
-                          const methodName = provider.method_display || provider.method || provider.method?.method_name || provider.method?.method_display || provider.method_name || null;
-                          
-                          // Extract account details (account_name and account_number)
-                          const details = provider.payment_details?.[0];
-                          const accountInfo = details ? `${details.account_name || ''} - ${details.account_number || ''}` : null;
-                          
-                          // Use account details as subtitle if available, otherwise fall back to method name
-                          const subtitle = accountInfo || (methodName ? `${providerName} - ${methodName}` : null);
-                          
+                          const providerName =
+                            provider.provider_name ||
+                            provider.payment_provider_name ||
+                            "Unknown";
+
                           return {
                             value: providerName,
                             label: providerName,
-                            subtitle: subtitle || undefined,
                             logo: provider.logo || provider.provider_logo || undefined,
                           };
                         }).filter((opt: any) => opt.value && opt.value.trim());
