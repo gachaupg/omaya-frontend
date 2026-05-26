@@ -7,6 +7,11 @@ import { withRetry } from "@/lib/utils/retry";
 import { API_CONFIG } from "@/lib/appConfig";
 import { logger } from '@/lib/utils/logger';
 import { resolveSwapCreateErrorMessage } from "@/lib/utils/swapAssetValidation";
+import {
+  clearSupportedTokensCachesOnReload,
+  shouldBypassSupportedTokensCache,
+  shouldForceSupportedTokensRefetch,
+} from "@/lib/utils/supportedTokensCache";
 
 import {
   SupportedAsset,
@@ -195,7 +200,10 @@ const fetchAllPages = async <T>({
     while (nextUrl) {
       const response = await cachedGet<T[] | PaginatedResponse<T>>(
         toRelativeApiUrl(nextUrl),
-        { timeout }
+        {
+          timeout,
+          cache: !shouldForceSupportedTokensRefetch(),
+        }
       );
       const payload = response?.data as T[] | PaginatedResponse<T>;
       if (Array.isArray(payload)) {
@@ -218,7 +226,13 @@ const fetchAllPages = async <T>({
 const fetchPublicSupportedAssetsFallback = async (
   feature: SupportedAssetsFeature = "swap"
 ): Promise<SupportedAsset[]> => {
-  const freshCached = readSwapPublicAssetsCache(false, feature);
+  if (shouldForceSupportedTokensRefetch()) {
+    await clearSupportedTokensCachesOnReload();
+  }
+
+  const freshCached = shouldForceSupportedTokensRefetch()
+    ? []
+    : readSwapPublicAssetsCache(false, feature);
   if (freshCached.length > 0) {
     logger.debug(
       "swap",
@@ -256,9 +270,15 @@ const fetchPublicSupportedAssetsFallback = async (
 export const getSupportedAssets = async (
   feature: SupportedAssetsFeature = "swap"
 ): Promise<SupportedAsset[]> => {
+  if (shouldForceSupportedTokensRefetch()) {
+    await clearSupportedTokensCachesOnReload();
+  }
+
   // Fast path: same caching behavior as Express public assets hook.
   // Serve cached list immediately and avoid blocking UI on network timeout.
-  const cachedPublicAssets = readSwapPublicAssetsCache(false, feature);
+  const cachedPublicAssets = shouldForceSupportedTokensRefetch()
+    ? []
+    : readSwapPublicAssetsCache(false, feature);
   if (cachedPublicAssets.length > 0) {
     logger.debug(
       "swap",

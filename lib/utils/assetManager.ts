@@ -3,6 +3,7 @@
  * Centralized asset fetching and caching to prevent redundant API calls
  */
 
+import { REAL_ASSETS_CACHE_TTL_MS } from '@/lib/constants/realAssetsCache';
 import { sliceCache } from './sliceCache';
 import { getSupportedAssets } from '../../features/swap/api';
 import { EXCHANGE_ENDPOINTS } from '../../features/exchange/api';
@@ -24,14 +25,15 @@ class AssetManager {
     return AssetManager.instance;
   }
 
-  /** 1 hour – refetch only after TTL to avoid refetching at all cost */
-  private static readonly ASSETS_CACHE_TTL_MS = 60 * 60 * 1000;
+  /** Swap/ChangeNOW list — longer TTL than DB real assets */
+  private static readonly SWAP_ASSETS_CACHE_TTL_MS = 10 * 60 * 1000;
+  private static readonly EXCHANGE_ASSETS_CACHE_TTL_MS = REAL_ASSETS_CACHE_TTL_MS;
 
   /**
    * Get swap assets with intelligent caching
    */
   async getSwapAssets(options: AssetManagerOptions = {}): Promise<any[]> {
-    const { ttl = AssetManager.ASSETS_CACHE_TTL_MS, forceRefresh = false } = options;
+    const { ttl = AssetManager.SWAP_ASSETS_CACHE_TTL_MS, forceRefresh = false } = options;
     const cacheKey = "swap_assets_global";
 
     // Check if request is already pending
@@ -55,7 +57,7 @@ class AssetManager {
    * Get exchange assets with intelligent caching
    */
   async getExchangeAssets(options: AssetManagerOptions = {}): Promise<any> {
-    const { ttl = AssetManager.ASSETS_CACHE_TTL_MS, forceRefresh = false } = options;
+    const { ttl = AssetManager.EXCHANGE_ASSETS_CACHE_TTL_MS, forceRefresh = false } = options;
     const cacheKey = 'exchange_assets_global';
 
     // Check if request is already pending

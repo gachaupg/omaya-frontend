@@ -31,8 +31,15 @@ import {
   RemoveFavoritePayload,
 } from "../types";
 
+import { REAL_ASSETS_CACHE_TTL_MS } from "@/lib/constants/realAssetsCache";
+import {
+  clearSupportedTokensCachesOnReload,
+  consumeSupportedTokensReloadRefetch,
+  shouldForceSupportedTokensRefetch,
+} from "@/lib/utils/supportedTokensCache";
+
 /** Skip exchange asset list refetch when Redux already has rows and TTL not expired. */
-export const EXCHANGE_ASSETS_CLIENT_TTL_MS = 10 * 60 * 1000;
+export const EXCHANGE_ASSETS_CLIENT_TTL_MS = REAL_ASSETS_CACHE_TTL_MS;
 
 interface ExchangeState {
   deposits: TransactionsResponse | null;
@@ -274,8 +281,8 @@ const fetchAllExchangeAssetPages = async (
       AssetsResponse | SupportedTokenApiAsset[] | PaginatedResponse<SupportedTokenApiAsset>
     >(toRelativeApiUrl(nextUrl), {
       timeout: 30000,
-      ttl: 10 * 60 * 1000,
-      cache: true,
+      ttl: REAL_ASSETS_CACHE_TTL_MS,
+      cache: !shouldForceSupportedTokensRefetch(),
     });
     const normalized = normalizeAssetsPayload(response.data);
     if (Array.isArray(normalized.assets) && normalized.assets.length > 0) {
@@ -315,6 +322,10 @@ let exchangeAssetsInFlight: Promise<AssetsResponse> | null = null;
 export const fetchAssets = createAsyncThunk<AssetsResponse, boolean | undefined>(
   "exchange/fetchAssets",
   async (forceRefresh: boolean = false, { rejectWithValue }) => {
+    const bypassCache = forceRefresh || shouldForceSupportedTokensRefetch();
+    if (bypassCache) {
+      await clearSupportedTokensCachesOnReload();
+    }
     const endpoint = EXCHANGE_ENDPOINTS.ASSETS;
 
     // Check circuit breaker before making the call
@@ -328,7 +339,7 @@ export const fetchAssets = createAsyncThunk<AssetsResponse, boolean | undefined>
     try {
       let data;
       
-      if (forceRefresh) {
+      if (bypassCache) {
         logger.debug('exchange', "🔄 Force refresh - bypassing cache for exchange assets...");
         // Clear cache first
         await sliceCache.delete('exchange', 'fetchAssets');
@@ -336,7 +347,7 @@ export const fetchAssets = createAsyncThunk<AssetsResponse, boolean | undefined>
         const response = await fetchAllExchangeAssetPages(endpoint);
         logger.debug('exchange', "✅ Force refresh API response received:", response?.assets?.length || 0, "assets");
         // Cache the fresh data
-        await sliceCache.set('exchange', 'fetchAssets', response, undefined, 10 * 60 * 1000);
+        await sliceCache.set('exchange', 'fetchAssets', response, undefined, REAL_ASSETS_CACHE_TTL_MS);
         data = response;
       } else {
         // Dedupe concurrent callers (multiple components dispatching before first resolves).
@@ -356,7 +367,7 @@ export const fetchAssets = createAsyncThunk<AssetsResponse, boolean | undefined>
               return response;
             },
             undefined, // no params
-            10 * 60 * 1000 // 10 minute cache – refetch only after TTL
+            REAL_ASSETS_CACHE_TTL_MS
           )
           .finally(() => {
             exchangeAssetsInFlight = null;
@@ -365,6 +376,9 @@ export const fetchAssets = createAsyncThunk<AssetsResponse, boolean | undefined>
       }
 
       CircuitBreaker.onSuccess(endpoint);
+      if (shouldForceSupportedTokensRefetch()) {
+        consumeSupportedTokensReloadRefetch();
+      }
       return data;
     } catch (error: any) {
       exchangeAssetsInFlight = null;
@@ -381,7 +395,7 @@ export const fetchAssets = createAsyncThunk<AssetsResponse, boolean | undefined>
   },
   {
     condition: (forceRefresh, { getState }) => {
-      if (forceRefresh) return true;
+      if (forceRefresh || shouldForceSupportedTokensRefetch()) return true;
       if (exchangeAssetsInFlight) return false;
       const state = getState() as { exchange: ExchangeState };
       const rows = state.exchange.assets?.assets;
