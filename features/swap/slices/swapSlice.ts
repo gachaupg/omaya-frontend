@@ -23,6 +23,11 @@ import {
   resolveExpressMinAmountDisplayError,
 } from "@/lib/utils/expressMinAmount";
 import { sliceCache } from "@/lib/utils/sliceCache";
+import {
+  clearSupportedTokensCachesOnReload,
+  consumeSupportedTokensReloadRefetch,
+  shouldForceSupportedTokensRefetch,
+} from "@/lib/utils/supportedTokensCache";
 
 import { logger } from '@/lib/utils/logger';
 
@@ -204,9 +209,9 @@ export const fetchSupportedAssets = createAsyncThunk<
   async (arg, { rejectWithValue, getState }) => {
     try {
       const forceRefresh =
-        typeof arg === "object" && arg !== null
+        (typeof arg === "object" && arg !== null
           ? Boolean(arg.forceRefresh)
-          : Boolean(arg);
+          : Boolean(arg)) || shouldForceSupportedTokensRefetch();
       const feature =
         typeof arg === "object" && arg !== null && arg.feature === "exchange"
           ? "exchange"
@@ -214,6 +219,10 @@ export const fetchSupportedAssets = createAsyncThunk<
       const cacheKey = `fetchSupportedAssets_${feature}`;
 
       logger.debug('swap', "🔄 Starting fetchSupportedAssets...");
+
+      if (forceRefresh) {
+        await clearSupportedTokensCachesOnReload();
+      }
 
       // Serve fresh Redux state as a fulfilled result so callers using `.unwrap()`
       // do not treat cache hits as failures and trigger unnecessary force refreshes.
@@ -264,6 +273,9 @@ export const fetchSupportedAssets = createAsyncThunk<
       }
       
       logger.debug('swap', "✅ fetchSupportedAssets completed:", data?.length || 0, "assets");
+      if (shouldForceSupportedTokensRefetch()) {
+        consumeSupportedTokensReloadRefetch();
+      }
       return data;
     } catch (error) {
       console.error("❌ Failed to fetch supported assets:", error);

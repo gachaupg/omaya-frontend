@@ -7,6 +7,10 @@ import { get, post, put, patch, del, AxiosRequestConfig } from './apiClient';
 import { AxiosResponse } from 'axios';
 import { browserCache } from './browserCache';
 import { serializeAxiosResponse, deserializeAxiosResponse, isSerializedAxiosResponse } from './utils/axiosSerializer';
+import {
+  clearSupportedTokensCachesOnReload,
+  shouldForceSupportedTokensRefetch,
+} from './utils/supportedTokensCache';
 
 interface CachedApiOptions {
   ttl?: number; // Time to live in milliseconds
@@ -54,8 +58,15 @@ class CachedApiClient {
     config?: CachedAxiosRequestConfig & CachedApiOptions
   ): Promise<AxiosResponse<T>> {
     const { ttl, useCache = true, cacheKey, ...axiosConfig } = config || {};
-    
-    if (useCache && this.shouldCache('GET', axiosConfig)) {
+    const skipCacheForReload =
+      shouldForceSupportedTokensRefetch() &&
+      /supported-tokens|changenow|fronted-all-asset/i.test(url);
+
+    if (skipCacheForReload) {
+      await clearSupportedTokensCachesOnReload();
+    }
+
+    if (useCache && !skipCacheForReload && this.shouldCache('GET', axiosConfig)) {
       const key = cacheKey || this.generateCacheKey(url, axiosConfig);
       
       try {

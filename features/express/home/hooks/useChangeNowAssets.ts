@@ -3,6 +3,10 @@
 import { useEffect, useMemo, useState } from "react";
 
 import { API_CONFIG, CHANGE_NOW_PUBLIC_ASSET_ID_OVERRIDES } from "@/lib/appConfig";
+import {
+  clearSupportedTokensCachesOnReload,
+  shouldForceSupportedTokensRefetch,
+} from "@/lib/utils/supportedTokensCache";
 
 type ChangeNowAssetFeature = "exchange" | "swap";
 type ChangeNowAssetSource = "supported" | "public";
@@ -448,21 +452,35 @@ export function useChangeNowAssets(
     }, ASSETS_FETCH_TIMEOUT_MS);
 
     const cacheKey = getAssetsCacheKey(opts);
+    const bypassCache = shouldForceSupportedTokensRefetch();
+
+    if (bypassCache) {
+      void clearSupportedTokensCachesOnReload();
+      for (const key of Object.keys(inMemoryPublicAssetsCache)) {
+        delete inMemoryPublicAssetsCache[key];
+      }
+      delete inFlightAssetsFetch[cacheKey];
+    }
 
     // Serve cached data immediately (public assets are relatively stable).
     // If cache is fresh, we don't refetch.
     const now = Date.now();
-    const featureCache = inMemoryPublicAssetsCache[cacheKey] || null;
-    const cached =
-      (featureCache &&
-        now - featureCache.ts < PUBLIC_ASSETS_CACHE_TTL_MS
-        ? featureCache
-        : null) ||
-      readAssetsCacheFromLocalStorage(cacheKey) ||
-      // Legacy fallback (older keys)
-      readPublicAssetsCacheFromLocalStorageByFeature(opts.feature);
+    const featureCache =
+      !bypassCache && inMemoryPublicAssetsCache[cacheKey]
+        ? inMemoryPublicAssetsCache[cacheKey]
+        : null;
+    const cached = bypassCache
+      ? null
+      : (featureCache &&
+          now - featureCache.ts < PUBLIC_ASSETS_CACHE_TTL_MS
+          ? featureCache
+          : null) ||
+        readAssetsCacheFromLocalStorage(cacheKey) ||
+        // Legacy fallback (older keys)
+        readPublicAssetsCacheFromLocalStorageByFeature(opts.feature);
     const staleCached = cached && Array.isArray(cached.assets) ? cached.assets : [];
     const isFresh =
+      !bypassCache &&
       !!cached &&
       now - cached.ts < PUBLIC_ASSETS_CACHE_TTL_MS;
 

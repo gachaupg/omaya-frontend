@@ -15,6 +15,7 @@ import { initializeCrossTabSync } from "@/lib/utils/crossTabSync";
 import { Spinner } from "@/components/ui/Skeletons";
 import { storage } from "@/features/auth/utils/storage";
 import { initializeTokenRefresh } from "@/lib/utils/tokenRefresh";
+import { clearSupportedTokensCachesOnReload } from "@/lib/utils/supportedTokensCache";
 import GlobalSessionManager from "@/components/GlobalSessionManager";
 
 declare global {
@@ -36,6 +37,10 @@ export default function Providers({
   children: React.ReactNode;
   initialLocale: Locale;
 }) {
+  useEffect(() => {
+    void clearSupportedTokensCachesOnReload();
+  }, []);
+
   // Handle auth state changes (for Google OAuth and other external auth)
   useEffect(() => {
     const handleAuthStateChange = (event: CustomEvent) => {

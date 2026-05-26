@@ -1,7 +1,16 @@
 import { useEffect, useMemo, useState } from 'react';
+import { useDispatch } from 'react-redux';
 
+import { AppDispatch } from '@/store';
+import { REAL_ASSETS_CACHE_TTL_MS } from '@/lib/constants/realAssetsCache';
 import { logger } from '@/lib/utils/logger';
+import {
+  clearSupportedTokensCachesOnReload,
+  shouldForceSupportedTokensRefetch,
+} from '@/lib/utils/supportedTokensCache';
 import { idbDel, idbGet, idbSet } from '@/features/express/utils/indexedDbKv';
+import { fetchAssets } from '@/features/exchange/slices/exchangeSlice';
+import { fetchSupportedAssets } from '@/features/swap/slices/swapSlice';
 
 interface UseDataDisplayProps<T> {
   data: T[] | null | undefined;
@@ -87,8 +96,9 @@ export function useAssetsDisplay(
   exchangeError: string | null,
   swapError: string | null
 ) {
+  const dispatch = useDispatch<AppDispatch>();
   const ASSETS_CACHE_KEY = "omaya_real_assets_cache_v1";
-  const ASSETS_CACHE_TTL_MS = 60 * 60 * 1000; // 1 hour
+  const ASSETS_CACHE_TTL_MS = REAL_ASSETS_CACHE_TTL_MS;
   // Keep localStorage payload bounded to avoid QuotaExceededError crashes.
   const ASSETS_CACHE_MAX_ITEMS = 500;
 
@@ -196,6 +206,14 @@ export function useAssetsDisplay(
     let cancelled = false;
 
     (async () => {
+      if (shouldForceSupportedTokensRefetch()) {
+        await clearSupportedTokensCachesOnReload();
+        dispatch(fetchAssets(true));
+        dispatch(fetchSupportedAssets({ forceRefresh: true, feature: "exchange" }));
+        dispatch(fetchSupportedAssets({ forceRefresh: true, feature: "swap" }));
+        return;
+      }
+
       // 1) Try IndexedDB cache first
       const parsed = await idbGet<{ ts?: number; assets?: any[] }>(ASSETS_CACHE_KEY);
       if (!cancelled && parsed) {
@@ -204,6 +222,7 @@ export function useAssetsDisplay(
         const isFresh = Date.now() - ts <= ASSETS_CACHE_TTL_MS;
         if (!isFresh) {
           await idbDel(ASSETS_CACHE_KEY);
+          dispatch(fetchAssets(true));
         } else {
           const uuidAssets = assets.filter((a: any) =>
             /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(
@@ -227,6 +246,7 @@ export function useAssetsDisplay(
         const isFresh = Date.now() - ts <= ASSETS_CACHE_TTL_MS;
         if (!isFresh) {
           localStorage.removeItem(ASSETS_CACHE_KEY);
+          dispatch(fetchAssets(true));
           return;
         }
         const uuidAssets = assets
@@ -258,7 +278,7 @@ export function useAssetsDisplay(
     return () => {
       cancelled = true;
     };
-  }, []);
+  }, [dispatch]);
 
   // Persist fresh real assets to cache.
   useEffect(() => {
