@@ -146,7 +146,7 @@ export default function Footer() {
             </Link>
             <div className="space-y-3 sm:space-y-4 md:space-y-5 mt-2 sm:mt-4">
               <p className="text-sm text-gray-900 dark:text-white">Follow us on:</p>
-              <div className="grid grid-cols-4 sm:grid-cols-4 md:grid-cols-4 gap-3 sm:gap-7 w-full sm:max-w-max">
+              <div className="grid grid-cols-4 gap-y-3 gap-x-2 sm:gap-x-4 md:gap-x-5 lg:gap-x-6 w-full place-items-center justify-items-stretch [&>a]:flex [&>a]:justify-center">
                 <a
                   href="https://t.me/omayaexchange"
                   target="_blank"
@@ -448,47 +448,47 @@ export default function Footer() {
             </div>
           </div>
           {/* App Download — full-width row only on small screens (2-col grid); md+ uses normal grid cell */}
-          <div className="flex flex-col gap-6 md:gap-4 w-full min-w-0 col-span-2 md:col-span-1">
+          <div className="flex flex-col gap-4 md:gap-3 w-full min-w-0 col-span-2 md:col-span-1">
             {/* Mobile: badge + QR pairs spaced across the row */}
-            <div className="flex md:hidden flex-row justify-between items-end w-full gap-3 sm:gap-6">
+            <div className="flex md:hidden flex-row justify-between items-end w-full gap-2 sm:gap-4">
               {/* App Store (badge above QR) */}
-              <div className="flex flex-col items-center justify-center gap-[2px] shrink-0 leading-none min-w-0 flex-1 max-w-[48%]">
+              <div className="flex flex-col items-center justify-center gap-1 shrink-0 leading-none min-w-0 flex-1 max-w-[49%]">
                 <Image
                   src="/assets/Appstore_nqe65y.png"
                   alt="App Store"
-                  width={60}
-                  height={60}
+                  width={88}
+                  height={88}
                   className="object-contain flex-shrink-0"
-                  style={{ width: "72px", height: "72px" }}
+                  style={{ width: "86px", height: "86px" }}
                 />
                 <Image
                   src="/assets/qr-code-bc94057f452f4806af70fd34540f72ad_3_jk8lq1.png"
                   alt="App Store QR Code"
-                  width={60}
-                  height={60}
+                  width={88}
+                  height={88}
                   priority
                   className="object-contain flex-shrink-0"
-                  style={{ width: "72px", height: "72px" }}
+                  style={{ width: "86px", height: "86px" }}
                 />
               </div>
 
               {/* Google Play (badge above QR) */}
-              <div className="flex flex-col items-center justify-center gap-[2px] shrink-0 leading-none min-w-0 flex-1 max-w-[48%]">
+              <div className="flex flex-col items-center justify-center gap-1 shrink-0 leading-none min-w-0 flex-1 max-w-[49%]">
                 <Image
                   src="/images/playstore.webp"
                   alt="Google Play"
-                  width={60}
-                  height={60}
+                  width={88}
+                  height={88}
                   className="object-contain flex-shrink-0"
-                  style={{ width: "72px", height: "72px" }}
+                  style={{ width: "86px", height: "86px" }}
                 />
                 <Image
                   src="/assets/qr-code-bc94057f452f4806af70fd34540f72ad_3_jk8lq1.png"
                   alt="Google Play QR Code"
-                  width={60}
-                  height={60}
+                  width={88}
+                  height={88}
                   className="object-contain flex-shrink-0"
-                  style={{ width: "72px", height: "72px" }}
+                  style={{ width: "86px", height: "86px" }}
                 />
               </div>
             </div>

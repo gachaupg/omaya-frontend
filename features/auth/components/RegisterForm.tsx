@@ -937,9 +937,9 @@ export default function RegistrationPage() {
 
   return (
     <>
-      <div className="min-h-screen bg-gray-50 dark:bg-[#0a0a0a] flex flex-col-reverse md:flex-row items-start justify-center relative overflow-hidden px-4 sm:px-6 md:px-8 lg:px-12 py-12 sm:py-16 md:pt-24 md:pb-24">
+      <div className="min-h-screen bg-gray-50 dark:bg-[#0a0a0a] flex flex-col-reverse md:flex-row items-start justify-center relative overflow-hidden px-4 sm:px-6 md:px-8 lg:px-12 pt-24 pb-8 sm:pt-24 sm:pb-10 md:pt-24 md:pb-24">
         {/* Left Side - Mobile App Preview */}
-        <div className="w-full md:w-1/2 flex justify-center mb-8 md:mb-0 relative z-10">
+        <div className="hidden md:flex w-full md:w-1/2 justify-center mb-8 md:mb-0 relative z-10">
           {/* Background Glow Effect */}
           <div className="w-[438px] h-[403px] bg-[#1D8751] blur-[60px] absolute left-16 2xl:left-54 opacity-60"></div>
           <div className="relative">
@@ -990,7 +990,7 @@ export default function RegistrationPage() {
         </div>
 
         {/* Right Side - Registration Form */}
-        <div className="w-full md:w-1/2 relative z-10 px-4 sm:px-6 md:px-8 lg:px-0 flex justify-center md:justify-start">
+        <div className="w-full md:w-1/2 relative z-10 px-0 sm:px-2 md:px-8 lg:px-0 flex justify-center md:justify-start">
           <div className="max-w-xl mx-auto 2xl:max-w-2xl w-full rounded-2xl p-6 sm:p-8 bg-white dark:bg-transparent shadow-[0_4px_6px_-1px_rgba(0,0,0,0.1),0_10px_20px_-5px_rgba(0,0,0,0.1)] dark:shadow-[0_4px_20px_rgba(0,0,0,0.7),0_20px_60px_rgba(0,0,0,0.8),0_40px_100px_rgba(0,0,0,0.6)]">
             <div className="mb-6">
               <h1 className="text-gray-900 dark:text-white text-2xl sm:text-3xl font-bold">

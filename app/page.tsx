@@ -437,7 +437,7 @@ export default function MarketingPage() {
   return (
     <div>
       <section
-        className="relative min-h-[calc(100svh-80px)] pt-16 sm:pt-18 lg:pt-14 pb-6 sm:pb-8 lg:pb-4 mx-auto overflow-visible bg-gradient-to-br from-gray-50 to-white dark:bg-[var(--bg-color)]"
+        className="relative min-h-[calc(100svh-80px)] pt-12 sm:pt-14 lg:pt-14 pb-6 sm:pb-8 lg:pb-4 mx-auto overflow-visible bg-gradient-to-br from-gray-50 to-white dark:bg-[var(--bg-color)]"
       >
 
         {/* Background styling - different for light and dark modes */}
@@ -497,20 +497,22 @@ export default function MarketingPage() {
           ></div>
         </div>
 
-        <div className="w-full max-w-[1600px] mx-auto px-2 sm:px-4 lg:px-8 xl:px-10 relative z-10 mt-0 lg:mt-0" style={{ paddingTop: 'clamp(0.75rem, 2vw, 1.25rem)' }}>
+        <div className="w-full max-w-[1600px] mx-auto px-2 sm:px-4 lg:px-8 xl:px-10 relative z-10 mt-0 lg:mt-0 pt-10 sm:pt-4 lg:pt-5">
           <div className="grid grid-cols-1 lg:grid-cols-2 items-start lg:items-center gap-y-4 md:gap-y-3 md:gap-x-6 lg:gap-x-8 xl:gap-x-10">
             <div className="space-y-2 md:space-y-2 pl-0 md:pl-4 lg:pl-5 text-center lg:text-left">
               {/* Green pill banner */}
-              <div className="inline-flex items-center justify-center md:justify-start">
+              <div className="inline-flex items-center justify-center md:justify-start mt-4 sm:mt-0">
                 <span className="bg-[#1D8751]/10 border border-[#1D8751] text-[#1D8751] px-3 py-1 rounded-full text-xs sm:text-sm font-medium">
                   {t("marketing.hero.badge", "East Africa #1 Crypto Exchange.")}
                 </span>
               </div>
 
               {/* Main heading */}
-              <h1 className="text-[1.5rem] sm:text-[1.75rem] md:text-[2.5rem] lg:text-[3rem] xl:text-[3.5rem] font-bold text-gray-900 dark:text-white tracking-tight leading-tight sm:leading-tight md:leading-tight lg:leading-tight">
-                <span className="block">{t("marketing.hero.line1", "Trade Crypto")}</span>
-                <span className="block text-[#1D8751]">{t("marketing.hero.line2", "Instantly")}</span>
+              <h1 className="mt-4 sm:mt-0 text-[1.35rem] sm:text-[1.75rem] md:text-[2.5rem] lg:text-[3rem] xl:text-[3.5rem] font-bold text-gray-900 dark:text-white tracking-tight leading-tight sm:leading-tight md:leading-tight lg:leading-tight">
+                <span className="block whitespace-nowrap sm:whitespace-normal">
+                  <span className="inline sm:block">{t("marketing.hero.line1", "Trade Crypto")}</span>{" "}
+                  <span className="inline sm:block text-[#1D8751]">{t("marketing.hero.line2", "Instantly")}</span>
+                </span>
                 <span className="block">
                   {t("marketing.hero.line3Prefix", "With")}{" "}
                   <span className="text-[#1D8751]">OMAYA</span>
@@ -1448,7 +1450,7 @@ export default function MarketingPage() {
       items-center
     ">
             {/* Left Side - Phone */}
-            <div className="relative flex justify-center">
+            <div className="relative flex justify-center order-2 lg:order-1">
               {/* Green Glow */}
               <div className="absolute inset-0 flex items-center justify-center">
                 <div className="relative w-[320px] h-[320px] sm:w-[420px] sm:h-[420px] lg:w-[650px] lg:h-[650px]">
@@ -1476,7 +1478,7 @@ export default function MarketingPage() {
             </div>
 
             {/* Right Side - Content */}
-            <div className="relative space-y-6 sm:space-y-8 max-w-xl lg:max-w-none">
+            <div className="relative space-y-6 sm:space-y-8 max-w-xl lg:max-w-none order-1 lg:order-2">
               {/* Background glows */}
               <div className="pointer-events-none absolute inset-0 -z-10">
                 <div className="absolute inset-0 bg-gradient-to-br from-[#1D8751]/15 via-[#0E5531]/10 to-transparent rounded-[40px] blur-3xl opacity-60 dark:from-[#1D8751]/25 dark:via-[#0E5531]/20 dark:opacity-70"></div>
@@ -1557,7 +1559,8 @@ export default function MarketingPage() {
 
               {/* App Buttons */}
               <div className="
-          flex flex-col sm:flex-row
+          hidden lg:flex
+          flex-col sm:flex-row
           gap-3
           pt-4
         ">
@@ -1589,6 +1592,43 @@ export default function MarketingPage() {
                   </a>
                 ))}
               </div>
+            </div>
+            {/* App Buttons - Mobile only, placed below phone */}
+            <div className="
+        flex lg:hidden
+        flex-col sm:flex-row
+        gap-3
+        pt-2
+        order-3
+        justify-center
+      ">
+              {[
+                { pre: 'Download on the', text: "App Store" },
+                { pre: "GET IT ON", text: "Google Play" }
+              ].map((btn, i) => (
+                <a
+                  key={`mobile-app-${i}`}
+                  href="#"
+                  className="
+              inline-flex items-center justify-start gap-3
+              bg-white hover:bg-gray-50
+              dark:bg-[#1A1A1F] dark:hover:bg-[#252530]
+              border border-gray-300 hover:border-gray-400
+              dark:border-[#2A2A35]
+              rounded-xl
+              px-4 py-2.5 sm:py-3
+              min-w-[160px] sm:min-w-[180px]
+              transition-colors
+              shadow-sm dark:shadow-none
+            "
+                >
+                  <HiOutlineDeviceMobile className="text-2xl text-[#22C55E]" />
+                  <div className="flex flex-col items-start">
+                    <span className="text-gray-500 dark:text-gray-400 font-medium text-xs tracking-wide">{btn.pre}</span>
+                    <span className="text-gray-900 dark:text-white font-semibold text-sm tracking-wide">{btn.text}</span>
+                  </div>
+                </a>
+              ))}
             </div>
           </div>
         </div>

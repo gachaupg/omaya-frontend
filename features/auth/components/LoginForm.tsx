@@ -252,9 +252,9 @@ export default function LoginPage() {
   }, []);
 
   return (
-    <div className="min-h-screen bg-gray-50 dark:bg-[#0a0a0a] flex flex-col md:flex-row items-center justify-center relative overflow-hidden px-4 sm:px-6 md:px-8 lg:px-12 py-12 sm:py-16 md:py-20 gap-10 md:gap-14 lg:gap-16">
+    <div className="min-h-screen bg-gray-50 dark:bg-[#0a0a0a] flex flex-col md:flex-row items-center justify-center relative overflow-hidden px-4 sm:px-6 md:px-8 lg:px-12 py-8 sm:py-10 md:py-20 gap-6 sm:gap-8 md:gap-14 lg:gap-16">
       {/* Left Side - Mobile App Preview */}
-      <div className="w-full max-w-xs sm:max-w-sm md:max-w-none md:w-[40%] lg:w-[38%] flex justify-center shrink-0 relative z-10 mb-6 md:mb-0">
+      <div className="hidden md:flex w-full max-w-xs sm:max-w-sm md:max-w-none md:w-[40%] lg:w-[38%] justify-center shrink-0 relative z-10 mb-6 md:mb-0">
         {/* Background Glow Effect */}
         <div className="w-[min(100%,280px)] h-[220px] md:h-[260px] bg-[#1D8751] blur-[48px] md:blur-[56px] absolute left-1/2 -translate-x-1/2 top-8 opacity-50 pointer-events-none" />
         <div className="relative flex flex-col items-center">
@@ -304,7 +304,7 @@ export default function LoginPage() {
       </div>
 
       {/* Right Side - Login Form (card like register + shadow) */}
-      <div className="w-full md:flex-1 relative z-10 px-4 sm:px-6 md:px-8 lg:px-10 flex justify-center">
+      <div className="w-full md:flex-1 relative z-10 px-0 sm:px-2 md:px-8 lg:px-10 flex justify-center">
         <div className="max-w-md w-full rounded-2xl p-6 sm:p-8 bg-white dark:bg-transparent shadow-[0_4px_6px_-1px_rgba(0,0,0,0.1),0_10px_20px_-5px_rgba(0,0,0,0.1)] dark:shadow-[0_4px_20px_rgba(0,0,0,0.7),0_20px_60px_rgba(0,0,0,0.8),0_40px_100px_rgba(0,0,0,0.6)]">
           <div className="mb-6">
             <h1 className="text-gray-900 dark:text-white text-2xl sm:text-3xl font-bold">

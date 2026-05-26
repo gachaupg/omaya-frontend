@@ -30,6 +30,7 @@ import {
   PAYMENT_LOGO_BASE_CLASS,
   PAYMENT_LOGO_SIZE,
 } from "@/features/express/utils/imageHelpers";
+import { swapAmountValueClass } from "@/features/swap/components/swapFieldStyles";
 import {
   clampMoneyXAmountNumber,
   getMoneyXMaxAmountErrorMessage,
@@ -1069,8 +1070,7 @@ export default function TransferForm({ isHomePage = false, onTransfer, commissio
                     handleAmountChange(e.target.value, true);
                   }}
                   placeholder={t("express.enterAmount", "Enter amount")}
-                  className={`w-full rounded-2xl px-4 py-2 pr-16 text-lg focus:outline-none border appearance-none bg-transparent ${isDark ? "border-white/10 text-white" : "border-gray-200 text-[#111827]"
-                    }`}
+                  className={`w-full rounded-2xl px-4 py-2 pr-16 focus:outline-none border appearance-none bg-transparent ${isDark ? "border-white/10" : "border-gray-200"} ${swapAmountValueClass(isDark)}`}
                 />
               </div>
             </div>
@@ -1185,8 +1185,7 @@ export default function TransferForm({ isHomePage = false, onTransfer, commissio
                     handleAmountChange(e.target.value, false);
                   }}
                   placeholder="Enter amount"
-                  className={`w-full rounded-2xl px-4 py-2 pr-16 text-lg focus:outline-none border appearance-none bg-transparent ${isDark ? "border-white/10 text-white" : "border-gray-200 text-[#111827]"
-                    }`}
+                  className={`w-full rounded-2xl px-4 py-2 pr-16 focus:outline-none border appearance-none bg-transparent ${isDark ? "border-white/10" : "border-gray-200"} ${swapAmountValueClass(isDark)}`}
                 />
               </div>
             </div>

@@ -63,6 +63,7 @@ import PaymentMethodsModal from "../../../../p2p/components/ui/p2pdashboard/sect
 import InfoModal from "./info";
 import { debugAssetFetching } from "../../../../../lib/utils/debugAssets";
 import { stripLeadingZerosFromDecimalInput } from "@/lib/utils/decimalAmountInput";
+import { swapAmountValueClass } from "@/features/swap/components/swapFieldStyles";
 import {
   useAssetsDisplay,
   usePaymentMethodsDisplay,
@@ -4338,13 +4339,13 @@ export default function WithdrawalForm({
                           ? "Calculating..."
                           : "Enter amount"
                       }
-                      className={`w-full rounded-2xl px-4 py-2 pr-16 text-lg focus:outline-none border appearance-none bg-transparent text-[#111827] dark:text-white ${
+                      className={`w-full rounded-2xl px-4 py-2 pr-16 focus:outline-none border appearance-none bg-transparent ${
                         isCalculating || isCalculatingReceive
                           ? "border-[#1D8751]"
                           : isDark
-                            ? "border-white/10 font-normal"
-                            : "border-gray-200 font-bold"
-                      }`}
+                            ? "border-white/10"
+                            : "border-gray-200"
+                      } ${swapAmountValueClass(isDark)}`}
                     />
                     <div className="absolute right-4 top-1/2 transform -translate-y-1/2">
                       <span className={`${isDark ? "text-white" : "text-[#1F2937]"} text-sm font-medium`}>
@@ -4390,7 +4391,7 @@ export default function WithdrawalForm({
 
                 {/* You Get Section */}
                 <div className="flex-1 min-w-0">
-                  <div className={`text-xs mb-1 mt-[30px] ${isDark ? "text-[#788099]" : "text-[#64748B]"
+                  <div className={`text-xs mb-1 mt-1 sm:mt-[30px] ${isDark ? "text-[#788099]" : "text-[#64748B]"
                     }`}>
                     {t("express.asset", "Asset")}
                   </div>
@@ -4722,13 +4723,13 @@ export default function WithdrawalForm({
                           ? "Calculating..."
                           : "Enter amount"
                       }
-                      className={`w-full rounded-2xl px-4 py-2 pr-16 text-lg focus:outline-none border appearance-none bg-transparent text-[#111827] dark:text-white ${
+                      className={`w-full rounded-2xl px-4 py-2 pr-16 focus:outline-none border appearance-none bg-transparent ${
                         isCalculating || isCalculatingReceive
                           ? "border-[#1D8751]"
                           : isDark
-                            ? "border-white/10 font-normal"
-                            : "border-gray-200 font-extrabold"
-                      }`}
+                            ? "border-white/10"
+                            : "border-gray-200"
+                      } ${swapAmountValueClass(isDark)}`}
                     />
                     <div className="absolute right-4 top-1/2 transform -translate-y-1/2">
                       <span className={`${isDark ? "text-white" : "text-[#1F2937]"} text-sm font-medium`}>
@@ -4753,7 +4754,7 @@ export default function WithdrawalForm({
 
                 {/* Payment Method Section */}
                 <div className="flex-1 min-w-0 relative z-0">
-                  <div className={`text-xs mb-1 mt-[30px] ${isDark ? "text-[#788099]" : "text-[#64748B]"
+                  <div className={`text-xs mb-1 mt-1 sm:mt-[30px] ${isDark ? "text-[#788099]" : "text-[#64748B]"
                     }`}>
                     {t("express.paymentMethod", "Payment Method")}
                   </div>

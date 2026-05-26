@@ -55,15 +55,15 @@ function ContactDetailLine({
   const isEmail = action === "email";
 
   return (
-    <div className="flex items-center justify-between gap-2 min-w-0">
-      <span className="truncate text-sm text-gray-600 dark:text-gray-400">
+    <div className="grid w-full grid-cols-[minmax(0,1fr)_auto] items-center gap-x-4">
+      <span className="min-w-0 text-sm text-gray-600 dark:text-gray-400 break-words">
         {label}
       </span>
       <a
         href={href}
         title={isEmail ? "Send email" : "Call"}
         aria-label={isEmail ? `Send email to ${label}` : `Call ${label}`}
-        className={actionIconBtnClass}
+        className={`${actionIconBtnClass} justify-self-end`}
       >
         {isEmail ? <Mail className="w-4 h-4" /> : <Phone className="w-4 h-4" />}
       </a>
@@ -85,11 +85,11 @@ function InfoCard({ icon, title, children }: InfoCardProps) {
       <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-[#1D8751]/10 dark:bg-[#1D8751]/15 text-[#1D8751]">
         {icon}
       </div>
-      <div className="min-w-0">
+      <div className="min-w-0 flex-1">
         <p className="text-sm font-semibold text-gray-900 dark:text-white mb-1">
           {title}
         </p>
-        <div className="text-sm space-y-0.5">{children}</div>
+        <div className="text-sm space-y-0.5 w-full">{children}</div>
       </div>
     </div>
   );

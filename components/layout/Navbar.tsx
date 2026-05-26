@@ -916,32 +916,12 @@ export default function Navbar() {
   // Memoize logo selection to prevent unnecessary re-renders
   const logoConfig = useMemo(() => {
     if (!mounted) return null;
-
-    const isHomePage = pathname === "/";
-    const isAboutPage = pathname === "/about";
-    const isNotScrolled = !scrolled;
-    const isDarkTheme = theme === "dark";
-
-    if ((isHomePage && isNotScrolled)) {
-      // Home page, not scrolled: white logo for transparent/green background
-      return {
-        src: "/assets/bad9edd9da5201cb8f8f9cea35bf46f4fb541bd6_lplbyc.png",
-        alt: "OMAYA.io",
-      };
-    } else if (isDarkTheme) {
-      // Dark theme: green logo
-      return {
-        src: "/assets/bad9edd9da5201cb8f8f9cea35bf46f4fb541bd6_lplbyc.png",
-        alt: "OMAYA.io",
-      };
-    } else {
-      // Light theme: default logo
-      return {
-        src: "/assets/bad9edd9da5201cb8f8f9cea35bf46f4fb541bd6_lplbyc.png",
-        alt: "OMAYA.io",
-      };
-    }
-  }, [mounted, pathname, scrolled, theme]);
+    // Keep one brand color mark on all themes/screens for consistency.
+    return {
+      src: "/images/logo.webp",
+      alt: "OMAYA.io",
+    };
+  }, [mounted]);
 
   const toggleImageModal = (e?: React.MouseEvent) => {
     if (e) {
@@ -1050,9 +1030,9 @@ export default function Navbar() {
               <Image
                 src={logoConfig.src}
                 alt={logoConfig.alt}
-                width={150}
-                height={40}
-                className="h-8 w-20 sm:h-auto sm:w-32 md:w-28 lg:w-36 xl:w-40 2xl:w-48 dark:brightness-0 dark:invert object-contain"
+                width={170}
+                height={48}
+                className="h-10 w-28 sm:h-10 sm:w-32 md:h-auto md:w-30 lg:w-36 xl:w-40 2xl:w-48 object-contain"
                 priority
               />
             )}

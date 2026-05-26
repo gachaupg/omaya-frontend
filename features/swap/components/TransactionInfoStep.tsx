@@ -23,10 +23,9 @@ import {
 import { ExpressAssetSelectorTrigger } from "@/features/express/components/ExpressAssetSelectorTrigger";
 import { SwapAssetOptionDisplay } from "./SwapAssetOptionDisplay";
 import {
-  swapAmountFieldClass,
   swapAmountTickerClass,
   swapAssetTriggerClass,
-  SWAP_AMOUNT_TEXT,
+  swapAmountValueClass,
 } from "./swapFieldStyles";
 
 interface TransactionInfoStepProps {
@@ -73,8 +72,8 @@ const headerCopy = labelCopy;
 /** User may type "0" while editing — don't show estimate API errors until amount is positive */
 const hasPositiveAmount = (s: string) => isPositiveSwapAmount(s);
 
-const inputBase =
-  `rounded-2xl bg-transparent dark:bg-transparent ${strongBorder} dark:text-white text-[#35353e] px-4 py-2 pr-16 w-full ${SWAP_AMOUNT_TEXT} dark:placeholder:text-[#5f6070] placeholder:text-[#7e7e8f] focus:outline-none h-[44px]`;
+const amountInputBase = (isDark: boolean) =>
+  `rounded-2xl bg-transparent dark:bg-transparent ${strongBorder} px-4 py-2 pr-16 w-full ${swapAmountValueClass(isDark)} dark:placeholder:text-[#5f6070] placeholder:text-[#7e7e8f] focus:outline-none h-[44px]`;
 
 const TransactionInfoStep: React.FC<TransactionInfoStepProps> = (props) => {
   const { isDark } = useTheme();
@@ -476,8 +475,8 @@ const TransactionInfoStep: React.FC<TransactionInfoStepProps> = (props) => {
     error?: string
   ) => {
     const inputClassName = isYouSend
-      ? inputBase
-      : inputBase.replace('bg-transparent dark:bg-transparent', 'bg-white dark:bg-[#35353E]');
+      ? amountInputBase(isDark)
+      : amountInputBase(isDark).replace('bg-transparent dark:bg-transparent', 'bg-white dark:bg-[#35353E]');
 
     // Show loader on the OPPOSITE input (the one receiving calculated value)
     // If user is typing in "from" (isYouSend=true, activeInputField="from"), show loader on "to" (isYouSend=false)
