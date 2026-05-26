@@ -11,7 +11,7 @@ import AddPaymentDetailsModal from './AddPaymentDetailsModal';
 import { Asset, Network, PaymentMethod, PaymentProvider, UserPaymentDetail, AdminPaymentDetail } from '../types';
 import { deleteUserPaymentDetail, fetchPaymentMethods, fetchPaymentProviders, fetchUserPaymentDetails } from '../slices/paymentSlice';
 import { fetchAssets, createWithdrawal } from '../slices/exchangeSlice';
-import toast, { Toaster } from 'react-hot-toast';
+import toast from 'react-hot-toast';
 import { AxiosRequestConfig } from '../../../lib/apiClient';
 
 import { logger } from '@/lib/utils/logger';
@@ -331,7 +331,6 @@ useEffect(() => {
         />
       ) : (
         <div className="min-h-screen bg-[#18181D] md:p-4">
-          <Toaster />
           {/* Header */}
           <div className="flex flex-col md:flex-row justify-between mb-4 gap-4">
             {/* Crypto/Forex Toggle */}

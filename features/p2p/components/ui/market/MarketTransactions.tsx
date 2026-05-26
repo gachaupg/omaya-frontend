@@ -294,14 +294,26 @@ const MarketTransactions = memo(({ activeTab }: { activeTab: string }) => {
     const validProviders = new Set(
       providerOptions.map((o) => o.value).filter(Boolean)
     );
-    setProviders((prev) => prev.filter((p) => validProviders.has(p)));
+    setProviders((prev) => {
+      const next = prev.filter((p) => validProviders.has(p));
+      if (next.length === prev.length && next.every((p, i) => p === prev[i])) {
+        return prev;
+      }
+      return next;
+    });
   }, [providerOptions]);
 
   useEffect(() => {
     const validMethods = new Set(
       paymentMethodOptions.map((o) => o.value).filter(Boolean)
     );
-    setPaymentTypes((prev) => prev.filter((m) => validMethods.has(m)));
+    setPaymentTypes((prev) => {
+      const next = prev.filter((m) => validMethods.has(m));
+      if (next.length === prev.length && next.every((m, i) => m === prev[i])) {
+        return prev;
+      }
+      return next;
+    });
   }, [paymentMethodOptions]);
   const currencyOptions = useMemo(() => getCurrencyOptions(orders), [orders]);
   const paymentSummary = useMemo(

@@ -1,5 +1,4 @@
 import React from "react";
-import { Toaster } from "react-hot-toast";
 import { useDepositLogic } from "./useDepositLogic";
 import AssetSelector from "./AssetSelector";
 import DepositForm from "./DepositForm";
@@ -22,7 +21,6 @@ const DepositModal: React.FC<DepositModalProps> = ({
 
   return (
     <div className="min-h-screen bg-[#18181D] md:p-4">
-      <Toaster />
       {/* Top Row: Asset Class and Transaction Type toggles */}
       <div className="flex flex-row justify-between items-start mb-4 gap-4">
         {/* Asset Class Toggle */}

@@ -9,7 +9,7 @@ import WithdrawalModal from './WithdrawalModal';
 import { Asset, Network, PaymentMethod, PaymentProvider, AdminPaymentDetail, DepositTransactionPayload } from '../types';
 import { fetchPaymentMethods, fetchPaymentProviders, fetchAdminPaymentDetails } from '../slices/paymentSlice';
 import { createDeposit, fetchAssets } from '../slices/exchangeSlice';
-import toast, { Toaster } from 'react-hot-toast';
+import toast from 'react-hot-toast';
 import { validateWalletAddress } from './utils/validation/walletValidation';
 import { calculateCommission } from './utils/calculations/commissionCalculator';
 import { calculateNetworkFee, calculateTotalFees } from './utils/calculations/feeCalculator';
@@ -261,7 +261,6 @@ const DepositModal: React.FC<DepositModalProps> = ({ asset, assetType, onClose }
 
   return (
     <div className="min-h-screen bg-[#18181D] md:p-4">
-      <Toaster />
       {/* Header Section */}
       <div className="flex flex-col md:flex-row justify-between mb-4 gap-4">
         {/* Crypto/Forex Toggle */}

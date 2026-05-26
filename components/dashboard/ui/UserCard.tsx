@@ -7,7 +7,7 @@ import VerifiedBadge from "@/components/ui/VerifiedBadge";
 import Image from "next/image";
 import React, { useEffect, useRef, useState } from "react";
 import { showToast } from "@/lib/utils/toast";
-import { fetchMatchedTrades } from "@/features/p2p/slices/matchedTradesSlice";
+import { fetchLatestMatchedTradesPage } from "@/features/p2p/slices/matchedTradesSlice";
 import { useDispatch, useSelector } from "react-redux";
 import { AppDispatch } from "@/store";
 import { RootState } from "@/store/rootReducer";
@@ -19,8 +19,8 @@ import {
 import { getUserProfile } from "@/features/auth/slices/authSlice";
 import HelpSupportForm from "@/features/settings/components/HelpSupportForm";
 import { useDashboardI18n } from "@/lib/useDashboardI18n";
-import { useMatchedTradesWebSocket } from "@/features/p2p/hooks/useMatchedTradesWebSocket";
 import { selectPendingMatchedTradeNotificationCount } from "@/features/p2p/selectors";
+import { useMatchedTradesWsConnected } from "@/features/p2p/components/MatchedTradesWebSocketProvider";
 import { logger } from "@/lib/utils/logger";
 import { checkKYCStatus } from "@/features/kyc/slices/kycSlice";
 
@@ -40,17 +40,11 @@ function UserCard() {
   const kycState = useSelector((state: RootState) => state.kyc);
   // KYC verification status from central KYC slice
   const isVerified = kycState.isVerified ?? false;
-
-  // Use WebSocket for real-time matched trades updates with HTTP polling fallback
-  const { isConnected: wsConnected } = useMatchedTradesWebSocket({
-    enabled: isAuthenticated,
-    fallbackToPolling: true,
-    pollingInterval: 30000, // 30 seconds fallback polling
-  });
+  const wsConnected = useMatchedTradesWsConnected();
 
   useEffect(() => {
     if (isAuthenticated) {
-      dispatch(fetchMatchedTrades(1));
+      dispatch(fetchLatestMatchedTradesPage());
       dispatch(getP2PProfileThunk())
         .unwrap()
         .then((response) => {

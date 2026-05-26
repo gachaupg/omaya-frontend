@@ -5181,7 +5181,7 @@ export default function WithdrawalForm({
                           strokeLinejoin="round"
                         />
                       </svg>
-                      <span>Withdrawal Addresses Generated</span>
+                      <span>Withdraw addresses generated</span>
                     </div>
                   ) : (
                     <span className="flex items-center justify-center text-muted">

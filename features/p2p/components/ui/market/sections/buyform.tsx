@@ -169,33 +169,21 @@ function FinalBuy({ orderData }: FinalBuyProps) {
     const oldStatus = confirmOrder?.status;
     const newStatus = status.status;
 
-    // Always refresh if we have a valid status update
-    if (confirmOrder?.id && newStatus) {
-      logger.debug('p2p', "✅ Conditions met - will update UI");
+    const tradeId = String(confirmOrderIdRef.current ?? confirmOrder?.id ?? "").trim();
+    const normalizedNew = String(newStatus ?? snap.rawStatus ?? "").trim();
 
-      // Show toast notification for status changes
-      if (oldStatus !== newStatus) {
-        logger.debug('p2p', `📢 Status changed: ${oldStatus} → ${newStatus}`);
-        if (oldStatus === "matched" && newStatus === "half-matched") {
-        } else if (oldStatus === "half-matched" && newStatus === "completed") {
-        } else if (newStatus === "cancelled") {
-        } else {
-        }
-      } else {
-        logger.debug('p2p', "ℹ️ Status unchanged, still refreshing data");
-      }
-
-      logger.debug('p2p', "🔄 Refreshing trade data for ID:", confirmOrder.id);
-      dispatch(fetchConfirmOrder(confirmOrder.id))
+    // WS drives UI; only hit confirm REST when status actually changes (not every tick).
+    if (tradeId && normalizedNew && oldStatus !== normalizedNew) {
+      logger.debug('p2p', `📢 Status changed: ${oldStatus} → ${normalizedNew}`);
+      dispatch(fetchConfirmOrder(tradeId))
         .unwrap()
         .then((updatedOrder) => {
-          logger.debug('p2p', "✅ fetchConfirmOrder SUCCESS:", updatedOrder);
-          logger.debug('p2p', "✅ Updated status:", updatedOrder?.status);
+          logger.debug('p2p', "✅ fetchConfirmOrder SUCCESS:", updatedOrder?.status);
         })
         .catch((error) => {
           console.error("❌ fetchConfirmOrder FAILED:", error);
         });
-    } else {
+    } else if (!tradeId || !normalizedNew) {
       console.warn("❌ Conditions NOT met:", {
         hasConfirmOrderId: !!confirmOrder?.id,
         hasNewStatus: !!newStatus,
@@ -203,7 +191,7 @@ function FinalBuy({ orderData }: FinalBuyProps) {
         newStatus: newStatus
       });
     }
-  }, [confirmOrder, dispatch, performExitToP2p]);
+  }, [confirmOrder?.id, confirmOrder?.status, dispatch, performExitToP2p]);
 
   // WebSocket for real-time trade status updates
   const { isConnected: statusWsConnected } = useTradeStatusWebSocket({

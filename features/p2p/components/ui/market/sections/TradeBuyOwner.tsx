@@ -99,44 +99,17 @@ const FinalSell: React.FC<FinalSellProps> = ({ orderData }) => {
       const oldStatus = confirmOrder?.status;
       const newStatus = status.status;
 
-      // Always refresh if we have a valid status update
-      if (confirmOrder?.id && newStatus) {
-        logger.debug("p2p", "✅ Conditions met - will update UI");
+      const tradeId = String(confirmOrder?.id ?? "").trim();
+      const normalizedNew = String(newStatus ?? "").trim();
 
-        // Show toast notification for status changes
-        if (oldStatus !== newStatus) {
-          logger.debug("p2p", `📢 Status changed: ${oldStatus} → ${newStatus}`);
-          if (oldStatus === "matched" && newStatus === "half-matched") {
-
-          } else if (
-            oldStatus === "half-matched" &&
-            newStatus === "completed"
-          ) {
-
-          } else if (newStatus === "cancelled") {
-            /* redirect handled by useP2pTradeCanceledRedirect */
-          } else {
-
-          }
-        } else {
-          logger.debug("p2p", "ℹ️ Status unchanged, still refreshing data");
-        }
-
-        logger.debug(
-          "p2p",
-          "🔄 Refreshing trade data for ID:",
-          confirmOrder.id
-        );
-        dispatch(fetchConfirmOrder(confirmOrder.id))
+      if (tradeId && normalizedNew && oldStatus !== normalizedNew) {
+        logger.debug("p2p", `📢 Status changed: ${oldStatus} → ${normalizedNew}`);
+        dispatch(fetchConfirmOrder(tradeId))
           .unwrap()
-          .then((updatedOrder) => {
-            logger.debug("p2p", "✅ fetchConfirmOrder SUCCESS:", updatedOrder);
-            logger.debug("p2p", "✅ Updated status:", updatedOrder?.status);
-          })
           .catch((error) => {
             console.error("❌ fetchConfirmOrder FAILED:", error);
           });
-      } else {
+      } else if (!tradeId || !normalizedNew) {
         console.warn("❌ Conditions NOT met:", {
           hasConfirmOrderId: !!confirmOrder?.id,
           hasNewStatus: !!newStatus,
@@ -145,7 +118,7 @@ const FinalSell: React.FC<FinalSellProps> = ({ orderData }) => {
         });
       }
     },
-    [confirmOrder, dispatch, handleWsStatusPayload]
+    [confirmOrder?.id, confirmOrder?.status, dispatch, handleWsStatusPayload]
   );
 
   // WebSocket for real-time trade status updates
@@ -516,38 +489,39 @@ const FinalSell: React.FC<FinalSellProps> = ({ orderData }) => {
               </div>
             </div>
             <div className="grid grid-cols-1 md:grid-cols-3 gap-3 md:gap-4 border border-gray-200 dark:border-accent p-3 sm:p-4 rounded-xl mt-4 bg-white dark:bg-[var(--card-color)]">
-              {/* Buy: I want to Send = fiat (KES/USD) */}
+              {/* Buy: fiat receive, rate, USDT send — same colors as buyform / TradeSellerOwner */}
               <div className="flex flex-col gap-2 w-full">
-                <p className="text-[#788099] text-xs sm:text-sm">I will receive</p>
+                <p className="text-[#788099] text-xs sm:text-sm font-medium">I will receive</p>
                 <div className="flex flex-row items-center justify-between w-full bg-[#EEF1F4] dark:bg-accent rounded-xl px-3 sm:px-4 py-2.5 min-h-[52px]">
                   <div className="flex items-center gap-1.5 min-w-0">
                     <span className="text-[#1D8751] text-lg sm:text-xl font-bold shrink-0">{rangeSymbol}</span>
-                    <span className="text-warning text-base sm:text-lg font-bold ">
+                    <span className="text-[#1D8751] text-lg sm:text-xl font-bold">
                       {formatAmount(Math.round(Number(sendAmount) * Number(commissionRate) * 100) / 100)}
                     </span>
                   </div>
-                  <span className="text-xs text-warning font-medium ml-2 shrink-0">{rangeSuffix}</span>
-                </div>
-              </div>
-
-              <div className="flex flex-col gap-2 w-full">
-                <p className="text-[#788099] text-xs sm:text-sm">Rate</p>
-                <div className="flex w-full flex-row justify-between items-center bg-[#EEF1F4] dark:bg-accent rounded-xl px-3 sm:px-4 py-2.5 min-h-[52px]">
-                  <div className="flex items-center gap-1.5 min-w-0">
-                    <span className="text-[#1D8751] text-lg sm:text-xl font-bold shrink-0">{rangeSymbol}</span>
-                    <span className="text-[#1D8751] text-lg sm:text-xl font-bold ">
-                      {commissionRate}
-                    </span>
-                  </div>
-                  <span className="text-xs sm:text-sm text-[#051015] dark:text-warning font-medium ml-2 flex-shrink-0">
+                  <span className="text-xs sm:text-sm text-gray-900 dark:text-white font-medium ml-2 shrink-0">
                     {rangeSuffix}
                   </span>
                 </div>
               </div>
 
-              {/* I want to Receive = USDT */}
               <div className="flex flex-col gap-2 w-full">
-                <p className="text-[#788099] text-xs sm:text-sm">I will send</p>
+                <p className="text-[#788099] text-xs sm:text-sm font-medium">Rate</p>
+                <div className="flex w-full flex-row justify-between items-center bg-[#EEF1F4] dark:bg-accent rounded-xl px-3 sm:px-4 py-2.5 min-h-[52px]">
+                  <div className="flex items-center gap-1.5 min-w-0">
+                    <span className="text-[#1D8751] text-lg sm:text-xl font-bold shrink-0">{rangeSymbol}</span>
+                    <span className="text-[#1D8751] text-lg sm:text-xl font-bold">
+                      {commissionRate}
+                    </span>
+                  </div>
+                  <span className="text-xs sm:text-sm text-gray-900 dark:text-white font-medium ml-2 shrink-0">
+                    {rangeSuffix}
+                  </span>
+                </div>
+              </div>
+
+              <div className="flex flex-col gap-2 w-full">
+                <p className="text-[#788099] text-xs sm:text-sm font-medium">I will send</p>
                 <div className="flex flex-row justify-between w-full items-center bg-[#EEF1F4] dark:bg-accent rounded-xl px-3 sm:px-4 py-2.5 min-h-[52px]">
                   <div className="flex flex-row items-center gap-2 min-w-0">
                     <Image
@@ -557,11 +531,11 @@ const FinalSell: React.FC<FinalSellProps> = ({ orderData }) => {
                       height={20}
                       className="w-4 h-4 sm:w-5 sm:h-5 shrink-0"
                     />
-                    <span className="text-[#1D8751] text-base sm:text-lg font-bold ">
+                    <span className="text-[#1D8751] text-lg sm:text-xl font-bold">
                       {formatAmount(Math.ceil(Number(saveOrder?.amount ?? 0)))}
                     </span>
                   </div>
-                  <span className="text-xs text-warning dark:text-[#A3A3C2] font-medium ml-2 shrink-0">
+                  <span className="text-xs sm:text-sm text-gray-900 dark:text-white font-medium ml-2 shrink-0">
                     USDT
                   </span>
                 </div>
@@ -875,7 +849,7 @@ const FinalSell: React.FC<FinalSellProps> = ({ orderData }) => {
                     <span className="text-gray-600 dark:text-[#A3A3C2]">
                       Amount Sent:
                     </span>
-                    <span className="text-[#F79330] font-semibold break-words ml-2">
+                    <span className="text-[#1D8751] font-semibold break-words ml-2">
                       ${formatAmount(sendAmount)} USD
                     </span>
                   </div>

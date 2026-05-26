@@ -22,10 +22,12 @@ import { getAllUserTransactions } from "@/features/transactions/api";
 import { getMyTransactions as getMyP2PTransactions } from "@/features/p2p/api";
 import { TransactionFromToCell } from "@/components/dashboard/ui/TransactionFromToCell";
 import { TransactionStatusCell } from "@/components/dashboard/ui/TransactionStatusCell";
+import { TransactionAmountCell } from "@/components/dashboard/ui/TransactionAmountCell";
 import {
   isPendingAddressDashboardStatus,
   shouldOmitExchangeWithoutDepositOrWithdrawal,
 } from "@/lib/utils/dashboardTransactionFilters";
+import { getExchangeAssetColumnLabels } from "@/lib/utils/exchangeCurrencyDisplay";
 import {
   type FromToCellModel,
   buildExchangeFromTo,
@@ -36,13 +38,6 @@ import {
   textFromToCell,
   withFromToLogos,
 } from "@/lib/utils/transactionFromTo";
-
-const formatAmount = (amount: string | number | undefined | null): string => {
-  if (amount === undefined || amount === null || amount === "") return "0.0000";
-  const numAmount = typeof amount === "string" ? parseFloat(amount) : amount;
-  if (isNaN(numAmount)) return "0.0000";
-  return numAmount.toFixed(4);
-};
 
 const normalizeStatusForBadge = (status: unknown): string => {
   const s = String(status ?? "").trim();
@@ -157,17 +152,7 @@ type AllTransactionsProps = {
 
 const getAssetColumnLabels = (tx: AllTransactionItem): { title: string; subtitle?: string } => {
   if (tx.type === "exchange") {
-    const isDeposit = tx.sub_type === "deposit";
-    const title = String(
-      isDeposit ? tx.to_asset || tx.currency : tx.from_asset || tx.currency
-    )
-      .trim()
-      .toUpperCase();
-    const subtitle = String(tx.asset_name || tx.network || "").trim();
-    if (!subtitle || subtitle.toUpperCase() === title) {
-      return { title: title || "—" };
-    }
-    return { title: title || "—", subtitle };
+    return getExchangeAssetColumnLabels(tx);
   }
   const title = String(
     tx.currency || tx.asset || (tx.type === "moneyx" ? "USD" : "USDT")
@@ -628,10 +613,10 @@ const AllTransactions = ({
         e.stopPropagation();
         openTransactionDetails(tx);
       }}
-      className={`inline-flex flex-row items-center justify-center gap-2 px-4 py-2.5 min-w-[148px] rounded-xl text-sm font-semibold text-[#1D8751] border border-[#1D8751]/40 bg-[#1D8751]/8 hover:bg-[#1D8751]/15 dark:hover:bg-[#1D8751]/20 transition-colors whitespace-nowrap ${extraClassName}`}
+      className={`inline-flex flex-row items-center justify-center gap-1.5 px-3 py-2 min-w-0 rounded-lg text-xs sm:text-sm font-semibold text-white bg-[#1D8751] border border-[#1D8751] hover:bg-[#17693F] active:bg-[#16663d] transition-colors whitespace-nowrap shadow-sm ${extraClassName}`}
       aria-label={t("transactions.viewDetails", "View transaction details")}
     >
-      <Eye className="w-5 h-5 shrink-0" aria-hidden />
+      <Eye className="w-4 h-4 shrink-0" aria-hidden />
       <span>{t("transactions.viewDetails", "View details")}</span>
     </button>
   );
@@ -697,7 +682,6 @@ const AllTransactions = ({
           <TransactionFromToCell
             label={fromCell.label}
             subLabel={fromCell.subLabel}
-            copyValue={fromCell.copyValue}
             iconUrl={fromCell.iconUrl}
           />
         </td>
@@ -705,15 +689,20 @@ const AllTransactions = ({
           <TransactionFromToCell
             label={toCell.label}
             subLabel={toCell.subLabel}
-            copyValue={toCell.copyValue}
             iconUrl={toCell.iconUrl}
           />
         </td>
-        <td
-          className={`px-3 sm:px-4 lg:px-6 py-4 border-b border-gray-200 dark:border-[#35353E] text-sm sm:text-base font-semibold ${isExchange && isDeposit ? "text-[#1D8751]" : "text-red-500 dark:text-red-400"
-            }`}
-        >
-          {formatAmount(tx.amount)}
+        <td className="px-3 sm:px-4 lg:px-6 py-4 border-b border-gray-200 dark:border-[#35353E] align-top whitespace-nowrap">
+          <TransactionAmountCell
+            tx={tx}
+            variant="asset"
+            amountTone={
+              isExchange ? (isDeposit ? "positive" : "negative") : "neutral"
+            }
+          />
+        </td>
+        <td className="px-3 sm:px-4 lg:px-6 py-4 border-b border-gray-200 dark:border-[#35353E] align-top whitespace-nowrap">
+          <TransactionAmountCell tx={tx} variant="usd" />
         </td>
         <td
           className="px-3 sm:px-4 lg:px-6 py-4 border-b border-gray-200 dark:border-[#35353E]"
@@ -823,7 +812,6 @@ const AllTransactions = ({
             <TransactionFromToCell
               label={fromCell.label}
               subLabel={fromCell.subLabel}
-              copyValue={fromCell.copyValue}
               iconUrl={fromCell.iconUrl}
             />
           </div>
@@ -832,24 +820,26 @@ const AllTransactions = ({
             <TransactionFromToCell
               label={toCell.label}
               subLabel={toCell.subLabel}
-              copyValue={toCell.copyValue}
               iconUrl={toCell.iconUrl}
             />
           </div>
           <div>
-            <div className="text-xs text-gray-500 dark:text-[#A0A3BC] mb-1">Amount</div>
-            <div
-              className={`font-semibold text-sm ${isExchange && isDeposit ? "text-[#1D8751]" : "text-red-500 dark:text-red-400"
-                }`}
-            >
-              {formatAmount(tx.amount)}
+            <div className="text-xs text-gray-500 dark:text-[#A0A3BC] mb-1">
+              {t("transactions.assetAmount", "Asset amount")}
             </div>
+            <TransactionAmountCell
+              tx={tx}
+              variant="asset"
+              amountTone={
+                isExchange ? (isDeposit ? "positive" : "negative") : "neutral"
+              }
+            />
           </div>
           <div>
-            <div className="text-xs text-gray-500 dark:text-[#A0A3BC] mb-1">When</div>
-            <div className="font-medium text-sm text-gray-500 dark:text-[#A0A3BC]">
-              {formatDashboardTransactionWhen(tx.created_at)}
+            <div className="text-xs text-gray-500 dark:text-[#A0A3BC] mb-1">
+              {t("transactions.usdValue", "USD value")}
             </div>
+            <TransactionAmountCell tx={tx} variant="usd" />
           </div>
         </div>
         <div className="pt-2" onClick={(e) => e.stopPropagation()}>
@@ -878,7 +868,8 @@ const AllTransactions = ({
                 t("transactions.asset", "Asset"),
                 t("transactions.from", "From"),
                 t("transactions.to", "To"),
-                t("transactions.amount", "Amount"),
+                t("transactions.assetAmount", "Asset amount"),
+                t("transactions.usdValue", "USD value"),
                 t("transactions.status", "Status"),
                 t("transactions.when", "When"),
                 t("transactions.actions", "Actions"),
@@ -887,7 +878,7 @@ const AllTransactions = ({
                   key={h}
                   className={`px-3 sm:px-4 lg:px-6 py-3 text-left text-xs sm:text-sm font-medium text-gray-600 dark:text-[#788099] ${
                     h === t("transactions.actions", "Actions")
-                      ? "min-w-[160px] whitespace-nowrap"
+                      ? "min-w-[120px] whitespace-nowrap"
                       : ""
                   }`}
                 >

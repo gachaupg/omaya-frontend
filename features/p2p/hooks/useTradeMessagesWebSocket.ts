@@ -242,7 +242,13 @@ export const useTradeMessagesWebSocket = (options: UseTradeMessagesWebSocketOpti
         const looksLikeChatMessage = Boolean(
           hasMessageBodyOrMedia && !isSystemConnectionPayload
         );
-        if (looksLikeChatMessage) {
+        const handledByTypedMessageCase =
+          rawType === "new_message" ||
+          rawType === "message_received" ||
+          rawType === "messages_list" ||
+          rawType === "initial_messages" ||
+          rawType === "recent_messages";
+        if (looksLikeChatMessage && !handledByTypedMessageCase) {
           const resolvedId =
             candidatePayload.id ??
             candidatePayload.message_id ??

@@ -22,6 +22,50 @@ import { resolveExpressTransactionFailureMessage } from "@/lib/utils/websocketUt
 import { useScrollAppToTopWhen } from "@/hooks/useScrollAppToTopWhen";
 import { encodeQrScanData } from "@/lib/utils/ussdDial";
 import { P2P_STATUS_SCROLL_FRACTION } from "@/lib/utils/scrollAppToTop";
+import HowToSendDialBlock from "@/components/ui/HowToSendDialBlock";
+import CryptoSendToAddressBlock from "@/components/ui/CryptoSendToAddressBlock";
+import { shouldSkipAssetFetchError } from "@/lib/utils/assetLoadNotice";
+
+const EVM_ADDRESS_RE = /^0x[a-fA-F0-9]{40}$/i;
+
+const resolveCryptoPayinAddress = (tx: {
+  payin_address?: string;
+  walletAddress?: string;
+  details?: { payin_address?: string };
+}): string => {
+  return (
+    String(tx?.payin_address || "").trim() ||
+    String(tx?.details?.payin_address || "").trim() ||
+    String(tx?.walletAddress || "").trim()
+  );
+};
+
+const resolveTxAssetTicker = (tx: {
+  asset?: { ticker?: string; symbol?: string; name?: string };
+  details?: { to_currency?: string };
+}): string =>
+  tx?.asset?.ticker ||
+  tx?.asset?.symbol ||
+  tx?.asset?.name ||
+  tx?.details?.to_currency ||
+  "USDT";
+
+const resolveTxNetworkLabel = (tx: {
+  asset?: { network?: string };
+  network?: { network_type?: string; network?: string; network_id?: string };
+}): string =>
+  tx?.asset?.network ||
+  tx?.network?.network_type ||
+  tx?.network?.network ||
+  tx?.network?.network_id ||
+  "BSC";
+
+/** Match Exchange Deposit status page width and spacing */
+const STATUS_PAGE_MAX_W = "max-w-4xl";
+const statusCardSurface = (dark: boolean) =>
+  dark
+    ? "bg-[#23232B] border-[#35353E]"
+    : "bg-white border-gray-200";
 
 interface ExchangingProps {
   transactionData?: {
@@ -130,9 +174,6 @@ export default function Exchanging({ transactionData }: ExchangingProps) {
       pick(pd.how_to_send) ||
       pick(nested?.how_to_send) ||
       pick(admin?.how_to_send) ||
-      pick(pd.wallet_address) ||
-      pick(nested?.wallet_address) ||
-      pick(admin?.wallet_address) ||
       account
     );
   };
@@ -170,6 +211,60 @@ export default function Exchanging({ transactionData }: ExchangingProps) {
       return base.slice(0, -1) + `*${amt}#`;
     }
     return base + `*${amt}#`;
+  };
+
+  const renderSendInstructionsBlock = () => {
+    if (!effectiveTransactionData) return null;
+
+    const assetTicker = resolveTxAssetTicker(effectiveTransactionData);
+    const networkLabel = resolveTxNetworkLabel(effectiveTransactionData);
+
+    if (effectiveTransactionData.type === "withdrawal") {
+      const address = String(
+        effectiveTransactionData.walletAddress || ""
+      ).trim();
+      if (!EVM_ADDRESS_RE.test(address)) return null;
+      return (
+        <CryptoSendToAddressBlock
+          address={address}
+          assetTicker={assetTicker}
+          networkLabel={networkLabel}
+          isDark={isDark}
+          className="w-full"
+        />
+      );
+    }
+
+    if (effectiveTransactionData.type !== "deposit") return null;
+
+    const payin = resolveCryptoPayinAddress(effectiveTransactionData);
+    if (EVM_ADDRESS_RE.test(payin)) {
+      return (
+        <CryptoSendToAddressBlock
+          address={payin}
+          assetTicker={assetTicker}
+          networkLabel={networkLabel}
+          isDark={isDark}
+          className="w-full"
+        />
+      );
+    }
+
+    const howToSendRaw = resolveHowToSendFromTx(effectiveTransactionData);
+    const amountForHowToSend =
+      liveAmount ?? (effectiveTransactionData as { amount?: number }).amount ?? null;
+    const ussdValue = formatHowToSend(howToSendRaw, amountForHowToSend);
+    if (!ussdValue || EVM_ADDRESS_RE.test(ussdValue)) return null;
+
+    return (
+      <HowToSendDialBlock
+        value={ussdValue}
+        isDark={isDark}
+        compact
+        dialOnMobileOnly
+        className="w-full"
+      />
+    );
   };
 
   const handleFailureModalClose = () => {
@@ -305,7 +400,9 @@ export default function Exchanging({ transactionData }: ExchangingProps) {
         try {
           await dispatch(cancelP2PDepositTransaction(txId)).unwrap();
         } catch (error) {
-          logger.error('p2p', "Failed to cancel transaction:", error);
+          if (!shouldSkipAssetFetchError(error)) {
+            logger.error("p2p", "Failed to cancel transaction:", error);
+          }
         }
         localStorage.removeItem("express_transaction_data");
         localStorage.removeItem("express_transaction_expiry");
@@ -337,7 +434,9 @@ export default function Exchanging({ transactionData }: ExchangingProps) {
       // Redirect to home page
       router.push("/");
     } catch (error) {
-      logger.error('p2p', "Failed to cancel transaction:", error);
+      if (!shouldSkipAssetFetchError(error)) {
+        logger.error("p2p", "Failed to cancel transaction:", error);
+      }
       // Still redirect even if cancel fails
       router.push("/");
     }
@@ -950,15 +1049,16 @@ export default function Exchanging({ transactionData }: ExchangingProps) {
   }
 
   return (
-    <div className={`w-full min-h-screen flex flex-col items-center pt-2`}>
+    <div className="w-full min-h-0 flex flex-col items-center pt-2 px-3 sm:px-4 pb-6">
+      <div className={`w-full ${STATUS_PAGE_MAX_W} flex flex-col`}>
       {/* Timer Banner */}
       {timerActive && timeRemaining > 0 && (
-        <div className={`w-full max-w-4xl mb-4 ${timeRemaining <= 60
+        <div className={`w-full mb-2 sm:mb-4 ${timeRemaining <= 60
           ? 'bg-red-500/20 border-red-500'
           : timeRemaining <= 300
             ? 'bg-orange-500/20 border-orange-500'
             : 'bg-[#1D8751]/20 border-[#1D8751]'
-          } border-2 rounded-2xl p-4 flex items-center justify-between`}>
+          } border-2 rounded-2xl p-2 sm:p-3 md:p-4 flex items-center justify-between`}>
           <div className="flex items-center gap-3">
             <svg
               className={`w-6 h-6 ${timeRemaining <= 60
@@ -1004,36 +1104,38 @@ export default function Exchanging({ transactionData }: ExchangingProps) {
 
       {/* Top Card */}
       <div
-        className={`flex flex-col md:flex-row justify-between items-stretch bg-[#FFFFFF] dark:${isDark
-          ? "bg-[#23232B]  border:[#E8EFF5] dark:border-[#35353E]"
-          : "bg-white border-gray-200"
-          } border-2 rounded-2xl p-4 shadow-lg w-full  mb-4 min-h-[180px]`}
+        className={`flex flex-col ${statusCardSurface(isDark)} border-2 rounded-2xl p-3 sm:p-4 shadow-lg w-full mb-2 sm:mb-4`}
       >
-        <div className="flex-1 flex flex-col justify-between py-2 pr-2">
+        <div className="flex flex-col md:flex-row justify-between items-stretch gap-4 w-full">
+        <div className="flex-1 flex flex-col justify-between py-1 sm:py-2 min-w-0 w-full">
           <div>
-            <div
-              className={`${isDark ? "text-[#7B7B7B]" : "text-gray-600"
-                } text-xs font-semibold mb-0.5`}
-            >
-              Amount:
-            </div>
-            <div
-              className={`${isDark ? "text-white" : "text-gray-900"
-                } text-base font-semibold mb-1 flex items-center gap-2`}
-            >
-              <span>
-                {liveAmount !== null
-                  ? liveAmount
-                  : 0}{" "}
-                <span className="uppercase">
-                  {liveCurrency ||
-                    effectiveTransactionData?.asset?.ticker ||
-                    effectiveTransactionData?.asset?.symbol ||
-                    effectiveTransactionData?.asset?.name ||
-                    transactionData?.details?.to_currency ||
-                    "USDT"}
-                </span>
-              </span>
+            <div className="flex flex-row flex-wrap gap-x-6 gap-y-2 items-baseline">
+              <div>
+                <div
+                  className={`${isDark ? "text-[#7B7B7B]" : "text-gray-600"
+                    } text-xs font-semibold mb-0.5`}
+                >
+                  Amount you&apos;re sending:
+                </div>
+                <div
+                  className={`${isDark ? "text-white" : "text-gray-900"
+                    } text-base font-semibold flex items-center gap-2`}
+                >
+                  <span>
+                    {liveAmount !== null
+                      ? liveAmount
+                      : effectiveTransactionData?.amount ?? 0}{" "}
+                    <span className="uppercase">
+                      {liveCurrency ||
+                        effectiveTransactionData?.asset?.ticker ||
+                        effectiveTransactionData?.asset?.symbol ||
+                        effectiveTransactionData?.asset?.name ||
+                        transactionData?.details?.to_currency ||
+                        "USDT"}
+                    </span>
+                  </span>
+                </div>
+              </div>
             </div>
             {/* {liveAmount !== null &&
               liveAmount !== effectiveTransactionData?.amount && (
@@ -1095,7 +1197,7 @@ export default function Exchanging({ transactionData }: ExchangingProps) {
                 >
                   Asset & Network:
                 </div>
-                <div className="flex items-center mb-2">
+                <div className="flex items-center mb-1 sm:mb-2">
                   <img
                     src={
                       effectiveTransactionData?.asset?.icon ||
@@ -1112,7 +1214,7 @@ export default function Exchanging({ transactionData }: ExchangingProps) {
                   />
                   <span
                     className={`${isDark ? "text-white" : "text-gray-900"
-                      } text-sm font-semibold`}
+                      } text-sm font-semibold uppercase`}
                   >
                     {effectiveTransactionData?.asset?.ticker || effectiveTransactionData?.asset?.symbol || effectiveTransactionData?.asset?.name || "USDT"}
                   </span>
@@ -1120,50 +1222,6 @@ export default function Exchanging({ transactionData }: ExchangingProps) {
                     {effectiveTransactionData?.asset?.network || effectiveTransactionData?.network?.network_type || "BSC"}
                   </span>
                 </div>
-
-
-
-                {/* How to send (selected payment method details) */}
-                {effectiveTransactionData?.type === "deposit" &&
-                  (resolveHowToSendFromTx(effectiveTransactionData) ||
-                    String((effectiveTransactionData as any)?.payin_address || "").trim() ||
-                    String((effectiveTransactionData as any)?.details?.payin_address || "").trim() ||
-                    String(effectiveTransactionData?.walletAddress || "").trim()) && (
-                  <>
-                    <div
-                      className={`${isDark ? "text-[#1D8751]" : "text-[#1D8751]"
-                        } text-sm font-semibold mb-1 mt-3`}
-                    >
-                      How to send:
-                    </div>
-                    <div className="flex items-center mb-2 p-2 rounded-lg border border-[#1D8751]/30 bg-[#1D8751]/5">
-                      <span
-                        className={`${isDark ? "text-white" : "text-gray-900"
-                          } text-sm font-mono break-all flex-1 leading-relaxed`}
-                        style={{ wordBreak: 'break-all', lineHeight: '1.5' }}
-                      >
-                        {resolveHowToSendFromTx(effectiveTransactionData) ||
-                          String((effectiveTransactionData as any)?.payin_address || "").trim() ||
-                          String((effectiveTransactionData as any)?.details?.payin_address || "").trim() ||
-                          String(effectiveTransactionData?.walletAddress || "").trim()}
-                      </span>
-                      <CopyButton
-                        value={
-                          resolveHowToSendFromTx(effectiveTransactionData) ||
-                          String((effectiveTransactionData as any)?.payin_address || "").trim() ||
-                          String((effectiveTransactionData as any)?.details?.payin_address || "").trim() ||
-                          String(effectiveTransactionData?.walletAddress || "").trim()
-                        }
-                        className="ml-2 flex-shrink-0"
-                      />
-                    </div>
-                  </>
-                )}
-
-                {/* Status from WebSocket */}
-
-
-
               </>
             )}
 
@@ -1225,25 +1283,9 @@ export default function Exchanging({ transactionData }: ExchangingProps) {
                 </div>
               </>
             )}
-            {effectiveTransactionData?.type === "withdrawal" && (
-              <>
-                <div
-                  className={`${isDark ? "text-[#7B7B7B]" : "text-gray-600"
-                    } text-xs font-semibold mb-0.5`}
-                >
-                  Wallet Address:
-                </div>
-                <div
-                  className={`${isDark ? "text-white" : "text-gray-900"
-                    } text-sm font-mono break-all`}
-                >
-                  {effectiveTransactionData.walletAddress}
-                </div>
-              </>
-            )}
           </div>
         </div>
-        <div className="flex-shrink-0 ml-0 md:ml-6 flex items-center justify-center py-2">
+        <div className="flex-shrink-0 w-full md:w-auto md:ml-6 flex flex-col items-center justify-center py-2 md:py-0">
           {/* QR code */}
           {(() => {
             // For deposits: use selected payment method "How to send" (formatted with real amount). For withdrawals: wallet address.
@@ -1297,11 +1339,25 @@ export default function Exchanging({ transactionData }: ExchangingProps) {
             );
           })()}
         </div>
+        </div>
+        {(() => {
+          const sendBlock = renderSendInstructionsBlock();
+          if (!sendBlock) return null;
+          return (
+            <div
+              className={`w-full mt-2 pt-2 border-t border-dashed ${
+                isDark ? "border-[#35353E]" : "border-gray-300"
+              }`}
+            >
+              {sendBlock}
+            </div>
+          );
+        })()}
       </div>
 
-      <div className="flex items-center justify-between w-full  mb-4 relative">
+      <div className="flex items-center justify-between w-full mb-2 sm:mb-4 relative px-2 sm:px-0 overflow-x-auto">
         {/* Connecting Lines */}
-        <div className="absolute top-5 left-[16.66%] right-[16.66%] h-0.5 z-0">
+        <div className="absolute top-5 left-[12.5%] right-[12.5%] h-0.5 z-0 hidden sm:block">
           <div
             className={`h-0.5 transition-all duration-500 ${currentStatus === "completed" || currentStatus === "finished"
               ? "bg-[#1D8751] w-full"
@@ -1318,9 +1374,9 @@ export default function Exchanging({ transactionData }: ExchangingProps) {
         </div>
 
         {/* Step 1: Awaiting Deposit */}
-        <div className="flex flex-col items-center flex-1 relative z-10">
+        <div className="flex flex-col items-center flex-1 relative z-10 min-w-[70px] sm:min-w-0">
           <div
-            className={`w-10 h-10 rounded-full flex items-center justify-center mb-1 border-4 ${currentStatus === "pending" ||
+            className={`w-8 h-8 sm:w-10 sm:h-10 rounded-full flex items-center justify-center mb-1 border-2 sm:border-4 ${currentStatus === "pending" ||
               currentStatus === "waiting"
               ? "bg-[#FF9500] border-[#FF95001A]"
               : currentStatus === "confirming" ||
@@ -1331,7 +1387,7 @@ export default function Exchanging({ transactionData }: ExchangingProps) {
                 : "bg-[#23232B] border-[#35353E]"
               }`}
           >
-            <svg width="24" height="24" fill="none" viewBox="0 0 24 24">
+            <svg width="20" height="20" className="sm:w-6 sm:h-6" fill="none" viewBox="0 0 24 24">
               <circle
                 cx="12"
                 cy="12"
@@ -1368,9 +1424,9 @@ export default function Exchanging({ transactionData }: ExchangingProps) {
               />
             </svg>
           </div>
-          <div className="flex items-center gap-1">
+          <div className="flex items-center gap-0.5 sm:gap-1 flex-wrap justify-center">
             <span
-              className={`font-semibold text-base ${currentStatus === "pending" ||
+              className={`font-semibold text-[10px] sm:text-base text-center ${currentStatus === "pending" ||
                 currentStatus === "waiting"
                 ? "text-[#FF9500]"
                 : currentStatus === "confirming" ||
@@ -1381,7 +1437,8 @@ export default function Exchanging({ transactionData }: ExchangingProps) {
                   : "text-[#7B7B7B]"
                 }`}
             >
-              Awaiting Deposit
+              <span className="hidden sm:inline">Awaiting Deposit</span>
+              <span className="sm:hidden">Awaiting</span>
             </span>
             {(currentStatus === "pending" ||
               currentStatus === "waiting") && (
@@ -1419,9 +1476,9 @@ export default function Exchanging({ transactionData }: ExchangingProps) {
           </div>
         </div>
         {/* Step 2: Confirming */}
-        <div className="flex flex-col items-center flex-1 relative z-10">
+        <div className="flex flex-col items-center flex-1 relative z-10 min-w-[70px] sm:min-w-0">
           <div
-            className={`w-10 h-10 rounded-full flex items-center justify-center mb-1 border-4 ${currentStatus === "confirming"
+            className={`w-8 h-8 sm:w-10 sm:h-10 rounded-full flex items-center justify-center mb-1 border-2 sm:border-4 ${currentStatus === "confirming"
               ? "bg-[#FF9500] border-[#FF95001A]"
               : currentStatus === "sending" ||
                 currentStatus === "completed" ||
@@ -1430,7 +1487,7 @@ export default function Exchanging({ transactionData }: ExchangingProps) {
                 : `${isDark ? "bg-[#23232B] border-[#35353E]" : "bg-gray-200 border-gray-300"}`
               }`}
           >
-            <svg width="24" height="24" fill="none" viewBox="0 0 24 24">
+            <svg width="20" height="20" className="sm:w-6 sm:h-6" fill="none" viewBox="0 0 24 24">
               <circle
                 cx="12"
                 cy="12"
@@ -1461,9 +1518,9 @@ export default function Exchanging({ transactionData }: ExchangingProps) {
               />
             </svg>
           </div>
-          <div className="flex items-center gap-1">
+          <div className="flex items-center gap-0.5 sm:gap-1 flex-wrap justify-center">
             <span
-              className={`font-semibold text-base ${currentStatus === "confirming"
+              className={`font-semibold text-[10px] sm:text-base text-center ${currentStatus === "confirming"
                 ? "text-[#FF9500]"
                 : currentStatus === "sending" ||
                   currentStatus === "completed" ||
@@ -1508,16 +1565,16 @@ export default function Exchanging({ transactionData }: ExchangingProps) {
           </div>
         </div>
         {/* Step 3: Sending to you */}
-        <div className="flex flex-col items-center flex-1 relative z-10">
+        <div className="flex flex-col items-center flex-1 relative z-10 min-w-[70px] sm:min-w-0">
           <div
-            className={`w-10 h-10 rounded-full flex items-center justify-center mb-1 border-4 ${currentStatus === "sending"
+            className={`w-8 h-8 sm:w-10 sm:h-10 rounded-full flex items-center justify-center mb-1 border-2 sm:border-4 ${currentStatus === "sending"
               ? "bg-[#FF9500] border-[#FF95001A]"
               : currentStatus === "completed" || currentStatus === "finished"
                 ? "bg-[#1D8751] border-[#1D87511A]"
                 : "bg-[#23232B] border-[#35353E]"
               }`}
           >
-            <svg width="24" height="24" fill="none" viewBox="0 0 24 24">
+            <svg width="20" height="20" className="sm:w-6 sm:h-6" fill="none" viewBox="0 0 24 24">
               <circle
                 cx="12"
                 cy="12"
@@ -1547,9 +1604,9 @@ export default function Exchanging({ transactionData }: ExchangingProps) {
               />
             </svg>
           </div>
-          <div className="flex items-center gap-1">
+          <div className="flex items-center gap-0.5 sm:gap-1 flex-wrap justify-center">
             <span
-              className={`font-semibold text-base ${currentStatus === "sending"
+              className={`font-semibold text-[10px] sm:text-base text-center ${currentStatus === "sending"
                 ? "text-[#FF9500]"
                 : currentStatus === "completed" ||
                   currentStatus === "finished"
@@ -1610,13 +1667,12 @@ export default function Exchanging({ transactionData }: ExchangingProps) {
 
       {/* Transaction Details Card */}
       <div
-        className={`${isDark ? "bg-[#23232B] border-[#35353E]" : "bg-white border-gray-200"
-          } border-2 rounded-2xl p-4 sm:p-6 shadow-lg w-full mb-4`}
+        className={`${statusCardSurface(isDark)} border-2 rounded-2xl p-3 sm:p-4 md:p-6 shadow-lg w-full mb-2 sm:mb-4 overflow-hidden`}
       >
         {/* Title */}
         <div
           className={`${isDark ? "text-white" : "text-gray-900"
-            } text-xl sm:text-2xl font-semibold mb-4`}
+            } text-lg sm:text-xl md:text-2xl font-semibold mb-3 sm:mb-4`}
         >
           Transaction Details
         </div>
@@ -1626,12 +1682,14 @@ export default function Exchanging({ transactionData }: ExchangingProps) {
             className={`${isDark ? "text-[#7B7B7B]" : "text-gray-600"
               } text-sm sm:text-base font-medium`}
           >
-            {effectiveTransactionData?.type === "deposit" ? "Wallet Address" : "Transaction ID"}
+            {effectiveTransactionData?.type === "deposit"
+              ? `Send ${resolveTxAssetTicker(effectiveTransactionData)} (${resolveTxNetworkLabel(effectiveTransactionData)}) address`
+              : "Transaction ID"}
           </div>
-          <div className="flex items-center gap-2 min-w-0">
+          <div className="flex items-center gap-2 min-w-0 flex-1 sm:flex-initial sm:justify-end">
             <span
               className={`${isDark ? "text-white" : "text-gray-900"
-                } text-sm sm:text-base font-mono font-semibold break-all`}
+                } text-xs sm:text-sm md:text-base font-mono font-semibold truncate min-w-0`}
             >
               {effectiveTransactionData?.type === "deposit"
                 ? (effectiveTransactionData?.walletAddress || liveTransactionId || effectiveTransactionData?.transactionId)
@@ -1799,27 +1857,29 @@ export default function Exchanging({ transactionData }: ExchangingProps) {
       </div>
 
 
-      <div className="w-full  rounded-2xl flex ">
+      <div className="w-full rounded-2xl flex">
 
-        <div className="w-full bg-[#FF9500]/50 border-2 border-solid border-[#FF9500]/50 rounded-[18px] flex flex-col gap-2 p-3">
-          <h2 className="text-white text-base font-semibold">
+        <div className="w-full border border-[#1D8751] rounded-xl bg-[#F8FAFF] dark:bg-[#1D1D23] flex flex-col gap-2 p-3 sm:p-4">
+          <h2 className="text-gray-900 dark:text-white text-sm sm:text-base font-semibold">
             Terms and Conditions Summary
           </h2>
           <ul className="list-disc list-outside ml-4 space-y-1">
-            <li className="text-white text-sm">
+            <li className="text-[#475569] dark:text-[#C5C9D6] text-xs sm:text-sm">
               Only send
               {` ${transactionData?.asset?.ticker || transactionData?.asset?.symbol || transactionData?.asset?.name || "USDT"} (${transactionData?.asset?.network})`}{" "}
               to this address{" "}
             </li>
-            <li className="text-white text-sm">
+            <li className="text-[#475569] dark:text-[#C5C9D6] text-xs sm:text-sm">
               Send exactly the amount specified below
             </li>
-            <li className="text-white text-sm">
+            <li className="text-[#475569] dark:text-[#C5C9D6] text-xs sm:text-sm">
               Do not send from exchange accounts
             </li>
            
           </ul>
         </div>
+      </div>
+
       </div>
 
       <FailureStatusModal

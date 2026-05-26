@@ -1,34 +1,70 @@
 "use client";
 
 import { Toaster as SonnerToaster } from "sonner";
+import toast, {
+  Toaster as HotToaster,
+  ToastBar,
+  resolveValue,
+} from "react-hot-toast";
+import { ToastContainer } from "react-toastify";
+import { X } from "lucide-react";
+import "react-toastify/dist/ReactToastify.css";
+import { hotToastOptions, sonnerToastClassNames } from "@/lib/utils/toastTheme";
 
 type ToasterProps = React.ComponentProps<typeof SonnerToaster>;
 
-const baseToast =
-  "group toast group-[.toaster]:bg-[#35353E] group-[.toaster]:shadow-lg group-[.toaster]:border";
-
 const Toaster = ({ ...props }: ToasterProps) => {
   return (
-    <SonnerToaster
-      position="top-right"
-      className="toaster group"
-      toastOptions={{
-        classNames: {
-          toast: baseToast,
-          title: "group-[.toast]:font-semibold",
-          description: "group-[.toast]:opacity-90",
-          success: `${baseToast} group-[.toaster]:border-[#1D8751] group-[.toaster]:text-[#1D8751] [&_[data-title]]:text-[#1D8751] [&_[data-description]]:text-[#7dd4a0]`,
-          error: `${baseToast} group-[.toaster]:border-[#E23D3A] group-[.toaster]:text-[#E23D3A] [&_[data-title]]:text-[#E23D3A] [&_[data-description]]:text-[#f5a5a3]`,
-          warning: `${baseToast} group-[.toaster]:border-[#F79330] group-[.toaster]:text-[#F79330] [&_[data-title]]:text-[#F79330] [&_[data-description]]:text-[#f5c99a]`,
-          info: `${baseToast} group-[.toaster]:border-[#3B82F6] group-[.toaster]:text-[#93C5FD] [&_[data-title]]:text-[#93C5FD] [&_[data-description]]:text-[#BFDBFE]`,
-          actionButton:
-            "group-[.toast]:bg-[#1D8751] group-[.toast]:text-white",
-          cancelButton:
-            "group-[.toast]:bg-[#35353E] group-[.toast]:text-gray-300",
-        },
-      }}
-      {...props}
-    />
+    <>
+      <SonnerToaster
+        position="top-right"
+        className="toaster group"
+        closeButton
+        toastOptions={{
+          classNames: sonnerToastClassNames,
+        }}
+        {...props}
+      />
+      <HotToaster position="top-right" gutter={8} toastOptions={hotToastOptions}>
+        {(t) => (
+          <ToastBar toast={t}>
+            {({ icon, message }) => (
+              <div className="relative flex items-start gap-2 w-full pr-5">
+                {icon ? <span className="shrink-0 mt-0.5">{icon}</span> : null}
+                <div className="flex-1 min-w-0 text-[13px] leading-snug">
+                  {resolveValue(message, t)}
+                </div>
+                {t.type !== "loading" ? (
+                  <button
+                    type="button"
+                    onClick={() => toast.dismiss(t.id)}
+                    className="absolute top-2 right-2 p-0.5 rounded opacity-70 hover:opacity-100 text-inherit"
+                    aria-label="Close"
+                  >
+                    <X className="w-3.5 h-3.5" strokeWidth={2.5} />
+                  </button>
+                ) : null}
+              </div>
+            )}
+          </ToastBar>
+        )}
+      </HotToaster>
+      <ToastContainer
+        position="top-right"
+        autoClose={4000}
+        hideProgressBar={false}
+        newestOnTop
+        closeOnClick
+        closeButton
+        rtl={false}
+        pauseOnFocusLoss
+        draggable
+        pauseOnHover
+        theme="dark"
+        icon={false}
+        toastClassName="omaya-toastify-toast"
+      />
+    </>
   );
 };
 

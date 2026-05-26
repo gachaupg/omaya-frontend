@@ -248,9 +248,30 @@ export const matchP2POrderThunk = createAsyncThunk(
 
 export const fetchConfirmOrder = createAsyncThunk(
   "p2p/fetchConfirmOrder",
-  async (id: string, { rejectWithValue }) => {
+  async (
+    arg: string | { id: string; force?: boolean },
+    { rejectWithValue, getState }
+  ) => {
+    const id = typeof arg === "string" ? arg : arg.id;
+    const force = typeof arg === "object" ? Boolean(arg.force) : false;
+    const trimmed = String(id ?? "").trim();
+    if (!trimmed) {
+      return rejectWithValue("Trade id is required");
+    }
+
     try {
-      return await getConfirmOrder(id);
+      const { getConfirmOrderCached } = await import("../utils/p2pConfirmCache");
+      const state = getState() as { p2pMarket?: { confirmOrder?: MatchedTrade | null } };
+      const current = state.p2pMarket?.confirmOrder;
+      if (
+        !force &&
+        current?.id &&
+        String(current.id).trim() === trimmed &&
+        current.status
+      ) {
+        return current;
+      }
+      return await getConfirmOrderCached(trimmed, { force });
     } catch (err: any) {
       const msg = handleP2PErrorSafe(err);
       return rejectWithValue(msg || err.message || "Failed to fetch confirm order");
@@ -465,6 +486,12 @@ const p2pMarketSlice = createSlice({
     },
     resetConfirmOrderState: (state) => {
       state.confirmOrder = null;
+      state.confirmOrderLoading = false;
+      state.confirmOrderError = null;
+    },
+    /** Preview flow: one confirm GET, then WS-only updates (no refetch). */
+    setConfirmOrderSnapshot: (state, action) => {
+      state.confirmOrder = action.payload;
       state.confirmOrderLoading = false;
       state.confirmOrderError = null;
     },
@@ -878,6 +905,7 @@ export const {
   setCurrentPage,
   resetMatchState,
   resetConfirmOrderState,
+  setConfirmOrderSnapshot,
   resetSingleOrderState,
   resetWithdrawalAddressesState,
   updateOrdersFromWS,
