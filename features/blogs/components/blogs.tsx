@@ -149,7 +149,7 @@ const BlogPage = () => {
   }
 
   return (
-    <div className="bg-white dark:bg-[var(--bg-color)] text-gray-900 dark:text-white min-h-screen p-0 sm:p-6 md:p-8 mt-20">
+    <div className="bg-white dark:bg-[var(--bg-color)] text-gray-900 dark:text-white min-h-screen p-0 pb-14 sm:p-6 md:p-8 mt-14 sm:mt-16">
       <div className="w-full px-4 md:px-6 lg:px-8">
         <header className="mb-4 md:mb-6 text-center md:text-left">
           <h1 className="text-2xl sm:text-2xl md:text-3xl font-bold leading-tight">
@@ -185,7 +185,7 @@ const BlogPage = () => {
           </h1>
         </header>
 
-        <div className="flex flex-col md:flex-row justify-end items-center mb-8 gap-4">
+        <div className="flex flex-col md:flex-row justify-end items-center mb-6 sm:mb-7 gap-4">
           <div className="relative w-full md:w-auto">
             <span className="absolute inset-y-0 left-0 flex items-center pl-4">
               <FaSearch className="h-5 w-5 text-gray-500 dark:text-gray-400" />
@@ -289,7 +289,7 @@ const BlogPage = () => {
 
             {/* Pagination */}
             {!searchTerm.trim() && totalPages > 1 && (
-              <div className="flex flex-col sm:flex-row items-center justify-between gap-4 mt-8 pt-6 border-t border-gray-200 dark:border-[#30363D]">
+              <div className="flex flex-col sm:flex-row items-center justify-between gap-4 mt-8 pt-6 mb-10 sm:mb-0 border-t border-gray-200 dark:border-[#30363D]">
                 <div className="text-sm text-gray-600 dark:text-gray-400">
                   {t("blogs.pagination.showing", "Showing")} {indexOfFirstItem + 1}-{indexOfLastItem} {t("blogs.pagination.of", "of")} {totalCount} {t("blogs.pagination.posts", "posts")}
                 </div>

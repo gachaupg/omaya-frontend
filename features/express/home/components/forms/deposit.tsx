@@ -71,6 +71,7 @@ import {
 } from "@/features/express/api";
 import { withTimeout } from "@/features/express/utils/fetchWithTimeout";
 import { stripLeadingZerosFromDecimalInput } from "@/lib/utils/decimalAmountInput";
+import { swapAmountValueClass } from "@/features/swap/components/swapFieldStyles";
 import { resolveForexDepositAdminPaymentDetailId } from "@/features/express/utils/forexDepositResolution";
 import {
   ASSET_ICON_BASE_CLASS,
@@ -4023,9 +4024,9 @@ export default function DepositForm({
                     !isForexAsset(selectedAsset)
                     ? "border-[#1D8751]"
                     : isDark
-                      ? "border-white/10 text-white font-normal"
-                      : "border-gray-200 text-[#111827] font-extrabold"
-                    }`}
+                      ? "border-white/10"
+                      : "border-gray-200"
+                    } ${swapAmountValueClass(isDark)}`}
                 />
 
 
@@ -4331,9 +4332,9 @@ export default function DepositForm({
                         !isForexAsset(selectedAsset)
                         ? "border-[#1D8751]"
                         : isDark
-                          ? "border-white/10 text-white font-normal"
-                          : "border-gray-200 text-[#111827] font-extrabold"
-                    }`}
+                          ? "border-white/10"
+                          : "border-gray-200"
+                    } ${swapAmountValueClass(isDark)}`}
                 />
                 {/* Show loading spinner when calculating "You Send" from "You Receive" */}
                 {(isCalculating || isCalculatingReceive) && !isCalculatingFromPay && selectedAsset && !isForexAsset(selectedAsset) && (
@@ -4388,7 +4389,7 @@ export default function DepositForm({
 
             {/* Asset Section */}
             <div className="flex-1 min-w-0">
-              <div className={`text-xs mb-1 mt-[30px] ${isDark ? "text-[#788099]" : "text-[#64748B]"
+              <div className={`text-xs mb-1 mt-1 sm:mt-[30px] ${isDark ? "text-[#788099]" : "text-[#64748B]"
                 }`}>
                 {t("express.asset", "Asset")}
               </div>

@@ -1145,7 +1145,7 @@ export default function ExchangeForm({
 
     const buttonClasses = [
       "relative flex w-full items-center justify-center overflow-hidden transition-all duration-200",
-      "px-3 sm:px-4 md:px-5 lg:px-6 xl:px-7 py-2 sm:py-2.5 md:py-3 lg:py-3.5 min-h-[44px] sm:min-h-[48px] md:min-h-[52px] lg:min-h-[56px]",
+      "px-3.5 sm:px-4.5 md:px-5.5 lg:px-6.5 xl:px-7 py-2.5 sm:py-3 md:py-3.5 lg:py-4 min-h-[48px] sm:min-h-[50px] md:min-h-[54px] lg:min-h-[58px]",
       isActive
         ? "bg-transparent"
         : isDark
@@ -1169,7 +1169,7 @@ export default function ExchangeForm({
     const labelWrapperClasses = [
       "relative z-[1] flex items-center justify-center",
       "gap-0", // Gap handled inside specific labels
-      "text-[10px] sm:text-xs md:text-sm lg:text-base transition-colors whitespace-nowrap",
+      "text-xs sm:text-sm md:text-base lg:text-[1.05rem] transition-colors whitespace-nowrap",
       textColorClass
     ].join(" ");
 
@@ -1193,10 +1193,10 @@ export default function ExchangeForm({
         // "E_X" Style - E followed by X icon only (matching sidebar)
         return (
           <span className="flex flex-row items-center justify-center h-full">
-            <span className={`${textColorClass} text-[10px] sm:text-xs md:text-sm lg:text-base font-bold uppercase`} style={{ lineHeight: 1 }}>E</span>
+            <span className={`${textColorClass} text-xs sm:text-sm md:text-base lg:text-[1.05rem] font-bold uppercase`} style={{ lineHeight: 1 }}>E</span>
             <img
               src={isActive && isDark ? exchangeIconSrc2 : exchangeIconSrc1}
-              className="h-[10px] mt-2 sm:h-[11px] md:h-[13px] lg:h-[15px] w-auto"
+              className="h-[11px] mt-2 sm:h-[12px] md:h-[14px] lg:h-[16px] w-auto"
               alt="X"
               style={{ display: 'inline-block' }}
             />
@@ -1205,8 +1205,8 @@ export default function ExchangeForm({
       } else if (variant === "moneyx") {
         return (
           <MoneyXLabel
-            moneyClassName={`${textColorClass} text-[10px] sm:text-xs md:text-sm lg:text-base font-bold`}
-            xClassName="h-[10px] mt-2 sm:h-[11px] md:h-[13px] lg:h-[15px] w-auto"
+            moneyClassName={`${textColorClass} text-xs sm:text-sm md:text-base lg:text-[1.05rem] font-bold`}
+            xClassName="h-[11px] mt-2 sm:h-[12px] md:h-[14px] lg:h-[16px] w-auto"
             active={isActive}
           />
         );
