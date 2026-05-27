@@ -1122,12 +1122,12 @@ export default function Exchanging({ transactionData, onBackToTransfer }: Exchan
 
       {/* Top Card */}
       <div
-        className={`flex flex-col md:flex-row justify-between items-stretch bg-[#FFFFFF] dark:${isDark
+        className={`flex flex-col md:flex-row md:items-start justify-between bg-[#FFFFFF] dark:${isDark
             ? "bg-[var(--card-color)]  border:[#E8EFF5] dark:border-[#35353E]"
             : "bg-white border-gray-200"
           } border-2 rounded-xl sm:rounded-2xl p-3 sm:p-4 md:p-5 shadow-lg w-full max-w-4xl mb-3 sm:mb-4 min-h-[160px] sm:min-h-[180px] overflow-hidden box-border`}
       >
-        <div className="flex-1 flex flex-col justify-between py-1 sm:py-2 pr-0 sm:pr-2 w-full">
+        <div className="flex-1 min-w-0 flex flex-col justify-between py-1 sm:py-2 pr-0 sm:pr-2 w-full">
           <div className="w-full">
             {/* Amount you're sending */}
             <div className={`${isDark ? "text-[#7B7B7B]" : "text-gray-600"} text-[10px] sm:text-xs font-semibold mb-0.5`}>
@@ -1270,7 +1270,7 @@ export default function Exchanging({ transactionData, onBackToTransfer }: Exchan
 
           </div>
         </div>
-        <div className="flex-shrink-0 ml-0 md:ml-6 mt-3 sm:mt-2 md:mt-0 flex flex-col items-center justify-center py-2 gap-3 min-w-[9rem] max-w-[220px]">
+        <div className="flex-shrink-0 md:ml-auto md:pl-6 mt-3 sm:mt-2 md:mt-0 flex flex-col items-center md:items-end justify-start py-2 gap-3 w-full md:w-auto">
           {/* QR code */}
           <div className="w-28 h-28 sm:w-36 sm:h-36 bg-white rounded-lg flex items-center justify-center">
             <img
@@ -1282,7 +1282,7 @@ export default function Exchanging({ transactionData, onBackToTransfer }: Exchan
             />
           </div>
           {ussdCode ? (
-            <HowToSendDialBlock value={ussdCode} isDark={isDark} compact className="w-full" />
+            <HowToSendDialBlock value={ussdCode} isDark={isDark} compact className="w-full md:w-[220px]" />
           ) : null}
         </div>
       </div>

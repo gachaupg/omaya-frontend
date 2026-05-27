@@ -82,8 +82,15 @@ const FilterTabs: React.FC<FilterTabsProps> = ({
     };
   }, [myOrders]);
 
-  /** Tabs */
+  /** Tabs — order: My Ads (0) → + Post New Ad (1) → Payment Methods (2) → Feedback (3) */
   const tabList = [
+    {
+      label: "My Ads",
+      extra: (
+        <span className="text-[#E23D3A] font-bold">({myOrders.length})</span>
+      ),
+    },
+    { label: "+ Post New Ad" },
     { label: "Payment Methods" },
     {
       label: (
@@ -92,18 +99,11 @@ const FilterTabs: React.FC<FilterTabsProps> = ({
         </>
       )
     },
-    {
-      label: "My Ads",
-      extra: (
-        <span className="text-[#E23D3A] font-bold">({myOrders.length})</span>
-      ),
-    },
-    { label: "+ Post New Ad" },
   ];
 
   const handleTabClick = (idx: number) => {
     setActiveTab(idx);
-    if (idx === 3) window.location.href = "/adds?type=buy";
+    if (idx === 1) window.location.href = "/adds?type=buy";
   };
 
   /** Derived — filtered trades for My Ads */
@@ -361,7 +361,7 @@ const FilterTabs: React.FC<FilterTabsProps> = ({
           ))}
         </div>
         <div className="flex flex-col gap-3 w-full sm:w-auto">
-          {activeTab === 1 ? (
+          {activeTab === 3 ? (
             <>
               {/* Positive Feedback Status - Only show when Feedback tab is active */}
               <div className="flex items-center gap-3">
@@ -410,14 +410,14 @@ const FilterTabs: React.FC<FilterTabsProps> = ({
       </div>
 
       <div className="w-full overflow-x-auto">
-        {activeTab === 0 && <PaymentMethods />}
-        {activeTab === 1 && <Feedback />}
-        {activeTab === 2 && (
+        {activeTab === 0 && (
           <>
             <MyAdsFilterBar />
             <MyAdsTable trades={filteredTrades} loading={myOrdersLoading} />
           </>
         )}
+        {activeTab === 2 && <PaymentMethods />}
+        {activeTab === 3 && <Feedback />}
       </div>
     </div>
   );

@@ -598,12 +598,7 @@ function FinalBuy({ orderData }: FinalBuyProps) {
                 <MessageCircle className="w-4 h-4" />
                 {showChat ? "Close Chat" : "Chat"}
               </button>
-              <button
-                onClick={handleRefresh}
-                className="flex items-center gap-1 bg-white dark:bg-[var(--bg-color)] text-[#1D8751] rounded-lg px-2 py-1 border border-[#E8EFF5] dark:border-[#35353E] hover:bg-gray-200 dark:hover:bg-[#35353E] transition-colors"
-                title="Refresh"
-              >
-              </button>
+             
             </div>
           </div>
           {/* Advertiser Info - Image, Name, Live, Time in one row */}
@@ -780,19 +775,9 @@ function FinalBuy({ orderData }: FinalBuyProps) {
 
           {/* Send Money To */}
           <section className="rounded-[18px] p-2 md:p-4 w-full">
-            <div className="flex flex-col md:flex-row justify-between w-full items-center mb-4 gap-2 md:gap-0">
-              <div className="text-lg flex-1 text-gray-900 dark:text-white">
+            <div className="mb-4">
+              <div className="text-lg text-gray-900 dark:text-white">
                 Send Money To
-              </div>
-              <div className="text-xs flex items-center gap-1">
-                <span className="text-[#1D8751]">Transaction time:</span>
-                {isClient ? (
-                  <TimeDisplay
-                    seconds={transactionTimerActive ? countdown : displaySeconds}
-                  />
-                ) : (
-                  <span>--:--</span>
-                )}
               </div>
             </div>
             <div className="rounded-[18px] flex flex-col p-2 md:p-4 gap-4 bg-gray-50 dark:bg-[var(--bg-color)] border-1 border-[#E8EFF5] dark:border-[#35353E]">
