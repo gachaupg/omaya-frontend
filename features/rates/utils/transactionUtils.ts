@@ -1,5 +1,9 @@
 import { formatRecentTransactionWhen } from "@/lib/globalFormatter";
 import { normalizeExchangeSubType } from "@/lib/utils/exchangeTransactionDisplay";
+import {
+  getDefaultAssetIcon,
+  getHighResAssetIcon,
+} from "@/features/express/utils/imageHelpers";
 import { Transaction } from "../types";
 
 export const formatTransactionType = (type: string): string => {
@@ -66,13 +70,57 @@ export const resolveHttpLogo = (url: string | null | undefined): string | null =
 /** US flag for fiat USD in live transaction lists (not USDT). */
 export const USD_FLAG_LOGO = "https://flagcdn.com/w80/us.png";
 
+const FIAT_FLAG_LOGOS: Record<string, string> = {
+  USD: USD_FLAG_LOGO,
+  EUR: "https://flagcdn.com/w80/eu.png",
+  GBP: "https://flagcdn.com/w80/gb.png",
+  KES: "https://flagcdn.com/w80/ke.png",
+};
+
 export const withFiatCurrencyFlag = (
   currency: string,
   logo: string | null
 ): string | null => {
   if (logo) return logo;
-  if (currency.trim().toUpperCase() === "USD") return USD_FLAG_LOGO;
-  return null;
+  const code = currency.trim().toUpperCase();
+  return FIAT_FLAG_LOGOS[code] ?? null;
+};
+
+const resolveKnownCurrencyLogo = (currency: string): string | null => {
+  const code = currency.trim().toUpperCase();
+  if (!code) return null;
+  const icon = getHighResAssetIcon({ ticker: code });
+  return icon && icon !== getDefaultAssetIcon() ? icon : null;
+};
+
+const resolveSystemTypeAndSubType = (
+  merged: Record<string, unknown>
+): { systemType: string; subType: string } => {
+  const transactionType = pickStr(
+    merged.transaction_type,
+    merged.system_type
+  ).toLowerCase();
+  const legacyType = pickStr(merged.type).toLowerCase();
+  const subTypeField = pickStr(merged.sub_type).toLowerCase();
+
+  if (transactionType) {
+    if (
+      transactionType === "exchange" &&
+      (legacyType === "buy" || legacyType === "sell")
+    ) {
+      return { systemType: "exchange", subType: subTypeField || legacyType };
+    }
+    return {
+      systemType: transactionType,
+      subType: subTypeField || legacyType,
+    };
+  }
+
+  if (legacyType === "buy" || legacyType === "sell") {
+    return { systemType: "exchange", subType: subTypeField || legacyType };
+  }
+
+  return { systemType: legacyType, subType: subTypeField };
 };
 
 const currencyMatches = (a: string, b: string) =>
@@ -150,26 +198,54 @@ const getPublicPaymentLabel = (tx: Transaction): string | null => {
   return null;
 };
 
+const assetLogoForCurrency = (
+  currency: string,
+  tx: Transaction
+): string | null => {
+  const assetLogo = resolveHttpLogo(tx.asset_image);
+  if (!assetLogo) return null;
+  const primary = pickStr(tx.currency, tx.asset);
+  const fromCur = pickStr(tx.from_currency, tx.from_asset);
+  const toCur = pickStr(tx.to_currency, tx.to_asset);
+  if (primary && currencyMatches(currency, primary)) return assetLogo;
+  if (fromCur && currencyMatches(currency, fromCur)) return assetLogo;
+  if (toCur && currencyMatches(currency, toCur)) return assetLogo;
+  return null;
+};
+
 const resolveCurrencySideLogo = (
   currency: string,
   tx: Transaction,
   side: "from" | "to"
 ): string | null => {
-  const primary = String(tx.currency ?? tx.asset ?? "").trim();
-  const assetLogo = resolveHttpLogo(tx.asset_image);
+  const fromCur = pickStr(tx.from_currency, tx.from_asset);
+  const toCur = pickStr(tx.to_currency, tx.to_asset);
+  const fromLogo = resolveHttpLogo(tx.from_asset_logo);
+  const toLogo = resolveHttpLogo(tx.to_asset_logo);
+  const code = currency.trim().toUpperCase();
+
   if (side === "from") {
+    if (fromCur && code && currencyMatches(currency, fromCur) && fromLogo) {
+      return fromLogo;
+    }
     return (
-      resolveHttpLogo(tx.from_asset_logo) ??
+      fromLogo ??
       resolveHttpLogo(tx.from_provider_logo) ??
       resolveHttpLogo(tx.sender_provider_logo) ??
-      (primary && currencyMatches(currency, primary) ? assetLogo : null)
+      assetLogoForCurrency(currency, tx) ??
+      (toCur && code && currencyMatches(currency, toCur) ? toLogo : null)
     );
   }
+
+  if (toCur && code && currencyMatches(currency, toCur) && toLogo) {
+    return toLogo;
+  }
   return (
-    resolveHttpLogo(tx.to_asset_logo) ??
+    toLogo ??
     resolveHttpLogo(tx.to_provider_logo) ??
     resolveHttpLogo(tx.receiver_provider_logo) ??
-    (primary && currencyMatches(currency, primary) ? assetLogo : null)
+    assetLogoForCurrency(currency, tx) ??
+    (fromCur && code && currencyMatches(currency, fromCur) ? fromLogo : null)
   );
 };
 
@@ -181,7 +257,9 @@ const buildCurrencySide = (
 ): { name: string; logo: string | null } => {
   const code = currency.trim().toUpperCase() || "USD";
   const label = formatLiveAssetLabel(code, network);
-  const logo = withFiatCurrencyFlag(code, resolveCurrencySideLogo(code, tx, side));
+  const logo =
+    withFiatCurrencyFlag(code, resolveCurrencySideLogo(code, tx, side)) ??
+    resolveKnownCurrencyLogo(code);
   return { name: label || code, logo };
 };
 
@@ -269,11 +347,17 @@ const buildPublicExchangeFromTo = (
 export const getTransactionFromTo = (
   tx: Transaction
 ): { from: { name: string; logo: string | null }; to: { name: string; logo: string | null } } => {
-  const systemType = String(
+  const rawSystemType = String(
     tx.system_type ?? tx.transaction_type ?? ""
   )
     .trim()
     .toLowerCase();
+  const systemType =
+    rawSystemType === "buy" || rawSystemType === "sell"
+      ? "exchange"
+      : rawSystemType.startsWith("p2p_")
+        ? "p2p"
+        : rawSystemType;
   const subType = String(tx.sub_type ?? "").trim().toLowerCase();
 
   const fromCurrency = pickStr(tx.from_currency, tx.from_asset);
@@ -411,11 +495,7 @@ export const normalizeSystemTransaction = (
   raw: Record<string, unknown>
 ): Transaction => {
   const merged = flattenTransactionRaw(raw);
-  const systemType = pickStr(merged.type).toLowerCase();
-  const subType = pickStr(
-    merged.sub_type,
-    systemType === "exchange" ? merged.transaction_type : ""
-  ).toLowerCase();
+  const { systemType, subType } = resolveSystemTypeAndSubType(merged);
   const id =
     pickStr(merged.transaction_id, merged.id) || `tx-${Date.now()}`;
   const amount = pickStr(merged.amount, merged.total_amount_due, "0");
@@ -441,14 +521,31 @@ export const normalizeSystemTransaction = (
     merged.to_asset,
     merged.receiver_currency
   );
-  const from_asset_logo =
+  let from_asset_logo =
     resolveHttpLogo(merged.from_asset_logo as string) ??
     resolveHttpLogo(merged.from_asset_image as string) ??
     resolveHttpLogo(merged.from_currency_image as string);
-  const to_asset_logo =
+  let to_asset_logo =
     resolveHttpLogo(merged.to_asset_logo as string) ??
     resolveHttpLogo(merged.to_asset_image as string) ??
     resolveHttpLogo(merged.to_currency_image as string);
+
+  if (
+    !from_asset_logo &&
+    asset_image &&
+    from_currency &&
+    currencyMatches(from_currency, currency)
+  ) {
+    from_asset_logo = asset_image;
+  }
+  if (
+    !to_asset_logo &&
+    asset_image &&
+    to_currency &&
+    currencyMatches(to_currency, currency)
+  ) {
+    to_asset_logo = asset_image;
+  }
 
   const user: Transaction["user"] = {
     id: 0,
@@ -464,7 +561,7 @@ export const normalizeSystemTransaction = (
   );
 
   return {
-    transaction_type: subType || systemType || "transaction",
+    transaction_type: systemType || subType || "transaction",
     transaction_id: id,
     user,
     amount,
@@ -476,7 +573,8 @@ export const normalizeSystemTransaction = (
     stages: pickStr(merged.stages),
     timestamp,
     system_type: systemType || undefined,
-    sub_type: subType || undefined,
+    sub_type:
+      subType && subType !== systemType ? subType : undefined,
     asset: pickStr(merged.asset) || undefined,
     network: pickStr(merged.network, merged.asset_network, merged.network_name) || undefined,
     from_network: pickStr(merged.from_network) || undefined,
