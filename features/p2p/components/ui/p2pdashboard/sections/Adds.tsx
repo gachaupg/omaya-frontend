@@ -8,6 +8,7 @@ import Button from "../../../Common/Button";
 import Card from "../../../Common/Card";
 import Loader from "../../../Common/Loader";
 import { postP2POrderThunk } from "../../../../slices/adSlice";
+import { fetchAssets } from "@/features/p2p/slices/assetsSlice";
 import {
   fetchUserPaymentDetails,
   fetchAdminPaymentMethods,
@@ -120,6 +121,7 @@ const Adds: React.FC<AddsProps> = ({ filterType }) => {
     adminMethods,
     loading: adminLoading,
   } = useSelector((state: RootState) => state.paymentMethods);
+  const { data: assetsData } = useSelector((state: RootState) => state.assets);
   const { postOrderLoading, postOrderError, postOrderSuccess } = useSelector(
     (state: RootState) => state.p2pAds
   );
@@ -190,8 +192,9 @@ const Adds: React.FC<AddsProps> = ({ filterType }) => {
     if (isAuthenticated) {
       dispatch(fetchUserPaymentDetails() as any);
       dispatch(fetchAdminPaymentMethods() as any);
+      dispatch(fetchAssets(false) as any);
     }
-  }, [dispatch]);
+  }, [dispatch, isAuthenticated]);
 
   useEffect(() => {
     if (selectedPaymentDetails.length > 0) {
@@ -365,11 +368,29 @@ const Adds: React.FC<AddsProps> = ({ filterType }) => {
       const hasMin = orderMin.trim() !== "" && Number.isFinite(minNum);
       const hasMax = orderMax.trim() !== "" && Number.isFinite(maxNum);
       const kesMaxAllowed = rate * amountNum;
+      const sellUsdtCap = type === "sell" ? getSellUsdtCap(amount, availableBalance) : amountNum;
+      const sellFiatCap =
+        type === "sell" && activeCurrency === "KES"
+          ? getSellOrderMaxLimit(type, activeCurrency, amount, commission, availableBalance)
+          : Number.POSITIVE_INFINITY;
 
       // reset currency-dependent errors first
       if (next.orderMin) delete next.orderMin;
       if (next.orderMax) delete next.orderMax;
       if (next.amount) delete next.amount;
+
+      // Amount: keep core validation stable (prevents error flicker).
+      if (amount.trim() !== "") {
+        if (!Number.isFinite(amountNum)) {
+          next.amount = "Amount must be a number";
+        } else if (amountNum < 10) {
+          next.amount = "Minimum amount is 10 USDT";
+        } else if (type === "sell" && amountNum > availableBalance) {
+          next.amount = `Amount cannot exceed available balance (${formatLargeNumber(
+            availableBalance
+          )} USDT)`;
+        }
+      }
 
       if (activeCurrency === "KES" && kesBaseRate != null && commission.trim() !== "") {
         const kesRateErr = validateKesRateAgainstMarket(
@@ -382,18 +403,34 @@ const Adds: React.FC<AddsProps> = ({ filterType }) => {
       if (hasMin) {
         if (minNum < 10) {
           next.orderMin = "Minimum order amount must be at least 10";
-        } else if (
-          activeCurrency === "KES" &&
-          hasAmount &&
-          Number.isFinite(kesMaxAllowed) &&
-          rate > 0 &&
-          minNum > kesMaxAllowed
-        ) {
-          next.orderMin = `Minimum order amount cannot exceed KSh ${formatLargeNumber(
-            kesMaxAllowed
-          )}`;
+        } else if (activeCurrency === "KES") {
+          if (
+            type === "sell" &&
+            Number.isFinite(sellFiatCap) &&
+            sellFiatCap > 0 &&
+            minNum > sellFiatCap
+          ) {
+            next.orderMin = `Minimum order amount cannot exceed available (KSh ${formatLargeNumber(
+              sellFiatCap
+            )})`;
+          } else if (
+            hasAmount &&
+            Number.isFinite(kesMaxAllowed) &&
+            rate > 0 &&
+            minNum > kesMaxAllowed
+          ) {
+            next.orderMin = `Minimum order amount cannot exceed KSh ${formatLargeNumber(
+              kesMaxAllowed
+            )}`;
+          }
         } else if (activeCurrency !== "KES" && hasAmount && minNum > amountNum) {
-          next.orderMin = "Minimum order amount cannot be greater than amount";
+          const cap = type === "sell" ? sellUsdtCap : amountNum;
+          if (minNum > cap) {
+            next.orderMin =
+              type === "sell"
+                ? `Minimum order amount cannot exceed available (${formatLargeNumber(cap)} USDT)`
+                : "Minimum order amount cannot be greater than amount";
+          }
         }
       }
 
@@ -404,26 +441,48 @@ const Adds: React.FC<AddsProps> = ({ filterType }) => {
           next.orderMax = "Maximum order amount must be at least 10";
         } else if (hasMin && maxNum < minNum) {
           next.orderMax = "Maximum order amount cannot be less than minimum order amount";
-        } else if (
-          activeCurrency === "KES" &&
-          hasAmount &&
-          Number.isFinite(kesMaxAllowed) &&
-          rate > 0 &&
-          maxNum > kesMaxAllowed
-        ) {
-          next.orderMax = `Maximum order amount cannot exceed rate * amount (KSh ${formatLargeNumber(
-            kesMaxAllowed
-          )})`;
-        } else if (activeCurrency !== "KES" && hasAmount && maxNum > amountNum) {
-          next.orderMax = "Maximum order amount cannot be greater than amount";
+        } else if (activeCurrency === "KES") {
+          if (
+            type === "sell" &&
+            Number.isFinite(sellFiatCap) &&
+            sellFiatCap > 0 &&
+            maxNum > sellFiatCap
+          ) {
+            next.orderMax = `Maximum order amount cannot exceed available (KSh ${formatLargeNumber(
+              sellFiatCap
+            )})`;
+          } else if (
+            hasAmount &&
+            Number.isFinite(kesMaxAllowed) &&
+            rate > 0 &&
+            maxNum > kesMaxAllowed
+          ) {
+            next.orderMax = `Maximum order amount cannot exceed rate * amount (KSh ${formatLargeNumber(
+              kesMaxAllowed
+            )})`;
+          }
+        } else if (activeCurrency !== "KES" && hasAmount) {
+          const cap = type === "sell" ? sellUsdtCap : amountNum;
+          if (maxNum > cap) {
+            next.orderMax =
+              type === "sell"
+                ? `Maximum order amount cannot exceed available (${formatLargeNumber(cap)} USDT)`
+                : "Maximum order amount cannot be greater than amount";
+          }
         }
       }
 
       if (hasAmount && hasMin) {
         if (activeCurrency === "KES" && rate > 0 && minNum > kesMaxAllowed) {
           next.amount = "Amount/rate combination is too low for current minimum order amount";
-        } else if (activeCurrency !== "KES" && minNum > amountNum) {
-          next.amount = "Amount must be greater than or equal to minimum order amount";
+        } else if (activeCurrency !== "KES") {
+          const cap = type === "sell" ? sellUsdtCap : amountNum;
+          if (minNum > cap) {
+            next.amount =
+              type === "sell"
+                ? "Amount must be greater than or equal to minimum order amount (and within available)"
+                : "Amount must be greater than or equal to minimum order amount";
+          }
         }
       }
 
@@ -508,6 +567,34 @@ const Adds: React.FC<AddsProps> = ({ filterType }) => {
       isValid = false;
     }
 
+    // Ensure Order Max never exceeds the available amount.
+    // USD: orderMax is in USDT units (same as amount). KES: orderMax is fiat, so compare to rate * (min(amount, wallet)).
+    if (orderMax && amount) {
+      const maxNum = Number(orderMax);
+      const amountNum = Number(amount);
+      if (Number.isFinite(maxNum) && maxNum > 0 && Number.isFinite(amountNum) && amountNum > 0) {
+        if (activeCurrency !== "KES") {
+          if (maxNum > amountNum) {
+            newErrors.orderMax = "Maximum order amount cannot be greater than amount";
+            isValid = false;
+          }
+        } else {
+          const rate = Number(commission) || 0;
+          const maxAllowed = getSellOrderMaxLimit(
+            type,
+            activeCurrency,
+            amount,
+            commission,
+            availableBalance
+          );
+          if (rate > 0 && Number.isFinite(maxAllowed) && maxAllowed > 0 && maxNum > maxAllowed) {
+            newErrors.orderMax = `Maximum order amount cannot exceed available (${formatLargeNumber(maxAllowed)} KES)`;
+            isValid = false;
+          }
+        }
+      }
+    }
+
     // When KES: Order Max cannot exceed rate * amount (using Rate at top)
     if (activeCurrency === "KES" && orderMax && amount && commission) {
       const rate = Number(commission) || 0;
@@ -515,7 +602,12 @@ const Adds: React.FC<AddsProps> = ({ filterType }) => {
       const maxNum = Number(orderMax) || 0;
       const maxAllowed = rate * amountNum;
       if (!isNaN(maxNum) && !isNaN(maxAllowed) && maxNum > maxAllowed) {
-        newErrors.orderMax = `Maximum order amount cannot exceed rate * amount (KSh ${formatLargeNumber(maxAllowed)})`;
+        // Keep legacy wording for non-sell or when wallet cap isn't used.
+        newErrors.orderMax =
+          type === "sell"
+            ? newErrors.orderMax ||
+              `Maximum order amount cannot exceed rate * amount (KSh ${formatLargeNumber(maxAllowed)})`
+            : `Maximum order amount cannot exceed rate * amount (KSh ${formatLargeNumber(maxAllowed)})`;
         isValid = false;
       }
     }
@@ -577,10 +669,39 @@ const Adds: React.FC<AddsProps> = ({ filterType }) => {
       }));
       return;
     }
+
+    if (!assetsData?.assets?.length) {
+      showToast.error(
+        "Asset ID is missing or invalid",
+        "Assets list is not loaded yet. Please wait a second and try again."
+      );
+      dispatch(fetchAssets(true) as any);
+      return;
+    }
+
+    const usdtAsset =
+      assetsData.assets.find((a) => String(a?.symbol || "").toUpperCase() === "USDT") ||
+      assetsData.assets.find((a) =>
+        String(a?.symbol || "").toUpperCase().includes("USDT")
+      ) ||
+      assetsData.assets.find((a) =>
+        String(a?.description || "").toLowerCase().includes("tether")
+      );
+
+    const usdtAssetId = String((usdtAsset as any)?.asset_id || (usdtAsset as any)?.id || "").trim();
+    if (!usdtAssetId) {
+      showToast.error(
+        "Asset ID is missing or invalid",
+        "Could not resolve USDT asset id. Please refresh and try again."
+      );
+      dispatch(fetchAssets(true) as any);
+      return;
+    }
+
     const adData = {
       order_type: type,
       currency: "USDT",
-      asset_id: "a0232aac-dca3-42a6-8a33-63658d191130",
+      asset_id: usdtAssetId,
       range_currency: activeCurrency,
       amount,
       min_order_amount: orderMin,
@@ -880,7 +1001,7 @@ const Adds: React.FC<AddsProps> = ({ filterType }) => {
                   {type === "sell" && (
                     <div className="flex items-center gap-2">
                       <span className="text-xs text-[#1D8751] dark:text-[#1D8751]">
-                        Available: {formatLargeNumber(availableBalance)} USD
+                        Available: {formatLargeNumber(availableBalance)} USDT
                       </span>
                       <button
                         type="button"

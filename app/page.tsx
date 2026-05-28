@@ -1209,11 +1209,13 @@ export default function MarketingPage() {
       </div>
 
       {/* Easy Onboarding Section */}
-      <div className="w-full bg-white dark:bg-[var(--bg-color)] pt-4 md:pt-6 pb-16 md:pb-24 relative overflow-hidden">
+      <div className="w-full bg-white dark:bg-[var(--bg-color)] pt-4 md:pt-6 pb-16 md:pb-24 relative overflow-hidden isolate">
         {/* Dark gradient background with green dots */}
         <div className="absolute inset-0 overflow-hidden">
           {/* Green glowing particles background */}
-          <FloatingParticles count={6} size={{ min: 5, max: 11 }} />
+          <div className="hidden sm:block">
+            <FloatingParticles count={6} size={{ min: 5, max: 11 }} />
+          </div>
 
           {/* <div className="absolute top-20 left-10 w-2 h-2 bg-[#1D8751] rounded-full opacity-60 blur-sm animate-pulse"></div>
           <div className="absolute top-40 right-20 w-3 h-3 bg-[#1D8751] rounded-full opacity-40 blur-md animate-pulse" style={{ animationDelay: '0.5s' }}></div>
@@ -1234,8 +1236,10 @@ export default function MarketingPage() {
 
           {/* Subtle gradient overlays */}
           <div className="relative inset-0 opacity-30">
-            <div className="absolute top-5 left-20 w-65 h-80 rounded-full bg-[#1D8751] blur-3xl opacity-60" />
-            <div className="absolute top-145 right-10 w-75 h-90 rounded-full bg-[#1D8751] blur-3xl opacity-60" />
+            {/* Mobile browsers can show artifact lines with very large blur layers.
+               Keep the effect but reduce blur/size on small screens. */}
+            <div className="absolute top-5 left-10 sm:left-20 w-40 h-56 sm:w-65 sm:h-80 rounded-full bg-[#1D8751] blur-2xl sm:blur-3xl opacity-40 sm:opacity-60" />
+            <div className="absolute top-80 sm:top-145 right-6 sm:right-10 w-44 h-64 sm:w-75 sm:h-90 rounded-full bg-[#1D8751] blur-2xl sm:blur-3xl opacity-35 sm:opacity-60" />
           </div>
         </div>
 

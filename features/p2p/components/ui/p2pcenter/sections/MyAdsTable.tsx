@@ -223,7 +223,8 @@ const MyAdsTable: React.FC<Props> = ({ trades, loading }) => {
 
   const handleViewActiveTrade = () => {
     if (!activeTradeForDelete) {
-      router.push("/dashboard/p2p/?tab=orders");
+      // User should land in Market (not Orders) to continue the active trade flow.
+      router.push("/dashboard/p2p/?tab=market");
       return;
     }
     router.push(buildMatchedTradeHref(activeTradeForDelete, userEmail));

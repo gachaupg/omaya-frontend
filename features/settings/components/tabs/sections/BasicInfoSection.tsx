@@ -18,6 +18,7 @@ const BasicInfoSection: React.FC<BasicInfoSectionProps> = ({ user }) => {
   const dispatch = useDispatch<AppDispatch>();
   const [isUpdating, setIsUpdating] = useState(false);
   const isMountedRef = useRef(true);
+  const isVerifiedUser = useMemo(() => user?.is_verified === true, [user]);
   const [formData, setFormData] = useState({
     first_name: "",
     last_name: "",
@@ -130,11 +131,12 @@ const BasicInfoSection: React.FC<BasicInfoSectionProps> = ({ user }) => {
 
   const hasNameChanges = useMemo(() => {
     if (!user) return false;
+    if (isVerifiedUser) return false;
     return (
       formData.first_name.trim() !== (user.first_name || "").trim() ||
       formData.last_name.trim() !== (user.last_name || "").trim()
     );
-  }, [formData, user]);
+  }, [formData, user, isVerifiedUser]);
 
   // Check if email or phone has changed, or first/last name
   const hasChanges = useMemo(() => {
@@ -147,6 +149,9 @@ const BasicInfoSection: React.FC<BasicInfoSectionProps> = ({ user }) => {
   }, [formData, user, hasNameChanges]);
 
   const handleInputChange = (field: string, value: string) => {
+    if (isVerifiedUser && (field === "first_name" || field === "last_name")) {
+      return;
+    }
     if (field === "phone_number") {
       value = value.replace(/[^0-9]/g, "");
     }
@@ -158,6 +163,10 @@ const BasicInfoSection: React.FC<BasicInfoSectionProps> = ({ user }) => {
 
   const requestNameChangeOtp = async () => {
     if (!user || !isMountedRef.current) return;
+    if (isVerifiedUser) {
+      showToast.error("Verified users cannot change name details");
+      return;
+    }
     const first = formData.first_name.trim();
     const last = formData.last_name.trim();
     if (!first || !last) {
@@ -219,7 +228,7 @@ const BasicInfoSection: React.FC<BasicInfoSectionProps> = ({ user }) => {
         type: "phone",
         initialValue: formData.phone_number,
       });
-    } else if (hasNameChanges) {
+    } else if (hasNameChanges && !isVerifiedUser) {
       void requestNameChangeOtp();
     } else {
       showToast.info("No changes to update");
@@ -242,7 +251,13 @@ const BasicInfoSection: React.FC<BasicInfoSectionProps> = ({ user }) => {
               value={formData.first_name}
               onChange={(e) => handleInputChange("first_name", e.target.value)}
               placeholder="First name"
+              disabled={isVerifiedUser}
             />
+            {isVerifiedUser && (
+              <span className="text-[11px] text-gray-500 dark:text-[#788099] mt-1 inline-block">
+                Name details are locked for verified users.
+              </span>
+            )}
           </div>
           <div>
             <label className="block text-xs dark:text-[#ffff] text-[#0D0D0D] mb-1">
@@ -253,6 +268,7 @@ const BasicInfoSection: React.FC<BasicInfoSectionProps> = ({ user }) => {
               value={formData.last_name}
               onChange={(e) => handleInputChange("last_name", e.target.value)}
               placeholder="Last name"
+              disabled={isVerifiedUser}
             />
           </div>
           <div>
