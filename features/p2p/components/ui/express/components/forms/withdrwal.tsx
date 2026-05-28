@@ -1068,7 +1068,7 @@ export default function WithdrawalForm({
             }
           }
           // Keep loading states active
-        }, 1500); // Ultra-fast 1.5 second timeout for immediate response
+        }, 12000); // Align with ChangeNow/estimate API budget (avoid premature abort)
 
         // Use the actual fetchSwapEstimate API call for deposit
         // Note: fromCurrency is the selected asset, toCurrency is always "USDT" for deposits

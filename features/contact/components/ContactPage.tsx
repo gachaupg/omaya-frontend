@@ -41,7 +41,7 @@ const SUPPORT_PHONES = [
 ];
 
 const actionIconBtnClass =
-  "shrink-0 p-1.5 rounded-lg text-gray-500 dark:text-gray-400 hover:text-[#1D8751] hover:bg-gray-100 dark:hover:bg-gray-700/50 transition-colors";
+  "shrink-0 w-8 h-8 rounded-lg flex items-center justify-center text-gray-500 dark:text-gray-400 hover:text-[#1D8751] hover:bg-gray-100 dark:hover:bg-gray-700/50 transition-colors";
 
 function ContactDetailLine({
   label,
@@ -55,7 +55,7 @@ function ContactDetailLine({
   const isEmail = action === "email";
 
   return (
-    <div className="grid w-full grid-cols-[minmax(0,1fr)_auto] items-center gap-x-4">
+    <div className="grid w-full grid-cols-[minmax(0,1fr)_32px] items-center gap-x-2">
       <span className="min-w-0 text-sm text-gray-600 dark:text-gray-400 break-words">
         {label}
       </span>
@@ -80,7 +80,7 @@ type InfoCardProps = {
 function InfoCard({ icon, title, children }: InfoCardProps) {
   return (
     <div
-      className={`flex gap-4 rounded-2xl border ${CARD_BORDER} ${CARD_BG} p-4`}
+      className={`flex gap-3 sm:gap-4 rounded-2xl border ${CARD_BORDER} ${CARD_BG} p-3 sm:p-4`}
     >
       <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl bg-[#1D8751]/10 dark:bg-[#1D8751]/15 text-[#1D8751]">
         {icon}

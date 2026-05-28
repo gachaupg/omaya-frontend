@@ -35,6 +35,41 @@ interface ChartProps {
   showTimeFilter?: boolean;
 }
 
+function quantile(sortedAsc: number[], q: number): number {
+  if (!sortedAsc.length) return 0;
+  const qq = Math.min(1, Math.max(0, q));
+  const pos = (sortedAsc.length - 1) * qq;
+  const base = Math.floor(pos);
+  const rest = pos - base;
+  const a = sortedAsc[base] ?? 0;
+  const b = sortedAsc[base + 1] ?? a;
+  return a + rest * (b - a);
+}
+
+function roundUpNice(n: number): number {
+  if (!Number.isFinite(n) || n <= 0) return 0;
+  const pow = Math.pow(10, Math.floor(Math.log10(n)));
+  const scaled = n / pow;
+  const nice = scaled <= 1 ? 1 : scaled <= 2 ? 2 : scaled <= 5 ? 5 : 10;
+  return nice * pow;
+}
+
+function getRobustYMax(values: number[]): number {
+  const clean = values
+    .map((v) => (Number.isFinite(v) ? v : 0))
+    .filter((v) => v > 0)
+    .sort((a, b) => a - b);
+
+  if (!clean.length) return 0;
+  if (clean.length < 8) return clean[clean.length - 1] ?? 0;
+
+  const rawMax = clean[clean.length - 1] ?? 0;
+  const p95 = quantile(clean, 0.95);
+  // Only cap when a spike is clearly abnormal.
+  const capBase = rawMax > p95 * 8 ? p95 : rawMax;
+  return roundUpNice(capBase * 1.1);
+}
+
 const normalizeRangeCurrency = (value: unknown): "USD" | "KES" => {
   const upper = String(value || "").trim().toUpperCase();
   return upper === "KES" ? "KES" : "USD";
@@ -126,7 +161,7 @@ const Charts: React.FC<ChartProps> = ({
     (s: RootState) => s.auth?.user?.email || ""
   );
 
-  const [chartData, setChartData] = useState<
+  const [chartDataRaw, setChartDataRaw] = useState<
     { name: string; buyValue: number; sellValue: number }[]
   >([]);
   /** All pages for the graph (no currency filter on API). */
@@ -192,7 +227,7 @@ const Charts: React.FC<ChartProps> = ({
         } => Boolean(item)
       );
     if (!src.length) {
-      setChartData([]);
+      setChartDataRaw([]);
       return;
     }
 
@@ -264,24 +299,39 @@ const Charts: React.FC<ChartProps> = ({
       });
     }
 
-    setChartData(newData);
+    setChartDataRaw(newData);
   }, [data, trades, selectedTimeFilter, chartTrades, currentUserEmail]);
+
+  const { chartData, yAxisMax } = React.useMemo(() => {
+    const values: number[] = [];
+    for (const row of chartDataRaw) {
+      if (filter !== "Sells") values.push(row.buyValue);
+      if (filter !== "Buys") values.push(row.sellValue);
+    }
+
+    const yMax = getRobustYMax(values);
+    if (!yMax) return { chartData: chartDataRaw, yAxisMax: 0 };
+
+    const clamped = chartDataRaw.map((row) => ({
+      ...row,
+      buyValueDisplay: Math.min(row.buyValue, yMax),
+      sellValueDisplay: Math.min(row.sellValue, yMax),
+    }));
+
+    return { chartData: clamped, yAxisMax: yMax };
+  }, [chartDataRaw, filter]);
 
   /* ------------------- Tooltip ----------------------------- */
   const CustomTooltip = ({ active, payload, label }: any) => {
     if (!active || !Array.isArray(payload) || payload.length === 0) return null;
 
-    const buyPoint = payload.find((p: any) => p?.dataKey === "buyValue");
-    const sellPoint = payload.find((p: any) => p?.dataKey === "sellValue");
-
-    const buyValue =
-      typeof buyPoint?.value === "number"
-        ? buyPoint.value
-        : Number(buyPoint?.value || 0);
-    const sellValue =
-      typeof sellPoint?.value === "number"
-        ? sellPoint.value
-        : Number(sellPoint?.value || 0);
+    const datum = payload?.[0]?.payload || {};
+    const buyValue = Number(datum.buyValue || 0);
+    const sellValue = Number(datum.sellValue || 0);
+    const buyWasCapped =
+      typeof datum.buyValueDisplay === "number" && datum.buyValueDisplay < buyValue;
+    const sellWasCapped =
+      typeof datum.sellValueDisplay === "number" && datum.sellValueDisplay < sellValue;
 
     return (
       <div
@@ -289,10 +339,10 @@ const Charts: React.FC<ChartProps> = ({
       >
         <p className="font-medium">{label}</p>
         {filter !== "Sells" && (
-          <p className="text-[#1D8751]">{`Buys: ${buyValue.toLocaleString()} USD`}</p>
+          <p className="text-[#1D8751]">{`Buys: ${buyValue.toLocaleString()} USD${buyWasCapped ? " (capped on chart)" : ""}`}</p>
         )}
         {filter !== "Buys" && (
-          <p className="text-[#FF4D4D]">{`Sells: ${sellValue.toLocaleString()} USD`}</p>
+          <p className="text-[#FF4D4D]">{`Sells: ${sellValue.toLocaleString()} USD${sellWasCapped ? " (capped on chart)" : ""}`}</p>
         )}
       </div>
     );
@@ -438,6 +488,7 @@ const Charts: React.FC<ChartProps> = ({
               <YAxis
                 className="text-gray-700 dark:text-white"
                 tickFormatter={(v) => v.toLocaleString()}
+                domain={[0, yAxisMax || "auto"]}
               />
 
               <Tooltip content={<CustomTooltip />} />
@@ -445,7 +496,7 @@ const Charts: React.FC<ChartProps> = ({
               {(filter === "All" || filter === "Buys") && (
                 <Area
                   type="monotone"
-                  dataKey="buyValue"
+                  dataKey={yAxisMax ? "buyValueDisplay" : "buyValue"}
                   stroke="#1D8751"
                   strokeWidth={3}
                   fillOpacity={1}
@@ -455,7 +506,7 @@ const Charts: React.FC<ChartProps> = ({
               {(filter === "All" || filter === "Sells") && (
                 <Area
                   type="monotone"
-                  dataKey="sellValue"
+                  dataKey={yAxisMax ? "sellValueDisplay" : "sellValue"}
                   stroke="#FF4D4D"
                   strokeWidth={3}
                   fillOpacity={1}

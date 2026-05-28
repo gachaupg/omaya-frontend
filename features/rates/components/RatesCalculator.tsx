@@ -542,6 +542,13 @@ const RatesCalculator = ({ activeTab = 'crypto' }: RatesCalculatorProps) => {
   )
     .trim()
     .toUpperCase();
+
+  const isUuid = useCallback((v: string) => {
+    const s = String(v || "").trim();
+    return /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(
+      s
+    );
+  }, []);
   const shouldShowTemporaryWalletAddressNotice =
     !!selectedAssetTicker &&
     !selectedAssetTicker.includes("USDT") &&
@@ -1024,7 +1031,7 @@ const getPaymentRestrictionMessage = (status?: string) =>
       if (
         assetsDisplay.displayData &&
         assetsDisplay.displayData.length > 0 &&
-        !selectedAsset &&
+        (!selectedAsset || !isUuid(String((selectedAsset as any)?.asset_id || (selectedAsset as any)?.id || "").trim())) &&
         !hasSavedAsset &&
         !stillHasSavedAsset // Only auto-select if there's no saved asset to restore
       ) {
@@ -1080,7 +1087,7 @@ const getPaymentRestrictionMessage = (status?: string) =>
     }, 100); // Small delay to let restore happen first
 
     return () => clearTimeout(timeoutId);
-  }, [assetsDisplay.displayData, selectedAsset]);
+  }, [assetsDisplay.displayData, selectedAsset, isUuid]);
 
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
@@ -3309,13 +3316,30 @@ const getPaymentRestrictionMessage = (status?: string) =>
       nestedDetail?.account_name,
       providerName
     );
-    const isUuid = (v: string) =>
-      /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(
-        v
-      );
-    const assetId = String(
+    const rawAssetId = String(
       (selectedAsset as any)?.asset_id || (selectedAsset as any)?.id || ""
     ).trim();
+
+    // Rates default asset uses a placeholder id (non-UUID). Resolve to a real backend asset_id once assets are loaded.
+    const resolvedAsset =
+      (rawAssetId && isUuid(rawAssetId) && selectedAsset) ||
+      assetsDisplay.displayData?.find((a: any) => {
+        const id = String(a?.asset_id || a?.id || "").trim();
+        if (!isUuid(id)) return false;
+        const at = String(a?.ticker || a?.symbol || a?.name || "").trim().toLowerCase();
+        const st = String(selectedAsset?.ticker || selectedAsset?.symbol || selectedAsset?.name || "").trim().toLowerCase();
+        const an = String(getAssetNetwork(a) || a?.network || "").trim().toLowerCase();
+        const sn = String(getAssetNetwork(selectedAsset) || (selectedAsset as any)?.network || "").trim().toLowerCase();
+        return at === st && (!!sn ? an === sn : true);
+      }) ||
+      assetsDisplay.displayData?.find((a: any) => {
+        const id = String(a?.asset_id || a?.id || "").trim();
+        if (!isUuid(id)) return false;
+        const at = String(a?.ticker || a?.symbol || a?.name || "").trim().toLowerCase();
+        return at === "usdt";
+      });
+
+    const assetId = String((resolvedAsset as any)?.asset_id || (resolvedAsset as any)?.id || rawAssetId).trim();
     if (!isUuid(assetId)) {
       throw new Error("Asset ID is missing or invalid");
     }
