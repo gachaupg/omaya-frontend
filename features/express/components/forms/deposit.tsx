@@ -46,6 +46,7 @@ import {
   usePaymentMethodsDisplay,
 } from "../../hooks/useDataDisplay";
 import CustomSelect from "@/components/ui/CustomSelect";
+import { AssetWithNetworkIcon } from "@/components/ui/AssetWithNetworkIcon";
 import {
   buildExpressRedirectPath,
   setAuthRedirectPath,
@@ -4448,17 +4449,11 @@ export default function DepositForm({
                   <div className="flex items-center gap-3">
                     {selectedAsset ? (
                       <>
-                        <img
-                          src={getHighResAssetIcon(selectedAsset, 72)}
-                          alt={
-                            selectedAsset?.name ||
-                            selectedAsset?.ticker ||
-                            selectedAsset?.symbol ||
-                            "Asset"
-                          }
-                          className={`${ASSET_ICON_BASE_CLASS} w-6 h-6 rounded-full object-cover`}
-                          loading="lazy"
-                          onError={(e) => {
+                        <AssetWithNetworkIcon
+                          asset={selectedAsset}
+                          size={24}
+                          assetIconSrc={getHighResAssetIcon(selectedAsset, 72)}
+                          onAssetIconError={(e) => {
                             e.currentTarget.src = getHighResAssetIcon(null, 72);
                           }}
                         />

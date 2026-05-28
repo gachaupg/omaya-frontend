@@ -133,9 +133,10 @@ export const selectPendingMatchedTradeNotifications = createSelector(
     filterPendingMatchedTradeNotifications(tradesState.data?.results || [])
 );
 
+/** Badge count — always derived from pending rows (stays in sync with WS +/-). */
 export const selectPendingMatchedTradeNotificationCount = createSelector(
   [selectPendingMatchedTradeNotifications],
-  (trades) => trades.length
+  (pendingTrades) => pendingTrades.length
 );
 
 /**

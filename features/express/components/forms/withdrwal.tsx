@@ -72,6 +72,7 @@ import {
 } from "@/features/express/hooks/useDataDisplay";
 import { useChangeNowAssets } from "@/features/express/home/hooks/useChangeNowAssets";
 import CustomSelect from "@/components/ui/CustomSelect";
+import { AssetWithNetworkIcon } from "@/components/ui/AssetWithNetworkIcon";
 import {
   PAYMENT_LOGO_BASE_CLASS,
   PAYMENT_LOGO_SIZE,
@@ -4227,16 +4228,11 @@ export default function WithdrawalForm({
                       <div className="flex items-center gap-3">
                         {selectedAsset ? (
                           <>
-                            <img
-                              src={getHighResAssetIcon(selectedAsset, 72)}
-                              alt={
-                                selectedAsset?.name ||
-                                selectedAsset?.ticker ||
-                                selectedAsset?.symbol ||
-                                "Asset"
-                              }
-                              className="w-6 h-6 rounded-full object-cover"
-                              onError={(e) => {
+                            <AssetWithNetworkIcon
+                              asset={selectedAsset}
+                              size={24}
+                              assetIconSrc={getHighResAssetIcon(selectedAsset, 72)}
+                              onAssetIconError={(e) => {
                                 console.log(
                                   "Image failed to load for asset:",
                                   selectedAsset

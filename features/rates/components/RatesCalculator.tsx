@@ -77,11 +77,13 @@ import {
   isExpressBelowMinAmountError,
 } from "@/lib/utils/expressMinAmount";
 import { useChangeNowAssets } from "@/features/express/home/hooks/useChangeNowAssets";
+import { AssetWithNetworkIcon } from "@/components/ui/AssetWithNetworkIcon";
 import {
   RatesAssetImage,
   RATES_ASSET_ICON_FALLBACK,
   normalizeRatesAssetIconForPayload,
   pickRatesAssetImageRaw,
+  resolveRatesAssetImageUrl,
 } from "./RatesAssetImage";
 
 const MISSING_FXP_USD_RATE_ERROR =
@@ -2925,11 +2927,13 @@ const getPaymentRestrictionMessage = (status?: string) =>
           setAssetSearchTerm("");
         }}
       >
-        <RatesAssetImage
-          remoteUrl={pickRatesAssetImageRaw(asset)}
-          alt={asset?.name || asset?.ticker || asset?.symbol || "Asset"}
-          className="w-6 h-6 rounded-full object-cover flex-shrink-0"
-          onError={() => {
+        <AssetWithNetworkIcon
+          asset={asset}
+          size={24}
+          assetIconSrc={resolveRatesAssetImageUrl(
+            pickRatesAssetImageRaw(asset) ?? ""
+          )}
+          onAssetIconError={() => {
             logger.debug("general", "Image failed to load for asset:", asset);
           }}
         />

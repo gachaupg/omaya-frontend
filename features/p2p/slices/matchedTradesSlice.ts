@@ -41,6 +41,7 @@ function withFilteredResults(
   return {
     ...payload,
     results,
+    count: results.length,
   };
 }
 
@@ -74,23 +75,89 @@ function mergePendingTrades(
   return sortTradesNewestFirst(Array.from(byId.values()));
 }
 
+/** Full WS/HTTP list: pending rows only (excludes completed/cancelled). */
+function replacePendingTradesFromSnapshot(trades: MatchedTrade[]): MatchedTrade[] {
+  return sortTradesNewestFirst(
+    filterPendingMatchedTradeNotifications(trades)
+  );
+}
+
+function ensureMatchedTradesData(state: MatchedTradesState): MatchedTradesResponse {
+  if (!state.data) {
+    state.data = { results: [], count: 0, next: null, previous: null };
+  }
+  return state.data;
+}
+
+/** Keep results pending-only and sync badge count with list length. */
+function syncPendingNotificationCount(state: MatchedTradesState) {
+  if (!state.data) return;
+  state.data.results = filterPendingMatchedTradeNotifications(
+    state.data.results
+  );
+  state.data.count = state.data.results.length;
+}
+
 function applyTradeListToState(
   state: MatchedTradesState,
   trades: MatchedTrade[],
-  options?: { count?: number; replace?: boolean }
+  options?: { replace?: boolean }
 ) {
-  const incoming = filterPendingMatchedTradeNotifications(trades);
   const results = options?.replace
-    ? sortTradesNewestFirst(incoming)
-    : mergePendingTrades(state.data?.results || [], incoming);
+    ? replacePendingTradesFromSnapshot(trades)
+    : mergePendingTrades(state.data?.results || [], trades);
 
   state.data = {
     ...(state.data ?? { next: null, previous: null, count: 0 }),
     results,
-    count: options?.count ?? state.data?.count ?? results.length,
+    /** Badge/list count = pending rows only (not server total trade history). */
+    count: results.length,
     next: state.data?.next ?? null,
     previous: state.data?.previous ?? null,
   };
+}
+
+function upsertMatchedTradeFromWSReducer(
+  state: MatchedTradesState,
+  action: PayloadAction<MatchedTrade>
+) {
+  const trade = action.payload;
+  const tradeId = String(trade.id ?? "").trim();
+  if (!tradeId) return;
+
+  const data = ensureMatchedTradesData(state);
+  const index = data.results.findIndex((t) => String(t.id) === tradeId);
+  const pending = isPendingMatchedTradeNotification(trade);
+
+  if (!pending) {
+    if (index !== -1) {
+      data.results.splice(index, 1);
+    }
+    syncPendingNotificationCount(state);
+    return;
+  }
+
+  if (index !== -1) {
+    data.results[index] = trade;
+  } else {
+    data.results = sortTradesNewestFirst([trade, ...data.results]);
+  }
+  syncPendingNotificationCount(state);
+}
+
+function removeMatchedTradeFromWSReducer(
+  state: MatchedTradesState,
+  action: PayloadAction<string>
+) {
+  const tradeId = String(action.payload ?? "").trim();
+  if (!tradeId || !state.data?.results) return;
+  const before = state.data.results.length;
+  state.data.results = state.data.results.filter(
+    (trade) => String(trade.id) !== tradeId
+  );
+  if (state.data.results.length !== before) {
+    syncPendingNotificationCount(state);
+  }
 }
 
 export const fetchMatchedTrades = createAsyncThunk(
@@ -123,62 +190,27 @@ const matchedTradesSlice = createSlice({
     updateMatchedTradesFromWS: (state, action) => {
       const trades: MatchedTrade[] =
         action.payload.trades || action.payload.results || [];
-      if (!trades.length) return;
       applyTradeListToState(state, trades, {
-        count: action.payload.count,
         replace: action.payload.replace === true,
       });
     },
-    addMatchedTradeFromWS: (state, action: PayloadAction<MatchedTrade>) => {
-      if (!isPendingMatchedTradeNotification(action.payload)) return;
-      if (state.data?.results) {
-        const exists = state.data.results.some((t) => t.id === action.payload.id);
-        if (exists) return;
-        state.data.results = sortTradesNewestFirst([
-          action.payload,
-          ...state.data.results,
-        ]);
-      } else {
-        state.data = {
-          results: [action.payload],
-          count: 1,
-          next: null,
-          previous: null,
-        };
-      }
-    },
-    updateSingleTradeFromWS: (state, action: PayloadAction<MatchedTrade>) => {
-      const trade = action.payload;
-      const tradeId = trade.id;
-      if (!state.data?.results || !tradeId) return;
-
-      if (!isPendingMatchedTradeNotification(trade)) {
-        state.data.results = state.data.results.filter((t) => t.id !== tradeId);
-        return;
-      }
-
-      const index = state.data.results.findIndex((t) => t.id === tradeId);
-      if (index !== -1) {
-        state.data.results[index] = trade;
-      } else {
-        state.data.results = sortTradesNewestFirst([trade, ...state.data.results]);
-      }
-    },
-    removeMatchedTradeFromWS: (state, action: PayloadAction<string>) => {
-      if (!state.data?.results) return;
-      state.data.results = state.data.results.filter(
-        (trade) => trade.id !== action.payload
-      );
-    },
+    /** Single trade from matched-trades WS `trade_update` (+1 / update / -1 when terminal). */
+    upsertMatchedTradeFromWS: upsertMatchedTradeFromWSReducer,
+    addMatchedTradeFromWS: upsertMatchedTradeFromWSReducer,
+    updateSingleTradeFromWS: upsertMatchedTradeFromWSReducer,
+    removeMatchedTradeFromWS: removeMatchedTradeFromWSReducer,
     removeMatchedTradeByStatusFromWS: (
       state,
       action: PayloadAction<{ tradeId: string; status?: string }>
     ) => {
-      const { tradeId, status } = action.payload;
+      const tradeId = String(action.payload.tradeId ?? "").trim();
+      const { status } = action.payload;
       if (!tradeId) return;
       if (status && !isTerminalMatchedTradeNotificationStatus(status)) return;
-      if (!state.data?.results) return;
-      state.data.results = state.data.results.filter((t) => t.id !== tradeId);
+      removeMatchedTradeFromWSReducer(state, {
+        type: "matchedTrades/removeMatchedTradeFromWS",
+        payload: tradeId,
+      });
     },
   },
   extraReducers: (builder) => {
@@ -238,6 +270,7 @@ const matchedTradesSlice = createSlice({
 export const {
   clearMatchedTrades,
   updateMatchedTradesFromWS,
+  upsertMatchedTradeFromWS,
   addMatchedTradeFromWS,
   updateSingleTradeFromWS,
   removeMatchedTradeFromWS,

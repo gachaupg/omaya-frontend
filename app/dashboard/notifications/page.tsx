@@ -14,7 +14,11 @@ import { showToast } from "@/lib/utils/toast";
 import { getMessageFromApiError } from "@/lib/utils/errorHandler";
 import { waitForTradeConfirmStatus } from "@/features/p2p/utils/waitTradeConfirmSocketStatus";
 import { isPendingAcceptanceStatus } from "@/features/p2p/utils/tradeWsAcceptanceGate";
-import { getMatchedTradeNotificationStatus } from "@/features/p2p/utils/matchedTradeNotifications";
+import {
+  getMatchedTradeNotificationDisplayName,
+  getMatchedTradeNotificationProfileImage,
+  getMatchedTradeNotificationStatus,
+} from "@/features/p2p/utils/matchedTradeNotifications";
 import { selectPendingMatchedTradeNotifications } from "@/features/p2p/selectors";
 
 /** When owner === logged user: show order_type as-is (Buy/Sell). When not owner: show counterparty action (buy ad → Sell, sell ad → Buy). */
@@ -28,9 +32,6 @@ const getOrderType = (order_type: string, isOwner: boolean) => {
     ? { label: "Sell", color: "text-red-400" }
     : { label: "Buy", color: "text-[#1D8751]" };
 };
-
-const truncate = (str: string, n: number) =>
-  str.length > n ? str.slice(0, n - 3) + "..." : str;
 
 const normalizeEmail = (e: string | null | undefined) =>
   String(e ?? "").trim().toLowerCase();
@@ -256,26 +257,11 @@ const Notifications = () => {
           trade,
           user?.email || ""
         );
-        const owner = trade.owner === user?.email ? trade.buyer : trade.seller;
-        const isCurrentUserAdvertiser =
-          trade.advertiser_name === user?.first_name;
-
-        const name = isCurrentUserAdvertiser
-          ? trade.order_type === "sell"
-            ? truncate(trade.buyer, 10)
-            : truncate(trade.seller, 10)
-          : trade.advertiser_name;
-
-        // Keep name and photo conditions in sync:
-        // - If current user is the advertiser, show counterparty's photo
-        // - If current user is NOT the advertiser, show advertiser's photo
-        const profileImage = isCurrentUserAdvertiser
-          ? trade.order_type === "sell"
-            ? trade.buyer_photo
-            : trade.seller_photo
-          : trade.order_type === "buy"
-          ? trade.buyer_photo
-          : trade.seller_photo;
+        const name = getMatchedTradeNotificationDisplayName(trade, user?.email);
+        const profileImage = getMatchedTradeNotificationProfileImage(
+          trade,
+          user?.email
+        );
 
         return (
           <div
@@ -307,7 +293,7 @@ const Notifications = () => {
               {/* Name + Amount + Date */}
               <div className="flex flex-col grow min-w-0">
                 <div className="flex items-center gap-2 mb-0.5 flex-wrap">
-                  <span className="font-bold text-sm sm:text-base text-gray-900 dark:text-gray-100 truancate">
+                  <span className="font-bold text-sm sm:text-base text-gray-900 dark:text-gray-100 break-words">
                     {name}
                   </span>
                   <span className={`text-[10px] uppercase font-bold px-1.5 py-0.5 rounded border whitespace-nowrap ${orderType.color === "text-[#1D8751]" ? "border-[#1D8751]/20 text-[#1D8751] bg-[#1D8751]/5" : "border-red-400/20 text-red-400 bg-red-400/5"

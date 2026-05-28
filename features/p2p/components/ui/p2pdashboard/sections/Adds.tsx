@@ -8,7 +8,6 @@ import Button from "../../../Common/Button";
 import Card from "../../../Common/Card";
 import Loader from "../../../Common/Loader";
 import { postP2POrderThunk } from "../../../../slices/adSlice";
-import { fetchAssets } from "@/features/p2p/slices/assetsSlice";
 import {
   fetchUserPaymentDetails,
   fetchAdminPaymentMethods,
@@ -60,6 +59,9 @@ const COLORS = {
   buy: "#1D8751",
   sell: "#E23D3A",
 };
+
+/** Same USDT asset UUID as mobile (`p2pUsdtAssetId` in OmayaExchangeMobile). */
+const P2P_USDT_ASSET_ID = "a0232aac-dca3-42a6-8a33-63658d191130";
 
 /** Sell ads: USDT cap is the lesser of entered amount and wallet available. */
 function getSellUsdtCap(amount: string, availableBalance: number): number {
@@ -121,7 +123,6 @@ const Adds: React.FC<AddsProps> = ({ filterType }) => {
     adminMethods,
     loading: adminLoading,
   } = useSelector((state: RootState) => state.paymentMethods);
-  const { data: assetsData } = useSelector((state: RootState) => state.assets);
   const { postOrderLoading, postOrderError, postOrderSuccess } = useSelector(
     (state: RootState) => state.p2pAds
   );
@@ -192,7 +193,6 @@ const Adds: React.FC<AddsProps> = ({ filterType }) => {
     if (isAuthenticated) {
       dispatch(fetchUserPaymentDetails() as any);
       dispatch(fetchAdminPaymentMethods() as any);
-      dispatch(fetchAssets(false) as any);
     }
   }, [dispatch, isAuthenticated]);
 
@@ -670,38 +670,10 @@ const Adds: React.FC<AddsProps> = ({ filterType }) => {
       return;
     }
 
-    if (!assetsData?.assets?.length) {
-      showToast.error(
-        "Asset ID is missing or invalid",
-        "Assets list is not loaded yet. Please wait a second and try again."
-      );
-      dispatch(fetchAssets(true) as any);
-      return;
-    }
-
-    const usdtAsset =
-      assetsData.assets.find((a) => String(a?.symbol || "").toUpperCase() === "USDT") ||
-      assetsData.assets.find((a) =>
-        String(a?.symbol || "").toUpperCase().includes("USDT")
-      ) ||
-      assetsData.assets.find((a) =>
-        String(a?.description || "").toLowerCase().includes("tether")
-      );
-
-    const usdtAssetId = String((usdtAsset as any)?.asset_id || (usdtAsset as any)?.id || "").trim();
-    if (!usdtAssetId) {
-      showToast.error(
-        "Asset ID is missing or invalid",
-        "Could not resolve USDT asset id. Please refresh and try again."
-      );
-      dispatch(fetchAssets(true) as any);
-      return;
-    }
-
     const adData = {
       order_type: type,
       currency: "USDT",
-      asset_id: usdtAssetId,
+      asset_id: P2P_USDT_ASSET_ID,
       range_currency: activeCurrency,
       amount,
       min_order_amount: orderMin,

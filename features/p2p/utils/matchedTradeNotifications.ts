@@ -39,6 +39,137 @@ export type MatchedTradeNotificationStatus = {
   color: string;
 };
 
+type MatchedTradeForDisplayName = {
+  owner?: string;
+  order_type?: string;
+  buyer?: string;
+  seller?: string;
+  buyer_full_name?: string | null;
+  seller_full_name?: string | null;
+  advertiser_name?: string | null;
+};
+
+const normalizeEmail = (e: string | null | undefined) =>
+  String(e ?? "").trim().toLowerCase();
+
+const emailLocalPart = (email: string | undefined | null): string => {
+  if (!email) return "";
+  const at = email.indexOf("@");
+  return at > 0 ? email.slice(0, at) : email;
+};
+
+const pickDisplayName = (
+  fullName: string | null | undefined,
+  email: string | undefined | null,
+  fallback?: string | null
+): string => {
+  const fromFull = fullName?.trim();
+  if (fromFull) return fromFull;
+  const fromFallback = fallback?.trim();
+  if (fromFallback) return fromFallback;
+  const fromEmail = emailLocalPart(email);
+  return fromEmail || "Unknown";
+};
+
+/** Counterparty / advertiser label for notification rows (full name when API provides it). */
+export function getMatchedTradeNotificationDisplayName(
+  trade: MatchedTradeForDisplayName,
+  userEmail: string | null | undefined
+): string {
+  const isOwner =
+    Boolean(userEmail && trade.owner) &&
+    normalizeEmail(userEmail) === normalizeEmail(trade.owner);
+
+  const orderType = trade.order_type?.trim().toLowerCase();
+
+  if (isOwner) {
+    if (orderType === "sell") {
+      return pickDisplayName(trade.buyer_full_name, trade.buyer);
+    }
+    return pickDisplayName(trade.seller_full_name, trade.seller);
+  }
+
+  if (orderType === "sell") {
+    return pickDisplayName(
+      trade.seller_full_name,
+      trade.seller,
+      trade.advertiser_name
+    );
+  }
+  return pickDisplayName(
+    trade.buyer_full_name,
+    trade.buyer,
+    trade.advertiser_name
+  );
+}
+
+export type TradeNameSource = {
+  buyer?: string | null;
+  seller?: string | null;
+  buyer_full_name?: string | null;
+  seller_full_name?: string | null;
+};
+
+const toTradeNameSource = (src: unknown): TradeNameSource | undefined => {
+  if (src == null || typeof src !== "object") return undefined;
+  const o = src as Record<string, unknown>;
+  const str = (key: string) => {
+    const v = o[key];
+    return typeof v === "string" ? v : undefined;
+  };
+  return {
+    buyer: str("buyer"),
+    seller: str("seller"),
+    buyer_full_name: str("buyer_full_name"),
+    seller_full_name: str("seller_full_name"),
+  };
+};
+
+const pickPartyDisplayName = (
+  fullName: string | null | undefined,
+  shortName: string | null | undefined
+): string => {
+  const fromFull = fullName?.trim();
+  if (fromFull) return fromFull;
+  const fromShort = shortName?.trim();
+  if (fromShort) return fromShort;
+  return "";
+};
+
+/** Counterparty buyer on sell-ad owner trade screens (TradeBuyOwner). */
+export function getSellAdOwnerCounterpartyBuyerName(
+  ...sources: unknown[]
+): string {
+  for (const raw of sources) {
+    const src = toTradeNameSource(raw);
+    const name = pickPartyDisplayName(src?.buyer_full_name, src?.buyer);
+    if (name) return name;
+  }
+  return "—";
+}
+
+/** Profile photo for the person shown in getMatchedTradeNotificationDisplayName. */
+export function getMatchedTradeNotificationProfileImage(
+  trade: {
+    owner?: string;
+    order_type?: string;
+    buyer_photo?: string | null;
+    seller_photo?: string | null;
+  },
+  userEmail: string | null | undefined
+): string | null | undefined {
+  const isOwner =
+    Boolean(userEmail && trade.owner) &&
+    normalizeEmail(userEmail) === normalizeEmail(trade.owner);
+
+  const orderType = trade.order_type?.trim().toLowerCase();
+
+  if (isOwner) {
+    return orderType === "sell" ? trade.buyer_photo : trade.seller_photo;
+  }
+  return orderType === "sell" ? trade.seller_photo : trade.buyer_photo;
+}
+
 /** Display label for a pending matched-trade notification row. */
 export function getMatchedTradeNotificationStatus(
   trade: { owner?: string; order_type?: string; status?: string | null },
@@ -54,7 +185,11 @@ export function getMatchedTradeNotificationStatus(
   if (status === "pending_acceptance") {
     return { text: "Awaiting acceptance", color: "text-yellow-500" };
   }
-  if (trade.owner === userEmail) {
+  if (
+    userEmail &&
+    trade.owner &&
+    normalizeEmail(userEmail) === normalizeEmail(trade.owner)
+  ) {
     return { text: "Pending Incoming Trade", color: "text-[#1D8751]" };
   }
   return {

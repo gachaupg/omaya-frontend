@@ -24,6 +24,7 @@ import { RefreshCw, Copy, MessageCircle } from "lucide-react";
 import { FaChevronRight } from "react-icons/fa";
 import { useTradeStatusWebSocket } from "@/features/p2p/hooks/useTradeStatusWebSocket";
 import { useMarketTradeStatusWsHandler } from "@/features/p2p/hooks/useMarketTradeStatusWsHandler";
+import { useBackgroundAwareCountdown } from "@/features/p2p/hooks/useBackgroundAwareCountdown";
 import { handleCopyToClipboard, parseDurationToSeconds, formatDurationForDisplay } from "@/features/p2p/components/Common/utils";
 
 import { logger } from '@/lib/utils/logger';
@@ -103,7 +104,10 @@ const FinalSell: React.FC<FinalSellProps> = ({ orderData }) => {
     effectiveStatus
   );
 
-  const [countdown, setCountdown] = useState(displaySeconds);
+  const sellerPaymentPhaseActiveRef = useRef(sellerPaymentPhaseActive);
+  sellerPaymentPhaseActiveRef.current = sellerPaymentPhaseActive;
+  const handleCancelTransactionRef = useRef<() => void>(() => {});
+
   const initialFetchDone = useRef(false);
 
   useEffect(() => {
@@ -376,20 +380,6 @@ const FinalSell: React.FC<FinalSellProps> = ({ orderData }) => {
     };
   }, [dispatch]);
 
-  useEffect(() => {
-    if (displaySeconds > 0) {
-      setCountdown(displaySeconds);
-    }
-  }, [displaySeconds, confirmOrder?.id]);
-
-  useEffect(() => {
-    if (!transactionTimerActive) return;
-    const timer = setInterval(() => {
-      setCountdown((prev) => (prev > 0 ? prev - 1 : 0));
-    }, 1000);
-    return () => clearInterval(timer);
-  }, [transactionTimerActive]);
-
   // Use payment_details from singleOrder, confirmOrder, or URL - prefer source with most methods
   const fromSingle = Array.isArray(singleOrder?.payment_details) ? singleOrder.payment_details : [];
   const fromConfirm = Array.isArray(confirmOrder?.payment_details) ? confirmOrder.payment_details : [];
@@ -456,20 +446,18 @@ const FinalSell: React.FC<FinalSellProps> = ({ orderData }) => {
         });
     }
   };
+  handleCancelTransactionRef.current = handleCancelTransaction;
 
-  useEffect(() => {
-    if (!transactionTimerActive || countdown !== 0 || !sellerPaymentPhaseActive) {
-      return;
-    }
-    logger.debug("p2p", "Countdown reached 0, auto-cancelling transaction");
-    handleCancelTransaction();
-  }, [
-    transactionTimerActive,
-    countdown,
-    sellerPaymentPhaseActive,
-    confirmOrder?.id,
-    isAuthenticated,
-  ]);
+  const countdown = useBackgroundAwareCountdown({
+    durationSeconds: displaySeconds,
+    active: transactionTimerActive,
+    resetKey: confirmOrder?.id ?? null,
+    onExpire: () => {
+      if (!sellerPaymentPhaseActiveRef.current) return;
+      logger.debug("p2p", "Countdown reached 0, auto-cancelling transaction");
+      handleCancelTransactionRef.current();
+    },
+  });
 
   const handleConfirmTrade = () => {
     if (isAuthenticated && confirmOrder?.id) {

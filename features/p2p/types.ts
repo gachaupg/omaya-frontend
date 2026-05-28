@@ -440,6 +440,8 @@ export interface MatchedTrade {
   limit: string;
   buyer: string;
   seller: string;
+  buyer_full_name?: string | null;
+  seller_full_name?: string | null;
   price: string;
   amount: string;
   timestamp: string;
