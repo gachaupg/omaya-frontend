@@ -30,6 +30,7 @@ import { Dialog } from "@headlessui/react";
 import { useTradeStatusWebSocket } from "@/features/p2p/hooks/useTradeStatusWebSocket";
 import { useP2pTradeCanceledRedirect } from "@/features/p2p/hooks/useP2pTradeCanceledRedirect";
 import { useMarketTradeStatusWsHandler } from "@/features/p2p/hooks/useMarketTradeStatusWsHandler";
+import { useBackgroundAwareCountdown } from "@/features/p2p/hooks/useBackgroundAwareCountdown";
 
 import { logger } from '@/lib/utils/logger';
 
@@ -83,38 +84,10 @@ const FinalSell: React.FC<FinalSellProps> = ({ orderData }) => {
 
   // Use limit_duration for countdown (e.g. "00:00:05" = 5 min) - prefer order's limit over trade default
   const displaySeconds = parseDurationToSeconds(singleOrder?.limit_duration);
-
-  // Local countdown state for auto-cancel logic
-  const [countdown, setCountdown] = useState(displaySeconds);
-
-  // Sync countdown ONLY when status becomes 'matched'
-  useEffect(() => {
-    if (confirmOrder?.status === "matched") {
-      setCountdown(displaySeconds);
-    }
-    // Do not reset countdown if status is not matched
-  }, [displaySeconds, confirmOrder?.status]);
-
-  // Countdown effect
-  useEffect(() => {
-    if (confirmOrder?.status !== "matched") return;
-    if (countdown <= 0) return;
-    const timer = setInterval(() => {
-      setCountdown((prev) => (prev > 0 ? prev - 1 : 0));
-    }, 1000);
-    return () => clearInterval(timer);
-  }, [confirmOrder?.status, countdown]);
-
-  // Auto-cancel when countdown reaches 0 and status is matched - DISABLED
-  useEffect(() => {
-    if (isAuthenticated) {
-      if (confirmOrder?.status === "matched" && countdown === 0) {
-        handleCancelTransaction();
-        logger.debug('p2p', "Countdown reached 0, auto-cancel is disabled");
-        return;
-      }
-    }
-  }, [confirmOrder?.status, countdown, confirmOrder?.id, dispatch]);
+  const appealTimerMatched = confirmOrder?.status === "matched";
+  const handleCancelTransactionRef = useRef<() => void>(() => {});
+  const confirmStatusRef = useRef(confirmOrder?.status);
+  confirmStatusRef.current = confirmOrder?.status;
 
   // Fetch confirm order when authenticated and orderId is available
   useEffect(() => {
@@ -150,13 +123,6 @@ const FinalSell: React.FC<FinalSellProps> = ({ orderData }) => {
       }
     }
   }, []);
-
-  // Reset countdown to displaySeconds when status is not 'matched'
-  useEffect(() => {
-    if (confirmOrder?.status !== "matched") {
-      setCountdown(displaySeconds);
-    }
-  }, [confirmOrder?.status, displaySeconds]);
 
   // Reset modal and previous status when switching to a different trade
   useEffect(() => {
@@ -259,6 +225,19 @@ const FinalSell: React.FC<FinalSellProps> = ({ orderData }) => {
       }, 2000);
     }
   };
+  handleCancelTransactionRef.current = handleCancelTransaction;
+
+  const countdown = useBackgroundAwareCountdown({
+    durationSeconds: displaySeconds,
+    active: Boolean(confirmOrder?.id) && displaySeconds > 0,
+    armed: appealTimerMatched,
+    resetKey: `${confirmOrder?.id ?? ""}-matched`,
+    onExpire: () => {
+      if (confirmStatusRef.current !== "matched") return;
+      logger.debug("p2p", "Appeal countdown reached 0, auto-cancelling transaction");
+      handleCancelTransactionRef.current();
+    },
+  });
 
   // Add handler for confirming trade
   const handleConfirmTrade = () => {

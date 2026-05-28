@@ -4,6 +4,7 @@ import {
   assetMatchesSearchTerm,
   sortAssetsForDisplay,
 } from "@/lib/utils/assetSearch";
+import { AssetWithNetworkIcon } from "@/components/ui/AssetWithNetworkIcon";
 import {
   handleSwapAssetIconError,
   resolveSwapAssetIconSrc,
@@ -62,11 +63,12 @@ const AssetDropdown: React.FC<AssetDropdownProps> = ({
       >
         {selectedAsset ? (
           <div className="flex items-center min-w-0 flex-1">
-            <img
-              src={resolveSwapAssetIconSrc(selectedAsset)}
-              alt={selectedAsset.name || "Asset"}
-              className="w-6 h-6 mr-3 rounded-full object-cover shrink-0"
-              onError={(e) => handleSwapAssetIconError(e, selectedAsset)}
+            <AssetWithNetworkIcon
+              asset={selectedAsset}
+              size={24}
+              className="mr-3"
+              assetIconSrc={resolveSwapAssetIconSrc(selectedAsset)}
+              onAssetIconError={(e) => handleSwapAssetIconError(e, selectedAsset)}
             />
             <SwapAssetOptionDisplay
               asset={selectedAsset}
@@ -126,11 +128,12 @@ const AssetDropdown: React.FC<AssetDropdownProps> = ({
                   tabIndex={0}
                   className="flex items-center px-3 py-2 text-xs sm:text-sm dark:hover:bg-[#35353E] hover:bg-gray-100 cursor-pointer"
                 >
-                  <img
-                    src={resolveSwapAssetIconSrc(asset)}
-                    alt={asset.name || "Asset"}
-                    className="w-6 h-6 mr-3 rounded-full object-cover shrink-0"
-                    onError={(e) => handleSwapAssetIconError(e, asset)}
+                  <AssetWithNetworkIcon
+                    asset={asset}
+                    size={24}
+                    className="mr-3"
+                    assetIconSrc={resolveSwapAssetIconSrc(asset)}
+                    onAssetIconError={(e) => handleSwapAssetIconError(e, asset)}
                   />
                   <SwapAssetOptionDisplay
                     asset={asset}

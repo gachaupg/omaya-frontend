@@ -10,7 +10,10 @@ import { useDispatch, useSelector } from "react-redux";
 import { AppDispatch } from "@/store";
 import { orderStatusTabs as staticOrderStatusTabs } from "../../data";
 import { RootState } from "@/store/rootReducer";
-import { selectUserTradesByStatus } from "../../selectors";
+import {
+  selectPendingMatchedTradeNotificationCount,
+  selectUserTradesByStatus,
+} from "../../selectors";
 import { OrdersListSkeleton } from "@/components/ui/Skeletons";
 import { useGroupedMessages } from "../../hooks/useGroupedMessages";
 import { fetchMatchedTrades } from "../../slices/matchedTradesSlice";
@@ -90,8 +93,10 @@ const Orders = memo(() => {
     selectUserTradesByStatus
   );
 
-  // Use matched trades count for processing tab
-  const actualProcessingCount = matchedTrades?.count || processingCount;
+  const pendingMatchedCount = useSelector(
+    selectPendingMatchedTradeNotificationCount
+  );
+  const actualProcessingCount = pendingMatchedCount || processingCount;
 
   const orderStatusTabs = useMemo(
     () =>

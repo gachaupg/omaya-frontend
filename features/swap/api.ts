@@ -29,6 +29,10 @@ type PublicAssetLike = {
   image?: string;
   image_url?: string;
   network?: string;
+  network_image?: string;
+  network_icon?: string;
+  network_icon_url?: string;
+  chain_image?: string;
   legacyTicker?: string;
   legacy_ticker?: string;
   hasExternalId?: boolean;
@@ -81,6 +85,10 @@ const mapPublicAssetToSupportedAsset = (
     image_url: image || undefined,
     image: image || undefined,
     network,
+    network_image: String(asset.network_image || asset.network_icon || "").trim() || undefined,
+    network_icon: String(asset.network_icon || "").trim() || undefined,
+    network_icon_url: String(asset.network_icon_url || "").trim() || undefined,
+    chain_image: String(asset.chain_image || "").trim() || undefined,
     has_external_id: Boolean(asset.hasExternalId ?? asset.has_external_id),
     is_extra_id_supported: Boolean(
       asset.isExtraIdSupported ?? asset.is_extra_id_supported

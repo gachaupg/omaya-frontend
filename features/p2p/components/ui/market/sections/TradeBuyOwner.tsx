@@ -33,6 +33,8 @@ import Image from "next/image";
 import { useTradeStatusWebSocket } from "@/features/p2p/hooks/useTradeStatusWebSocket";
 import { useP2pTradeCanceledRedirect } from "@/features/p2p/hooks/useP2pTradeCanceledRedirect";
 import { useMarketTradeStatusWsHandler } from "@/features/p2p/hooks/useMarketTradeStatusWsHandler";
+import { useBackgroundAwareCountdown } from "@/features/p2p/hooks/useBackgroundAwareCountdown";
+import { getSellAdOwnerCounterpartyBuyerName } from "@/features/p2p/utils/matchedTradeNotifications";
 
 import { logger } from "@/lib/utils/logger";
 
@@ -90,39 +92,10 @@ const FinalSell: React.FC<FinalSellProps> = ({ orderData }) => {
 
   // Use limit_duration from order only (e.g. "00:00:05" = 5 min) - never use trade's limit (30 min default)
   const displaySeconds = parseDurationToSeconds(singleOrder?.limit_duration);
-
-  // Local countdown state for auto-cancel logic
-  const [countdown, setCountdown] = useState(displaySeconds);
-  const prevStatus = useRef(confirmOrder?.status);
-
-  // Sync countdown ONLY when status becomes 'matched'
-  useEffect(() => {
-    if (confirmOrder?.status === "matched") {
-      setCountdown(displaySeconds);
-    }
-    // Do not reset countdown if status is not matched
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [displaySeconds, confirmOrder?.status]);
-
-  // Countdown effect
-  useEffect(() => {
-    if (confirmOrder?.status !== "matched") return;
-    if (countdown <= 0) return;
-    const timer = setInterval(() => {
-      setCountdown((prev) => (prev > 0 ? prev - 1 : 0));
-    }, 1000);
-    return () => clearInterval(timer);
-  }, [confirmOrder?.status, countdown]);
-
-  // Auto-cancel when countdown reaches 0 and status is matched - DISABLED
-  useEffect(() => {
-    if (confirmOrder?.status === "matched" && countdown === 0) {
-      handleCancelTransaction();
-      // AUTO-CANCEL DISABLED - Countdown reached 0 but no auto-cancel
-      logger.debug("p2p", "Countdown reached 0, auto-cancel is disabled");
-      return;
-    }
-  }, [confirmOrder?.status, countdown, confirmOrder?.id, dispatch]);
+  const appealTimerMatched = confirmOrder?.status === "matched";
+  const handleCancelTransactionRef = useRef<() => void>(() => {});
+  const confirmStatusRef = useRef(confirmOrder?.status);
+  confirmStatusRef.current = confirmOrder?.status;
 
   // Fetch confirm order when authenticated and orderId is available
   useEffect(() => {
@@ -137,6 +110,13 @@ const FinalSell: React.FC<FinalSellProps> = ({ orderData }) => {
     : null;
   const orderIdToFetch = confirmOrder?.buy_order ?? confirmOrder?.sell_order;
 
+  /** Sell-ad owner screen: counterparty is always the buyer (full name when API provides it). */
+  const counterpartyDisplayName = getSellAdOwnerCounterpartyBuyerName(
+    confirmOrder,
+    singleOrder,
+    saveOrder
+  );
+
   // Fetch single order only when the order id changes (not on every confirmOrder ref from WebSocket refresh)
   useEffect(() => {
     if (isAuthenticated && orderIdToFetch) {
@@ -147,13 +127,6 @@ const FinalSell: React.FC<FinalSellProps> = ({ orderData }) => {
   useEffect(() => {
     setIsClient(true);
   }, []);
-
-  // Reset countdown to displaySeconds when status is not 'matched'
-  useEffect(() => {
-    if (confirmOrder?.status !== "matched") {
-      setCountdown(displaySeconds);
-    }
-  }, [confirmOrder?.status, displaySeconds]);
 
   // Reset modal and previous status when switching to a different trade
   useEffect(() => {
@@ -273,6 +246,19 @@ const FinalSell: React.FC<FinalSellProps> = ({ orderData }) => {
         });
     }
   };
+  handleCancelTransactionRef.current = handleCancelTransaction;
+
+  const countdown = useBackgroundAwareCountdown({
+    durationSeconds: displaySeconds,
+    active: Boolean(confirmOrder?.id) && displaySeconds > 0,
+    armed: appealTimerMatched,
+    resetKey: `${confirmOrder?.id ?? ""}-matched`,
+    onExpire: () => {
+      if (confirmStatusRef.current !== "matched") return;
+      logger.debug("p2p", "Appeal countdown reached 0, auto-cancelling transaction");
+      handleCancelTransactionRef.current();
+    },
+  });
 
   const getButtonText = () => {
     const isThisTradeLoading =
@@ -615,34 +601,15 @@ const FinalSell: React.FC<FinalSellProps> = ({ orderData }) => {
               ) : (
                 <div className="text-[#788099] text-sm py-4">No payment methods available</div>
               )}
-              {/* Seller's name (advertiser - who receives payment) */}
+              {/* Buyer's name (counterparty — not the ad owner) */}
               <div className="border border-warning rounded-2xl px-3 sm:px-4 min-[900px]:px-8 py-4 sm:py-6 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 sm:gap-0 mt-2 bg-white dark:bg-[var(--card-color)]">
-                <p className="text-warning font-semibold text-sm sm:text-lg sm:mr-6 truancate">
-                  {confirmOrder?.buyer}
+                <p className="text-warning font-semibold text-sm sm:text-lg sm:mr-6 shrink-0">
+                  Buyer&apos;s name
                 </p>
-                <div className="flex items-center flex-wrap gap-2">
+                <div className="flex items-center flex-wrap gap-2 min-w-0">
                   <span className="w-2 h-2 sm:w-3 sm:h-3 rounded-full bg-[#051015] dark:bg-white flex-shrink-0"></span>
                   <span className="text-gray-900 dark:text-white font-semibold text-sm sm:text-lg break-words">
-                    {(() => {
-                      const firstName =
-                        (singleOrder as any)?.advertiser_first_name ??
-                        (confirmOrder as any)?.advertiser_first_name ??
-                        (saveOrder as any)?.advertiser_first_name ??
-                        "";
-                      const lastName =
-                        (singleOrder as any)?.advertiser_last_name ??
-                        (confirmOrder as any)?.advertiser_last_name ??
-                        (saveOrder as any)?.advertiser_last_name ??
-                        "";
-                      const fullName =
-                        firstName && lastName
-                          ? `${firstName} ${lastName}`.trim()
-                          : (singleOrder as any)?.advertiser_name ??
-                            (confirmOrder as any)?.advertiser_name ??
-                            (saveOrder as any)?.advertiser_name ??
-                            "";
-                      return fullName || "—";
-                    })()}
+                    {counterpartyDisplayName}
                   </span>
                   <UserStatusBadge isLive={statusWsConnected} className="flex-shrink-0" />
                 </div>

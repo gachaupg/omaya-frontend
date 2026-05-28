@@ -5,6 +5,8 @@ import { useSelector } from "react-redux";
 import { RootState } from "@/store/rootReducer";
 import {
   filterPendingMatchedTradeNotifications,
+  getMatchedTradeNotificationDisplayName,
+  getMatchedTradeNotificationProfileImage,
   getMatchedTradeNotificationStatus,
 } from "@/features/p2p/utils/matchedTradeNotifications";
 
@@ -156,22 +158,11 @@ const ProcessingNotifications: React.FC<ProcessingNotificationsProps> = ({ match
             trade,
             user?.email || ""
           );
-          const isCurrentUserAdvertiser =
-            trade.advertiser_name === user?.first_name;
-
-          const name = isCurrentUserAdvertiser
-            ? trade.order_type === "sell"
-              ? truncate(trade.buyer, 10)
-              : truncate(trade.seller, 10)
-            : trade.advertiser_name;
-
-          const profileImage = isCurrentUserAdvertiser
-            ? trade.order_type === "sell"
-              ? trade.buyer_photo
-              : trade.seller_photo
-            : trade.order_type === "buy"
-            ? trade.buyer_photo
-            : trade.seller_photo;
+          const name = getMatchedTradeNotificationDisplayName(trade, user?.email);
+          const profileImage = getMatchedTradeNotificationProfileImage(
+            trade,
+            user?.email
+          );
 
           return (
             <div
@@ -203,7 +194,7 @@ const ProcessingNotifications: React.FC<ProcessingNotificationsProps> = ({ match
 
                 <div className="flex flex-col grow min-w-0">
                   <div className="flex items-center gap-2 mb-0.5 flex-wrap">
-                    <span className="font-bold text-sm sm:text-base text-gray-900 dark:text-gray-100 truncate">
+                    <span className="font-bold text-sm sm:text-base text-gray-900 dark:text-gray-100 break-words">
                       {name}
                     </span>
                     <span

@@ -18,6 +18,10 @@ export interface SupportedAsset {
   is_stable?: boolean;
   supports_fixed_rate?: boolean;
   network: string;
+  network_image?: string | null;
+  network_icon?: string | null;
+  network_icon_url?: string | null;
+  chain_image?: string | null;
   token_contract?: string;
   can_buy?: boolean;
   can_sell?: boolean;

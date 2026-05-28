@@ -24,6 +24,7 @@ import { FaChevronRight } from "react-icons/fa";
 import { Dialog } from "@headlessui/react";
 import { useTradeStatusWebSocket } from "@/features/p2p/hooks/useTradeStatusWebSocket";
 import { useMarketTradeStatusWsHandler } from "@/features/p2p/hooks/useMarketTradeStatusWsHandler";
+import { useBackgroundAwareCountdown } from "@/features/p2p/hooks/useBackgroundAwareCountdown";
 
 import { logger } from '@/lib/utils/logger';
 import {
@@ -185,22 +186,9 @@ function FinalBuy({ orderData }: FinalBuyProps) {
     effectiveStatus
   );
 
-  const [countdown, setCountdown] = useState(displaySeconds);
-  const prevStatus = useRef(confirmOrder?.status);
-
-  useEffect(() => {
-    if (displaySeconds > 0) {
-      setCountdown(displaySeconds);
-    }
-  }, [displaySeconds, confirmOrder?.id]);
-
-  useEffect(() => {
-    if (!transactionTimerActive) return;
-    const timer = setInterval(() => {
-      setCountdown((prev) => (prev > 0 ? prev - 1 : 0));
-    }, 1000);
-    return () => clearInterval(timer);
-  }, [transactionTimerActive]);
+  const buyerPaymentPhaseActiveRef = useRef(buyerPaymentPhaseActive);
+  buyerPaymentPhaseActiveRef.current = buyerPaymentPhaseActive;
+  const handleCancelTransactionRef = useRef<() => void>(() => {});
 
   useEffect(() => {
     // Use trade_id from localStorage first, then fallback to params
@@ -436,20 +424,18 @@ function FinalBuy({ orderData }: FinalBuyProps) {
         });
     }
   };
+  handleCancelTransactionRef.current = handleCancelTransaction;
 
-  useEffect(() => {
-    if (!transactionTimerActive || countdown !== 0 || !buyerPaymentPhaseActive) {
-      return;
-    }
-    logger.debug("p2p", "Countdown reached 0, auto-cancelling transaction");
-    handleCancelTransaction();
-  }, [
-    transactionTimerActive,
-    countdown,
-    buyerPaymentPhaseActive,
-    confirmOrder?.id,
-    isAuthenticated,
-  ]);
+  const countdown = useBackgroundAwareCountdown({
+    durationSeconds: displaySeconds,
+    active: transactionTimerActive,
+    resetKey: confirmOrder?.id ?? null,
+    onExpire: () => {
+      if (!buyerPaymentPhaseActiveRef.current) return;
+      logger.debug("p2p", "Countdown reached 0, auto-cancelling transaction");
+      handleCancelTransactionRef.current();
+    },
+  });
 
   // Add handler for confirming trade
   const handleConfirmTrade = () => {

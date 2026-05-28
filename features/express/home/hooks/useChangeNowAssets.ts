@@ -75,6 +75,10 @@ interface ChangeNowApiAsset {
   name?: string;
   image?: string;
   network?: string;
+  network_image?: string;
+  network_icon?: string;
+  network_icon_url?: string;
+  chain_image?: string;
   asset_id?: string | null;
   legacyTicker?: string;
   hasExternalId?: boolean;
@@ -98,6 +102,10 @@ export interface ChangeNowMappedAsset {
   symbol: string;
   name: string;
   network: string;
+  network_image?: string;
+  network_icon?: string;
+  network_icon_url?: string;
+  chain_image?: string;
   networks: Array<{ network_id: string; network_type: string }>;
   image_url: string;
   icon: string;
@@ -388,6 +396,10 @@ const mapChangeNowAsset = (
     symbol: ticker,
     name: displayName,
     network: networkId,
+    network_image: asset.network_image || asset.network_icon || undefined,
+    network_icon: asset.network_icon,
+    network_icon_url: asset.network_icon_url,
+    chain_image: asset.chain_image,
     networks: [{ network_id: networkId, network_type: networkId }],
     image_url: iconUrl,
     icon: iconUrl,

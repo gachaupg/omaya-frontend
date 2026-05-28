@@ -47,6 +47,7 @@ import {
 } from "../../../hooks/useDataDisplay";
 import { useChangeNowAssets } from "@/features/express/home/hooks/useChangeNowAssets";
 import CustomSelect from "@/components/ui/HomeCommonSelect";
+import { AssetWithNetworkIcon } from "@/components/ui/AssetWithNetworkIcon";
 import Select from "@/features/p2p/components/Common/Select";
 import {
   buildExpressRedirectPath,
@@ -4407,11 +4408,11 @@ export default function DepositForm({
                   <div className="flex items-center gap-3 min-w-0">
                     {selectedAsset ? (
                       <>
-                        <img
-                          src={getAssetDropdownIcon(selectedAsset)}
-                          alt={selectedAsset?.name || selectedAsset?.ticker || selectedAsset?.symbol || "Asset"}
-                          className={`${ASSET_ICON_BASE_CLASS} w-6 h-6 rounded-full`}
-                          onError={(e) => {
+                        <AssetWithNetworkIcon
+                          asset={selectedAsset}
+                          size={24}
+                          assetIconSrc={getAssetDropdownIcon(selectedAsset)}
+                          onAssetIconError={(e) => {
                             console.log(
                               "Image failed to load for asset:",
                               selectedAsset

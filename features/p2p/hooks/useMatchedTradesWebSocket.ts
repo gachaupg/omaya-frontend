@@ -3,18 +3,14 @@ import { useDispatch } from "react-redux";
 import { AppDispatch, RootState } from "@/store";
 import {
   updateMatchedTradesFromWS,
-  addMatchedTradeFromWS,
-  updateSingleTradeFromWS,
+  upsertMatchedTradeFromWS,
   removeMatchedTradeFromWS,
   removeMatchedTradeByStatusFromWS,
   fetchLatestMatchedTradesPage,
   fetchMatchedTrades,
 } from "../slices/matchedTradesSlice";
 import { P2P_TRADE_CANCELED_EVENT } from "../constants/tradeSocketEvents";
-import {
-  isPendingMatchedTradeNotification,
-  isTerminalMatchedTradeNotificationStatus,
-} from "../utils/matchedTradeNotifications";
+import { isTerminalMatchedTradeNotificationStatus } from "../utils/matchedTradeNotifications";
 import {
   getMatchedTradesWebSocket,
   WebSocketMessage,
@@ -148,11 +144,10 @@ export const useMatchedTradesWebSocket = (
             break;
 
           case "initial_data":
-            if (message.data.trades) {
+            if (Array.isArray(message.data?.trades)) {
               dispatch(
                 updateMatchedTradesFromWS({
                   trades: message.data.trades,
-                  count: message.data.count,
                   replace: true,
                 })
               );
@@ -160,11 +155,11 @@ export const useMatchedTradesWebSocket = (
             break;
 
           case "trades_update":
-            if (message.data.trades) {
+            if (Array.isArray(message.data?.trades)) {
               dispatch(
                 updateMatchedTradesFromWS({
                   trades: message.data.trades,
-                  count: message.data.count,
+                  replace: true,
                 })
               );
             }
@@ -178,6 +173,7 @@ export const useMatchedTradesWebSocket = (
             const status = String(
               message.data?.status ?? message.data?.trade?.status ?? ""
             );
+            const trade = message.data?.trade;
 
             if (
               action === "deleted" ||
@@ -189,24 +185,15 @@ export const useMatchedTradesWebSocket = (
               break;
             }
 
+            if (trade) {
+              dispatch(upsertMatchedTradeFromWS(trade));
+              break;
+            }
+
             if (tradeId && isTerminalMatchedTradeNotificationStatus(status)) {
               dispatch(
                 removeMatchedTradeByStatusFromWS({ tradeId, status })
               );
-              break;
-            }
-
-            if (message.data.trade) {
-              const trade = message.data.trade;
-              if (action === "created") {
-                if (isPendingMatchedTradeNotification(trade)) {
-                  dispatch(addMatchedTradeFromWS(trade));
-                }
-              } else if (isPendingMatchedTradeNotification(trade)) {
-                dispatch(updateSingleTradeFromWS(trade));
-              } else if (trade.id) {
-                dispatch(removeMatchedTradeFromWS(String(trade.id)));
-              }
             }
             break;
           }

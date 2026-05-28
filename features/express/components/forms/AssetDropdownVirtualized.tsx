@@ -8,6 +8,7 @@ import React, {
   useState,
 } from "react";
 import type { SupportedAsset } from "@/features/swap/types";
+import { AssetWithNetworkIcon } from "@/components/ui/AssetWithNetworkIcon";
 import { getHighResAssetIcon } from "../../utils/imageHelpers";
 
 export type AssetDropdownRow =
@@ -89,15 +90,11 @@ const AssetRow = React.memo(function AssetRow({
       }`}
       onClick={() => onSelect(asset)}
     >
-      <img
-        src={getHighResAssetIcon(asset, 72)}
-        alt={
-          asset?.name || asset?.ticker || asset?.symbol || "Asset"
-        }
-        className="w-6 h-6 rounded-full object-cover shrink-0"
-        loading="lazy"
-        decoding="async"
-        onError={(e) => {
+      <AssetWithNetworkIcon
+        asset={asset}
+        size={24}
+        assetIconSrc={getHighResAssetIcon(asset, 72)}
+        onAssetIconError={(e) => {
           (e.currentTarget as HTMLImageElement).src = getHighResAssetIcon(null, 72);
         }}
       />

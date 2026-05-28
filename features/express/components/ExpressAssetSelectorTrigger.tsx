@@ -2,6 +2,7 @@
 
 import React from "react";
 import type { AssetLike } from "@/lib/utils/networkDisplay";
+import { AssetWithNetworkIcon } from "@/components/ui/AssetWithNetworkIcon";
 import { ASSET_ICON_BASE_CLASS } from "@/features/express/utils/imageHelpers";
 import { SwapAssetOptionDisplay } from "@/features/swap/components/SwapAssetOptionDisplay";
 import {
@@ -45,11 +46,11 @@ export function ExpressAssetSelectorTrigger({
       <div className="flex items-center gap-2 min-w-0 flex-1 overflow-hidden">
         {asset ? (
           <>
-            <img
-              src={iconSrc}
-              alt={asset.name || asset.ticker || asset.symbol || "Asset"}
-              className={`${ASSET_ICON_BASE_CLASS} w-5 h-5 rounded-full object-cover shrink-0`}
-              onError={onIconError}
+            <AssetWithNetworkIcon
+              asset={asset}
+              size={20}
+              assetIconSrc={iconSrc}
+              onAssetIconError={onIconError}
             />
             <SwapAssetOptionDisplay
               asset={asset}

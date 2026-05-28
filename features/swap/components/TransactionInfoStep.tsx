@@ -16,6 +16,7 @@ import {
   assetMatchesSearchTerm,
   sortAssetsForDisplay,
 } from "@/lib/utils/assetSearch";
+import { AssetWithNetworkIcon } from "@/components/ui/AssetWithNetworkIcon";
 import {
   handleSwapAssetIconError,
   resolveSwapAssetIconSrc,
@@ -404,12 +405,11 @@ const TransactionInfoStep: React.FC<TransactionInfoStepProps> = (props) => {
                       toggle();
                     }}
                   >
-                    <img
-                      src={resolveSwapAssetIconSrc(option)}
-                      alt={option.name || "Asset"}
-                      className="w-6 h-6 rounded-full object-cover"
-                      loading="lazy"
-                      onError={(e) => handleSwapAssetIconError(e, option)}
+                    <AssetWithNetworkIcon
+                      asset={option}
+                      size={24}
+                      assetIconSrc={resolveSwapAssetIconSrc(option)}
+                      onAssetIconError={(e) => handleSwapAssetIconError(e, option)}
                     />
                     <div className="flex-1 min-w-0">
                       <SwapAssetOptionDisplay
