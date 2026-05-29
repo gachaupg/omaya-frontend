@@ -18,7 +18,7 @@ import { AppDispatch } from "@/store/rootReducer";
 import { logger } from '@/lib/utils/logger';
 import {
   fetchBankHowToSend,
-  replaceTrailingUssdAmount,
+  resolveFormattedHowToSendForTx,
 } from "@/features/moneyX/utils/howToSend";
 
 import {
@@ -997,7 +997,11 @@ export default function Exchanging({ transactionData, onBackToTransfer }: Exchan
   }
 
   const ussdAmount = liveAmount ?? effectiveTransactionData?.amount ?? 0;
-  const ussdCode = replaceTrailingUssdAmount(bankHowToSend, ussdAmount);
+  const howToSendDisplay = resolveFormattedHowToSendForTx(
+    effectiveTransactionData,
+    ussdAmount,
+    bankHowToSend
+  );
   const initialNetAmount = parseNumberish(effectiveTransactionData?.net_amount);
   const netAmountToDisplay =
     liveNetAmount ?? initialNetAmount ?? effectiveTransactionData?.receiveAmount;
@@ -1271,18 +1275,26 @@ export default function Exchanging({ transactionData, onBackToTransfer }: Exchan
           </div>
         </div>
         <div className="flex-shrink-0 md:ml-auto md:pl-6 mt-3 sm:mt-2 md:mt-0 flex flex-col items-center md:items-end justify-start py-2 gap-3 w-full md:w-auto">
-          {/* QR code */}
+          {/* QR: when how_to_send exists, encode for dialer; else account / wallet */}
           <div className="w-28 h-28 sm:w-36 sm:h-36 bg-white rounded-lg flex items-center justify-center">
             <img
               src={`https://api.qrserver.com/v1/create-qr-code/?size=180x180&data=${encodeQrScanData(
-                ussdCode || fromPaymentAccountNumber || effectiveTransactionData?.walletAddress || ""
+                howToSendDisplay ||
+                  fromPaymentAccountNumber ||
+                  effectiveTransactionData?.walletAddress ||
+                  ""
               )}`}
               alt="QR Code"
               className="w-24 h-24 sm:w-32 sm:h-32"
             />
           </div>
-          {ussdCode ? (
-            <HowToSendDialBlock value={ussdCode} isDark={isDark} compact className="w-full md:w-[220px]" />
+          {howToSendDisplay ? (
+            <HowToSendDialBlock
+              value={howToSendDisplay}
+              isDark={isDark}
+              compact
+              className="w-full md:w-[220px]"
+            />
           ) : null}
         </div>
       </div>

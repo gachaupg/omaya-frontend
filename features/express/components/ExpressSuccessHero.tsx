@@ -1,19 +1,27 @@
 "use client";
 
 import React from "react";
+import { MoneyXLabel } from "@/components/ui/MoneyXLabel";
 
 const SUCCESS_GREEN = "#1D8751";
 
 type ExpressSuccessHeroProps = {
   message?: string;
   className?: string;
+  variant?: "exchange" | "moneyx";
 };
 
 /** Code-based success header (replaces success PNG assets). */
 export function ExpressSuccessHero({
-  message = "Your Exchange has been completed successfully",
+  message,
   className = "",
+  variant = "exchange",
 }: ExpressSuccessHeroProps) {
+  const defaultMessage =
+    variant === "moneyx"
+      ? "Your MoneyX transfer has been completed successfully"
+      : "Your Exchange has been completed successfully";
+  const heroMessage = message ?? defaultMessage;
   return (
     <div
       className={`flex flex-col items-center text-center w-full pt-0 pb-2 ${className}`}
@@ -60,12 +68,29 @@ export function ExpressSuccessHero({
       </div>
 
       <h1 className="text-lg sm:text-xl font-bold tracking-tight mb-1 leading-tight">
-        <span className="text-gray-900 dark:text-white">EXCHANGE </span>
-        <span style={{ color: SUCCESS_GREEN }}>Successful!</span>
+        {variant === "moneyx" ? (
+          <>
+            <MoneyXLabel
+              moneyText="Money"
+              className="inline-flex align-middle"
+              moneyClassName="text-gray-900 dark:text-white text-lg sm:text-xl font-bold"
+              xClassName="h-[1.1em] sm:h-[1.15em] w-auto inline-block align-middle -mt-0.5"
+            />
+            <span style={{ color: SUCCESS_GREEN }} className="align-middle">
+              {" "}
+              Successful!
+            </span>
+          </>
+        ) : (
+          <>
+            <span className="text-gray-900 dark:text-white">EXCHANGE </span>
+            <span style={{ color: SUCCESS_GREEN }}>Successful!</span>
+          </>
+        )}
       </h1>
 
       <p className="text-xs sm:text-sm text-gray-600 dark:text-white/90 max-w-sm px-2 leading-snug">
-        {message}
+        {heroMessage}
       </p>
     </div>
   );

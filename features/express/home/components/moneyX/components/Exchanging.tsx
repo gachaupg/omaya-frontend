@@ -16,7 +16,10 @@ import HowToSendDialBlock from "@/components/ui/HowToSendDialBlock";
 import { useDispatch, useSelector } from "react-redux";
 import { AppDispatch } from "@/store/rootReducer";
 import { logger } from '@/lib/utils/logger';
-import { fetchBankHowToSend } from "@/features/moneyX/utils/howToSend";
+import {
+  fetchBankHowToSend,
+  resolveFormattedHowToSendForTx,
+} from "@/features/moneyX/utils/howToSend";
 
 import {
   cancelDepositTransaction,
@@ -86,73 +89,6 @@ interface ExchangingProps {
   onBackToTransfer?: () => void;
   isHomePage?: boolean;
 }
-
-const paymentDetailsNested = (pd: any) => pd?.payment_details?.[0];
-
-const resolveHowToSendFromPaymentDetail = (pd: any): string => {
-  if (!pd) return "";
-  const n = paymentDetailsNested(pd);
-  const admin = Array.isArray(pd?.admin_payment_details) ? pd.admin_payment_details[0] : null;
-  const pick = (v: unknown) =>
-    v != null && String(v).trim() !== "" ? String(v).trim() : "";
-  return (
-    pick(pd.how_to_send) ||
-    pick(n?.how_to_send) ||
-    pick(admin?.how_to_send) ||
-    ""
-  );
-};
-
-const resolveHowToSendFromTx = (tx: any): string => {
-  const ordered = [
-    tx?.paymentDetails?.[0],
-    tx?.paymentDetail,
-  ].filter(Boolean);
-  for (const pd of ordered) {
-    const value = resolveHowToSendFromPaymentDetail(pd);
-    if (value) return value;
-  }
-  return "";
-};
-
-const isValidHowToSendInstruction = (value: string): boolean => {
-  const trimmed = String(value || "").trim();
-  if (!trimmed) return false;
-  // Reject plain numeric account-like values (e.g. "37060018", "37060018#")
-  if (/^\d+#?$/.test(trimmed)) return false;
-  return true;
-};
-
-const formatHowToSend = (raw: string, amount: number | string | null | undefined): string => {
-  const base = String(raw || "").trim();
-  if (!base) return "";
-
-  if (/^0x[a-fA-F0-9]{40}#?$/.test(base)) {
-    return base.replace(/#$/, "");
-  }
-
-  const parsedAmt =
-    typeof amount === "number"
-      ? amount
-      : amount != null && String(amount).trim() !== ""
-        ? Number(String(amount))
-        : NaN;
-  const amt = Number.isFinite(parsedAmt) ? String(parsedAmt) : "";
-  if (!amt) return base;
-
-  if (/\bamount\b/i.test(base)) {
-    return base.replace(/\bamount\b/gi, amt);
-  }
-
-  if (!base.includes("*")) {
-    return base;
-  }
-
-  if (base.endsWith("#")) {
-    return base.slice(0, -1) + `*${amt}#`;
-  }
-  return base + `*${amt}#`;
-};
 
 export default function Exchanging({ transactionData, onBackToTransfer, isHomePage = false }: ExchangingProps) {
   const searchParams = useSearchParams();
@@ -1107,22 +1043,11 @@ export default function Exchanging({ transactionData, onBackToTransfer, isHomePa
 
   const initialNetAmount = parseNumberish((effectiveTransactionData as any)?.net_amount);
   const ussdAmount = liveAmount ?? effectiveTransactionData?.amount ?? 0;
-  const txHowToSend = resolveHowToSendFromTx(effectiveTransactionData);
-  const bankHowToSendWithAmount = formatHowToSend(bankHowToSend || "", ussdAmount);
-  const txHowToSendWithAmount = formatHowToSend(txHowToSend, ussdAmount);
-  const validTxHowToSend = isValidHowToSendInstruction(txHowToSendWithAmount)
-    ? txHowToSendWithAmount
-    : "";
-  const validBankHowToSend = isValidHowToSendInstruction(bankHowToSendWithAmount)
-    ? bankHowToSendWithAmount
-    : "";
-  const payinAddress =
-    String((effectiveTransactionData as any)?.payin_address || "").trim() ||
-    String((effectiveTransactionData as any)?.details?.payin_address || "").trim();
-  const howToSendValue =
-    validTxHowToSend ||
-    validBankHowToSend ||
-    payinAddress;
+  const howToSendDisplay = resolveFormattedHowToSendForTx(
+    effectiveTransactionData,
+    ussdAmount,
+    bankHowToSend
+  );
   const fromPaymentAccountNumber = String(
     effectiveTransactionData?.fromPaymentMethod?.account_number ||
       effectiveTransactionData?.fromPaymentMethod?.payment_details?.[0]
@@ -1143,7 +1068,7 @@ export default function Exchanging({ transactionData, onBackToTransfer, isHomePa
       ""
   ).trim();
   const qrPayload =
-    howToSendValue ||
+    howToSendDisplay ||
     fromPaymentAccountNumber ||
     String(liveTransactionId || effectiveTransactionData?.transactionId || "").trim();
   const netAmountToDisplay =
@@ -1454,9 +1379,9 @@ export default function Exchanging({ transactionData, onBackToTransfer, isHomePa
               className={isHomePage ? "w-20 h-20 sm:w-24 sm:h-24" : "w-32 h-32"}
             />
           </div>
-          {howToSendValue ? (
+          {howToSendDisplay ? (
             <HowToSendDialBlock
-              value={howToSendValue}
+              value={howToSendDisplay}
               isDark={isDark}
               compact
               className="w-full"

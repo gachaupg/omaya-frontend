@@ -1,10 +1,11 @@
 "use client";
 
-import React, { useEffect, useState, Suspense } from "react";
+import React, { useEffect, useState, Suspense, useRef } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
 import { useSelector } from "react-redux";
 import { useTheme } from "@/context/theme";
 import CopyButton from "@/components/ui/CopyButton";
+import DownloadReceiptButton from "@/components/ui/DownloadReceiptButton";
 import { useRouteProtection } from "@/features/auth/hooks/useRouteProtection";
 import Loader from "@/features/p2p/components/Common/Loader";
 import { useScrollAppToTopWhen } from "@/hooks/useScrollAppToTopWhen";
@@ -20,6 +21,7 @@ function ForexSuccessContent() {
 
   const { currentExchange } = useSelector((state: any) => state.forex);
   const [exchangeData, setExchangeData] = useState<any>(null);
+  const receiptRef = useRef<HTMLDivElement>(null);
   const shouldHideExchangeRate =
     String(exchangeData?.to_currency || "").toUpperCase() === "FXP" ||
     String(exchangeData?.from_currency || "").toUpperCase() === "FXP";
@@ -72,6 +74,7 @@ function ForexSuccessContent() {
       {/* Success Animation Card */}
       <div className="w-full max-w-2xl mb-6">
         <div
+          ref={receiptRef}
           className={`${
             isDark ? "bg-[#23232B] border-[#35353E]" : "bg-white border-gray-200"
           } border-2 rounded-2xl p-8 shadow-lg flex flex-col items-center`}
@@ -187,6 +190,17 @@ function ForexSuccessContent() {
               Scan to view transaction details
             </p>
           </div>
+
+          <DownloadReceiptButton
+            receiptRef={receiptRef}
+            fileNamePrefix="OMAYA_Forex_Receipt"
+            transactionId={
+              exchangeData.transaction_reference ||
+              exchangeData.transaction_id ||
+              exchangeData.forex_transaction_id
+            }
+            className="mb-3"
+          />
 
           {/* Action Buttons */}
           <div className="w-full space-y-3">
