@@ -175,6 +175,11 @@ const extractApiErrorMessage = (error: any, fallback: string): string => {
     if (/request failed with status code 400/i.test(v)) return "";
     return v;
   };
+  const toUserFacingMessage = (message: string): string => {
+    const v = String(message || "").trim();
+    if (!v) return v;
+    return normalizeExpressApiErrorMessage(v, error?.response?.data, error);
+  };
   const toFrozenMessageIfNeeded = (message: string): string => {
     const normalized = message.toLowerCase();
     const isFrozenError =
@@ -191,7 +196,7 @@ const extractApiErrorMessage = (error: any, fallback: string): string => {
 
   const responseData = error?.response?.data;
   if (typeof responseData === "string" && responseData.trim()) {
-    return toFrozenMessageIfNeeded(responseData);
+    return toFrozenMessageIfNeeded(toUserFacingMessage(responseData));
   }
 
   const direct =
@@ -204,25 +209,25 @@ const extractApiErrorMessage = (error: any, fallback: string): string => {
     "";
   const cleanedDirect = cleanMessage(direct);
   if (cleanedDirect) {
-    return toFrozenMessageIfNeeded(cleanedDirect);
+    return toFrozenMessageIfNeeded(toUserFacingMessage(cleanedDirect));
   }
 
   if (typeof error === "string") {
     const cleanedStringError = cleanMessage(error);
     if (cleanedStringError) {
-      return toFrozenMessageIfNeeded(cleanedStringError);
+      return toFrozenMessageIfNeeded(toUserFacingMessage(cleanedStringError));
     }
   }
 
   if (error?.message) {
     const cleanedMessage = cleanMessage(String(error.message));
     if (cleanedMessage) {
-      return toFrozenMessageIfNeeded(cleanedMessage);
+      return toFrozenMessageIfNeeded(toUserFacingMessage(cleanedMessage));
     }
   }
 
   if (typeof direct === "string" && direct.trim()) {
-    return toFrozenMessageIfNeeded(direct);
+    return toFrozenMessageIfNeeded(toUserFacingMessage(direct));
   }
 
   const fieldErrors = responseData?.errors || responseData?.error;
@@ -231,15 +236,19 @@ const extractApiErrorMessage = (error: any, fallback: string): string => {
     if (firstKey) {
       const value = fieldErrors[firstKey];
       if (Array.isArray(value) && value.length > 0) {
-        return toFrozenMessageIfNeeded(`${firstKey}: ${String(value[0])}`);
+        return toFrozenMessageIfNeeded(
+          toUserFacingMessage(`${firstKey}: ${String(value[0])}`)
+        );
       }
       if (typeof value === "string" && value.trim()) {
-        return toFrozenMessageIfNeeded(`${firstKey}: ${value}`);
+        return toFrozenMessageIfNeeded(
+          toUserFacingMessage(`${firstKey}: ${value}`)
+        );
       }
     }
   }
 
-  return fallback;
+  return toUserFacingMessage(fallback);
 };
 
 const FROZEN_ACCOUNT_MESSAGE =
@@ -425,6 +434,8 @@ export default function WithdrawalForm({
   const assetDropdownRef = useRef<HTMLDivElement>(null);
   const assetDropdownContentRef = useRef<HTMLDivElement | null>(null);
   const estimateTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  /** Blocks estimate effects from clearing submit errors (e.g. ChangeNOW min amount). */
+  const submitAmountErrorRef = useRef<string | null>(null);
 
   const isForexAsset = (asset: any) => isForexPrimusAsset(asset);
   const getFxpReversePayAmount = (receiveAmount: number): number => {
@@ -2070,6 +2081,26 @@ export default function WithdrawalForm({
     return 0; // No minimum for other assets
   };
 
+  const persistSubmitAmountError = useCallback(
+    (message: string) => {
+      const msg = String(message || "").trim();
+      if (!msg) return;
+      submitAmountErrorRef.current = msg;
+      setApiValidationError(msg);
+      setReceiveAmountError(msg);
+      setEstimateLoading(false);
+      setIsCalculating(false);
+      setIsCalculatingReceive(false);
+      if (isHomePage) {
+        setValidationErrors([msg]);
+        showToast.error(msg);
+      } else {
+        setValidationErrors([]);
+      }
+    },
+    [isHomePage]
+  );
+
   // Validate receive amount
   const validateReceiveAmount = (amount: number, asset: any) => {
     const minAmount = getMinimumAmount(asset);
@@ -2087,6 +2118,12 @@ export default function WithdrawalForm({
         estimateTimeoutRef.current = null;
       }
       setEstimateLoading(false);
+      return;
+    }
+    if (submitAmountErrorRef.current) {
+      setEstimateLoading(false);
+      setIsCalculating(false);
+      setIsCalculatingReceive(false);
       return;
     }
     if (estimateTimeoutRef.current) {
@@ -2109,13 +2146,15 @@ export default function WithdrawalForm({
       if (cachedEntry && isCacheValid(cachedEntry.timestamp)) {
         setEstimate(cachedEntry.data);
         setCalculationError(null); // Clear any previous errors
-        setApiValidationError(null);
+        if (!submitAmountErrorRef.current) {
+          setApiValidationError(null);
+        }
         // Don't set any loading states for cached results
         return;
       }
 
       // Set loading state immediately for visual feedback (only if no API validation errors)
-      if (!apiValidationError) {
+      if (!apiValidationError && !submitAmountErrorRef.current) {
         setEstimateLoading(true);
         setEstimateError(null);
         setIsCalculating(true);
@@ -2124,10 +2163,12 @@ export default function WithdrawalForm({
 
       // For non-simple assets, don't show fallback calculation - go directly to API
       // Keep field empty during calculation - no intermediate values
-      setGetAmount(0);
-      setGetAmountInput("");
-      if (!apiValidationError) {
-        setReceiveAmountError("Calculating..."); // Show immediate feedback
+      if (!submitAmountErrorRef.current) {
+        setGetAmount(0);
+        setGetAmountInput("");
+        if (!apiValidationError) {
+          setReceiveAmountError("Calculating..."); // Show immediate feedback
+        }
       }
 
       // Minimal debounce to prevent rapid duplicate requests but keep UI responsive
@@ -2370,13 +2411,17 @@ export default function WithdrawalForm({
             }
             setEstimate(payload);
             setCalculationError(null);
-            setApiValidationError(null);
+            if (!submitAmountErrorRef.current) {
+              setApiValidationError(null);
+            }
             const estimatedAmount = payload?.toAmount ?? payload?.estimated_amount;
             if (estimatedAmount !== undefined && estimatedAmount !== null && !isNaN(estimatedAmount)) {
               const finalAmount = capReceiveAmount(Math.max(0, estimatedAmount));
-              setGetAmount(finalAmount);
-              setGetAmountInput(finalAmount.toString());
-              setReceiveAmountError(null);
+              if (!submitAmountErrorRef.current) {
+                setGetAmount(finalAmount);
+                setGetAmountInput(finalAmount.toString());
+                setReceiveAmountError(null);
+              }
               if (isOtcPopupAsset(selectedAsset) && finalAmount >= MAX_RECEIVE_AMOUNT_USD) {
                 setIsInfoModalOpen(true);
               }
@@ -2423,7 +2468,12 @@ export default function WithdrawalForm({
       setEstimateLoading(false);
       return;
     }
-
+    if (submitAmountErrorRef.current) {
+      setEstimateLoading(false);
+      setIsCalculating(false);
+      setIsCalculatingReceive(false);
+      return;
+    }
 
     if (
       selectedAsset &&
@@ -2468,10 +2518,12 @@ export default function WithdrawalForm({
 
             if (Number.isFinite(requiredUsdtAmount) && requiredUsdtAmount >= 0) {
               // Set the pay amount to the required USDT amount
-              setPayAmount(requiredUsdtAmount);
-              setPayAmountInput(requiredUsdtAmount.toString());
-              setEstimate(payload);
-              setApiValidationError(null);
+              if (!submitAmountErrorRef.current) {
+                setPayAmount(requiredUsdtAmount);
+                setPayAmountInput(requiredUsdtAmount.toString());
+                setEstimate(payload);
+                setApiValidationError(null);
+              }
             }
           }
           // Always clear loading states after this response branch.
@@ -3556,15 +3608,10 @@ export default function WithdrawalForm({
     }
   }, [payAmount, payAmountInput]);
 
-  // Clear validation errors on component unmount
+  // Clear persisted submit error when user changes amount or asset
   useEffect(() => {
-    return () => {
-      setApiValidationError(null);
-      setReceiveAmountError(null);
-      setEstimateError(null);
-      setCalculationError(null);
-    };
-  }, []);
+    submitAmountErrorRef.current = null;
+  }, [payAmount, payAmountInput, selectedAsset?.asset_id, selectedAsset?.ticker, selectedAsset?.network]);
 
   // Validate first card data
   const validateFirstCard = () => {
@@ -3764,15 +3811,11 @@ export default function WithdrawalForm({
         const amountInline =
           resolveExpressAmountInlineError(error) ||
           resolveExpressAmountInlineError(errorMessage);
-        if (amountInline) {
-          setApiValidationError(amountInline);
-          setReceiveAmountError(amountInline);
-          setValidationErrors([]);
-          return;
+        const displayError = (amountInline || errorMessage).trim();
+        persistSubmitAmountError(displayError);
+        if (!isHomePage && !amountInline) {
+          showToast.error(errorMessage);
         }
-
-        showToast.error(errorMessage);
-        setValidationErrors([errorMessage]);
         setIsTransactionSubmitted(false);
       } finally {
         // Always stop loading state
@@ -4090,11 +4133,9 @@ export default function WithdrawalForm({
       const amountInline =
         resolveExpressAmountInlineError(error) ||
         resolveExpressAmountInlineError(errorMessage);
-      if (amountInline) {
-        setApiValidationError(amountInline);
-        setReceiveAmountError(amountInline);
-        setValidationErrors([]);
-      } else {
+      const displayError = (amountInline || errorMessage).trim();
+      persistSubmitAmountError(displayError);
+      if (!isHomePage && !amountInline) {
         showToast.error(errorMessage);
         setValidationErrors([errorMessage]);
       }

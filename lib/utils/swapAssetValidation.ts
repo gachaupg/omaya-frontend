@@ -1,4 +1,5 @@
 import type { SupportedAsset } from "@/features/swap/types";
+import { resolveExpressChangeNowTooSmallMessage } from "@/lib/utils/expressMinAmount";
 
 export const SWAP_SAME_COIN_MESSAGE =
   "You cannot swap a coin to itself. Please select different assets.";
@@ -39,6 +40,9 @@ export function isSameSwapCreateErrorMessage(text: string): boolean {
 }
 
 export function resolveSwapCreateErrorMessage(error: unknown): string | null {
+  const changeNowMsg = resolveExpressChangeNowTooSmallMessage(error);
+  if (changeNowMsg) return changeNowMsg;
+
   if (typeof error === "string" && isSameSwapCreateErrorMessage(error)) {
     return SWAP_SAME_COIN_MESSAGE;
   }
@@ -61,5 +65,5 @@ export function resolveSwapCreateErrorMessage(error: unknown): string | null {
     }
   }
 
-  return null;
+  return resolveExpressChangeNowTooSmallMessage(...candidates);
 }

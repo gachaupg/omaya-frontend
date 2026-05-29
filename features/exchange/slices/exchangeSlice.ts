@@ -16,6 +16,7 @@ import NetworkFallback from "../../../lib/utils/networkFallback";
 import CircuitBreaker from "../../../lib/utils/circuitBreaker";
 import { sliceCache } from "@/lib/utils/sliceCache";
 import { logger } from '@/lib/utils/logger';
+import { normalizeExpressApiErrorMessage } from "@/lib/utils/expressMinAmount";
 
 import {
   Transaction,
@@ -194,10 +195,12 @@ const handleApiError = (error: unknown): string => {
 
   // Always remove "Withdrawal failed: " prefix if present
   if (errorMessage.startsWith("Withdrawal failed: ")) {
-    return errorMessage.replace("Withdrawal failed: ", "");
+    errorMessage = errorMessage.replace("Withdrawal failed: ", "");
   }
 
-  return errorMessage;
+  const responseData =
+    error instanceof AxiosError ? error.response?.data : undefined;
+  return normalizeExpressApiErrorMessage(errorMessage, responseData, error);
 };
 
 const toRelativeApiUrl = (url: string): string => {
