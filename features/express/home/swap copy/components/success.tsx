@@ -265,7 +265,7 @@ const SuccessPage: React.FC<SuccessPageProps> = ({
   
   return (
     <div className="flex flex-col w-full max-w-2xl mx-auto px-4 pt-0 pb-2">
-      <ExpressSuccessHero className="mb-1" />
+      <ExpressSuccessHero variant="swap" className="mb-1" />
 
       {/* Main Content Container */}
       <div
@@ -308,7 +308,7 @@ const SuccessPage: React.FC<SuccessPageProps> = ({
 
           <h3 className={`text-lg font-semibold mb-4 ${
             isDark ? "text-white" : "text-gray-900"
-          }`}>Exchange Summary</h3>
+          }`}>Swap Summary</h3>
           <div className={`border-t border-dashed my-4 ${
             isDark ? "border-gray-600" : "border-gray-300"
           }`}></div>
@@ -387,17 +387,33 @@ const SuccessPage: React.FC<SuccessPageProps> = ({
         transactionId={realData.transactionId}
       />
 
-      {/* Action Buttons */}
       <div className="w-full mt-2 space-y-3">
-       <img 
-         className="w-full" 
-         src={isDark 
-           ? "/assets/Frame_34947_qeutak.png" 
-           : "/assets/Frame_34947_khxqxo.png"
-         } 
-         alt="" 
-       />
-        
+        <div className="w-full rounded-xl bg-[#1D8751] p-4 sm:p-5 flex items-start gap-3 sm:gap-4">
+          <div className="flex-shrink-0 w-10 h-10 sm:w-12 sm:h-12 rounded-full bg-white/20 flex items-center justify-center">
+            <svg
+              className="w-6 h-6 sm:w-7 sm:h-7 text-white"
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2.5}
+                d="M5 13l4 4L19 7"
+              />
+            </svg>
+          </div>
+          <div className="flex-1 min-w-0">
+            <h3 className="text-white font-bold text-base sm:text-lg mb-1">
+              Swap Completed
+            </h3>
+            <p className="text-white/95 text-sm sm:text-base leading-relaxed">
+              Your {formatSwapDisplayTicker(realData.receivedCurrency)} has been sent to your wallet. It may take a few minutes to reflect in your balance.
+            </p>
+          </div>
+        </div>
+
         <div className={`text-center text-xs ${
           isDark ? "text-gray-400" : "text-gray-600"
         }`}>
