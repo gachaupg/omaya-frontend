@@ -8,6 +8,10 @@ import {
   resolvePaymentAccountNumber,
   resolvePaymentProviderName,
 } from "@/features/moneyX/utils/paymentAccount";
+import {
+  resolveExpressReceiveCurrency,
+  resolveExpressSendCurrency,
+} from "../utils/successAmountDisplay";
 const formatDateTimeEastAfrica = (input: Date | number | string): string => {
   const d = input instanceof Date ? input : new Date(input);
   if (Number.isNaN(d.getTime())) return "";
@@ -235,14 +239,8 @@ const SuccessPage: React.FC<SuccessPageProps> = ({
     const isDeposit = transactionData.type === "deposit";
     const isWithdrawal = transactionData.type === "withdrawal";
     
-    // Get currency information with better fallbacks
-    let fromCurrency = transactionData.asset?.ticker || 
-                      transactionData.asset?.symbol || 
-                      transactionData.asset?.name ||
-                      transactionData.currency || 
-                      "USDT";
-    
-    let toCurrency = fromCurrency; // Default to same currency
+    let fromCurrency = resolveExpressSendCurrency(transactionData);
+    let toCurrency = resolveExpressReceiveCurrency(transactionData);
     
     // Override with websocket data if available
     if (websocketData?.data) {
@@ -426,7 +424,7 @@ const SuccessPage: React.FC<SuccessPageProps> = ({
     return {
       transactionId: txId,
       date: transactionDate,
-      paidAmount: `${formatAmount(amount)} ${isDeposit ? 'USD' : ''}`,
+      paidAmount: `${formatAmount(amount)} ${fromCurrency}`,
       paidCurrency: fromCurrency,
       receivedAmount: formatAmount(estimatedAmount),
       receivedCurrency: toCurrency,
@@ -613,7 +611,7 @@ const SuccessPage: React.FC<SuccessPageProps> = ({
                   }`}>You Received</div>
                   <div className="font-bold flex items-center justify-end gap-2" style={{ color: GREEN }}>
                     <span>{realData.netAmount}</span>
-                    <span>{isDeposit ? realData.receivedCurrency : "USD"}</span>
+                    <span>{realData.receivedCurrency}</span>
                   </div>
                 </div>
               </div>

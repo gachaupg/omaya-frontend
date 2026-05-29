@@ -3485,10 +3485,16 @@ export default function DepositForm({
       }
 
       // Prepare transaction data for the status page
+      const receiveCurrency =
+        getCurrencyFromAsset(selectedAsset) || "USDT";
       const transactionData = {
         type: "deposit" as const,
         amount: payAmount,
         receiveAmount: parseFloat(getAmountInput) || getAmount, // From "You Receive" input
+        details: {
+          from_currency: "USD",
+          to_currency: receiveCurrency,
+        },
         asset: {
           ...selectedAsset,
           icon: selectedAsset.image_url || selectedAsset.asset_image || selectedAsset.icon_url || selectedAsset.image
@@ -3778,10 +3784,16 @@ export default function DepositForm({
 
       // Proceed to next page only after successful submission
       if (onExchange) {
+        const receiveCurrency =
+          getCurrencyFromAsset(selectedAsset) || "USDT";
         const transactionData = {
           type: "deposit" as const,
           amount: payAmount,
           receiveAmount: parseFloat(getAmountInput) || getAmount, // From "You Receive" input
+          details: {
+            from_currency: "USD",
+            to_currency: receiveCurrency,
+          },
           asset: {
             ...selectedAsset,
             icon: selectedAsset.image_url || selectedAsset.asset_image || selectedAsset.icon_url || selectedAsset.image
@@ -3906,7 +3918,7 @@ export default function DepositForm({
                 className={`block text-[15px] mb-2 font-semibold flex items-center gap-2 ${isDark ? "text-[#9CA3AF]" : "text-[#475569]"
                   }`}
               >
-                {t("express.youSend", "From")}
+                {t("express.youSend", "You Send")}
                 <div className="w-2 h-2 bg-[#1D8751] rounded-full animate-pulse"></div>
                 {/* {isCalculatingFromPay && (
                   <span className="text-xs text-[#1D8751] font-medium">(Active)</span>
@@ -4203,7 +4215,7 @@ export default function DepositForm({
                 className={`block text-[15px] mb-2 font-semibold flex items-center gap-2 ${isDark ? "text-[#9CA3AF]" : "text-[#475569]"
                   }`}
               >
-                {t("express.youReceive", "To")}
+                {t("express.youReceive", "You Receive")}
                 <div className="w-2 h-2 bg-[#1D8751] rounded-full animate-pulse"></div>
                 {!isCalculatingFromPay && (
                   <span className="text-xs text-[#1D8751] font-medium">{t("express.active", "(Active)")}</span>

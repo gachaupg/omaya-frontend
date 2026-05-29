@@ -24,6 +24,7 @@ import {
   getHighResAssetIcon,
   PAYMENT_LOGO_SIZE,
 } from "@/features/express/utils/imageHelpers";
+import { parseAllowAutoSend } from "@/features/p2p/utils/paymentAutoSend";
 
 const USDT_ICON_SIZE = 64;
 
@@ -55,6 +56,12 @@ const getMethodStatusLabel = (method: PaymentMethod): string => {
   return value.charAt(0).toUpperCase() + value.slice(1);
 };
 
+const AutoSendTag = () => (
+  <span className="inline-flex items-center rounded-full px-2 py-0.5 text-[10px] font-semibold bg-[#1D8751]/15 text-[#1D8751] border border-[#1D8751]/30 dark:bg-[#1D8751]/20 dark:text-[#4ade80] dark:border-[#1D8751]/40">
+    Auto Send
+  </span>
+);
+
 const getMethodStatusClasses = (status: string): string => {
   const key = status.toLowerCase();
   if (key === "approved") {
@@ -65,6 +72,21 @@ const getMethodStatusClasses = (status: string): string => {
   }
   return "bg-amber-100 text-amber-700 dark:bg-amber-500/20 dark:text-amber-300";
 };
+
+const renderStatusCell = (method: PaymentMethod, statusLabel: string) => (
+  <td className="px-4 py-4">
+    <div className="flex flex-wrap items-center gap-2">
+      <span
+        className={`inline-flex items-center rounded-full px-2.5 py-1 text-xs font-semibold ${getMethodStatusClasses(
+          statusLabel
+        )}`}
+      >
+        {statusLabel}
+      </span>
+      {parseAllowAutoSend(method.allow_auto_send) && <AutoSendTag />}
+    </div>
+  </td>
+);
 
 const PaymentMethods = () => {
   /** Local state */
@@ -369,15 +391,7 @@ const PaymentMethods = () => {
         <td className="px-4 py-4 text-sm sm:text-base text-gray-900 dark:text-white font-mono">
           {method?.account_number || '—'}
         </td>
-        <td className="px-4 py-4">
-          <span
-            className={`inline-flex items-center rounded-full px-2.5 py-1 text-xs font-semibold ${getMethodStatusClasses(
-              statusLabel
-            )}`}
-          >
-            {statusLabel}
-          </span>
-        </td>
+        {renderStatusCell(method, statusLabel)}
         <td className="px-4 py-4">
           <div className="flex items-center justify-end gap-2">
             {/* Edit Button */}
@@ -480,15 +494,7 @@ const PaymentMethods = () => {
             "—"
           )}
         </td>
-        <td className="px-4 py-4">
-          <span
-            className={`inline-flex items-center rounded-full px-2.5 py-1 text-xs font-semibold ${getMethodStatusClasses(
-              statusLabel
-            )}`}
-          >
-            {statusLabel}
-          </span>
-        </td>
+        {renderStatusCell(method, statusLabel)}
         <td className="px-4 py-4">
           <div className="flex items-center justify-end gap-2">
             <button
@@ -578,15 +584,7 @@ const PaymentMethods = () => {
         <td className="px-4 py-4 text-sm sm:text-base text-gray-900 dark:text-white font-mono">
           {method?.account_number || '—'}
         </td>
-        <td className="px-4 py-4">
-          <span
-            className={`inline-flex items-center rounded-full px-2.5 py-1 text-xs font-semibold ${getMethodStatusClasses(
-              statusLabel
-            )}`}
-          >
-            {statusLabel}
-          </span>
-        </td>
+        {renderStatusCell(method, statusLabel)}
         <td className="px-4 py-4">
           <div className="flex items-center justify-end gap-2">
             {/* Edit Button */}

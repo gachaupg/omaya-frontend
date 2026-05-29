@@ -4191,7 +4191,7 @@ export default function WithdrawalForm({
                 {/* You Send Section */}
                 <div className="flex-1 min-w-0">
                   <label className="block text-[15px] text-[#475569] dark:text-[#9CA3AF] mb-2 font-semibold flex items-center gap-2">
-                    {t("express.youSend", "From")}
+                    {t("express.youSend", "You Send")}
                     {isCalculatingFromPay &&
                       (isCalculating || isCalculatingReceive) && (
                         <div className="w-2 h-2 bg-[#1D8751] rounded-full animate-pulse"></div>
@@ -4553,7 +4553,7 @@ export default function WithdrawalForm({
                 {/* You Receive Section */}
                 <div className="flex-1 min-w-0">
                   <label className="block text-[15px] text-[#475569] dark:text-[#9CA3AF] mb-2 font-semibold flex items-center gap-2">
-                    {t("express.youReceive", "To")}
+                    {t("express.youReceive", "You Receive")}
                     {!isCalculatingFromPay &&
                       (isCalculating || isCalculatingReceive) && (
                         <div className="w-2 h-2 bg-[#1D8751] rounded-full animate-pulse"></div>

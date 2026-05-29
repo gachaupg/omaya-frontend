@@ -3880,7 +3880,7 @@ const getPaymentRestrictionMessage = (status?: string) =>
               } bg-transparent`}
           >
             <div className="text-sm sm:text-[17px] text-[#7e7e8f] dark:text-[#ffffff] mb-2 font-semibold flex items-center gap-2">
-              {t("rates.youSend", "From")}
+              {t("rates.youSend", "You Send")}
               <div className="w-2 h-2 bg-[#1D8751] rounded-full animate-pulse"></div>
             </div>
 
@@ -4363,7 +4363,7 @@ const getPaymentRestrictionMessage = (status?: string) =>
               } bg-transparent`}
           >
             <div className="text-sm sm:text-[17px] text-[#7e7e8f] dark:text-[#ffffff] mb-2 font-semibold flex items-center gap-2">
-              {t("rates.youGet", "To")}
+              {t("rates.youGet", "You Receive")}
               <div className="w-2 h-2 bg-[#1D8751] rounded-full animate-pulse"></div>
             </div>
 

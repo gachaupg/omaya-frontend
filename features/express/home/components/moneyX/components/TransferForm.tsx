@@ -1053,7 +1053,7 @@ export default function TransferForm({ isHomePage = false, onTransfer, commissio
             {/* Amount Section */}
             <div className="flex-1 min-w-0">
               <label className="block text-sm sm:text-[17px] text-[#7e7e8f] dark:text-[#ffffff] mb-2 font-semibold flex items-center gap-2">
-                {t("express.youSend", "From")}
+                {t("express.youSend", "You Send")}
                 <div className="w-2 h-2 bg-[#1D8751] rounded-full animate-pulse"></div>
               </label>
               <div className={`text-xs mb-1 ${isDark ? "text-[#788099]" : "text-[#64748B]"
@@ -1169,7 +1169,7 @@ export default function TransferForm({ isHomePage = false, onTransfer, commissio
             {/* You Receive Section */}
             <div className="flex-1 min-w-0">
               <label className="block text-sm sm:text-[17px] text-[#7e7e8f] dark:text-[#ffffff] mb-2 font-semibold flex items-center gap-2">
-                {t("express.youReceive", "To")}
+                {t("express.youReceive", "You Receive")}
                 <div className="w-2 h-2 bg-[#1D8751] rounded-full animate-pulse"></div>
               </label>
               <div className={`text-xs mb-1 ${isDark ? "text-[#788099]" : "text-[#64748B]"
