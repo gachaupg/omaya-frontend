@@ -1,3 +1,78 @@
+const assetTicker = (tx: any): string =>
+  String(
+    tx?.asset?.ticker || tx?.asset?.symbol || tx?.asset?.name || ""
+  )
+    .trim()
+    .toUpperCase();
+
+/** Fiat/crypto the user sends on the express status page. */
+export function resolveExpressSendCurrency(
+  tx: any,
+  wsFallback?: string
+): string {
+  const type = String(tx?.type ?? "").toLowerCase();
+  if (type === "deposit") return "USD";
+
+  const fromDetails = String(tx?.details?.from_currency ?? "")
+    .trim()
+    .toUpperCase();
+  const ws = String(wsFallback ?? "")
+    .trim()
+    .toUpperCase();
+  if (fromDetails) return fromDetails;
+  if (ws) return ws;
+  if (type === "withdrawal") return assetTicker(tx) || "USDT";
+  return assetTicker(tx) || "USD";
+}
+
+/** Send currency on status UI; deposits always USD (ignores socket asset ticker). */
+export function resolveExpressStatusSendCurrency(
+  tx: any,
+  liveCurrency?: string | null,
+  wsFallback?: string
+): string {
+  if (String(tx?.type ?? "").toLowerCase() === "deposit") return "USD";
+  const live = String(liveCurrency ?? "")
+    .trim()
+    .toUpperCase();
+  if (live) return live;
+  return resolveExpressSendCurrency(tx, wsFallback);
+}
+
+/** Fiat/crypto the user receives on the express status page. */
+export function resolveExpressReceiveCurrency(
+  tx: any,
+  wsFallback?: string
+): string {
+  const type = String(tx?.type ?? "").toLowerCase();
+  if (type === "withdrawal") return "USD";
+
+  const toDetails = String(tx?.details?.to_currency ?? "")
+    .trim()
+    .toUpperCase();
+  const ws = String(wsFallback ?? "")
+    .trim()
+    .toUpperCase();
+  if (toDetails) return toDetails;
+  if (ws) return ws;
+  if (type === "deposit") return assetTicker(tx) || "USDT";
+  return assetTicker(tx) || "USD";
+}
+
+/** Receive currency on status UI; withdrawals always USD (ignores socket crypto ticker). */
+export function resolveExpressStatusReceiveCurrency(
+  tx: any,
+  liveNetCurrency?: string | null,
+  wsFallback?: string
+): string {
+  if (String(tx?.type ?? "").toLowerCase() === "withdrawal") return "USD";
+  const live = String(liveNetCurrency ?? "")
+    .trim()
+    .toUpperCase();
+  if (live) return live;
+  return resolveExpressReceiveCurrency(tx, wsFallback);
+}
+
 export type ExpressStatusNetDisplayInput = {
   transactionType?: string;
   paidAmount?: number;
@@ -35,6 +110,11 @@ export function resolveExpressStatusNetDisplay(
     amount = Math.max(0, paid - commission);
   }
 
+  const type = String(input.transactionType ?? "").toLowerCase();
+  if (type === "withdrawal") {
+    return { amount, currency: "USD" };
+  }
+
   const live = String(input.liveNetCurrency ?? "")
     .trim()
     .toUpperCase();
@@ -43,7 +123,6 @@ export function resolveExpressStatusNetDisplay(
     .toUpperCase();
 
   let currency = live || to || "USD";
-
   if (input.preferFiatUsd) {
     currency = "USD";
   }
@@ -51,14 +130,19 @@ export function resolveExpressStatusNetDisplay(
   return { amount, currency };
 }
 
-/** Home success page: USD for deposit/withdrawal receive + net rows. */
+/** Home success page receive currency label. */
 export function resolveHomeExpressSuccessReceiveCurrency(
   transactionType: string | undefined,
-  toCurrency: string | undefined
+  toCurrency: string | undefined,
+  tx?: any
 ): string {
+  if (tx) {
+    return resolveExpressReceiveCurrency(tx, toCurrency);
+  }
   const type = String(transactionType ?? "").toLowerCase();
-  if (type === "deposit" || type === "withdrawal") {
-    return "USD";
+  if (type === "withdrawal") return "USD";
+  if (type === "deposit") {
+    return String(toCurrency ?? "USDT").trim().toUpperCase() || "USDT";
   }
   return String(toCurrency ?? "USD").trim().toUpperCase() || "USD";
 }

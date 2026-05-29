@@ -4,7 +4,11 @@ import CopyButton from "@/components/ui/CopyButton";
 import DownloadReceiptButton from "@/components/ui/DownloadReceiptButton";
 import { useTheme } from "@/context/theme";
 import { ExpressSuccessHero } from "@/features/express/components/ExpressSuccessHero";
-import { resolveHomeExpressSuccessReceiveCurrency } from "../../utils/successAmountDisplay";
+import {
+  resolveExpressReceiveCurrency,
+  resolveExpressSendCurrency,
+  resolveHomeExpressSuccessReceiveCurrency,
+} from "../../utils/successAmountDisplay";
 
 const formatDateTimeEastAfrica = (input: Date | number | string): string => {
   const d = input instanceof Date ? input : new Date(input);
@@ -156,14 +160,8 @@ const SuccessPage: React.FC<SuccessPageProps> = ({
     const isDeposit = transactionData.type === "deposit";
     const isWithdrawal = transactionData.type === "withdrawal";
     
-    // Get currency information with better fallbacks
-    let fromCurrency = transactionData.asset?.ticker || 
-                      transactionData.asset?.symbol || 
-                      transactionData.asset?.name ||
-                      transactionData.currency || 
-                      "USDT";
-    
-    let toCurrency = fromCurrency; // Default to same currency
+    let fromCurrency = resolveExpressSendCurrency(transactionData);
+    let toCurrency = resolveExpressReceiveCurrency(transactionData);
     
     // Override with websocket data if available
     if (websocketData?.data) {
@@ -349,13 +347,14 @@ const SuccessPage: React.FC<SuccessPageProps> = ({
     
     const displayReceiveCurrency = resolveHomeExpressSuccessReceiveCurrency(
       transactionData.type,
-      toCurrency
+      toCurrency,
+      transactionData
     );
 
     return {
       transactionId: txId,
       date: transactionDate,
-      paidAmount: `${formatAmount(amount)} ${isDeposit ? 'USD' : ''}`,
+      paidAmount: `${formatAmount(amount)} ${fromCurrency}`,
       paidCurrency: fromCurrency,
       receivedAmount: formatAmount(estimatedAmount),
       receivedCurrency: displayReceiveCurrency,

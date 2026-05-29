@@ -17,6 +17,7 @@ import {
   ChevronUp,
   CreditCard,
   Inbox,
+  Pencil,
   Plus,
   SearchX,
   Wallet,
@@ -34,6 +35,8 @@ import {
 import type { UserWalletAddress } from "@/features/settings/slices/userWalletAddressesSlice";
 import { UserPaymentDetail } from "@/features/p2p/components/ui/p2pdashboard/sections/UserPaymentSelector";
 import PaymentMethodsModal from "@/features/p2p/components/ui/p2pdashboard/sections/PaymentMethodsModal";
+import EditPaymentMethodModal from "@/features/p2p/components/ui/p2pcenter/sections/EditPaymentMethodModal";
+import { parseAllowAutoSend } from "@/features/p2p/utils/paymentAutoSend";
 import AddWalletAddressModal from "./AddWalletAddressModal";
 import { showToast } from "@/lib/utils/toast";
 import CopyButton from "@/components/ui/CopyButton";
@@ -274,6 +277,12 @@ const WalletAddressCard = ({
 
 const ITEMS_PER_PAGE = 5;
 
+const AutoSendTag = () => (
+  <span className="inline-flex items-center rounded-full px-2 py-0.5 text-[10px] sm:text-xs font-semibold bg-[#1D8751]/15 text-[#1D8751] border border-[#1D8751]/30 dark:bg-[#1D8751]/20 dark:text-[#4ade80] dark:border-[#1D8751]/40">
+    Auto Send
+  </span>
+);
+
 const PaymentMethods = () => {
   const router = useRouter();
   const pathname = usePathname();
@@ -306,6 +315,18 @@ const PaymentMethods = () => {
     deleteLoading: userWalletDeleteLoading,
   } = useSelector((state: RootState) => state.userWalletAddresses);
   const [showPaymentModal, setShowPaymentModal] = useState(false);
+  const [editingPaymentMethod, setEditingPaymentMethod] = useState<{
+    id: number | string;
+    account_name: string;
+    account_number: string;
+    wallet_address?: string | null;
+    allow_auto_send?: boolean;
+    payment_method_name?: string;
+    payment_provider_name?: string;
+    provider_name?: string;
+    user_payment_detail_id?: string;
+  } | null>(null);
+  const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [modalFilterProvider, setModalFilterProvider] = useState<string | undefined>();
   const [showAddWalletModal, setShowAddWalletModal] = useState(false);
   const [deletingMethodId, setDeletingMethodId] = useState<string | null>(null);
@@ -553,6 +574,25 @@ const PaymentMethods = () => {
     setShowDeleteConfirm(true);
   };
 
+  const openEditPaymentMethod = (payment: UserPaymentDetail) => {
+    setEditingPaymentMethod({
+      id: payment.id,
+      user_payment_detail_id:
+        (payment as { user_payment_detail_id?: string }).user_payment_detail_id ??
+        String(payment.id),
+      account_name: payment.account_name || "",
+      account_number: payment.account_number || "",
+      wallet_address: payment.wallet_address ?? null,
+      allow_auto_send: parseAllowAutoSend(
+        (payment as { allow_auto_send?: boolean }).allow_auto_send
+      ),
+      payment_method_name: payment.payment_method_name,
+      payment_provider_name: payment.payment_provider_name,
+      provider_name: (payment as { provider_name?: string }).provider_name,
+    });
+    setIsEditModalOpen(true);
+  };
+
   return (
     <div className="p-1 sm:p-2 md:p-4 dark:text-white text-gray-900 w-full">
       {/* Top Header: Two main sections */}
@@ -788,11 +828,9 @@ const PaymentMethods = () => {
                   <div
                     key={payment.id}
                     className={`flex flex-col gap-3 rounded-[28px] border px-4 py-4 ${
-                      isRejected
-                        ? "border-red-200 dark:border-red-900/50 bg-red-50/60 dark:bg-red-950/20 border-l-4 border-l-red-500"
-                        : isPending
-                          ? "border-amber-200 dark:border-amber-900/40 bg-amber-50/40 dark:bg-amber-950/15 border-[#E3E6F0] dark:border-[#2A2A35]"
-                          : "border-[#E3E6F0] dark:border-[#2A2A35] bg-gray-50 dark:bg-[var(--card-color)]"
+                      isPending
+                        ? "border-amber-200 dark:border-amber-900/40 bg-amber-50/40 dark:bg-amber-950/15"
+                        : "border-[#E3E6F0] dark:border-[#2A2A35] bg-gray-50 dark:bg-[var(--card-color)]"
                     }`}
                   >
                     <div className="flex items-start gap-4">
@@ -839,6 +877,9 @@ const PaymentMethods = () => {
                             >
                               {isPending ? "Pending" : isRejected ? "Rejected" : "Approved"}
                             </span>
+                            {parseAllowAutoSend(
+                              (payment as { allow_auto_send?: boolean }).allow_auto_send
+                            ) && <AutoSendTag />}
                           </div>
                           <p className="text-xs text-gray-500 dark:text-[#8B90A5] mt-0.5">
                             {isBankMethod
@@ -852,7 +893,7 @@ const PaymentMethods = () => {
                           ) : null}
                           {isRejected && (
                             <div className="mt-3 space-y-2 max-w-[520px]">
-                              <div className="rounded-xl border border-red-200/80 dark:border-red-800/50 bg-white/70 dark:bg-[#1a1214]/80 px-3 py-2.5">
+                              <div className="rounded-xl border border-[#E3E6F0] dark:border-[#2A2A35] bg-white dark:bg-[var(--card-color)] px-3 py-2.5">
                                 <div className="flex items-start gap-2">
                                   <AlertCircle className="h-4 w-4 shrink-0 text-red-600 dark:text-red-400 mt-0.5" aria-hidden />
                                   <div className="min-w-0 text-left">
@@ -875,46 +916,57 @@ const PaymentMethods = () => {
                             </div>
                           )}
                         </div>
-                        <button
-                          className="text-[#1D8751] hover:text-red-500 transition-colors"
-                          title="Delete"
-                          disabled={deletingMethodId === payment.id.toString()}
-                          onClick={() => handleDeleteMethod(payment.id.toString())}
-                        >
-                          {deletingMethodId === payment.id.toString() ? (
-                            <svg className="animate-spin h-4 w-4" viewBox="0 0 24 24">
-                              <circle
-                                className="opacity-25"
-                                cx="12"
-                                cy="12"
-                                r="10"
-                                stroke="#1D8751"
-                                strokeWidth="4"
+                        <div className="flex items-center gap-1 shrink-0">
+                          <button
+                            type="button"
+                            className="p-2 rounded-full text-[#1D8751] hover:bg-[#1D8751]/10 transition-colors"
+                            title="Edit payment method"
+                            onClick={() => openEditPaymentMethod(payment)}
+                          >
+                            <Pencil className="w-4 h-4" aria-hidden />
+                          </button>
+                          <button
+                            type="button"
+                            className="p-2 rounded-full text-red-500 hover:bg-red-500/10 transition-colors disabled:opacity-50"
+                            title="Delete"
+                            disabled={deletingMethodId === payment.id.toString()}
+                            onClick={() => handleDeleteMethod(payment.id.toString())}
+                          >
+                            {deletingMethodId === payment.id.toString() ? (
+                              <svg className="animate-spin h-4 w-4" viewBox="0 0 24 24">
+                                <circle
+                                  className="opacity-25"
+                                  cx="12"
+                                  cy="12"
+                                  r="10"
+                                  stroke="currentColor"
+                                  strokeWidth="4"
+                                  fill="none"
+                                />
+                                <path
+                                  className="opacity-75"
+                                  fill="currentColor"
+                                  d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z"
+                                />
+                              </svg>
+                            ) : (
+                              <svg
+                                xmlns="http://www.w3.org/2000/svg"
+                                className="w-4 h-4"
                                 fill="none"
-                              />
-                              <path
-                                className="opacity-75"
-                                fill="#1D8751"
-                                d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z"
-                              />
-                            </svg>
-                          ) : (
-                            <svg
-                              xmlns="http://www.w3.org/2000/svg"
-                              className="w-4 h-4 cursor-pointer"
-                              fill="none"
-                              viewBox="0 0 24 24"
-                              stroke="currentColor"
-                            >
-                              <path
-                                strokeLinecap="round"
-                                strokeLinejoin="round"
-                                strokeWidth={2}
-                                d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6M1 7h22M8 7V5a2 2 0 012-2h4a2 2 0 012 2v2"
-                              />
-                            </svg>
-                          )}
-                        </button>
+                                viewBox="0 0 24 24"
+                                stroke="currentColor"
+                              >
+                                <path
+                                  strokeLinecap="round"
+                                  strokeLinejoin="round"
+                                  strokeWidth={2}
+                                  d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6M1 7h22M8 7V5a2 2 0 012-2h4a2 2 0 012 2v2"
+                                />
+                              </svg>
+                            )}
+                          </button>
+                        </div>
                       </div>
                     </div>
                     <div>
@@ -1057,6 +1109,15 @@ const PaymentMethods = () => {
           </div>
         </div>
       )}
+
+      <EditPaymentMethodModal
+        isOpen={isEditModalOpen}
+        onClose={() => {
+          setIsEditModalOpen(false);
+          setEditingPaymentMethod(null);
+        }}
+        paymentMethod={editingPaymentMethod}
+      />
 
       {/* Error Modal */}
       {errorMessage && (

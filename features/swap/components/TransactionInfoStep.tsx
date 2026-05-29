@@ -522,7 +522,7 @@ const TransactionInfoStep: React.FC<TransactionInfoStepProps> = (props) => {
         <div className={`${baseCard} p-4 sm:p-5 md:p-6 lg:p-6 space-y-3 sm:space-y-3 md:space-y-4`} data-swap-card="true">
           <div className="flex flex-col sm:flex-row sm:items-end gap-3 sm:gap-3 md:gap-4">
             <div className="space-y-1 sm:flex-1">
-              <p className={headerCopy}>{t("swap.youSend", "From")}</p>
+              <p className={headerCopy}>{t("swap.youSend", "You Send")}</p>
             </div>
             <p className={`${headerCopy} ml-0 sm:ml-0 sm:flex-1`}>
               {t("swap.asset", "Asset")}
@@ -580,7 +580,7 @@ const TransactionInfoStep: React.FC<TransactionInfoStepProps> = (props) => {
         <div className={`${baseCard} p-3 sm:p-4 md:p-5 lg:p-6 space-y-2 sm:space-y-3 md:space-y-4`} data-swap-card="true">
           <div className="flex flex-col sm:flex-row sm:items-end gap-2 sm:gap-3 md:gap-4">
             <div className="space-y-1 sm:flex-1">
-              <p className={headerCopy}>{t("swap.youReceive", "To")}</p>
+              <p className={headerCopy}>{t("swap.youReceive", "You Receive")}</p>
             </div>
             <p className={`${headerCopy}  ml-4 sm:ml-0 sm:flex-1`}>
               {t("swap.asset", "Asset")}

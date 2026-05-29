@@ -3963,7 +3963,7 @@ export default function WithdrawalForm({
                 {/* You Send Section */}
                 <div className="flex-1 min-w-0">
                   <label className="block text-sm sm:text-[17px] text-[#7e7e8f] dark:text-[#ffffff] mb-2 font-semibold flex items-center gap-2">
-                    From
+                    You Send
                     <div className="w-2 h-2 bg-[#1D8751] rounded-full animate-pulse"></div>
                     {isCalculatingFromPay &&
                       (isCalculating || isCalculatingReceive) && (
@@ -4347,7 +4347,7 @@ export default function WithdrawalForm({
                 {/* You Receive Section */}
                 <div className="flex-1 min-w-0">
                   <label className="block text-sm sm:text-[17px] text-[#7e7e8f] dark:text-[#ffffff] mb-2 font-semibold flex items-center gap-2">
-                    To
+                    You Receive
                     <div className="w-2 h-2 bg-[#1D8751] rounded-full animate-pulse"></div>
                     {!isCalculatingFromPay &&
                       (isCalculating || isCalculatingReceive) && (

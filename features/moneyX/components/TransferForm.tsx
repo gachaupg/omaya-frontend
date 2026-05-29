@@ -1231,7 +1231,7 @@ export default function TransferForm({ onTransfer, initialState, commissionType 
             {/* Amount Section */}
             <div className="flex-1 sm:pr-4">
               <label className="block text-sm sm:text-[17px] text-[#7e7e8f] dark:text-[#ffffff] mb-2 font-semibold flex items-center gap-2">
-                {t("express.youSend", "From")}
+                {t("express.youSend", "You Send")}
                 <div className="w-2 h-2 bg-[#1D8751] rounded-full animate-pulse"></div>
               </label>
               <div className="relative">
@@ -1336,7 +1336,7 @@ export default function TransferForm({ onTransfer, initialState, commissionType 
             {/* You Receive Section */}
             <div className="flex-1 sm:pr-4">
               <label className="block text-sm sm:text-[17px] text-[#7e7e8f] dark:text-[#ffffff] mb-2 font-semibold flex items-center gap-2">
-                {t("express.youReceive", "To")}
+                {t("express.youReceive", "You Receive")}
                 <div className="w-2 h-2 bg-[#1D8751] rounded-full animate-pulse"></div>
                 {!isCalculatingFromPay && (
                   <span className="text-xs text-[#1D8751] font-medium hidden sm:inline">

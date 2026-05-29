@@ -3364,10 +3364,16 @@ export default function DepositForm({
 
       // Prepare transaction data for the status page
       const receiveFromInput = parseFloat(getAmountInput) || getAmount;
+      const receiveCurrency =
+        getCurrencyFromAsset(selectedAsset) || "USDT";
       const transactionData = {
         type: "deposit" as const,
         amount: payAmount,
         receiveAmount: receiveFromInput, // From "You Receive" input
+        details: {
+          from_currency: "USD",
+          to_currency: receiveCurrency,
+        },
         asset: {
           ...selectedAsset,
           icon:
@@ -3634,10 +3640,16 @@ export default function DepositForm({
       // Proceed to next page only after successful submission
       if (onExchange) {
         const receiveFromInput = parseFloat(getAmountInput) || getAmount;
+        const receiveCurrency =
+          getCurrencyFromAsset(selectedAsset) || "USDT";
         const transactionData = {
           type: "deposit" as const,
           amount: payAmount,
           receiveAmount: receiveFromInput, // From "You Receive" input
+          details: {
+            from_currency: "USD",
+            to_currency: receiveCurrency,
+          },
           asset: {
             ...selectedAsset,
             icon:
@@ -3773,7 +3785,7 @@ export default function DepositForm({
             {/* Amount Section */}
             <div className="flex-1 w-full sm:min-w-0">
               <label className="block text-sm sm:text-[17px] text-[#7e7e8f] dark:text-[#ffffff] mb-2 font-semibold flex items-center gap-2">
-                {t("express.youSend", "From")}
+                {t("express.youSend", "You Send")}
                 <div className="w-2 h-2 bg-[#1D8751] rounded-full animate-pulse"></div>
                 {/* {isCalculatingFromPay && (
                   <span className="text-xs text-[#1D8751] font-medium">(Active)</span>
@@ -4216,7 +4228,7 @@ export default function DepositForm({
             {/* You Receive Section */}
             <div className="flex-1 w-full sm:min-w-0">
               <label className="block text-sm sm:text-[17px] text-[#7e7e8f] dark:text-[#ffffff] mb-2 font-semibold flex items-center gap-2">
-                {t("express.youReceive", "To")}
+                {t("express.youReceive", "You Receive")}
                 <div className="w-2 h-2 bg-[#1D8751] rounded-full animate-pulse"></div>
                 {!isCalculatingFromPay && (
                   <span className="text-xs text-[#1D8751] font-medium hidden sm:inline">

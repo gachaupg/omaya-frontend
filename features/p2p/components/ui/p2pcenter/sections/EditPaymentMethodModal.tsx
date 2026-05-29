@@ -419,7 +419,7 @@ const EditPaymentMethodModal: React.FC<EditPaymentMethodModalProps> = ({
                 {!otpSent ? (
                   <Button
                     type="button"
-                    variant="secondary"
+                    variant="primary"
                     disabled={!canSendOtp}
                     onClick={handleSendOtp}
                     className="flex-1 py-3 text-base"
@@ -433,11 +433,11 @@ const EditPaymentMethodModal: React.FC<EditPaymentMethodModalProps> = ({
                 ) : (
                   <Button
                     type="submit"
-                    variant="secondary"
+                    variant="primary"
                     disabled={patchLoading || !otp.trim()}
                     className="flex-1 py-3 text-base"
                   >
-                    {patchLoading ? "Updating..." : "Update"}
+                    {patchLoading ? "Confirming..." : "Confirm"}
                   </Button>
                 )}
               </div>

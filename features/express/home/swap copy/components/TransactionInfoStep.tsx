@@ -406,7 +406,7 @@ const TransactionInfoStep: React.FC<TransactionInfoStepProps> = ({
                 className={`block text-[15px] mb-2 font-semibold flex items-center gap-2 ${isDark ? "text-[#9CA3AF]" : "text-[#475569]"
                   }`}
               >
-                {t("swap.youSend", "From")}
+                {t("swap.youSend", "You Send")}
                 <div className="w-2 h-2 bg-[#1D8751] rounded-full animate-pulse"></div>
               </label>
               <div className={`text-xs mb-1 ${isDark ? "text-[#788099]" : "text-[#64748B]"
@@ -510,7 +510,7 @@ const TransactionInfoStep: React.FC<TransactionInfoStepProps> = ({
                 className={`block text-[15px] mb-2 font-semibold flex items-center gap-2 ${isDark ? "text-[#9CA3AF]" : "text-[#475569]"
                   }`}
               >
-                {t("swap.youReceive", "To")}
+                {t("swap.youReceive", "You Receive")}
                 <div className="w-2 h-2 bg-[#1D8751] rounded-full animate-pulse"></div>
               </label>
               <div className={`text-xs mb-1 ${isDark ? "text-[#788099]" : "text-[#64748B]"
