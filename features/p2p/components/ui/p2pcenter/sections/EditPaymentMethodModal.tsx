@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useMemo } from "react";
 import { X } from "lucide-react";
 import Button from "@/features/p2p/components/Common/Button";
 import Input from "@/features/p2p/components/Common/Input";
@@ -14,6 +14,12 @@ import { useDispatch, useSelector } from "react-redux";
 import { AppDispatch, RootState } from "@/store/rootReducer";
 import { showToast } from "@/lib/utils/toast";
 import { logger } from "@/lib/utils/logger";
+import {
+  isCryptoPaymentMethodForAutoSend,
+  isForexPaymentMethodForAutoSend,
+  parseAllowAutoSend,
+  shouldShowEditAllowAutoSendCheckbox,
+} from "@/features/p2p/utils/paymentAutoSend";
 
 interface EditPaymentMethodModalProps {
   isOpen: boolean;
@@ -37,9 +43,8 @@ const EditPaymentMethodModal: React.FC<EditPaymentMethodModalProps> = ({
   paymentMethod,
 }) => {
   const dispatch = useDispatch<AppDispatch>();
-  const { patchLoading, patchError, patchSuccess } = useSelector(
-    (state: RootState) => state.paymentMethods
-  );
+  const { patchLoading, patchError, patchSuccess, userPaymentDetails } =
+    useSelector((state: RootState) => state.paymentMethods);
 
   const [formData, setFormData] = useState({
     account_name: "",
@@ -61,10 +66,8 @@ const EditPaymentMethodModal: React.FC<EditPaymentMethodModalProps> = ({
   // Initialize form data from props when payment method changes
   useEffect(() => {
     if (paymentMethod) {
-      const isCrypto =
-        paymentMethod.payment_method_name?.toLowerCase().includes("crypto") ||
-        paymentMethod.payment_method_name?.toLowerCase().includes("wallet");
-      const isForex = paymentMethod.payment_method_name?.toLowerCase().includes("forex");
+      const isCrypto = isCryptoPaymentMethodForAutoSend(paymentMethod);
+      const isForex = isForexPaymentMethodForAutoSend(paymentMethod);
       const walletValue = paymentMethod.wallet_address || paymentMethod.account_number || "";
       const accountValue = paymentMethod.account_number || "";
 
@@ -72,7 +75,7 @@ const EditPaymentMethodModal: React.FC<EditPaymentMethodModalProps> = ({
         account_name: paymentMethod.account_name || "",
         account_number: isCrypto || isForex ? walletValue : accountValue,
         wallet_address: isCrypto || isForex ? walletValue : (paymentMethod.wallet_address || ""),
-        allow_auto_send: paymentMethod.allow_auto_send ?? false,
+        allow_auto_send: parseAllowAutoSend(paymentMethod.allow_auto_send),
       });
       dispatch(clearPatchStatus());
     }
@@ -108,6 +111,20 @@ const EditPaymentMethodModal: React.FC<EditPaymentMethodModalProps> = ({
       dispatch(clearPatchStatus());
     }
   }, [patchError, dispatch]);
+
+  const isCryptoMethod = isCryptoPaymentMethodForAutoSend(paymentMethod);
+  const isForexMethod = isForexPaymentMethodForAutoSend(paymentMethod);
+
+  const showAllowAutoSendCheckbox = useMemo(
+    () => shouldShowEditAllowAutoSendCheckbox(paymentMethod, userPaymentDetails),
+    [paymentMethod, userPaymentDetails]
+  );
+
+  useEffect(() => {
+    if (isOpen) {
+      dispatch(fetchUserPaymentDetails() as any);
+    }
+  }, [isOpen, dispatch]);
 
   const handleInputChange = (field: string, value: string | boolean) => {
     setFormData((prev) => ({
@@ -145,11 +162,8 @@ const EditPaymentMethodModal: React.FC<EditPaymentMethodModalProps> = ({
       return;
     }
 
-    const isCryptoMethod =
-      paymentMethod.payment_method_name?.toLowerCase().includes("crypto") ||
-      paymentMethod.payment_method_name?.toLowerCase().includes("wallet");
-    const isForexMethod =
-      paymentMethod.payment_method_name?.toLowerCase().includes("forex");
+    const isCryptoMethod = isCryptoPaymentMethodForAutoSend(paymentMethod);
+    const isForexMethod = isForexPaymentMethodForAutoSend(paymentMethod);
 
     if (!patchId) {
       showToast.error("Payment method ID is required. Please refresh and try again.");
@@ -197,8 +211,8 @@ const EditPaymentMethodModal: React.FC<EditPaymentMethodModalProps> = ({
       updateData.wallet_address = null;
     }
 
-    if (formData.allow_auto_send !== (paymentMethod.allow_auto_send ?? false)) {
-      updateData.allow_auto_send = formData.allow_auto_send;
+    if (showAllowAutoSendCheckbox) {
+      updateData.allow_auto_send = Boolean(formData.allow_auto_send);
     }
 
     try {
@@ -228,12 +242,6 @@ const EditPaymentMethodModal: React.FC<EditPaymentMethodModalProps> = ({
 
   const hasValidOtpId = Boolean(otpPayloadId && otpPayloadId.length > 10);
 
-  const isCryptoMethod =
-    paymentMethod.payment_method_name?.toLowerCase().includes("crypto") ||
-    paymentMethod.payment_method_name?.toLowerCase().includes("wallet");
-  const isForexMethod =
-    paymentMethod.payment_method_name?.toLowerCase().includes("forex");
-
   // Check if account number or wallet address is filled based on payment method type
   const hasAccountOrWallet = isCryptoMethod || isForexMethod
     ? formData.wallet_address.trim().length > 0
@@ -242,25 +250,26 @@ const EditPaymentMethodModal: React.FC<EditPaymentMethodModalProps> = ({
   const canSendOtp = hasValidOtpId && !sendOtpLoading && cooldownRemaining <= 0 && hasAccountOrWallet;
 
   return (
-    <div className="fixed inset-0 bg-black/50 dark:bg-black/70 backdrop-blur-sm flex items-center justify-center z-50 p-4">
-      <div className="bg-white dark:bg-[#1D1D23] rounded-2xl shadow-2xl w-full max-w-md border border-gray-200 dark:border-accent">
-        <>
-            {/* Header */}
-            <div className="flex items-center justify-between p-4 sm:p-6 border-b border-gray-200 dark:border-accent">
-              <h2 className="text-lg sm:text-xl font-semibold text-gray-900 dark:text-white">
-                Edit Payment Method
-              </h2>
-              <button
-                onClick={onClose}
-                disabled={patchLoading}
-                className="p-2 hover:bg-gray-100 dark:hover:bg-[#2A2A2A] rounded-full transition-colors disabled:opacity-50"
-              >
-                <X className="w-5 h-5 text-gray-500 dark:text-gray-400" />
-              </button>
-            </div>
+    <div className="fixed inset-0 z-50 flex items-start sm:items-center justify-center overflow-y-auto bg-black/50 dark:bg-black/70 backdrop-blur-sm p-4 py-6 sm:py-8">
+      <div className="flex w-full max-w-md flex-col max-h-[min(100vh-2rem,720px)] my-auto rounded-2xl border border-gray-200 dark:border-accent bg-white dark:bg-[#1D1D23] shadow-2xl">
+        {/* Header */}
+        <div className="flex shrink-0 items-center justify-between border-b border-gray-200 dark:border-accent p-4 sm:p-6">
+          <h2 className="text-lg sm:text-xl font-semibold text-gray-900 dark:text-white">
+            Edit Payment Method
+          </h2>
+          <button
+            type="button"
+            onClick={onClose}
+            disabled={patchLoading}
+            className="p-2 hover:bg-gray-100 dark:hover:bg-[#2A2A2A] rounded-full transition-colors disabled:opacity-50"
+          >
+            <X className="w-5 h-5 text-gray-500 dark:text-gray-400" />
+          </button>
+        </div>
 
-            {/* Form */}
-            <form onSubmit={handleSubmit} className="p-4 sm:p-6 space-y-4">
+        {/* Scrollable body */}
+        <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain">
+          <form onSubmit={handleSubmit} className="p-4 sm:p-6 space-y-4">
               {!hasValidOtpId && (
                 <div className="p-3 rounded-xl bg-amber-500/10 border border-amber-500/30 text-amber-600 dark:text-amber-400 text-sm">
                   Cannot edit: payment detail UUID is missing for OTP. Please refresh the page.
@@ -337,8 +346,8 @@ const EditPaymentMethodModal: React.FC<EditPaymentMethodModalProps> = ({
                 </div>
               )}
 
-              {/* Allow Auto Send (if applicable) */}
-              {!isCryptoMethod && !isForexMethod && (
+              {/* Allow auto-send: hidden if another account already has it (only one allowed) */}
+              {showAllowAutoSendCheckbox && (
                 <>
                   <style jsx global>{`
                 .terms-checkbox-green:checked {
@@ -348,21 +357,35 @@ const EditPaymentMethodModal: React.FC<EditPaymentMethodModalProps> = ({
                   background-position: center !important;
                 }
               `}</style>
-                  <div className="flex items-center gap-2">
-                    <input
-                      type="checkbox"
-                      id="allow_auto_send"
-                      checked={formData.allow_auto_send}
-                      onChange={(e) => handleInputChange("allow_auto_send", e.target.checked)}
-                      disabled={patchLoading}
-                      className="terms-checkbox-green w-5 h-5 rounded border-2 border-[#1D8751] focus:ring-[#1D8751] appearance-none bg-transparent checked:bg-[#1D8751] checked:border-[#1D8751] shrink-0"
-                    />
-                    <label
-                      htmlFor="allow_auto_send"
-                      className="text-sm font-medium text-gray-700 dark:text-gray-300 cursor-pointer"
-                    >
-                      Allow auto-send
-                    </label>
+                  <div className="rounded-xl border border-[#1D8751]/30 bg-[#1D8751]/5 dark:bg-[#1D8751]/10 p-3 space-y-2">
+                    <div className="flex items-center gap-2">
+                      <input
+                        type="checkbox"
+                        id="allow_auto_send"
+                        checked={Boolean(formData.allow_auto_send)}
+                        onChange={(e) =>
+                          handleInputChange("allow_auto_send", e.target.checked)
+                        }
+                        disabled={patchLoading}
+                        className="terms-checkbox-green w-5 h-5 rounded border-2 border-[#1D8751] focus:ring-[#1D8751] appearance-none bg-transparent checked:bg-[#1D8751] checked:border-[#1D8751] shrink-0"
+                      />
+                      <label
+                        htmlFor="allow_auto_send"
+                        className="text-sm font-medium text-gray-700 dark:text-gray-300 cursor-pointer"
+                      >
+                        Allow auto-send
+                      </label>
+                    </div>
+                    {formData.allow_auto_send ? (
+                      <p className="text-xs text-gray-600 dark:text-gray-400">
+                        Uncheck to turn off automatic transactions for this account.
+                      </p>
+                    ) : (
+                      <p className="text-xs text-gray-600 dark:text-gray-400">
+                        Enable automatic processing for USDT deposits on this account.
+                        Only one payment method can use auto-send at a time.
+                      </p>
+                    )}
                   </div>
                 </>
               )}
@@ -441,8 +464,8 @@ const EditPaymentMethodModal: React.FC<EditPaymentMethodModalProps> = ({
                   </Button>
                 )}
               </div>
-            </form>
-        </>
+          </form>
+        </div>
       </div>
     </div>
   );

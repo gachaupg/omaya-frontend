@@ -43,6 +43,9 @@ import CopyButton from "@/components/ui/CopyButton";
 import QRCode from "qrcode";
 import { getHighResAssetIcon } from "@/features/express/utils/imageHelpers";
 
+const PAYMENT_CARD_BORDER =
+  "border border-[#E3E6F0] dark:border-[#2A2A35] bg-transparent";
+
 const AddressQrImage: React.FC<{ value: string }> = ({ value }) => {
   const [qrDataUrl, setQrDataUrl] = useState<string | null>(null);
   const [hasError, setHasError] = useState(false);
@@ -179,7 +182,7 @@ function SettingsEmptyState({
           : "bg-gray-100 dark:bg-[#23232B] text-gray-500 dark:text-[#8B90A5]";
 
   return (
-    <div className="rounded-2xl border border-dashed border-[#E3E6F0] dark:border-[#2A2A35] bg-gray-50/80 dark:bg-[#14141B]/80 px-6 py-10 text-center">
+    <div className="rounded-2xl border border-dashed border-[#E3E6F0] dark:border-[#2A2A35] bg-transparent px-6 py-10 text-center">
       <div
         className={`mx-auto mb-4 flex h-14 w-14 items-center justify-center rounded-2xl ${toneRing}`}
       >
@@ -212,7 +215,7 @@ const WalletAddressCard = ({
   onDelete: () => void;
   isDeleting: boolean;
 }) => (
-  <div className="flex flex-col gap-3 rounded-[28px] border border-[#E3E6F0] dark:border-[#2A2A35] bg-gray-50 dark:bg-[var(--card-color)] px-4 py-4">
+  <div className={`flex flex-col gap-3 rounded-[28px] px-4 py-4 ${PAYMENT_CARD_BORDER}`}>
     <div className="flex items-start gap-4">
       <div className="relative">
         <span className="w-4 h-4 rounded-full overflow-hidden flex-shrink-0 bg-white dark:bg-[#1F2432]">
@@ -262,7 +265,7 @@ const WalletAddressCard = ({
       <label className="text-xs font-medium text-gray-500 dark:text-[#8B90A5] mb-2 block">
         Wallet address
       </label>
-      <div className="rounded-full border border-[#E3E6F0] dark:border-[#2A2A35] bg-white dark:bg-[var(--card-color)] px-4 py-2 flex items-center gap-2 text-sm">
+      <div className={`rounded-full px-4 py-2 flex items-center gap-2 text-sm ${PAYMENT_CARD_BORDER}`}>
         <input
           type="text"
           readOnly
@@ -278,7 +281,9 @@ const WalletAddressCard = ({
 const ITEMS_PER_PAGE = 5;
 
 const AutoSendTag = () => (
-  <span className="inline-flex items-center rounded-full px-2 py-0.5 text-[10px] sm:text-xs font-semibold bg-[#1D8751]/15 text-[#1D8751] border border-[#1D8751]/30 dark:bg-[#1D8751]/20 dark:text-[#4ade80] dark:border-[#1D8751]/40">
+  <span
+    className={`inline-flex items-center rounded-full px-2 py-0.5 text-[10px] sm:text-xs font-semibold text-[#1D8751] dark:text-[#4ade80] ${PAYMENT_CARD_BORDER}`}
+  >
     Auto Send
   </span>
 );
@@ -356,7 +361,7 @@ const PaymentMethods = () => {
         title: "No pending payment methods",
         description:
           "Accounts you add appear here while our team reviews them. This usually takes a short time.",
-        tone: "warning" as const,
+        tone: "neutral" as const,
       };
     }
     if (bankTab === "rejected") {
@@ -627,7 +632,7 @@ const PaymentMethods = () => {
             Payment Methods
           </p>
         </div>
-        <div className="rounded-[32px] border border-[#20202A] dark:border-[#1E1E27] bg-white dark:bg-[var(--card-color)] p-2 sm:p-3 md:p-4 space-y-3">
+        <div className={`rounded-[32px] p-2 sm:p-3 md:p-4 space-y-3 ${PAYMENT_CARD_BORDER}`}>
           {mainSection === "omaya-wallets" ? (
             <>
               {(p2pAddressesLoading || userWalletAddressesLoading) ? (
@@ -648,12 +653,12 @@ const PaymentMethods = () => {
                         {p2pDepositAddresses.map((addr) => (
                           <div
                             key={addr.id}
-                            className="flex flex-col gap-3 rounded-[28px] border border-[#E3E6F0] dark:border-[#2A2A35] bg-gray-50 dark:bg-[var(--card-color)] px-4 py-4"
+                            className={`flex flex-col gap-3 rounded-[28px] px-4 py-4 ${PAYMENT_CARD_BORDER}`}
                           >
                             <div className="flex items-start justify-between gap-4">
                               <div className="flex items-start gap-4">
                                 <div className="relative">
-                                  <span className="w-4 h-4 rounded-full overflow-hidden flex-shrink-0 bg-white dark:bg-[#1F2432]">
+                                  <span className="w-4 h-4 rounded-full overflow-hidden flex-shrink-0 bg-transparent">
                                     <img
                                       src="/images/tether.svg"
                                       alt="USDT"
@@ -674,7 +679,9 @@ const PaymentMethods = () => {
                                       {addr.network_name || addr.chain}
                                     </span>
                                     {addr.address_type && (
-                                      <span className="inline-flex px-2 py-0.5 rounded-full text-[10px] sm:text-xs font-medium bg-[#1D8751]/15 text-[#1D8751] dark:bg-[#1D8751]/25 dark:text-[#34D399] border border-[#1D8751]/30">
+                                      <span
+                                        className={`inline-flex px-2 py-0.5 rounded-full text-[10px] sm:text-xs font-medium text-[#1D8751] dark:text-[#34D399] ${PAYMENT_CARD_BORDER}`}
+                                      >
                                         {addr.address_type}
                                       </span>
                                     )}
@@ -689,7 +696,9 @@ const PaymentMethods = () => {
                               <label className="text-xs font-medium text-gray-500 dark:text-[#8B90A5] mb-2 block">
                                 Wallet address
                               </label>
-                              <div className="rounded-full border border-[#E3E6F0] dark:border-[#2A2A35] bg-white dark:bg-[var(--card-color)] px-4 py-2 flex items-center gap-2 text-sm">
+                              <div
+                                className={`rounded-full px-4 py-2 flex items-center gap-2 text-sm ${PAYMENT_CARD_BORDER}`}
+                              >
                                 <input
                                   type="text"
                                   readOnly
@@ -769,11 +778,7 @@ const PaymentMethods = () => {
                   Pending
                 </button>
                 <button
-                  className={`px-3 py-1.5 rounded-full border text-xs sm:text-sm font-semibold focus:outline-none transition-colors ${
-                    bankTab === "rejected"
-                      ? "bg-red-600 text-white border-red-600"
-                      : "border-red-300 dark:border-red-800/60 text-red-600 dark:text-red-400 bg-transparent hover:bg-red-50 dark:hover:bg-red-950/30"
-                  }`}
+                  className={`px-3 py-1.5 rounded-full border border-[#1D8751] text-[#1D8751] text-xs sm:text-sm font-semibold focus:outline-none ${bankTab === "rejected" ? "bg-[#1D8751] text-white" : "bg-transparent"}`}
                   onClick={() => setBankTab("rejected")}
                 >
                   Rejected
@@ -827,15 +832,11 @@ const PaymentMethods = () => {
                 return (
                   <div
                     key={payment.id}
-                    className={`flex flex-col gap-3 rounded-[28px] border px-4 py-4 ${
-                      isPending
-                        ? "border-amber-200 dark:border-amber-900/40 bg-amber-50/40 dark:bg-amber-950/15"
-                        : "border-[#E3E6F0] dark:border-[#2A2A35] bg-gray-50 dark:bg-[var(--card-color)]"
-                    }`}
+                    className={`flex flex-col gap-3 rounded-[28px] px-4 py-4 ${PAYMENT_CARD_BORDER}`}
                   >
                     <div className="flex items-start gap-4">
                       <div className="relative">
-                        <span className="overflow-hidden flex-shrink-0 bg-white dark:bg-[#1F2432] rounded-full">
+                        <span className="overflow-hidden flex-shrink-0 bg-transparent rounded-full">
                           <img
                             src={
                               isCryptoWallet(payment)
@@ -843,7 +844,7 @@ const PaymentMethods = () => {
                                 : payment?.provider_logo || "/default-provider-logo.svg"
                             }
                             alt={payment?.payment_provider_name || payment?.payment_method_name}
-                            className={`w-10 h-10 rounded-full object-cover ${isCryptoWallet(payment) ? "object-contain bg-white dark:bg-[#1F2432]" : ""}`}
+                            className={`w-10 h-10 rounded-full object-cover ${isCryptoWallet(payment) ? "object-contain" : ""}`}
                             style={{ display: 'block' }}
                             onError={(e) => {
                               e.currentTarget.src = isCryptoWallet(payment)
@@ -852,9 +853,6 @@ const PaymentMethods = () => {
                             }}
                           />
                         </span>
-                        {isPending && (
-                          <span className="absolute -top-1 -right-1 w-2.5 h-2.5 rounded-full bg-[#FF4D55] border border-white dark:border-[#13131A]" />
-                        )}
                       </div>
                       <div className="flex-1 flex items-center justify-between gap-2">
                         <div>
@@ -867,13 +865,7 @@ const PaymentMethods = () => {
                             </p>
                             {/* account_name intentionally hidden to avoid repetition */}
                             <span
-                              className={`inline-flex px-2 py-0.5 rounded-full text-[10px] sm:text-xs font-semibold capitalize ${
-                                isPending
-                                  ? "bg-amber-100 dark:bg-amber-900/30 text-amber-700 dark:text-amber-400 border border-amber-200 dark:border-amber-800/50"
-                                  : isRejected
-                                  ? "bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-400 border border-red-200 dark:border-red-800/50"
-                                  : "bg-emerald-100 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-400 border border-emerald-200 dark:border-emerald-800/50"
-                              }`}
+                              className={`inline-flex px-2 py-0.5 rounded-full text-[10px] sm:text-xs font-semibold capitalize bg-transparent text-gray-600 dark:text-gray-300 ${PAYMENT_CARD_BORDER}`}
                             >
                               {isPending ? "Pending" : isRejected ? "Rejected" : "Approved"}
                             </span>
@@ -893,7 +885,7 @@ const PaymentMethods = () => {
                           ) : null}
                           {isRejected && (
                             <div className="mt-3 space-y-2 max-w-[520px]">
-                              <div className="rounded-xl border border-[#E3E6F0] dark:border-[#2A2A35] bg-white dark:bg-[var(--card-color)] px-3 py-2.5">
+                              <div className={`rounded-xl px-3 py-2.5 ${PAYMENT_CARD_BORDER}`}>
                                 <div className="flex items-start gap-2">
                                   <AlertCircle className="h-4 w-4 shrink-0 text-red-600 dark:text-red-400 mt-0.5" aria-hidden />
                                   <div className="min-w-0 text-left">
@@ -973,7 +965,9 @@ const PaymentMethods = () => {
                       <label className="text-xs font-medium text-gray-500 dark:text-[#8B90A5] mb-2 block">
                         {inputLabel}
                       </label>
-                      <div className="rounded-full border border-[#E3E6F0] dark:border-[#2A2A35] bg-white dark:bg-[var(--card-color)] px-4 py-2 flex items-center text-sm text-gray-500 dark:text-[#8890A6]">
+                      <div
+                        className={`rounded-full px-4 py-2 flex items-center text-sm text-gray-500 dark:text-[#8890A6] ${PAYMENT_CARD_BORDER}`}
+                      >
                         <input
                           type="text"
                           readOnly

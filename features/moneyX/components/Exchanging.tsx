@@ -1293,6 +1293,7 @@ export default function Exchanging({ transactionData, onBackToTransfer }: Exchan
               value={howToSendDisplay}
               isDark={isDark}
               compact
+              dialOnMobileOnly
               className="w-full md:w-[220px]"
             />
           ) : null}
