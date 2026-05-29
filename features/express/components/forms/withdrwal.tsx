@@ -131,6 +131,11 @@ const extractApiErrorMessage = (error: any, fallback: string): string => {
     if (/request failed with status code 400/i.test(v)) return "";
     return v;
   };
+  const toUserFacingMessage = (message: string): string => {
+    const v = String(message || "").trim();
+    if (!v) return v;
+    return normalizeExpressApiErrorMessage(v, error?.response?.data, error);
+  };
   const toFrozenMessageIfNeeded = (message: string): string => {
     const normalized = message.toLowerCase();
     const isFrozenError =
@@ -147,7 +152,7 @@ const extractApiErrorMessage = (error: any, fallback: string): string => {
 
   const responseData = error?.response?.data;
   if (typeof responseData === "string" && responseData.trim()) {
-    return toFrozenMessageIfNeeded(responseData);
+    return toFrozenMessageIfNeeded(toUserFacingMessage(responseData));
   }
 
   const direct =
@@ -160,25 +165,25 @@ const extractApiErrorMessage = (error: any, fallback: string): string => {
     "";
   const cleanedDirect = cleanMessage(direct);
   if (cleanedDirect) {
-    return toFrozenMessageIfNeeded(cleanedDirect);
+    return toFrozenMessageIfNeeded(toUserFacingMessage(cleanedDirect));
   }
 
   if (typeof error === "string") {
     const cleanedStringError = cleanMessage(error);
     if (cleanedStringError) {
-      return toFrozenMessageIfNeeded(cleanedStringError);
+      return toFrozenMessageIfNeeded(toUserFacingMessage(cleanedStringError));
     }
   }
 
   if (error?.message) {
     const cleanedMessage = cleanMessage(String(error.message));
     if (cleanedMessage) {
-      return toFrozenMessageIfNeeded(cleanedMessage);
+      return toFrozenMessageIfNeeded(toUserFacingMessage(cleanedMessage));
     }
   }
 
   if (typeof direct === "string" && direct.trim()) {
-    return toFrozenMessageIfNeeded(direct);
+    return toFrozenMessageIfNeeded(toUserFacingMessage(direct));
   }
 
   const fieldErrors = responseData?.errors || responseData?.error;
@@ -187,15 +192,19 @@ const extractApiErrorMessage = (error: any, fallback: string): string => {
     if (firstKey) {
       const value = fieldErrors[firstKey];
       if (Array.isArray(value) && value.length > 0) {
-        return toFrozenMessageIfNeeded(`${firstKey}: ${String(value[0])}`);
+        return toFrozenMessageIfNeeded(
+          toUserFacingMessage(`${firstKey}: ${String(value[0])}`)
+        );
       }
       if (typeof value === "string" && value.trim()) {
-        return toFrozenMessageIfNeeded(`${firstKey}: ${value}`);
+        return toFrozenMessageIfNeeded(
+          toUserFacingMessage(`${firstKey}: ${value}`)
+        );
       }
     }
   }
 
-  return fallback;
+  return toUserFacingMessage(fallback);
 };
 
 const isThunkConditionSkipError = (error: unknown): boolean => {

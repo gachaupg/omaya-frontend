@@ -2,6 +2,10 @@ import {
   enforceMoneyXAmountDigitLimit,
   MONEYX_MAX_AMOUNT_INPUT_DIGITS,
 } from "@/lib/utils/moneyXAmountInput";
+import {
+  EXPRESS_CHANGE_NOW_TOO_SMALL_MESSAGE,
+  isChangeNowTransactionTooSmallError,
+} from "@/lib/utils/expressMinAmount";
 
 /** Max digit characters (0–9) in one express amount field, including fractional part. */
 export const EXPRESS_MAX_AMOUNT_INPUT_DIGITS = MONEYX_MAX_AMOUNT_INPUT_DIGITS;
@@ -86,6 +90,9 @@ export function getExpressAmountFieldErrorsFromResponse(
 
 export function resolveExpressAmountInlineError(error: unknown): string | null {
   if (typeof error === "string") {
+    if (isChangeNowTransactionTooSmallError(error)) {
+      return EXPRESS_CHANGE_NOW_TOO_SMALL_MESSAGE;
+    }
     if (isExpressAmountDigitLimitMessage(error)) {
       return EXPRESS_AMOUNT_DIGIT_LIMIT_MESSAGE;
     }
@@ -97,6 +104,16 @@ export function resolveExpressAmountInlineError(error: unknown): string | null {
 
   const responseData =
     (error as { response?: { data?: unknown } })?.response?.data ?? error;
+
+  if (responseData && typeof responseData === "object") {
+    const d = responseData as Record<string, unknown>;
+    const apiError = [d.error, d.message, d.detail, d.details]
+      .filter((v) => typeof v === "string")
+      .map(String);
+    if (apiError.some(isChangeNowTransactionTooSmallError)) {
+      return EXPRESS_CHANGE_NOW_TOO_SMALL_MESSAGE;
+    }
+  }
 
   const fieldErrors = getExpressAmountFieldErrorsFromResponse(responseData);
   if (fieldErrors) {
@@ -112,6 +129,9 @@ export function resolveExpressAmountInlineError(error: unknown): string | null {
 
   if (!msg) return null;
 
+  if (isChangeNowTransactionTooSmallError(msg)) {
+    return EXPRESS_CHANGE_NOW_TOO_SMALL_MESSAGE;
+  }
   if (isExpressAmountDigitLimitMessage(msg)) {
     return EXPRESS_AMOUNT_DIGIT_LIMIT_MESSAGE;
   }

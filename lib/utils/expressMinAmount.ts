@@ -1,5 +1,45 @@
 /** Shared min-amount copy for Express withdrawal/deposit and Rates. */
 
+/** ChangeNOW create-transaction 400 (amount below provider minimum). */
+export const EXPRESS_CHANGE_NOW_TOO_SMALL_MESSAGE =
+  "Amount is too small to complete the transaction.";
+
+export function isChangeNowTransactionTooSmallError(text: unknown): boolean {
+  const s = String(text ?? "").toLowerCase();
+  if (!s) return false;
+  if (isExpressBelowMinAmountError(s)) return true;
+
+  const mentionsChangeNow =
+    s.includes("changenow") || s.includes("changenow.io");
+  const mentionsCreateFailure =
+    s.includes("failed to create transaction") ||
+    s.includes("error processing withdrawal");
+  const mentionsBadRequest =
+    s.includes("400") ||
+    s.includes("bad request") ||
+    s.includes("client error");
+
+  if (
+    mentionsCreateFailure &&
+    mentionsBadRequest &&
+    (mentionsChangeNow || s.includes("/v2/exchange"))
+  ) {
+    return true;
+  }
+
+  return false;
+}
+
+export function resolveExpressChangeNowTooSmallMessage(
+  ...sources: unknown[]
+): string | null {
+  const texts = collectErrorTextCandidates(...sources);
+  if (texts.some(isChangeNowTransactionTooSmallError)) {
+    return EXPRESS_CHANGE_NOW_TOO_SMALL_MESSAGE;
+  }
+  return null;
+}
+
 export function isExpressBelowMinAmountError(text: unknown): boolean {
   return /deposit_too_small|too_small|below minimum|out of min amount/i.test(
     String(text ?? "")
@@ -137,6 +177,9 @@ function collectErrorTextCandidates(...sources: unknown[]): string[] {
 export function resolveExpressMinAmountDisplayError(
   ...sources: unknown[]
 ): string | null {
+  const changeNowMsg = resolveExpressChangeNowTooSmallMessage(...sources);
+  if (changeNowMsg) return changeNowMsg;
+
   const texts = collectErrorTextCandidates(...sources);
   if (!texts.some(isExpressBelowMinAmountError)) return null;
   const payloads = collectErrorPayloads(...sources);

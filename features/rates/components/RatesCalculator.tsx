@@ -45,6 +45,8 @@ import {
 import { useRatesI18n } from "@/lib/useRatesI18n";
 import { FaSearch } from "react-icons/fa";
 import { showToast } from "@/lib/utils/toast";
+import { resolveExpressAmountInlineError } from "@/lib/utils/expressAmountValidation";
+import { normalizeExpressApiErrorMessage } from "@/lib/utils/expressMinAmount";
 import { openKYCModal, checkKYCStatus } from "@/features/auth/slices/authSlice";
 import { useTheme } from "@/context/theme";
 import MoneyXRates from "./MoneyXRates";
@@ -150,8 +152,15 @@ const extractApiErrorMessage = (error: any, fallback: string): string => {
     if (isAxiosGenericStatusMessage(v)) return "";
     return v;
   };
+  const toUserFacingMessage = (message: string): string => {
+    const v = String(message || "").trim();
+    if (!v) return v;
+    return normalizeExpressApiErrorMessage(v, error?.response?.data, error);
+  };
   const responseData = error?.response?.data;
-  if (typeof responseData === "string" && responseData.trim()) return responseData;
+  if (typeof responseData === "string" && responseData.trim()) {
+    return toUserFacingMessage(responseData);
+  }
 
   const direct =
     responseData?.message ||
@@ -162,7 +171,7 @@ const extractApiErrorMessage = (error: any, fallback: string): string => {
     responseData?.detail ||
     "";
   const cleanedDirect = cleanMessage(direct);
-  if (cleanedDirect) return cleanedDirect;
+  if (cleanedDirect) return toUserFacingMessage(cleanedDirect);
 
   const fieldErrors = responseData?.errors || responseData?.error;
   if (fieldErrors && typeof fieldErrors === "object" && !Array.isArray(fieldErrors)) {
@@ -170,23 +179,23 @@ const extractApiErrorMessage = (error: any, fallback: string): string => {
     if (firstKey) {
       const value = fieldErrors[firstKey];
       if (Array.isArray(value) && value.length > 0) {
-        return `${firstKey}: ${String(value[0])}`;
+        return toUserFacingMessage(`${firstKey}: ${String(value[0])}`);
       }
       if (typeof value === "string" && value.trim()) {
-        return `${firstKey}: ${value}`;
+        return toUserFacingMessage(`${firstKey}: ${value}`);
       }
     }
   }
 
   if (typeof error === "string") {
     const cleanedStringError = cleanMessage(error);
-    if (cleanedStringError) return cleanedStringError;
+    if (cleanedStringError) return toUserFacingMessage(cleanedStringError);
   }
   if (error?.message && String(error.message).trim()) {
     const cleanedMessage = cleanMessage(String(error.message));
-    if (cleanedMessage) return cleanedMessage;
+    if (cleanedMessage) return toUserFacingMessage(cleanedMessage);
   }
-  return fallback;
+  return toUserFacingMessage(fallback);
 };
 
 // Helper function to get network value from asset (handles both Asset and SupportedAsset types)
@@ -3613,6 +3622,14 @@ const getPaymentRestrictionMessage = (status?: string) =>
         error,
         "Failed to submit transaction. Please try again."
       );
+
+      const amountInline =
+        resolveExpressAmountInlineError(error) ||
+        resolveExpressAmountInlineError(errorMessage);
+      if (amountInline) {
+        showToast.error(amountInline);
+        return;
+      }
 
       // Check if error is about account verification - show KYC modal instead of toast
       const isVerificationError =
