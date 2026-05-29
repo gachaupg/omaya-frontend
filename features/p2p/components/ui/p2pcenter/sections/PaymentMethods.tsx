@@ -359,6 +359,14 @@ const PaymentMethods = () => {
     }
   }, [postError]);
 
+  const openEditPaymentMethod = useCallback((method: PaymentMethod) => {
+    setEditingPaymentMethod({
+      ...method,
+      allow_auto_send: parseAllowAutoSend(method.allow_auto_send),
+    });
+    setIsEditModalOpen(true);
+  }, []);
+
   /** Render helpers */
   const renderPaymentMethod = (method: PaymentMethod) => {
     // Safety check - return null if method is invalid
@@ -396,10 +404,7 @@ const PaymentMethods = () => {
           <div className="flex items-center justify-end gap-2">
             {/* Edit Button */}
             <button
-              onClick={() => {
-                setEditingPaymentMethod(method);
-                setIsEditModalOpen(true);
-              }}
+              onClick={() => openEditPaymentMethod(method)}
               className="p-2 hover:bg-gray-100 dark:hover:bg-[#2A2A2A] rounded-full transition-colors"
               title="Edit"
             >
@@ -498,10 +503,7 @@ const PaymentMethods = () => {
         <td className="px-4 py-4">
           <div className="flex items-center justify-end gap-2">
             <button
-              onClick={() => {
-                setEditingPaymentMethod(method);
-                setIsEditModalOpen(true);
-              }}
+              onClick={() => openEditPaymentMethod(method)}
               className="p-2 hover:bg-gray-100 dark:hover:bg-[#2A2A2A] rounded-full transition-colors"
               title="Edit"
               type="button"
@@ -589,10 +591,7 @@ const PaymentMethods = () => {
           <div className="flex items-center justify-end gap-2">
             {/* Edit Button */}
             <button
-              onClick={() => {
-                setEditingPaymentMethod(method);
-                setIsEditModalOpen(true);
-              }}
+              onClick={() => openEditPaymentMethod(method)}
               className="p-2 hover:bg-gray-100 dark:hover:bg-[#2A2A2A] rounded-full transition-colors"
               title="Edit"
             >

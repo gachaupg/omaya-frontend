@@ -17,6 +17,77 @@ export function findAutoSendPaymentDetail(
   return (match as Record<string, unknown>) ?? null;
 }
 
+type PaymentDetailRef = {
+  id?: number | string;
+  user_payment_detail_id?: string;
+};
+
+export function paymentDetailKeysMatch(
+  a: PaymentDetailRef | null | undefined,
+  b: PaymentDetailRef | null | undefined
+): boolean {
+  if (!a || !b) return false;
+  const aUuid = String(a.user_payment_detail_id ?? "").trim();
+  const bUuid = String(b.user_payment_detail_id ?? "").trim();
+  if (aUuid && bUuid && aUuid === bUuid) return true;
+  const aId = String(a.id ?? "").trim();
+  const bId = String(b.id ?? "").trim();
+  return Boolean(aId && bId && aId === bId);
+}
+
+/** True when the row being edited is the account that currently has auto-send enabled. */
+export function isEditingAutoSendPaymentDetail(
+  editing: PaymentDetailRef | null | undefined,
+  allDetails: unknown
+): boolean {
+  const holder = findAutoSendPaymentDetail(allDetails);
+  if (!holder || !editing) return false;
+  return paymentDetailKeysMatch(editing, holder as PaymentDetailRef);
+}
+
+type PaymentMethodShape = PaymentDetailRef & {
+  payment_method_name?: string;
+  payment_provider_name?: string;
+  wallet_address?: string | null;
+};
+
+/** Crypto on-chain wallets — auto-send applies to fiat/bank/mobile rails only. */
+export function isCryptoPaymentMethodForAutoSend(
+  method: PaymentMethodShape | null | undefined
+): boolean {
+  if (!method) return false;
+  const pm = String(method.payment_method_name || "").toLowerCase();
+  if (pm.includes("crypto")) return true;
+  const prov = String(method.payment_provider_name || "").toLowerCase();
+  if (/\b(bsc|bep20|usdt|trc20|tron|erc20|polygon|metamask|tether)\b/.test(prov)) {
+    const wa = String(method.wallet_address || "").trim();
+    if (wa.startsWith("0x") || wa.length >= 26) return true;
+  }
+  return false;
+}
+
+export function isForexPaymentMethodForAutoSend(
+  method: PaymentMethodShape | null | undefined
+): boolean {
+  if (!method) return false;
+  return String(method.payment_method_name || "").toLowerCase().includes("forex");
+}
+
+/**
+ * Edit modal: show allow_auto_send when no account has it (all bank/mobile methods),
+ * or when editing the account that currently has it (can disable).
+ */
+export function shouldShowEditAllowAutoSendCheckbox(
+  editing: PaymentMethodShape | null | undefined,
+  allDetails: unknown
+): boolean {
+  if (!editing) return false;
+  if (isCryptoPaymentMethodForAutoSend(editing)) return false;
+  if (isForexPaymentMethodForAutoSend(editing)) return false;
+  if (!findAutoSendPaymentDetail(allDetails)) return true;
+  return isEditingAutoSendPaymentDetail(editing, allDetails);
+}
+
 export function maskPaymentIdentifier(value: string): string {
   const v = String(value || "").trim();
   if (!v) return "";
