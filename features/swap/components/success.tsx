@@ -1,7 +1,8 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { FaCheckCircle } from "react-icons/fa";
 import { useRouter } from "next/navigation";
 import CopyButton from "@/components/ui/CopyButton";
+import DownloadReceiptButton from "@/components/ui/DownloadReceiptButton";
 import { useTheme } from "@/context/theme";
 import { formatSwapDisplayTicker } from "../utils/swapDisplayFormat";
 
@@ -92,6 +93,7 @@ const SuccessPage: React.FC<SuccessPageProps> = ({
   const router = useRouter();
   const { isDark, isLight } = useTheme();
   const [formattedDate, setFormattedDate] = useState<string>("");
+  const receiptRef = useRef<HTMLDivElement>(null);
 
   // Extract real data from transactionData and websocketData if available
   const getRealData = () => {
@@ -284,7 +286,9 @@ const SuccessPage: React.FC<SuccessPageProps> = ({
       </div>
 
       {/* Main Content Container */}
-      <div className={`w-full rounded-[18px] shadow-xl border-2 ${
+      <div
+        ref={receiptRef}
+        className={`w-full rounded-[18px] shadow-xl border-2 ${
         isDark 
           ? "bg-[var(--card-color)] border-[#35353E]" 
           : "bg-white border-gray-200"
@@ -394,6 +398,12 @@ const SuccessPage: React.FC<SuccessPageProps> = ({
           </div>
         </div>
       </div>
+
+      <DownloadReceiptButton
+        receiptRef={receiptRef}
+        fileNamePrefix="OMAYA_Swap_Receipt"
+        transactionId={realData.transactionId}
+      />
 
       {/* Action Buttons */}
       <div className="w-full mt-2 space-y-3">
