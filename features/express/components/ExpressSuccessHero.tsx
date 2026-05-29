@@ -8,7 +8,7 @@ const SUCCESS_GREEN = "#1D8751";
 type ExpressSuccessHeroProps = {
   message?: string;
   className?: string;
-  variant?: "exchange" | "moneyx";
+  variant?: "exchange" | "moneyx" | "swap";
 };
 
 /** Code-based success header (replaces success PNG assets). */
@@ -20,7 +20,9 @@ export function ExpressSuccessHero({
   const defaultMessage =
     variant === "moneyx"
       ? "Your MoneyX transfer has been completed successfully"
-      : "Your Exchange has been completed successfully";
+      : variant === "swap"
+        ? "Your swap has been completed successfully"
+        : "Your Exchange has been completed successfully";
   const heroMessage = message ?? defaultMessage;
   return (
     <div
@@ -80,6 +82,11 @@ export function ExpressSuccessHero({
               {" "}
               Successful!
             </span>
+          </>
+        ) : variant === "swap" ? (
+          <>
+            <span className="text-gray-900 dark:text-white">SWAP </span>
+            <span style={{ color: SUCCESS_GREEN }}>Successful!</span>
           </>
         ) : (
           <>

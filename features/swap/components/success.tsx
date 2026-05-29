@@ -1,9 +1,8 @@
 import React, { useState, useEffect, useRef } from "react";
-import { FaCheckCircle } from "react-icons/fa";
-import { useRouter } from "next/navigation";
 import CopyButton from "@/components/ui/CopyButton";
 import DownloadReceiptButton from "@/components/ui/DownloadReceiptButton";
 import { useTheme } from "@/context/theme";
+import { ExpressSuccessHero } from "@/features/express/components/ExpressSuccessHero";
 import { formatSwapDisplayTicker } from "../utils/swapDisplayFormat";
 
 const formatDateTimeEastAfrica = (input: Date | number | string): string => {
@@ -20,7 +19,7 @@ const GREEN = "#309A64";
 
 interface SuccessPageProps {
   transactionData?: {
-    type?: "swap"; // This success page is specifically for swap transactions
+    type?: "swap";
     amount?: number;
     asset?: any;
     network?: any;
@@ -43,6 +42,7 @@ interface SuccessPageProps {
   };
   websocketData?: {
     type: "status_update" | "final_status";
+    timestamp?: string;
     data: {
       id?: string;
       status?: string;
@@ -63,7 +63,6 @@ interface SuccessPageProps {
       [key: string]: any;
     };
   };
-  // Fallback props for backward compatibility
   transactionId?: string;
   date?: string;
   paidAmount?: string | number;
@@ -90,17 +89,15 @@ const SuccessPage: React.FC<SuccessPageProps> = ({
   transactionHash = "0x96ba940eec77c56e7a2806c5c269410303dce20cc2226ca1439659037940ce5b",
   netAmount = ".99",
 }) => {
-  const router = useRouter();
-  const { isDark, isLight } = useTheme();
+  const { isDark } = useTheme();
   const [formattedDate, setFormattedDate] = useState<string>("");
   const receiptRef = useRef<HTMLDivElement>(null);
 
-  // Extract real data from transactionData and websocketData if available
   const getRealData = () => {
     if (!transactionData) {
       return {
         transactionId,
-        date: new Date().toLocaleString(),
+        date: new Date().toISOString(),
         paidAmount,
         paidCurrency,
         receivedAmount,
@@ -112,111 +109,79 @@ const SuccessPage: React.FC<SuccessPageProps> = ({
       };
     }
 
-    // This is a swap transaction, not deposit/withdrawal
-    const isSwap = true;
-    
-    // Get currency information with better fallbacks
-    let currency = transactionData.asset?.ticker || 
-                  transactionData.asset?.symbol || 
-                  transactionData.asset?.name ||
-                  transactionData.currency || 
-                  "USDT";
-    
-    // Override with websocket data if available - new format
+    let currency =
+      transactionData.asset?.ticker ||
+      transactionData.asset?.symbol ||
+      transactionData.asset?.name ||
+      transactionData.currency ||
+      "USDT";
+
     if (websocketData?.data?.from_currency) {
       currency = websocketData.data.from_currency.toUpperCase();
     } else if (websocketData?.data?.fromCurrency) {
       currency = websocketData.data.fromCurrency.toUpperCase();
     }
-    
-    // Check for deposit-specific currency from websocket data
+
     if (websocketData?.data?.currency) {
       currency = websocketData.data.currency.toUpperCase();
     }
-    
-    // Check for withdrawal completion currency
-    if (websocketData?.data?.status === "completed" && websocketData?.data?.currency) {
-      currency = websocketData.data.currency.toUpperCase();
-    }
-    
-    const network = transactionData.network?.network_type || 
-                   transactionData.network?.network_id || 
-                   transactionData.network?.name ||
-                   "Unknown";
-    
-    // For swaps, we don't need payment methods like deposits/withdrawals
-    // The payment method is just the network/currency being swapped
-    
-    // Get amounts with websocket data priority
+
     let amount = transactionData.amount || 0;
-    let estimatedAmount = transactionData.details?.estimated_amount || 
-                         transactionData.totalAmountDue || 
-                         amount;
-    
-    // If amount is null/0, try to get it from websocket data
+    let estimatedAmount =
+      transactionData.details?.estimated_amount ||
+      transactionData.totalAmountDue ||
+      amount;
+
     if (!amount && websocketData?.data?.amount_from) {
       amount = parseFloat(websocketData.data.amount_from);
     }
-    
-          // Use websocket data for amounts if available
-      if (websocketData?.data) {
-        const wsData = websocketData.data;
-        
-        // Check if this is a direct use flow (first two assets) or ChangeNow flow
-        const isDirectFlow = !wsData.from_currency || !wsData.to_currency || 
-                            wsData.from_currency === wsData.to_currency ||
-                            (wsData.amount && wsData.net_amount && !wsData.amount_from && !wsData.amount_to);
-        
-        if (isDirectFlow) {
-          // Direct use flow: use 'amount' for both paid and received amounts
-          // For direct flow: "You Paid" = amount, "You Received" = amount (not net_amount)
-          if (wsData.amount !== null && wsData.amount !== undefined) {
-            amount = parseFloat(wsData.amount);
-            estimatedAmount = parseFloat(wsData.amount); // "You Received" should be amount, not net_amount
-          }
-        } else {
-          // ChangeNow flow: use amount_from, amount_to, etc.
-          // Use amount_from for paid amount (what user sent) - new websocket format
-          if (wsData.amount_from !== null && wsData.amount_from !== undefined) {
-            amount = parseFloat(wsData.amount_from);
-          } else if (wsData.amountFrom !== null && wsData.amountFrom !== undefined) {
-            amount = wsData.amountFrom;
-          } else if (wsData.expectedAmountFrom !== null && wsData.expectedAmountFrom !== undefined) {
-            amount = wsData.expectedAmountFrom;
-          }
-          
-          // Use amount_to for received amount (what user gets) - new websocket format
-          if (wsData.amount_to !== null && wsData.amount_to !== undefined) {
-            estimatedAmount = parseFloat(wsData.amount_to);
-          } else if (wsData.amountTo !== null && wsData.amountTo !== undefined) {
-            estimatedAmount = wsData.amountTo;
-          } else if (wsData.expectedAmountTo !== null && wsData.expectedAmountTo !== undefined) {
-            estimatedAmount = wsData.expectedAmountTo;
-          }
+
+    if (websocketData?.data) {
+      const wsData = websocketData.data;
+      const isDirectFlow =
+        !wsData.from_currency ||
+        !wsData.to_currency ||
+        wsData.from_currency === wsData.to_currency ||
+        (wsData.amount && wsData.net_amount && !wsData.amount_from && !wsData.amount_to);
+
+      if (isDirectFlow) {
+        if (wsData.amount !== null && wsData.amount !== undefined) {
+          amount = parseFloat(wsData.amount);
+          estimatedAmount = parseFloat(wsData.amount);
+        }
+      } else {
+        if (wsData.amount_from !== null && wsData.amount_from !== undefined) {
+          amount = parseFloat(wsData.amount_from);
+        } else if (wsData.amountFrom !== null && wsData.amountFrom !== undefined) {
+          amount = wsData.amountFrom;
+        } else if (wsData.expectedAmountFrom !== null && wsData.expectedAmountFrom !== undefined) {
+          amount = wsData.expectedAmountFrom;
+        }
+
+        if (wsData.amount_to !== null && wsData.amount_to !== undefined) {
+          estimatedAmount = parseFloat(wsData.amount_to);
+        } else if (wsData.amountTo !== null && wsData.amountTo !== undefined) {
+          estimatedAmount = wsData.amountTo;
+        } else if (wsData.expectedAmountTo !== null && wsData.expectedAmountTo !== undefined) {
+          estimatedAmount = wsData.expectedAmountTo;
         }
       }
-    
-    // Get transaction hash/ID with websocket data priority
-    let txId = transactionData.transactionId || 
-              transactionData.details?.changenow_id ||
-              "N/A";
-    
-    // Use websocket ID if available - new format
+    }
+
+    let txId =
+      transactionData.transactionId ||
+      transactionData.details?.changenow_id ||
+      "N/A";
+
     if (websocketData?.data?.swap_id) {
       txId = websocketData.data.swap_id;
     } else if (websocketData?.data?.id) {
       txId = websocketData.data.id;
-    }
-    
-    // Check for transaction_id from new deposit format
-    if (websocketData?.data?.transaction_id) {
+    } else if (websocketData?.data?.transaction_id) {
       txId = websocketData.data.transaction_id;
     }
-    
-    // Get transaction hash from websocket data
+
     let txHash = txId;
-    
-    // Check for transaction_hash from withdrawal completion (highest priority) - new format
     if (websocketData?.data?.payout_hash) {
       txHash = websocketData.data.payout_hash;
     } else if (websocketData?.data?.payin_hash) {
@@ -230,169 +195,226 @@ const SuccessPage: React.FC<SuccessPageProps> = ({
     } else if (websocketData?.data?.payoutHash) {
       txHash = websocketData.data.payoutHash;
     }
-    
-    // Format amounts properly
+
     const formatAmount = (amt: number | string) => {
-      const num = typeof amt === 'string' ? parseFloat(amt) : amt;
-      return isNaN(num) ? "0" : num.toFixed(8).replace(/\.?0+$/, '');
+      const num = typeof amt === "string" ? parseFloat(amt) : amt;
+      return Number.isNaN(num) ? "0" : num.toFixed(8).replace(/\.?0+$/, "");
     };
-    
-    // Get currencies from websocket data if available
-    const fromCurrency = websocketData?.data?.from_currency || websocketData?.data?.fromCurrency || currency;
-    const toCurrency = websocketData?.data?.to_currency || websocketData?.data?.toCurrency || currency;
-    
+
+    const fromCurrency =
+      websocketData?.data?.from_currency ||
+      websocketData?.data?.fromCurrency ||
+      currency;
+    const toCurrency =
+      websocketData?.data?.to_currency ||
+      websocketData?.data?.toCurrency ||
+      currency;
+
+    let transactionDate = new Date().toISOString();
+    if (websocketData?.timestamp) {
+      transactionDate = websocketData.timestamp;
+    } else if (websocketData?.data?.updatedAt) {
+      transactionDate = websocketData.data.updatedAt;
+    } else if (websocketData?.data?.createdAt) {
+      transactionDate = websocketData.data.createdAt;
+    }
+
     return {
       transactionId: txId,
-      date: new Date().toLocaleString(), // Always use current date and time
+      date: transactionDate,
       paidAmount: `${formatAmount(amount)} ${fromCurrency.toUpperCase()}`,
       paidCurrency: fromCurrency.toUpperCase(),
       receivedAmount: formatAmount(estimatedAmount),
       receivedCurrency: toCurrency.toUpperCase(),
-      payinMethod: `${fromCurrency.toUpperCase()} Network`,
-      payoutMethod: `${toCurrency.toUpperCase()} Network`,
+      payinMethod: `${formatSwapDisplayTicker(fromCurrency)} Network`,
+      payoutMethod: `${formatSwapDisplayTicker(toCurrency)} Network`,
       transactionHash: txHash,
       netAmount: formatAmount(estimatedAmount),
     };
   };
 
   const realData = getRealData();
-  
-  // This is a swap transaction
-  const isSwap = true;
+  const receivedTicker = formatSwapDisplayTicker(realData.receivedCurrency);
 
-  // Always use current date and time in EAT (client-side only)
   useEffect(() => {
-    setFormattedDate(formatDateTimeEastAfrica(new Date()));
-    
-    const interval = setInterval(() => {
+    try {
+      const dateObj = new Date(realData.date);
+      if (!Number.isNaN(dateObj.getTime())) {
+        setFormattedDate(formatDateTimeEastAfrica(dateObj));
+      } else {
+        setFormattedDate(formatDateTimeEastAfrica(new Date()));
+      }
+    } catch {
       setFormattedDate(formatDateTimeEastAfrica(new Date()));
-    }, 1000);
-    
-    return () => clearInterval(interval);
-  }, []);
-  
-  return (
-    <div className="flex flex-col mt-1 w-full max-w-2xl mx-auto px-3 sm:px-4">
-      {/* Success Image */}
-      <div className="flex flex-col w-full items-center mb-4">
-        <img 
-          className="w-full max-w-80 h-auto object-contain" 
-          src={isDark 
-            ? "/assets/Screenshot_2025-08-29_191548_two36s.png" 
-            : "/assets/success_wdhc19.png"
-          } 
-          alt="Success" 
-        />
-      </div>
+    }
+  }, [realData.date]);
 
-      {/* Main Content Container */}
+  return (
+    <div className="flex flex-col w-full max-w-2xl mx-auto px-3 sm:px-4 pt-0 pb-2">
+      <ExpressSuccessHero variant="swap" className="mb-1" />
+
       <div
         ref={receiptRef}
         className={`w-full rounded-[18px] shadow-xl border-2 ${
-        isDark 
-          ? "bg-[var(--card-color)] border-[#35353E]" 
-          : "bg-white border-gray-200"
-      }`}>
-        {/* Transaction Details Section */}
-        <div className="p-4 sm:p-6">
-          <h2 className={`text-base sm:text-lg font-semibold ${
-            isDark ? "text-white" : "text-gray-900"
-          }`}>Transaction Details</h2>
-          <div className="flex flex-col sm:flex-row sm:justify-between gap-2 sm:gap-0 text-xs sm:text-sm">
-            <div>
-              <div className={`${
-                isDark ? "text-gray-400" : "text-gray-600"
-              }`}>Transaction ID</div>
-              <div className={`font-mono break-all ${
-                isDark ? "text-white" : "text-gray-900"
-              }`}>{realData.transactionId}</div>
+          isDark
+            ? "bg-[var(--card-color)] border-[#35353E]"
+            : "bg-white border-gray-200"
+        }`}
+      >
+        <div className="p-6">
+          <h2
+            className={`text-lg font-semibold ${
+              isDark ? "text-white" : "text-gray-900"
+            }`}
+          >
+            Transaction Details
+          </h2>
+          <div className="flex flex-col sm:flex-row sm:justify-between text-sm gap-2">
+            <div className="flex-1 min-w-0">
+              <div className={isDark ? "text-gray-400" : "text-gray-600"}>
+                Transaction ID
+              </div>
+              <div
+                className={`flex items-center gap-2 font-mono break-all ${
+                  isDark ? "text-white" : "text-gray-900"
+                }`}
+              >
+                <span className="flex-1 min-w-0 break-all">
+                  {realData.transactionId}
+                </span>
+                <CopyButton
+                  value={realData.transactionId}
+                  className="flex-shrink-0 p-1.5 rounded-lg hover:bg-gray-200 dark:hover:bg-[#35353E] transition-colors"
+                  showText={false}
+                />
+              </div>
             </div>
             <div className="text-left sm:text-right">
-              <div className={`${
-                isDark ? "text-gray-400" : "text-gray-600"
-              }`}>Date & Time (EAT)</div>
-              <div className={`${
-                isDark ? "text-white" : "text-gray-900"
-              }`}>{formattedDate}</div>
+              <div className={isDark ? "text-gray-400" : "text-gray-600"}>
+                Date & Time (EAT)
+              </div>
+              <div className={isDark ? "text-white" : "text-gray-900"}>
+                {formattedDate || realData.date}
+              </div>
             </div>
           </div>
         </div>
 
-        {/* Exchange Summary Section */}
-        <div className="px-4 sm:px-6 pb-4 sm:pb-6">
-        <div className={`border-t border-1 my-4 ${
-          isDark ? "border-gray-600" : "border-gray-300"
-        }`}></div>
+        <div className="pl-6 pr-6 pb-6">
+          <div
+            className={`border-t border-1 my-4 ${
+              isDark ? "border-gray-600" : "border-gray-300"
+            }`}
+          />
 
-          <h3 className={`text-base sm:text-lg font-semibold mb-4 ${
-            isDark ? "text-white" : "text-gray-900"
-          }`}>Exchange Summary</h3>
-          <div className={`border-t border-dashed my-4 ${
-            isDark ? "border-gray-600" : "border-gray-300"
-          }`}></div>
-          {/* You Paid / You Received */}
-          <div className="flex flex-col sm:flex-row sm:justify-between gap-2 sm:gap-0 mb-4">
+          <h3
+            className={`text-lg font-semibold mb-4 ${
+              isDark ? "text-white" : "text-gray-900"
+            }`}
+          >
+            Swap Summary
+          </h3>
+          <div
+            className={`border-t border-dashed my-4 ${
+              isDark ? "border-gray-600" : "border-gray-300"
+            }`}
+          />
+
+          <div className="flex justify-between mb-4">
             <div>
-              <div className={`text-xs sm:text-sm mb-1 ${
-                isDark ? "text-gray-400" : "text-gray-600"
-              }`}>You Paid</div>
-              <div className="font-bold flex items-center gap-2 text-sm sm:text-base" style={{ color: GREEN }}>
-                <span>{realData.paidAmount}</span>
+              <div
+                className={`text-sm mb-1 ${
+                  isDark ? "text-gray-400" : "text-gray-600"
+                }`}
+              >
+                You Paid
               </div>
-              <div className={`text-xs ${
-                isDark ? "text-gray-400" : "text-gray-600"
-              }`}>Via {realData.payinMethod}</div>
+              <div className="font-bold" style={{ color: GREEN }}>
+                {realData.paidAmount}
+              </div>
+              <div
+                className={`text-xs mt-1 ${
+                  isDark ? "text-gray-400" : "text-gray-600"
+                }`}
+              >
+                Via {realData.payinMethod}
+              </div>
             </div>
-            <div className="text-left sm:text-right">
-              <div className={`text-xs sm:text-sm mb-1 ${
-                isDark ? "text-gray-400" : "text-gray-600"
-              }`}>You Received</div>
-              <div className="font-bold flex items-center justify-start sm:justify-end gap-2 text-sm sm:text-base" style={{ color: GREEN }}>
-                <span>{realData.receivedAmount} </span>
-                <span>{formatSwapDisplayTicker(realData.receivedCurrency)}</span>
+            <div className="text-right">
+              <div
+                className={`text-sm mb-1 ${
+                  isDark ? "text-gray-400" : "text-gray-600"
+                }`}
+              >
+                You Received
+              </div>
+              <div className="font-bold" style={{ color: GREEN }}>
+                {realData.receivedAmount} {receivedTicker}
+              </div>
+              <div
+                className={`text-xs mt-1 ${
+                  isDark ? "text-gray-400" : "text-gray-600"
+                }`}
+              >
+                Via {realData.payoutMethod}
               </div>
             </div>
           </div>
 
-          {/* Dashed separator */}
-          <div className={`border-t border-dashed my-4 ${
-            isDark ? "border-gray-600" : "border-gray-300"
-          }`}></div>
+          <div
+            className={`border-t border-dashed my-4 ${
+              isDark ? "border-gray-600" : "border-gray-300"
+            }`}
+          />
 
-          {/* Transaction Hash and Net Amount */}
           <div className="space-y-3">
             <div>
-              <div className={`text-xs sm:text-sm mb-1 ${
-                isDark ? "text-gray-400" : "text-gray-600"
-              }`}>Transaction Hash</div>
-              <div className={`text-[10px] sm:text-[12px] font-mono break-all ${
-                isDark ? "text-white" : "text-gray-900"
-              }`}>{realData.transactionHash} </div>
+              <div
+                className={`text-sm mb-1 ${
+                  isDark ? "text-gray-400" : "text-gray-600"
+                }`}
+              >
+                Transaction Hash
+              </div>
+              <div
+                className={`flex items-center gap-2 text-[12px] font-mono break-all ${
+                  isDark ? "text-white" : "text-gray-900"
+                }`}
+              >
+                <span className="flex-1 min-w-0 break-all">
+                  {realData.transactionHash}
+                </span>
+                <CopyButton
+                  value={realData.transactionHash}
+                  className="flex-shrink-0 p-1.5 rounded-lg hover:bg-gray-200 dark:hover:bg-[#35353E] transition-colors"
+                  showText={false}
+                />
+              </div>
             </div>
-            <div className={`my-4 rounded-[18px] shadow-xl border-1 ${
-              isDark 
-                ? "bg-[var(--card-color)] border-[#35353E]" 
-                : "bg-gray-50 border-gray-200"
-            }`}></div>
-            <div className="flex flex-col sm:flex-row sm:justify-between gap-2 sm:gap-0 mb-3">
-              <div className={`text-xs sm:text-sm ${
-                isDark ? "text-white" : "text-gray-900"
-              }`}>
+            <div className="flex justify-between mb-3">
+              <div
+                className={`text-sm ${
+                  isDark ? "text-white" : "text-gray-900"
+                }`}
+              >
                 Net Amount Processed
               </div>
-              <div className="font-mono flex items-center gap-2 text-sm sm:text-base" style={{ color: GREEN }}>
+              <div
+                className="font-mono flex items-center gap-2"
+                style={{ color: GREEN }}
+              >
                 {transactionData?.asset?.icon && (
                   <img
                     src={transactionData.asset.icon}
-                    alt={realData.receivedCurrency}
-                    className="w-4 h-4"
+                    alt={receivedTicker}
+                    className="w-4 h-4 rounded-full object-contain"
                     onError={(e) => {
-                      e.currentTarget.style.display = 'none';
+                      e.currentTarget.style.display = "none";
                     }}
                   />
                 )}
                 <span>{realData.netAmount}</span>
-                <span>{formatSwapDisplayTicker(realData.receivedCurrency)}</span>
+                <span>{receivedTicker}</span>
               </div>
             </div>
           </div>
@@ -405,22 +427,44 @@ const SuccessPage: React.FC<SuccessPageProps> = ({
         transactionId={realData.transactionId}
       />
 
-      {/* Action Buttons */}
       <div className="w-full mt-2 space-y-3">
-       <img 
-         className="w-full" 
-         src={isDark 
-           ? "/assets/Frame_34947_qeutak.png" 
-           : "/assets/Frame_34947_khxqxo.png"
-         } 
-         alt="" 
-       />
-        
-        <div className={`text-center text-xs px-4 ${
-          isDark ? "text-gray-400" : "text-gray-600"
-        }`}>
+        <div className="w-full rounded-xl bg-[#1D8751] p-4 sm:p-5 flex items-start gap-3 sm:gap-4">
+          <div className="flex-shrink-0 w-10 h-10 sm:w-12 sm:h-12 rounded-full bg-white/20 flex items-center justify-center">
+            <svg
+              className="w-6 h-6 sm:w-7 sm:h-7 text-white"
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2.5}
+                d="M5 13l4 4L19 7"
+              />
+            </svg>
+          </div>
+          <div className="flex-1 min-w-0">
+            <h3 className="text-white font-bold text-base sm:text-lg mb-1">
+              Swap Completed
+            </h3>
+            <p className="text-white/95 text-sm sm:text-base leading-relaxed">
+              Your {receivedTicker} has been sent to your wallet. It may take a
+              few minutes to reflect in your balance.
+            </p>
+          </div>
+        </div>
+
+        <div
+          className={`text-center text-xs ${
+            isDark ? "text-gray-400" : "text-gray-600"
+          }`}
+        >
           Need help? Contact our support team at{" "}
-          <a href="mailto:support@omayaexchange.com" className="underline text-green-400 break-all">
+          <a
+            href="mailto:support@omayaexchange.com"
+            className="underline text-green-400"
+          >
             support@omayaexchange.com
           </a>
         </div>
