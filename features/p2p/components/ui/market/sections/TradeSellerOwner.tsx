@@ -31,6 +31,12 @@ import { useTradeStatusWebSocket } from "@/features/p2p/hooks/useTradeStatusWebS
 import { useP2pTradeCanceledRedirect } from "@/features/p2p/hooks/useP2pTradeCanceledRedirect";
 import { useMarketTradeStatusWsHandler } from "@/features/p2p/hooks/useMarketTradeStatusWsHandler";
 import { useBackgroundAwareCountdown } from "@/features/p2p/hooks/useBackgroundAwareCountdown";
+import {
+  getEffectiveConfirmFlags,
+  getEffectiveTradeStatus,
+  isPendingAcceptanceStatus,
+  isTransactionCountdownActive,
+} from "@/features/p2p/utils/tradeWsAcceptanceGate";
 
 import { logger } from '@/lib/utils/logger';
 
@@ -59,6 +65,13 @@ const FinalSell: React.FC<FinalSellProps> = ({ orderData }) => {
   const [showChat, setShowChat] = useState(false);
   const prevStatusRef = useRef<string | undefined>(undefined);
   const prevTradeIdRef = useRef<string | null>(null);
+  const lastActionTradeIdRef = useRef<string | null>(null);
+  const [wsTradeSnapshot, setWsTradeSnapshot] = useState<{
+    rawStatus: string;
+    can_confirm_payment?: boolean;
+    can_confirm_receipt?: boolean;
+  }>({ rawStatus: "" });
+  const wsSnapshotRef = useRef(wsTradeSnapshot);
   const { user, isAuthenticated } = useSelector(
     (state: RootState) => state.auth
   );
@@ -73,6 +86,10 @@ const FinalSell: React.FC<FinalSellProps> = ({ orderData }) => {
     confirmOrder,
     logLabel: "TradeSellerOwner",
     onCanceledPayload: handleWsStatusPayload,
+    onSnapshot: (snap) => {
+      setWsTradeSnapshot(snap);
+      wsSnapshotRef.current = snap;
+    },
   });
 
   // WebSocket for real-time trade status updates
@@ -84,7 +101,26 @@ const FinalSell: React.FC<FinalSellProps> = ({ orderData }) => {
 
   // Use limit_duration for countdown (e.g. "00:00:05" = 5 min) - prefer order's limit over trade default
   const displaySeconds = parseDurationToSeconds(singleOrder?.limit_duration);
-  const appealTimerMatched = confirmOrder?.status === "matched";
+  const effectiveStatus = getEffectiveTradeStatus(
+    confirmOrder?.status,
+    wsTradeSnapshot
+  );
+  const effectiveFlags = getEffectiveConfirmFlags(confirmOrder, wsTradeSnapshot);
+  const inPendingAcceptance =
+    isPendingAcceptanceStatus(wsTradeSnapshot.rawStatus) ||
+    isPendingAcceptanceStatus(String(confirmOrder?.status || ""));
+  const buyerMayMarkMoneySent =
+    effectiveStatus === "matched" &&
+    effectiveFlags.can_confirm_payment !== false &&
+    (!inPendingAcceptance || effectiveFlags.can_confirm_payment === true);
+  const buyerPaymentPhaseActive =
+    effectiveStatus === "matched" && !inPendingAcceptance;
+  const transactionTimerActive = isTransactionCountdownActive(
+    displaySeconds,
+    confirmOrder?.id,
+    effectiveStatus
+  );
+  const appealTimerMatched = buyerPaymentPhaseActive;
   const handleCancelTransactionRef = useRef<() => void>(() => {});
   const confirmStatusRef = useRef(confirmOrder?.status);
   confirmStatusRef.current = confirmOrder?.status;
@@ -98,7 +134,7 @@ const FinalSell: React.FC<FinalSellProps> = ({ orderData }) => {
     }
   }, [params?.id, dispatch, isAuthenticated]);
 
-  // Fetch single order when confirmOrder is loaded
+  // Fetch single order only when the order id changes (not on every confirmOrder ref from WebSocket refresh)
   const orderIdToFetch = confirmOrder?.buy_order ?? confirmOrder?.sell_order;
   useEffect(() => {
     if (isAuthenticated && orderIdToFetch) {
@@ -106,6 +142,63 @@ const FinalSell: React.FC<FinalSellProps> = ({ orderData }) => {
     }
   }, [orderIdToFetch, dispatch, isAuthenticated]);
 
+  // REST may expose pending_acceptance / flags before WebSocket fires
+  useEffect(() => {
+    if (!confirmOrder?.id) return;
+    const st = String(confirmOrder.status || "");
+    if (isPendingAcceptanceStatus(st)) {
+      setWsTradeSnapshot((prev) => ({
+        rawStatus: "pending_acceptance",
+        can_confirm_payment: confirmOrder.can_confirm_payment ?? prev.can_confirm_payment,
+      }));
+      wsSnapshotRef.current = {
+        rawStatus: "pending_acceptance",
+        can_confirm_payment:
+          confirmOrder.can_confirm_payment ?? wsSnapshotRef.current.can_confirm_payment,
+      };
+    }
+    if (typeof confirmOrder.can_confirm_payment === "boolean") {
+      setWsTradeSnapshot((prev) => ({
+        ...prev,
+        can_confirm_payment: confirmOrder.can_confirm_payment,
+      }));
+      wsSnapshotRef.current = {
+        ...wsSnapshotRef.current,
+        can_confirm_payment: confirmOrder.can_confirm_payment,
+      };
+    }
+  }, [confirmOrder?.id, confirmOrder?.status, confirmOrder?.can_confirm_payment]);
+
+  // Keep WS snapshot aligned when REST reaches a terminal phase (avoids stale "matched" from WS)
+  useEffect(() => {
+    if (!confirmOrder?.id) return;
+    const st = String(confirmOrder.status || "").trim();
+    if (!st) return;
+    const lowered = st.toLowerCase();
+    if (
+      lowered === "completed" ||
+      lowered === "cancelled" ||
+      lowered === "canceled" ||
+      lowered === "half-matched" ||
+      lowered === "half_matched"
+    ) {
+      const snap = {
+        ...wsSnapshotRef.current,
+        rawStatus: st,
+        can_confirm_payment:
+          confirmOrder.can_confirm_payment ?? wsSnapshotRef.current.can_confirm_payment,
+        can_confirm_receipt:
+          confirmOrder.can_confirm_receipt ?? wsSnapshotRef.current.can_confirm_receipt,
+      };
+      wsSnapshotRef.current = snap;
+      setWsTradeSnapshot(snap);
+    }
+  }, [
+    confirmOrder?.id,
+    confirmOrder?.status,
+    confirmOrder?.can_confirm_payment,
+    confirmOrder?.can_confirm_receipt,
+  ]);
 
   useEffect(() => {
     setIsClient(true);
@@ -130,15 +223,26 @@ const FinalSell: React.FC<FinalSellProps> = ({ orderData }) => {
       setShowSuccessModal(false);
       prevTradeIdRef.current = confirmOrder?.id || null;
       prevStatusRef.current = undefined;
+      lastActionTradeIdRef.current = null;
+      setWsTradeSnapshot({ rawStatus: "" });
+      wsSnapshotRef.current = { rawStatus: "" };
+    } else if (confirmOrder?.id && !prevTradeIdRef.current) {
+      lastActionTradeIdRef.current = null;
     }
   }, [confirmOrder?.id]);
 
   // Show success modal only on transition to completed for the current trade
   useEffect(() => {
     const currentId = confirmOrder?.id || "";
-    const newStatus = confirmOrder?.status;
-    const prevStatus = prevStatusRef.current;
-    const paramId = (params?.id as string) || "";
+    const newStatus = getEffectiveTradeStatus(
+      confirmOrder?.status,
+      wsSnapshotRef.current
+    ).toLowerCase();
+    const prevStatus = (prevStatusRef.current || "").toLowerCase();
+    const paramId =
+      (params?.id as string) ||
+      (typeof window !== "undefined" ? localStorage.getItem("p2p_trade_id") : null) ||
+      "";
 
     // Ensure we're reacting only to the currently viewed trade
     if (!currentId || (paramId && currentId !== paramId)) {
@@ -151,12 +255,12 @@ const FinalSell: React.FC<FinalSellProps> = ({ orderData }) => {
       const hasShownModal = localStorage.getItem(modalShownKey);
       if (!hasShownModal) {
         setShowSuccessModal(true);
-        localStorage.setItem(modalShownKey, 'true');
+        localStorage.setItem(modalShownKey, "true");
       }
     }
 
     prevStatusRef.current = newStatus;
-  }, [confirmOrder?.status, confirmOrder?.id, params?.id]);
+  }, [confirmOrder?.status, confirmOrder?.id, params?.id, wsTradeSnapshot.rawStatus]);
 
   // Cleanup on unmount to treat next visit as new
   useEffect(() => {
@@ -242,6 +346,7 @@ const FinalSell: React.FC<FinalSellProps> = ({ orderData }) => {
   // Add handler for confirming trade
   const handleConfirmTrade = () => {
     if (isAuthenticated && confirmOrder?.id) {
+      lastActionTradeIdRef.current = confirmOrder.id;
       dispatch(confirmP2PTradeThunk(confirmOrder.id))
         .unwrap()
         .then(() => {
@@ -352,7 +457,7 @@ const FinalSell: React.FC<FinalSellProps> = ({ orderData }) => {
                     Transaction time:{" "}
                     {isClient ? (
                       <TimeDisplay
-                        seconds={confirmOrder?.status === "matched" ? countdown : displaySeconds}
+                        seconds={transactionTimerActive ? countdown : displaySeconds}
                       />
                     ) : (
                       <span>--:--</span>
@@ -478,7 +583,7 @@ const FinalSell: React.FC<FinalSellProps> = ({ orderData }) => {
                 <span className="text-[#1D8751] whitespace-nowrap">Transaction time:</span>
                 {isClient ? (
                   <TimeDisplay
-                    seconds={confirmOrder?.status === "matched" ? countdown : displaySeconds}
+                    seconds={transactionTimerActive ? countdown : displaySeconds}
                   />
                 ) : (
                   <span>--:--</span>
@@ -630,7 +735,7 @@ const FinalSell: React.FC<FinalSellProps> = ({ orderData }) => {
                     </div>
                   </div>
                   <div className="flex-1">
-                    {(confirmOrder?.status !== "matched" || countdown === 0) && (
+                    {(!buyerPaymentPhaseActive || countdown === 0) && (
                       <div className="mt-4 mb-2 text-lg">
                         <span className="text-gray-900 dark:text-white">
                           I have an issue with transaction.{" "}
@@ -657,23 +762,44 @@ const FinalSell: React.FC<FinalSellProps> = ({ orderData }) => {
                         {cancelLoading ? "Cancelling..." : "Cancel Transaction"}
                       </button>
                       <button
-                        className={`w-full md:w-auto flex-1 py-2 rounded-2xl text-lg  ${confirmOrder?.status === "half-matched"
+                        className={`w-full md:w-auto flex-1 py-2 rounded-2xl text-lg  ${confirmOrder?.status === "half-matched" || !buyerMayMarkMoneySent
                           ? "bg-gray-100 dark:bg-[var(--card-color)] text-gray-400 dark:text-[#888]"
                           : "bg-[#1D8751] text-white hover:bg-[#167a45] transition-colors"
-                          } ${confirmTradeLoading
-                            ? "opacity-60 cursor-not-allowed"
-                            : ""
-                          }`}
+                          } ${(() => {
+                            const isThisTradeLoading =
+                              confirmTradeLoading &&
+                              !!confirmOrder?.id &&
+                              lastActionTradeIdRef.current === confirmOrder.id;
+                            return isThisTradeLoading ? "opacity-60 cursor-not-allowed" : "";
+                          })()}`}
                         onClick={handleConfirmTrade}
                         disabled={
-                          confirmTradeLoading ||
-                          !confirmOrder?.id ||
-                          confirmOrder?.status === "half-matched"
+                          (() => {
+                            const isThisTradeLoading =
+                              confirmTradeLoading &&
+                              !!confirmOrder?.id &&
+                              lastActionTradeIdRef.current === confirmOrder.id;
+                            return (
+                              isThisTradeLoading ||
+                              !confirmOrder?.id ||
+                              confirmOrder?.status === "half-matched" ||
+                              !buyerMayMarkMoneySent
+                            );
+                          })()
                         }
                       >
-                        {confirmTradeLoading
-                          ? "Notifying seller..."
-                          : "Money Sent Notify Seller"}
+                        {(() => {
+                          const isThisTradeLoading =
+                            confirmTradeLoading &&
+                            !!confirmOrder?.id &&
+                            lastActionTradeIdRef.current === confirmOrder.id;
+                          if (effectiveStatus.toLowerCase() === "completed") {
+                            return "Trade completed";
+                          }
+                          return isThisTradeLoading
+                            ? "Notifying seller..."
+                            : "Money Sent Notify Seller";
+                        })()}
                       </button>
                     </div>
                   </div>
