@@ -45,7 +45,12 @@ import {
 import { useRatesI18n } from "@/lib/useRatesI18n";
 import { FaSearch } from "react-icons/fa";
 import { showToast } from "@/lib/utils/toast";
-import { resolveExpressAmountInlineError } from "@/lib/utils/expressAmountValidation";
+import {
+  EXPRESS_MAX_AMOUNT_INPUT_DIGITS,
+  EXPRESS_WITHDRAWAL_AMOUNT_TOO_BIG_MESSAGE,
+  enforceExpressAmountDigitLimit,
+  resolveExpressAmountInlineError,
+} from "@/lib/utils/expressAmountValidation";
 import { normalizeExpressApiErrorMessage } from "@/lib/utils/expressMinAmount";
 import { openKYCModal, checkKYCStatus } from "@/features/auth/slices/authSlice";
 import { useTheme } from "@/context/theme";
@@ -123,6 +128,10 @@ const isAxiosGenericStatusMessage = (msg: string): boolean =>
   /^request failed with status code \d{3}$/i.test(String(msg || "").trim());
 
 /** True when integer part exceeds JS safe integer range or fractional part is extremely long (avoids pointless API calls and opaque 500s). */
+const isAmountTooLargeToCalculateMessage = (message: string | null): boolean =>
+  !!message &&
+  /too large to calculate accurately/i.test(String(message));
+
 const isAmountStringTooLargeForSafeCalculation = (input: string): boolean => {
   const s = String(input ?? "")
     .replace(/,/g, "")
@@ -442,6 +451,8 @@ const RatesCalculator = ({ activeTab = 'crypto' }: RatesCalculatorProps) => {
       "rates.amountTooLargeInput",
       "This amount is too large to calculate accurately. Enter a smaller amount."
     );
+  const amountTooBigToProcess = () =>
+    t("rates.amountTooBigToProcess", "Amount too big to process");
   const mapSwapEstimateFailureText = (
     error: any,
     preferredDetail: string,
@@ -666,11 +677,22 @@ const getPaymentRestrictionMessage = (status?: string) =>
       const fracPart = compact.slice(firstDot + 1).replace(/\./g, "");
       result = `${intPart}${fracPart}`;
     }
-    return stripLeadingZerosFromDecimalInput(result);
+    return enforceExpressAmountDigitLimit(
+      stripLeadingZerosFromDecimalInput(result)
+    );
+  };
+
+  const clearAmountTooLargeErrorIfResolved = (value: string) => {
+    setApiValidationError((prev) => {
+      if (!isAmountTooLargeToCalculateMessage(prev)) return prev;
+      if (isAmountStringTooLargeForSafeCalculation(value)) return prev;
+      return null;
+    });
   };
 
   const applyReceiveAmountInput = (rawValue: string) => {
     const normalizedValue = sanitizeNumericInput(rawValue);
+    clearAmountTooLargeErrorIfResolved(normalizedValue);
     logger.debug('general', "You Get input changed:", {
       rawValue,
       normalizedValue,
@@ -3627,7 +3649,12 @@ const getPaymentRestrictionMessage = (status?: string) =>
         resolveExpressAmountInlineError(error) ||
         resolveExpressAmountInlineError(errorMessage);
       if (amountInline) {
-        showToast.error(amountInline);
+        const displayMessage =
+          amountInline === EXPRESS_WITHDRAWAL_AMOUNT_TOO_BIG_MESSAGE
+            ? amountTooBigToProcess()
+            : amountInline;
+        setApiValidationError(displayMessage);
+        showToast.error(displayMessage);
         return;
       }
 
@@ -3687,6 +3714,13 @@ const getPaymentRestrictionMessage = (status?: string) =>
   const hasDecimalPlacesError =
     /decimal places/i.test(String(apiValidationError || "")) ||
     /decimal places/i.test(String(receiveAmountError || ""));
+  const isAmountTooLargeForCalculation = isAmountTooLargeToCalculateMessage(
+    apiValidationError
+  );
+  const isAmountTooBigToProcess =
+    !!apiValidationError &&
+    (apiValidationError === amountTooBigToProcess() ||
+      /amount too big to process/i.test(apiValidationError));
   const isOtcThresholdReached =
     !!selectedAsset &&
     isOtcPopupAsset(selectedAsset) &&
@@ -3892,6 +3926,7 @@ const getPaymentRestrictionMessage = (status?: string) =>
                   <input
                     type="text"
                     inputMode="decimal"
+                    maxLength={EXPRESS_MAX_AMOUNT_INPUT_DIGITS + 1}
                     value={amount}
                     onChange={(e) => {
                       const value = e.target.value;
@@ -3906,6 +3941,7 @@ const getPaymentRestrictionMessage = (status?: string) =>
 
                       // Only allow numbers and decimals
                       if (normalizedValue === "" || /^\d*\.?\d*$/.test(normalizedValue)) {
+                        clearAmountTooLargeErrorIfResolved(normalizedValue);
                         setAmount(normalizedValue);
                         if (normalizedValue === "") {
                           setReceiveAmount("");
@@ -4375,6 +4411,7 @@ const getPaymentRestrictionMessage = (status?: string) =>
                   <input
                     type="text"
                     inputMode="decimal"
+                    maxLength={EXPRESS_MAX_AMOUNT_INPUT_DIGITS + 1}
                     value={receiveAmount}
                     onChange={(e) => applyReceiveAmountInput(e.target.value)}
                     onPaste={(e) => {
@@ -4756,7 +4793,9 @@ const getPaymentRestrictionMessage = (status?: string) =>
             isSubmitting ||
             isAmountBelowFixedMin ||
             isOtcThresholdReached ||
-            hasDecimalPlacesError
+            hasDecimalPlacesError ||
+            isAmountTooLargeForCalculation ||
+            isAmountTooBigToProcess
           }
           className={`w-full py-3 px-4 rounded-xl font-semibold text-white bg-[#1D8751] hover:bg-[#0f8f4d] transition-colors disabled:opacity-50 disabled:cursor-not-allowed ${isSubmitting ? "opacity-50 cursor-not-allowed" : ""
             }`}
