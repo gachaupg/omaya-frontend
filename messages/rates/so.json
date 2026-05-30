@@ -65,5 +65,6 @@
   "rates.money": "Lacag",
   "rates.liveTransactions": "Macaamillada Tooska Ah",
   "rates.amountTooLargeInput": "Qadarkan waa mid aad u weyn si sax ah loo xisaabiyo. Geli qadar ka yar.",
+  "rates.amountTooBigToProcess": "Qadarku waa mid aad u weyn in la farsameeyo",
   "rates.swapEstimateUnavailable": "Ma heli karno qiimaha tan qadarkan. Isku day qadar ka yar ama dib u isku day."
 }

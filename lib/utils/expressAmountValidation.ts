@@ -16,7 +16,30 @@ export const EXPRESS_AMOUNT_DIGIT_LIMIT_MESSAGE =
 export const EXPRESS_AMOUNT_POSITIVE_MESSAGE =
   "Please enter a valid amount greater than 0";
 
+export const EXPRESS_WITHDRAWAL_AMOUNT_TOO_BIG_MESSAGE =
+  "Amount too big to process";
+
 export const enforceExpressAmountDigitLimit = enforceMoneyXAmountDigitLimit;
+
+const WITHDRAWAL_DECIMAL_INVALID_PATTERNS = [
+  /decimal\.invalidoperation/i,
+  /\[<class\s+'decimal\.invalidoperation'>\]/i,
+  /error processing withdrawal/i,
+];
+
+export function isExpressWithdrawalDecimalInvalidOperationError(
+  message: string
+): boolean {
+  const m = String(message || "").trim();
+  if (!m) return false;
+  if (!WITHDRAWAL_DECIMAL_INVALID_PATTERNS.some((re) => re.test(m))) {
+    return false;
+  }
+  return (
+    /invalidoperation/i.test(m) ||
+    /decimal\.invalidoperation/i.test(m)
+  );
+}
 
 const DIGIT_LIMIT_PATTERNS = [
   /requested_amount/i,
@@ -93,6 +116,9 @@ export function resolveExpressAmountInlineError(error: unknown): string | null {
     if (isChangeNowTransactionTooSmallError(error)) {
       return EXPRESS_CHANGE_NOW_TOO_SMALL_MESSAGE;
     }
+    if (isExpressWithdrawalDecimalInvalidOperationError(error)) {
+      return EXPRESS_WITHDRAWAL_AMOUNT_TOO_BIG_MESSAGE;
+    }
     if (isExpressAmountDigitLimitMessage(error)) {
       return EXPRESS_AMOUNT_DIGIT_LIMIT_MESSAGE;
     }
@@ -113,6 +139,9 @@ export function resolveExpressAmountInlineError(error: unknown): string | null {
     if (apiError.some(isChangeNowTransactionTooSmallError)) {
       return EXPRESS_CHANGE_NOW_TOO_SMALL_MESSAGE;
     }
+    if (apiError.some(isExpressWithdrawalDecimalInvalidOperationError)) {
+      return EXPRESS_WITHDRAWAL_AMOUNT_TOO_BIG_MESSAGE;
+    }
   }
 
   const fieldErrors = getExpressAmountFieldErrorsFromResponse(responseData);
@@ -131,6 +160,9 @@ export function resolveExpressAmountInlineError(error: unknown): string | null {
 
   if (isChangeNowTransactionTooSmallError(msg)) {
     return EXPRESS_CHANGE_NOW_TOO_SMALL_MESSAGE;
+  }
+  if (isExpressWithdrawalDecimalInvalidOperationError(msg)) {
+    return EXPRESS_WITHDRAWAL_AMOUNT_TOO_BIG_MESSAGE;
   }
   if (isExpressAmountDigitLimitMessage(msg)) {
     return EXPRESS_AMOUNT_DIGIT_LIMIT_MESSAGE;
