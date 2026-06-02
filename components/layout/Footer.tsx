@@ -156,7 +156,7 @@ export default function Footer() {
                 >
                   <TelegramIcon size={20} />
                 </a>
-                <a href="https://www.youtube.com/@OMAYAExchange" target="_blank" rel="noopener noreferrer" className="hover:text-[#1D8751] text-gray-700 dark:text-white transition-colors" title="YouTube">
+                <a href="https://www.youtube.com/@OMAYAExchange?sub_confirmation=1" target="_blank" rel="noopener noreferrer" className="hover:text-[#1D8751] text-gray-700 dark:text-white transition-colors" title="YouTube">
                   <svg
                     width={20}
                     height={20}
@@ -197,7 +197,7 @@ export default function Footer() {
                     <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.890-5.335 11.893-11.893A11.821 11.821 0 0020.893 3.488" />
                   </svg>
                 </a>
-                <a href="https://www.snapchat.com/@omayaexchange?sender_web_id=1c0b0880-bc36-4c50-b300-d9b32e5bc4af&device_type=desktop&is_copy_url=true" target="_blank" rel="noopener noreferrer" className="hover:text-[#1D8751] text-gray-700 dark:text-white transition-colors" title="Snapchat">
+                <a href="https://www.snapchat.com/@omayaexchange?share_id=1pEuXysBjnI&locale=en-US" target="_blank" rel="noopener noreferrer" className="hover:text-[#1D8751] text-gray-700 dark:text-white transition-colors" title="Snapchat">
                   <SnapchatIcon size={20} />
                 </a>
                 <a href="https://x.com/omayaexchange" target="_blank" rel="noopener noreferrer" className="hover:text-[#1D8751] text-gray-700 dark:text-white transition-colors" title="Twitter / X">
@@ -213,7 +213,7 @@ export default function Footer() {
                       d="M15.8 2.76a1 1 0 0 1 .095 1.19a7 7 0 0 1-1.27 1.5c-.035 4.36-3.21 9.54-9.17 9.54a8.8 8.8 0 0 1-4.97-1.53a.998.998 0 0 1 .687-1.817q.274.036.552.034h.008c.41 0 .816-.055 1.21-.164a4.03 4.03 0 0 1-1.29-1.94a1 1 0 0 1-.006-.568A4.14 4.14 0 0 1 .604 6.253v-.034c0-.263.103-.511.28-.694a4.18 4.18 0 0 1 .26-3.47a1 1 0 0 1 1.668-.123c.634.827 1.42 1.5 2.32 1.98c.56.3 1.15.519 1.76.654c.07-.636.284-1.25.63-1.79a3.9 3.9 0 0 1 1.77-1.49a3.73 3.73 0 0 1 2.3-.19a3.8 3.8 0 0 1 1.52.75a4.7 4.7 0 0 0 1.01-.472c.354-.221.808-.2 1.14.053a1 1 0 0 1 .33 1.148a1 1 0 0 1 .206.179zm-2.96.197a2.84 2.84 0 0 0-1.47-.885a2.7 2.7 0 0 0-1.68.138a2.93 2.93 0 0 0-1.32 1.11a3.13 3.13 0 0 0-.496 1.704q-.004.35.066.69a7.7 7.7 0 0 1-3.27-.918a8 8 0 0 1-1.91-1.42a8 8 0 0 1-.723-.826a3.15 3.15 0 0 0-.321 2.21a3.2 3.2 0 0 0 .294.803a3 3 0 0 0 .509.696v.001a3 3 0 0 0 .4.34a2.7 2.7 0 0 1-1.238-.34l-.058-.033v.033a3.2 3.2 0 0 0 .217 1.156a3.1 3.1 0 0 0 .543.9a2.9 2.9 0 0 0 .991.739a3 3 0 0 0 .548.18a2.8 2.8 0 0 1-.753.1a2.4 2.4 0 0 1-.543-.05a3.2 3.2 0 0 0 .56 1.051a3 3 0 0 0 .866.72c.387.212.816.329 1.26.34a5.7 5.7 0 0 1-2.3 1.146a5.5 5.5 0 0 1-1.937.1q.335.229.686.419l.003.001q.57.308 1.17.516c.816.282 1.67.426 2.54.423c5.28 0 8.17-4.62 8.17-8.62q0-.2-.01-.39a6 6 0 0 0 .31-.253a6 6 0 0 0 1.13-1.32a5.7 5.7 0 0 1-1.65.48q.063-.04.122-.082a2.94 2.94 0 0 0 1.02-1.266q.069-.16.12-.329a5.5 5.5 0 0 1-1.822.734z" clipRule="evenodd" />
                   </svg>
                 </a>
-                <a href="https://www.tiktok.com/@omayaexchange" target="_blank" rel="noopener noreferrer" className="hover:text-[#1D8751] text-gray-700 dark:text-white transition-colors" title="TikTok">
+                <a href="https://www.tiktok.com/@omayaexchane" target="_blank" rel="noopener noreferrer" className="hover:text-[#1D8751] text-gray-700 dark:text-white transition-colors" title="TikTok">
                   <svg
                     width={20}
                     height={20}

@@ -314,7 +314,7 @@ const ContactPage: React.FC<ContactPageProps> = () => {
           actionLabel={t("contact.channels.watchVideos", "Watch Videos")}
           onAction={() =>
             window.open(
-              "https://www.youtube.com/@OMAYAExchange",
+              "https://www.youtube.com/@OMAYAExchange?sub_confirmation=1",
               "_blank",
               "noopener,noreferrer"
             )

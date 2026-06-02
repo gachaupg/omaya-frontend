@@ -531,7 +531,7 @@ function DonutChartWithCenter({
       >
         {hideCurrency
           ? allZero
-            ? "Transactions"
+            ? "0"
             : formatLargeNumber(displayTotal)
           : allZero
             ? "0 USD"

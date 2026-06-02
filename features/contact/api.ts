@@ -3,6 +3,7 @@ import { API_CONFIG } from '@/lib/appConfig';
 import type { ContactFormData, ContactApiResponse } from './types';
 
 import { logger } from '@/lib/utils/logger';
+import { MARKETING_HIGHLIGHT_STATS } from '@/lib/constants/marketingHighlightStats';
 
 export const contactApi = {
   /**
@@ -65,14 +66,6 @@ export const marketingApi = {
    * Get highlight statistics for the marketing page
    */
   getHighlightStatistics: async (): Promise<HighlightStatistics> => {
-    try {
-      const response = await apiClient.get<HighlightStatistics>(
-        API_CONFIG.MARKETING.HIGHLIGHT_STATISTICS
-      );
-      return response.data;
-    } catch (error) {
-      logger.error('general', 'Error fetching highlight statistics:', error);
-      throw error;
-    }
+    return MARKETING_HIGHLIGHT_STATS;
   },
 };

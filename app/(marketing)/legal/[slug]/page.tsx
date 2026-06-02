@@ -1,11 +1,46 @@
 import { notFound } from "next/navigation";
 import BackButton from "@/components/BackButton";
+import ReactMarkdown from "react-markdown";
+import remarkGfm from "remark-gfm";
+import path from "path";
+import { readFile } from "fs/promises";
 
 type PolicyConfig = {
   title: string;
   description: string;
   sections: { heading: string; body: string }[];
   lastUpdated?: string;
+};
+
+type MarkdownPolicyConfig = {
+  title: string;
+  description?: string;
+  lastUpdated?: string;
+  filePath: string;
+};
+
+const markdownPolicies: Record<string, MarkdownPolicyConfig> = {
+  "terms-of-service": {
+    title: "Terms of Service",
+    lastUpdated: "31 May 2026",
+    filePath: "content/legal/terms-of-service.md",
+  },
+  "cookies-policy": {
+    title: "Cookie Policy",
+    lastUpdated: "31 May 2026",
+    filePath: "content/legal/cookie-policy.md",
+  },
+  // Existing URL uses `/legal/aml-policy` — keep it working but render AML/KYC content.
+  "aml-policy": {
+    title: "AML/KYC Policy",
+    lastUpdated: "31 May 2026",
+    filePath: "content/legal/aml-kyc-policy.md",
+  },
+  "risk-disclosure-statement": {
+    title: "Risk Disclosure Statement",
+    lastUpdated: "31 May 2026",
+    filePath: "content/legal/risk-disclosure-statement.md",
+  },
 };
 
 const policyContent: Record<string, PolicyConfig> = {
@@ -236,12 +271,19 @@ export default async function LegalPolicyPage({ params }: PolicyPageProps) {
     notFound();
   }
 
+  const markdownPolicy = markdownPolicies[slugValue];
   const policy = policyContent[slugValue];
 
-  if (!policy) {
+  if (!markdownPolicy && !policy) {
     notFound();
   }
 
+  const markdown = markdownPolicy
+    ? await readFile(
+        path.join(process.cwd(), markdownPolicy.filePath),
+        "utf8",
+      )
+    : null;
 
   return (
     <div className="min-h-screen bg-(--bg-color) pt-32 pb-16 px-4">
@@ -254,37 +296,121 @@ export default async function LegalPolicyPage({ params }: PolicyPageProps) {
             Legal Policy
           </p>
           <h1 className="text-3xl md:text-4xl font-bold text-gray-900 dark:text-white mt-2">
-            {policy.title}
+            {(markdownPolicy ?? policy).title}
           </h1>
-          {policy.lastUpdated && (
+          {(markdownPolicy ?? policy).lastUpdated && (
             <p className="text-sm text-gray-500 dark:text-[#788099] mt-3">
-              Last updated: {policy.lastUpdated}
+              Last updated: {(markdownPolicy ?? policy).lastUpdated}
             </p>
           )}
-          <p className="mt-4 text-gray-600 dark:text-[#9CA3AF] leading-relaxed">
-            {policy.description}
-          </p>
+          {(markdownPolicy?.description ?? policy?.description) && (
+            <p className="mt-4 text-gray-600 dark:text-[#9CA3AF] leading-relaxed">
+              {markdownPolicy?.description ?? policy?.description}
+            </p>
+          )}
         </header>
 
-        <div className="space-y-8">
-          {policy.sections.map((section) => (
-            <section key={section.heading}>
-              <h2 className="text-xl font-semibold text-gray-900 dark:text-white mb-3">
-                {section.heading}
-              </h2>
-              <p className="text-gray-600 dark:text-[#9CA3AF] leading-relaxed">
-                {section.body}
-              </p>
-            </section>
-          ))}
-        </div>
+        {markdown ? (
+          <article className="space-y-5 text-gray-600 dark:text-[#9CA3AF] leading-relaxed">
+            <ReactMarkdown
+              remarkPlugins={[remarkGfm]}
+              components={{
+                h1: ({ children }) => (
+                  <h2 className="text-2xl font-bold text-gray-900 dark:text-white mt-6">
+                    {children}
+                  </h2>
+                ),
+                h2: ({ children }) => (
+                  <h3 className="text-xl font-semibold text-gray-900 dark:text-white mt-6">
+                    {children}
+                  </h3>
+                ),
+                h3: ({ children }) => (
+                  <h4 className="text-lg font-semibold text-gray-900 dark:text-white mt-5">
+                    {children}
+                  </h4>
+                ),
+                p: ({ children }) => <p className="mt-3">{children}</p>,
+                ul: ({ children }) => (
+                  <ul className="list-disc pl-6 mt-3 space-y-2">{children}</ul>
+                ),
+                ol: ({ children }) => (
+                  <ol className="list-decimal pl-6 mt-3 space-y-2">
+                    {children}
+                  </ol>
+                ),
+                li: ({ children }) => <li>{children}</li>,
+                a: ({ children, href }) => (
+                  <a
+                    href={href}
+                    className="text-[#1D8751] hover:underline break-words"
+                    rel="noopener noreferrer"
+                    target={href?.startsWith("http") ? "_blank" : undefined}
+                  >
+                    {children}
+                  </a>
+                ),
+                table: ({ children }) => (
+                  <div className="overflow-x-auto mt-4">
+                    <table className="min-w-full border border-gray-200 dark:border-[#2A2A30] text-sm">
+                      {children}
+                    </table>
+                  </div>
+                ),
+                thead: ({ children }) => (
+                  <thead className="bg-gray-50 dark:bg-[#1D1D23]">
+                    {children}
+                  </thead>
+                ),
+                th: ({ children }) => (
+                  <th className="text-left font-semibold px-3 py-2 border-b border-gray-200 dark:border-[#2A2A30]">
+                    {children}
+                  </th>
+                ),
+                td: ({ children }) => (
+                  <td className="px-3 py-2 align-top border-b border-gray-200 dark:border-[#2A2A30]">
+                    {children}
+                  </td>
+                ),
+                blockquote: ({ children }) => (
+                  <blockquote className="border-l-4 border-[#1D8751] pl-4 py-2 my-4 bg-gray-50/50 dark:bg-[#1D1D23]/40 rounded-r-lg">
+                    {children}
+                  </blockquote>
+                ),
+                hr: () => (
+                  <hr className="my-6 border-gray-200 dark:border-[#2A2A30]" />
+                ),
+                strong: ({ children }) => (
+                  <strong className="text-gray-900 dark:text-white font-semibold">
+                    {children}
+                  </strong>
+                ),
+              }}
+            >
+              {markdown}
+            </ReactMarkdown>
+          </article>
+        ) : (
+          <div className="space-y-8">
+            {policy.sections.map((section) => (
+              <section key={section.heading}>
+                <h2 className="text-xl font-semibold text-gray-900 dark:text-white mb-3">
+                  {section.heading}
+                </h2>
+                <p className="text-gray-600 dark:text-[#9CA3AF] leading-relaxed">
+                  {section.body}
+                </p>
+              </section>
+            ))}
+          </div>
+        )}
 
         <footer className="mt-10 border-t border-gray-200 dark:border-[#2A2A30] pt-6 text-sm text-gray-500 dark:text-[#788099]">
           <p>
             For questions about this policy, please contact our support team at
             {" "}
-            <a href="mailto:info@OMAYAExpress.com" className="text-[#1D8751] hover:underline">
-              info@OMAYAExpress.com
+            <a href="mailto:support@omaya.io" className="text-[#1D8751] hover:underline">
+              support@omaya.io
             </a>
             .
           </p>

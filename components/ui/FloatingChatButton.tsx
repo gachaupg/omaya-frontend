@@ -58,7 +58,7 @@ const socialLinks = [
   },
   {
     name: "TikTok",
-    href: "https://www.tiktok.com/@omayaexchange",
+    href: "https://www.tiktok.com/@omayaexchane",
     color: "#000000",
     darkColor: "#ffffff",
     icon: (

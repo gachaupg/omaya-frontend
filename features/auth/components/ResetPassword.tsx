@@ -69,18 +69,18 @@ const ResetPassword = () => {
   };
 
   return (
-    <div className="flex min-h-screen bg-app dark:bg-app flex-col md:flex-row items-start justify-center relative overflow-hidden px-4 py-8 md:pt-24">
-      {/* Left Side - Mobile App Preview */}
-      <div className="w-full md:w-1/2 flex justify-center mb-8 md:mb-0 relative z-10">
+    <div className="min-h-screen bg-gray-50 dark:bg-[#0a0a0a] flex flex-col md:flex-row items-center justify-center relative overflow-hidden px-4 sm:px-6 md:px-8 lg:px-12 py-8 sm:py-10 md:py-20 gap-6 sm:gap-8 md:gap-14 lg:gap-16">
+      {/* Left Side - Mobile App Preview (desktop only) */}
+      <div className="hidden md:flex w-full max-w-xs sm:max-w-sm md:max-w-none md:w-[40%] lg:w-[38%] justify-center shrink-0 relative z-10">
         {/* Background Glow Effect */}
-        <div className="w-[438px] h-[403px] bg-[#1D8751] blur-[60px]  absolute left-16 2xl:left-54 opacity-60"></div>
-        <div className="relative">
+        <div className="w-[min(100%,280px)] h-[220px] md:h-[260px] bg-[#1D8751] blur-[48px] md:blur-[56px] absolute left-1/2 -translate-x-1/2 top-8 opacity-50 pointer-events-none" />
+        <div className="relative flex flex-col items-center">
           <Image
             src="/images/iphone_vn7ejc.webp"
             alt="OMAYA.io Mobile App"
-            width={350}
-            height={650}
-            className="mx-auto "
+            width={240}
+            height={448}
+            className="mx-auto w-[min(100%,200px)] sm:w-[min(100%,230px)] md:w-[min(100%,250px)] lg:w-[min(100%,270px)] h-auto"
             priority
           />
           {/* App store badges */}
@@ -119,13 +119,13 @@ const ResetPassword = () => {
           </div>
         </div>
       </div>
-      {/* Right side - Reset password form */}
-      <div className="w-1/2 p-0 md:p-8 flex flex-col justify-center">
-        <div className="max-w-md mx-auto w-full 2xl:max-w-3/4">
-          <h1 className="text-2xl font-semibold text-white mb-2">
+      {/* Reset password form — full width on mobile */}
+      <div className="w-full md:flex-1 relative z-10 flex flex-col justify-center min-h-0 flex-1 md:min-h-0 px-0 sm:px-2 md:px-8 lg:px-10">
+        <div className="max-w-md w-full mx-auto rounded-2xl p-6 sm:p-8 bg-white dark:bg-transparent shadow-[0_4px_6px_-1px_rgba(0,0,0,0.1),0_10px_20px_-5px_rgba(0,0,0,0.1)] dark:shadow-[0_4px_20px_rgba(0,0,0,0.7),0_20px_60px_rgba(0,0,0,0.8),0_40px_100px_rgba(0,0,0,0.6)]">
+          <h1 className="text-2xl sm:text-3xl font-bold dark:text-white text-gray-900 mb-2">
             {t("auth.forgot.title", "Forgot Password")}
           </h1>
-          <p className="text-[#788099] mb-1">
+          <p className="dark:text-[#788099] text-gray-600 text-sm mb-4">
             {t("auth.reset.subtitle", "Create New Password")}
           </p>
           <form className="space-y-4" onSubmit={handleResetSubmit}>

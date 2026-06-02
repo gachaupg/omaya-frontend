@@ -119,6 +119,58 @@ function normalizeNetworkKey(network: string): string {
   return network.trim().toLowerCase();
 }
 
+type TickerNameMatchLevel = "exact" | "alias" | "prefix" | "none";
+
+/** Whether the asset ticker matches the search token (exact, alias, or prefix). */
+function getTickerMatchLevel(
+  ticker: string,
+  legacy: string,
+  token: string
+): TickerNameMatchLevel {
+  const t = token.toUpperCase();
+  const tick = ticker.toUpperCase();
+  const leg = legacy.toUpperCase();
+  if (!t) return "none";
+
+  if (tick === t || leg === t) return "exact";
+
+  const tokenAliases = SEARCH_ALIASES[t];
+  if (tokenAliases?.some((alias) => tick === alias || leg === alias)) {
+    return "alias";
+  }
+
+  for (const [key, vals] of Object.entries(SEARCH_ALIASES)) {
+    if ((key === tick || key === leg) && vals.includes(t)) return "alias";
+  }
+
+  if (
+    t.length >= 2 &&
+    (tick.startsWith(t) || leg.startsWith(t))
+  ) {
+    return "prefix";
+  }
+
+  return "none";
+}
+
+/** Whether the asset display name matches the search token (exact or prefix). */
+function getNameMatchLevel(asset: any, token: string): TickerNameMatchLevel {
+  const name = String(asset?.name || "")
+    .trim()
+    .toUpperCase();
+  const t = token.toUpperCase();
+  if (!name || !t) return "none";
+
+  if (name === t) return "exact";
+
+  const tokenAliases = SEARCH_ALIASES[t];
+  if (tokenAliases?.some((alias) => name === alias)) return "exact";
+
+  if (t.length >= 2 && name.startsWith(t)) return "prefix";
+
+  return "none";
+}
+
 function networkMatchesSearchToken(
   network: string,
   networkDisplay: string,
@@ -145,8 +197,9 @@ function networkMatchesSearchToken(
 
 /**
  * Lower rank = higher in dropdown when searching.
- * 0 exact ticker (+ network tokens if any), 1 ticker prefix, 2 same-network matches,
- * 3 exact ticker on other networks, 4 other haystack matches.
+ * 0 exact symbol, 1 symbol alias (e.g. SOL for "Solana"), 2 exact name,
+ * 3 symbol prefix, 4 name prefix, 5–7 symbol/name with wrong network,
+ * 8 network-only (e.g. tokens on Solana chain), 9 other haystack matches.
  */
 export function getAssetSearchPriority(asset: any, searchTerm: string): number {
   const raw = searchTerm.trim();
@@ -162,11 +215,8 @@ export function getAssetSearchPriority(asset: any, searchTerm: string): number {
   const network = resolveAssetNetwork(asset);
   const networkDisplay = getNetworkDisplayName(network);
 
-  const tickerExact = ticker === primaryToken || legacy === primaryToken;
-  const tickerPrefix =
-    !tickerExact &&
-    primaryToken.length >= 2 &&
-    (ticker.startsWith(primaryToken) || legacy.startsWith(primaryToken));
+  const tickerMatch = getTickerMatchLevel(ticker, legacy, primaryToken);
+  const nameMatch = getNameMatchLevel(asset, primaryToken);
 
   const allNetworkTokensMatch =
     networkTokens.length === 0 ||
@@ -174,21 +224,26 @@ export function getAssetSearchPriority(asset: any, searchTerm: string): number {
       networkMatchesSearchToken(network, networkDisplay, t)
     );
 
-  if (tickerExact && allNetworkTokensMatch) return 0;
-  if (tickerPrefix && allNetworkTokensMatch) return 1;
+  if (tickerMatch === "exact" && allNetworkTokensMatch) return 0;
+  if (tickerMatch === "alias" && allNetworkTokensMatch) return 1;
+  if (nameMatch === "exact" && allNetworkTokensMatch) return 2;
+  if (tickerMatch === "prefix" && allNetworkTokensMatch) return 3;
+  if (nameMatch === "prefix" && allNetworkTokensMatch) return 4;
+
+  if (tickerMatch === "exact" && !allNetworkTokensMatch) return 5;
+  if (tickerMatch === "alias" && !allNetworkTokensMatch) return 6;
+  if (nameMatch === "exact" && !allNetworkTokensMatch) return 7;
 
   if (
-    !tickerExact &&
-    !tickerPrefix &&
+    tickerMatch === "none" &&
+    nameMatch === "none" &&
     networkTokens.length === 0 &&
     networkMatchesSearchToken(network, networkDisplay, primaryToken)
   ) {
-    return 2;
+    return 8;
   }
 
-  if (tickerExact && !allNetworkTokensMatch) return 3;
-
-  return 4;
+  return 9;
 }
 
 /** Default Express ordering when the dropdown search is empty. */
