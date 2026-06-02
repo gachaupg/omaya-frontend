@@ -7,8 +7,9 @@ import { useDispatch, useSelector } from "react-redux";
 import { loginUser } from "@/features/auth/slices/authSlice";
 import { AppDispatch, RootState } from "@/features/auth/store";
 import { useRouter, useSearchParams } from "next/navigation";
-import GoogleAuthButton from "./GoogleAuthButton";
-import FacebookAuthButton from "@/features/auth/components/FacebookAuthButton";
+// V2: Re-enable after Google/Facebook auth is fully tested
+// import GoogleAuthButton from "./GoogleAuthButton";
+// import FacebookAuthButton from "@/features/auth/components/FacebookAuthButton";
 import { useI18n } from "@/lib/useI18n";
 
 import { logger } from '@/lib/utils/logger';
@@ -72,18 +73,16 @@ export default function LoginPage() {
     }
   }, [isAuthenticated, searchParams]);
 
-  const handleGoogleSuccess = (userData: any) => {
-    logger.debug('auth', "Google authentication successful:", userData);
-    // Handle successful Google authentication
-    if (userData.user) {
-      // You can dispatch to Redux store here if needed
-      logger.debug('auth', "User authenticated:", userData.user);
-    }
-  };
-
-  const handleGoogleError = (error: any) => {
-    console.error("Google authentication error:", error);
-  };
+  // V2: Re-enable with GoogleAuthButton
+  // const handleGoogleSuccess = (userData: any) => {
+  //   logger.debug('auth', "Google authentication successful:", userData);
+  //   if (userData.user) {
+  //     logger.debug('auth', "User authenticated:", userData.user);
+  //   }
+  // };
+  // const handleGoogleError = (error: any) => {
+  //   console.error("Google authentication error:", error);
+  // };
 
   const validateForm = () => {
     let isValid = true;
@@ -655,8 +654,8 @@ export default function LoginPage() {
               </p>
             </div>
 
-            {/* Or Login With */}
-            <div className="mt-4">
+            {/* V2: Re-enable Google / Facebook login after proper testing */}
+            {/* <div className="mt-4">
               <div className="relative flex items-center justify-center">
                 <span className="mx-4 text-gray-600 dark:text-[#9CA3AF] text-sm">
                   {t("auth.login.or", "Or Log in with")}
@@ -670,7 +669,7 @@ export default function LoginPage() {
                 />
                 <FacebookAuthButton />
               </div>
-            </div>
+            </div> */}
           </form>
 
           {/* Captcha Modal - Perfectly centered on screen */}

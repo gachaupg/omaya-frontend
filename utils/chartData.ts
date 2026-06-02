@@ -16,6 +16,32 @@ export type DonutChartData = {
   color: string;
 };
 
+function normalizeDonutNumber(n: unknown): number {
+  const v = typeof n === "number" ? n : Number.parseFloat(String(n ?? 0));
+  return Number.isFinite(v) ? v : 0;
+}
+
+/**
+ * Merge duplicate labels (case-insensitive) by summing their values.
+ * Keeps the first-seen color for a label.
+ */
+function dedupeDonutData(data: DonutChartData[]): DonutChartData[] {
+  const map = new Map<string, DonutChartData>();
+  for (const item of data) {
+    const label = String(item.label ?? "").trim();
+    if (!label) continue;
+    const key = label.toLowerCase();
+    const value = Math.abs(normalizeDonutNumber(item.value));
+    if (!map.has(key)) {
+      map.set(key, { label, value, color: item.color });
+      continue;
+    }
+    const prev = map.get(key)!;
+    map.set(key, { ...prev, value: prev.value + value });
+  }
+  return Array.from(map.values());
+}
+
 /** Approved P2P wallet deposits / funding (part of P2P volume, not exchange). */
 function getApprovedP2pDepositsVolume(
   transactionSummary: TransactionSummary
@@ -92,7 +118,7 @@ export const overviewTotalData = (
       offline: 0,
     };
 
-    return [
+    return dedupeDonutData([
       {
         label: "Completed",
         value: getStatusValue(status, "completed"),
@@ -113,7 +139,7 @@ export const overviewTotalData = (
         value: getStatusValue(status, "offline"),
         color: "#64748b",
       },
-    ];
+    ]);
   }
 
   if (type === "p2p") {
@@ -121,7 +147,7 @@ export const overviewTotalData = (
     const sellStatus = (transactionSummary as any).total_sell_trades_by_status || {};
     const p2pDeposits = getApprovedP2pDepositsVolume(transactionSummary);
 
-    return [
+    return dedupeDonutData([
       {
         label: "Completed",
         value: Math.abs(
@@ -152,10 +178,10 @@ export const overviewTotalData = (
         ),
         color: "#64748b",
       },
-    ];
+    ]);
   }
   if (type === "swap") {
-    return [
+    return dedupeDonutData([
       {
         label: "Completed",
         value: parseSummaryNumber(
@@ -175,7 +201,7 @@ export const overviewTotalData = (
         value: parseSummaryNumber(transactionSummary.total_failed_changenow_swaps),
         color: "#ef4444",
       },
-    ];
+    ]);
   }
   if (type === "moneyx") {
     const moneyxStatus = (transactionSummary as any).total_moneyx_by_status || {};
@@ -186,7 +212,7 @@ export const overviewTotalData = (
       (moneyxStatus.reviewer_approved || 0);
     const failedAmount = moneyxStatus.failed || 0;
 
-    return [
+    return dedupeDonutData([
       {
         label: "Completed",
         value: Math.abs(completedLike),
@@ -197,12 +223,12 @@ export const overviewTotalData = (
         value: Math.abs(failedAmount),
         color: "#ef4444",
       },
-    ];
+    ]);
   }
   const { deposits, withdrawals, pendingDeposits, pendingWithdrawals, exchangeNet } =
     getExchangeOverviewLegendAmounts(transactionSummary);
 
-  return [
+  return dedupeDonutData([
     {
       label: "Deposits",
       value: deposits,
@@ -223,7 +249,7 @@ export const overviewTotalData = (
       value: exchangeNet,
       color: "#386AB5",
     },
-  ];
+  ]);
 };
 
 // Helper function to calculate time period multiplier

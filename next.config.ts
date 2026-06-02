@@ -33,6 +33,7 @@ const nextConfig: NextConfig = {
     ];
 
     return [
+      { source: "/", headers: noStoreHeaders },
       { source: "/auth/:path*", headers: noStoreHeaders },
       { source: "/dashboard/:path*", headers: noStoreHeaders },
       { source: "/live-chat/:path*", headers: noStoreHeaders },

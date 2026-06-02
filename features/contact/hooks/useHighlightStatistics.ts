@@ -1,36 +1,19 @@
 import { useState, useEffect } from 'react';
-import { marketingApi, type HighlightStatistics } from '../api';
+import type { HighlightStatistics } from '../api';
+import { MARKETING_HIGHLIGHT_STATS } from '@/lib/constants/marketingHighlightStats';
 
-import { logger } from '@/lib/utils/logger';
-
+/** Always exposes canonical marketing stats (API may return stale values). */
 export const useHighlightStatistics = () => {
-  const [statistics, setStatistics] = useState<HighlightStatistics | null>(null);
+  const [statistics, setStatistics] = useState<HighlightStatistics | null>(
+    MARKETING_HIGHLIGHT_STATS
+  );
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    const fetchStatistics = async () => {
-      try {
-        setLoading(true);
-        setError(null);
-        const data = await marketingApi.getHighlightStatistics();
-        setStatistics(data);
-      } catch (err) {
-        logger.error('general', 'Failed to fetch highlight statistics:', err);
-        setError('Failed to load statistics');
-        // Set fallback data on error
-        setStatistics({
-          total_transactions_usdt: '50M+',
-          satisfied_clients: '5500+',
-          successful_transactions: '50,000+',
-          years_of_experience: '5+',
-        });
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    fetchStatistics();
+    setStatistics(MARKETING_HIGHLIGHT_STATS);
+    setLoading(false);
+    setError(null);
   }, []);
 
   return { statistics, loading, error };

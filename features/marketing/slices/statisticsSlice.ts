@@ -1,10 +1,11 @@
 import { createSlice, createAsyncThunk, PayloadAction } from "@reduxjs/toolkit";
 import { marketingApi } from "../api";
 import { HighlightStatistics, HighlightStatisticsState } from "../types";
+import { MARKETING_HIGHLIGHT_STATS } from "@/lib/constants/marketingHighlightStats";
 
 // Initial state
 const initialState: HighlightStatisticsState = {
-  statistics: null,
+  statistics: MARKETING_HIGHLIGHT_STATS,
   loading: false,
   error: null,
 };
@@ -12,16 +13,7 @@ const initialState: HighlightStatisticsState = {
 // Async thunk to fetch highlight statistics
 export const fetchHighlightStatistics = createAsyncThunk(
   "marketing/fetchHighlightStatistics",
-  async (_, { rejectWithValue }) => {
-    try {
-      const data = await marketingApi.getHighlightStatistics();
-      return data;
-    } catch (error: any) {
-      return rejectWithValue(
-        error.message || "Failed to fetch highlight statistics"
-      );
-    }
-  }
+  async () => MARKETING_HIGHLIGHT_STATS
 );
 
 // Create the slice
@@ -47,24 +39,15 @@ const statisticsSlice = createSlice({
         state.loading = true;
         state.error = null;
       })
-      .addCase(
-        fetchHighlightStatistics.fulfilled,
-        (state, action: PayloadAction<HighlightStatistics>) => {
-          state.loading = false;
-          state.statistics = action.payload;
-          state.error = null;
-        }
-      )
+      .addCase(fetchHighlightStatistics.fulfilled, (state) => {
+        state.loading = false;
+        state.statistics = MARKETING_HIGHLIGHT_STATS;
+        state.error = null;
+      })
       .addCase(fetchHighlightStatistics.rejected, (state, action) => {
         state.loading = false;
         state.error = action.payload as string;
-        // Set fallback statistics on error
-        state.statistics = {
-          total_transactions_usdt: "50M+",
-          satisfied_clients: "5500+",
-          successful_transactions: "50,000+",
-          years_of_experience: "5+",
-        };
+        state.statistics = MARKETING_HIGHLIGHT_STATS;
       });
   },
 });

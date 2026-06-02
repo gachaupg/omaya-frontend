@@ -13,7 +13,6 @@ import { useBlog } from "@/features/blogs/hooks/blog";
 import { BlogPost } from "@/features/blogs/types";
 import { useFAQ } from "@/features/faq/hooks/useFAQ";
 import { ContactForm } from "@/features/contact/components";
-import { useHighlightStatistics } from "@/features/contact/hooks/useHighlightStatistics";
 import { useSimpleMarkets } from "@/features/markets/hooks/useSimpleMarkets";
 import KYCVerificationModal from "@/features/auth/components/KYCVerificationModal";
 
@@ -22,9 +21,9 @@ import { FaRegStar } from "react-icons/fa";
 import { MdCurrencyBitcoin } from "react-icons/md";
 import { ShieldCheck, CircleCheckBig, Sparkles, Earth } from "lucide-react";
 
-import { GoDotFill } from "react-icons/go";
 import FloatingParticles from "@/components/ui/floating-particles";
 import { decodeHtml, stripLeadingImagesFromHtml } from "@/lib/utils/html";
+import KeyAchievementsSection from "@/components/marketing/KeyAchievementsSection";
 
 // Strip HTML tags for excerpt preview
 const stripHtmlTags = (html: string): string => {
@@ -53,26 +52,6 @@ const steps = [
     icon: "/assets/exchange_gmhyus.png",
     title: "marketing.steps.start.title",
     description: "marketing.steps.start.desc",
-  },
-];
-
-// Static fallback achievements (used while loading or on error)
-const fallbackAchievements = [
-  {
-    value: "100M+",
-    label: "Total Volume",
-  },
-  {
-    value: "5500+",
-    label: "Satisfied Clients",
-  },
-  {
-    value: "50,000+",
-    label: "Successful Transactions",
-  },
-  {
-    value: "5+",
-    label: "Years Of Experience",
   },
 ];
 
@@ -192,7 +171,6 @@ export default function MarketingPage() {
     const totalPages = Math.ceil((faqItems?.length ?? 0) / FAQ_PER_PAGE) || 1;
     setFaqPage((p) => Math.min(p, totalPages));
   }, [faqItems?.length]);
-  const { statistics, loading: statsLoading, error: statsError } = useHighlightStatistics();
   const {
     markets: marketAssets,
     loading: marketsLoading,
@@ -234,36 +212,6 @@ export default function MarketingPage() {
       "marketing.assets.toggleMore",
       `Show All (${assetsSource.length})`
     );
-
-  // Transform API statistics to achievements format
-  const achievements = statistics
-    ? [
-        {
-          value: statistics.total_transactions_usdt,
-          label: t("marketing.achievements.usdTotal", "Total Volume"),
-        },
-        {
-          value: statistics.satisfied_clients,
-          label: t("marketing.achievements.clients", "Satisfied Clients"),
-        },
-        {
-          value: statistics.successful_transactions,
-          label: t("marketing.achievements.transactions", "Successful Transactions"),
-        },
-        {
-          value: statistics.years_of_experience,
-          label: t("marketing.achievements.years", "Years Of Experience"),
-        },
-      ]
-    : fallbackAchievements.map((item, index) => ({
-        ...item,
-        label: [
-          t("marketing.achievements.usdTotal", "Total Volume"),
-          t("marketing.achievements.clients", "Satisfied Clients"),
-          t("marketing.achievements.transactions", "Successful Transactions"),
-          t("marketing.achievements.years", "Years Of Experience"),
-        ][index] ?? item.label,
-      }));
 
   const tags = [
     { id: 1, name: "Crypto" },
@@ -531,7 +479,7 @@ export default function MarketingPage() {
                 <span className="relative">
                   <span className="text-gray-900 dark:text-[#788099]">{t("marketing.hero.desc1", "Experience lightning-fast trades, ultra-low fees and bank grade security")}</span>
                   <br />
-                  <span className="text-[#1D8751] dark:text-secondary">{t("marketing.hero.desc2", "Join 50,000+ traders worldwide.")}</span>
+                  <span className="text-[#1D8751] dark:text-secondary">{t("marketing.hero.desc2", "Join 169+ traders worldwide.")}</span>
                 </span>
               </p>
 
@@ -603,166 +551,7 @@ export default function MarketingPage() {
         </div>
       </section>
 
-      <div className="pt-4 sm:pt-6 md:pt-8 pb-12 sm:pb-16 md:pb-20 px-4 md:px-10 lg:px-16 xl:px-[100px] bg-white dark:bg-(--card-color) relative z-10 overflow-hidden">
-        <div className="absolute top-0 left-90 w-[200px] sm:w-[300px] h-[200px] sm:h-[300px] bg-[#1D8751]/10 blur-3xl rounded-full" />
-
-        <div className="absolute inset-0 overflow-hidden pointer-events-none -z-1">
-          <div className="absolute w-[280px] sm:w-[300px] h-[600px] right-90 bottom-25 sm:h-24 blur-3xl bg-[#9810FA] rounded-full opacity-15" />
-        </div>
-        <div className="container mx-auto max-w-6xl 2xl:max-w-screen-2xl">
-          {/* Green pill banner */}
-          <div className="flex justify-center mb-4 sm:mb-6">
-            <span className=" flex justify-center items-center gap-1 bg-[#1D8751]/10 border-2 border-secondary/20 text-secondary/60 px-4 py-1.5 sm:px-5 sm:py-3 rounded-full text-xs sm:text-sm font-semibold">
-              <GoDotFill className="text-secondary text-lg" />
-              {t("marketing.trusted.badge", "Trusted by Thousands")}
-            </span>
-          </div>
-
-          {/* Title + Subtitle (small green gradient only around "Celebrating Success:") */}
-          <div className="mx-auto mb-8 sm:mb-10 md:mb-12 max-w-5xl px-2">
-            {/* Section Title */}
-            <div className="relative flex justify-center mb-3 sm:mb-4">
-              <h2 className="text-center text-xl sm:text-2xl md:text-3xl lg:text-4xl 2xl:text-5xl font-bold">
-                <span className="text-gray-900 dark:text-white">
-                  <span className="relative inline-flex items-center">
-                    <span className="relative">
-                      {t(
-                        "marketing.achievements.title.leading",
-                        "Celebrating Success:"
-                      )}
-                    </span>
-                  </span>{" "}
-                  <span className="text-secondary" >
-                    {t(
-                      "marketing.achievements.title.highlight",
-                      "Key Achievements"
-                    )}
-                  </span>
-                </span>
-              </h2>
-            </div>
-
-            {/* Subtitle */}
-            <p className="text-center text-[#99A1AF] text-sm sm:text-base md:text-lg px-4">
-              {t("marketing.achievements.subtitle", "Join the fastest-growing crypto exchange platform in Somalia.")}
-            </p>
-          </div>
-
-          {/* First Row - Achievement Cards */}
-          <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-5 md:gap-6 mb-6 sm:mb-8 md:mb-10 max-w-7xl mx-auto">
-            {achievements.map((achievement, index) => {
-              const icons = [
-                <DollarSign key="dollar" className="w-5 h-5 sm:w-6 sm:h-6 md:w-7 md:h-7 text-white" />,
-                <Users key="users" className="w-5 h-5 sm:w-6 sm:h-6 md:w-7 md:h-7 text-white" />,
-                <TrendingUp key="trending" className="w-5 h-5 sm:w-6 sm:h-6 md:w-7 md:h-7 text-white" />,
-                <Shield key="shield" className="w-5 h-5 sm:w-6 sm:h-6 md:w-7 md:h-7 text-white" />,
-              ];
-
-              const titles = [
-                t("marketing.achievements.card1.title", "USD Fiat Transactions"),
-                t("marketing.achievements.card2.title", "Satisfied Users"),
-                t("marketing.achievements.card3.title", "Successful Transactions"),
-                t("marketing.achievements.card4.title", "Years Of Experience"),
-              ];
-
-              const descriptions = [
-                t("marketing.achievements.card1.desc", "Total trading volume."),
-                t("marketing.achievements.card2.desc", "Active traders worldwide."),
-                t("marketing.achievements.card3.desc", "Completed daily trades."),
-                t("marketing.achievements.card4.desc", "Industry leadership."),
-              ];
-
-              return (
-                <div
-                  key={index}
-                  className="bg-gray-50 dark:bg-white/2 rounded-lg sm:rounded-3xl p-4 sm:p-5 md:p-6 flex flex-col relative overflow-hidden border border-gray-200 dark:border-white/10"
-                >
-                  {/* Subtle white gradient overlay */}
-                  <div className="absolute inset-0 bg-linear-to-b from-white/5 via-white/2 to-transparent pointer-events-none rounded-lg sm:rounded-3xl"></div>
-
-                  {/* Greenish blur glow at top-right */}
-                  <div className="absolute top-2 right-7 w-25 h-25 bg-[#1D8751] opacity-45 blur-3xl rounded-full pointer-events-none"></div>
-
-                  {/* Content wrapper */}
-                  <div className="relative z-10 flex flex-col">
-
-                    {/* Icon Container - Vibrant green rounded square */}
-                    <div className="relative mb-3 sm:mb-4 self-start">
-                      <div
-                        className="bg-[#1D8751] rounded-xl p-2 sm:p-2.5 md:p-3 flex items-center justify-center shadow-md"
-                        style={{
-                          boxShadow: '0 2px 4px rgba(0, 0, 0, 0.2)'
-                        }}
-                      >
-                        {icons[index]}
-                      </div>
-                    </div>
-
-                    {/* Number */}
-                    <div className="text-[#1D8751] text-2xl sm:text-3xl md:text-5xl lg:text-6xl font-bold mb-2 sm:mb-3">
-                      {achievement.value}
-                    </div>
-
-                    {/* Title */}
-                    <div className="text-gray-900 dark:text-muted text-sm sm:text-base md:text-lg mb-1 sm:mb-2">
-                      {titles[index]}
-                    </div>
-
-                    {/* Description */}
-                    <div className="text-gray-700 dark:text-[#99A1AF] text-xs sm:text-sm">
-                      {descriptions[index]}
-                    </div>
-                  </div>
-                </div>
-              );
-            })}
-          </div>
-
-          {/* Bottom Feature Cards Row */}
-          <div className="relative mt-6 sm:mt-8 md:mt-10 max-w-7xl mx-auto">
-            {/* Dark background container with green gradient */}
-            <div className="bg-gray-100 dark:bg-[#1D8751]/7 rounded-2xl p-4 md:p-6 border border-border dark:border-[#1D8751]/10">
-              <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 sm:gap-6 md:gap-8">
-                {/* 0.1% Trading Fee */}
-                <div className="flex flex-col items-center justify-center py-2">
-                  <div className="w-12 h-12 sm:w-13 sm:h-13 rounded-2xl bg-linear-to-br from-orange-400 to-orange-500 flex items-center justify-center mb-3 shadow-lg">
-                    <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                      <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2" />
-                    </svg>
-                  </div>
-                  <span className="text-gray-900 dark:text-white text-xs sm:text-sm md:text-base font-medium text-center">0.1% Trading Fee</span>
-                </div>
-
-                {/* Bank-Grade Security */}
-                <div className="flex flex-col items-center justify-center py-2">
-                  <div className="w-12 h-12 sm:w-13 sm:h-13 rounded-2xl bg-linear-to-br from-[#1D8751] to-[#13B562] flex items-center justify-center mb-3 shadow-lg">
-                    <Shield className="w-6 h-6 text-white" />
-                  </div>
-                  <span className="text-gray-900 dark:text-white text-xs sm:text-sm md:text-base font-medium text-center">Bank-Grade Security</span>
-                </div>
-
-                {/* 24/7 Support */}
-                <div className="flex flex-col items-center justify-center py-2">
-                  <div className="w-12 h-12 sm:w-13 sm:h-13 rounded-2xl bg-linear-to-br from-pink-400 to-pink-500 flex items-center justify-center mb-3 shadow-lg">
-                    <Globe className="w-6 h-6 text-white" />
-                  </div>
-                  <span className="text-gray-900 dark:text-white text-xs sm:text-sm md:text-base font-medium text-center">24/7 Support</span>
-                </div>
-
-                {/* Real-Time Charts */}
-                <div className="flex flex-col items-center justify-center py-2">
-                  <div className="w-12 h-12 sm:w-13 sm:h-13 rounded-2xl bg-linear-to-br from-[#1D8751] to-[#13B562] flex items-center justify-center mb-3 shadow-lg">
-                    <TrendingUp className="w-6 h-6 text-white" />
-                  </div>
-                  <span className="text-gray-900 dark:text-white text-xs sm:text-sm md:text-base font-medium text-center">Real-Time Charts</span>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-
-      </div>
-
+      <KeyAchievementsSection />
 
       {/* Supported Assets Section*/}
       <div
@@ -988,7 +777,7 @@ export default function MarketingPage() {
               </div>
             </div>
 
-            {/* 100M+ Total Volume */}
+            {/* 6M Total Volume */}
             <div
               className="bg-gray-50 dark:bg-[#1D1D23] rounded-lg p-4 sm:p-5 md:p-6 border border-gray-200 dark:border-[#2A2A2A] hover:border-[#1D8751]/40 transition-colors flex flex-col items-center relative overflow-hidden"
             >
@@ -1004,9 +793,11 @@ export default function MarketingPage() {
                 <div className="w-8 h-8 sm:w-10 sm:h-10 mb-3 flex items-center justify-center">
                   <DollarSign className="w-full h-full text-[#13B562]" />
                 </div>
-                <div className="text-gray-900 dark:text-white text-2xl sm:text-3xl md:text-4xl font-bold mb-2 text-center">100M+</div>
+                <div className="text-gray-900 dark:text-white text-2xl sm:text-3xl md:text-4xl font-bold mb-2 text-center">
+                  100M+
+                </div>
                 <div className="text-gray-700 dark:text-white text-xs sm:text-sm md:text-base text-center">
-                  {t("marketing.hero.stat.volume", "Total Volume")}
+                  {t("marketing.hero.stat.volume", "USD Fiat Transactions")}
                 </div>
               </div>
             </div>
@@ -2122,7 +1913,7 @@ export default function MarketingPage() {
                     </div>
                     <div>
                       <h4 className="text-gray-900 dark:text-white font-bold text-base mb-1">Working Hours</h4>
-                      <p className="text-gray-700 dark:text-white/80 text-sm">Mon - Fri: 9:00 AM - 6:00 PM</p>
+                      <p className="text-gray-700 dark:text-white/80 text-sm">24/7</p>
                     </div>
                   </div>
                 </div>

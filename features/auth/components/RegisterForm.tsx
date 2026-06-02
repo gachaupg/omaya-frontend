@@ -13,10 +13,9 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { showToast } from "@/lib/utils/toast";
 import axios from "axios";
 import { toast } from "react-toastify";
-// Dynamic import for GoogleAuthButton
-const GoogleAuthButton = React.lazy(() => import("./GoogleAuthButton"));
-// Dynamic import for FacebookAuthButton
-const FacebookAuthButton = React.lazy(() => import("./FacebookAuthButton"));
+// V2: Re-enable after Google/Facebook auth is fully tested
+// const GoogleAuthButton = React.lazy(() => import("./GoogleAuthButton"));
+// const FacebookAuthButton = React.lazy(() => import("./FacebookAuthButton"));
 import { useI18n } from "@/lib/useI18n";
 import { countries } from "./countries";
 
@@ -925,15 +924,14 @@ export default function RegistrationPage() {
     setShowVerificationModal(false);
   };
 
-  const handleGoogleSuccess = (userData: any) => {
-    // Handle successful Google authentication
-    if (userData.user) {
-    }
-  };
-
-  const handleGoogleError = (error: any) => {
-    // console.error("Google authentication error:", error);
-  };
+  // V2: Re-enable with GoogleAuthButton
+  // const handleGoogleSuccess = (userData: any) => {
+  //   if (userData.user) {
+  //   }
+  // };
+  // const handleGoogleError = (error: any) => {
+  //   // console.error("Google authentication error:", error);
+  // };
 
   return (
     <>
@@ -1826,8 +1824,8 @@ export default function RegistrationPage() {
                 </p>
               </div>
 
-              {/* Or Sign Up with */}
-              <div className="mt-4">
+              {/* V2: Re-enable Google / Facebook sign-up after proper testing */}
+              {/* <div className="mt-4">
                 <div className="relative flex items-center justify-center">
                   <span className="mx-4 text-gray-600 dark:text-[#9CA3AF] text-sm">
                     {t("auth.register.or", "Or Sign Up with")}
@@ -1874,7 +1872,7 @@ export default function RegistrationPage() {
                     />
                   </React.Suspense>
                 </div>
-              </div>
+              </div> */}
             </form>
           </div>
         </div>
