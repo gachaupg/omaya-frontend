@@ -452,6 +452,9 @@ export const Table = forwardRef<TableExportRef, TableProps>(({
             e.currentTarget.src = "/default-provider-logo.svg";
           }}
         />
+        <span className="text-sm font-semibold text-gray-900 dark:text-white">
+          USDT
+        </span>
       </div>
     );
   };
@@ -811,7 +814,7 @@ export const Table = forwardRef<TableExportRef, TableProps>(({
                 </div>
                 {type === "p2p" && (
                   <div
-                    className={`text-sm font-medium text-gray-900 dark:text-white flex items-center justify-start -ml-4 pl-0`}
+                    className={`text-sm font-medium text-gray-900 dark:text-white flex items-center justify-start pl-4`}
                   >
                     <span>ID</span>
                     <TiArrowUnsorted className="w-3 h-3 ml-1 text-gray-400" />
@@ -925,7 +928,7 @@ export const Table = forwardRef<TableExportRef, TableProps>(({
                           <AssetDirectionCell row={row} />
                           {type === "p2p" && (
                             <div
-                              className={`text-sm text-left text-gray-600 dark:text-[#788099] cursor-pointer relative -ml-4 pl-0`}
+                              className={`text-sm text-left text-gray-600 dark:text-[#788099] cursor-pointer relative pl-4`}
                               onMouseEnter={() => setTooltipId(row.id || "")}
                               onMouseLeave={() => setTooltipId(null)}
                               onClick={() => {
