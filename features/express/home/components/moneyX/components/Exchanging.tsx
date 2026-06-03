@@ -1394,7 +1394,7 @@ export default function Exchanging({ transactionData, onBackToTransfer, isHomePa
       {/* Progress Steps - Same as express */}
       <div className={`flex items-center justify-between ${flowSectionClass} ${isHomePage ? "mb-2 sm:mb-3 px-1" : "mb-4"} relative overflow-x-auto`}>
         {/* Connecting Lines */}
-        <div className={`absolute ${isHomePage ? 'top-3 sm:top-4' : 'top-5'} left-[12.5%] right-[12.5%] h-0.5 z-0 hidden sm:block`}>
+        <div className={`absolute ${isHomePage ? 'top-3 sm:top-4' : 'top-3 sm:top-4 md:top-5'} left-[10%] sm:left-[12.5%] right-[10%] sm:right-[12.5%] h-0.5 z-0`}>
           <div
             className={`h-0.5 transition-all duration-500 ${
               currentStatus === "completed" || currentStatus === "finished"

@@ -836,7 +836,7 @@ export default function MarketingPage() {
       </div>
 
       {/* Safe & Reliable Section */}
-      <div className="w-full bg-white dark:bg-[var(--bg-color)] pt-8 pb-16">
+      <div className="w-full bg-white dark:bg-[var(--bg-color)] pt-8 pb-16 overflow-hidden isolate">
         <div className="container mx-auto max-w-6xl 2xl:max-w-screen-2xl px-4">
           {/* Outer card with border that fades downward (no rounded top edge) */}
           <div className="relative rounded-b-3xl">
@@ -844,8 +844,19 @@ export default function MarketingPage() {
             <div className="rounded-b-3xl">
               {/* Inner content card (flat top, rounded bottom) */}
               <div className="relative bg-gray-50 dark:bg-(--card-color) rounded-b-3xl p-5 sm:p-6 md:p-8 shadow-sm overflow-hidden">
-                {/* green glow bg */}
-                <div className="absolute bg-[#1D8751] blur-3xl w-90 h-70 bottom-30 right-40 opacity-20 z-1" />
+                {/* green glow bg — filter blur causes horizontal line artifacts on some mobile GPUs */}
+                <div
+                  className="absolute pointer-events-none z-1 hidden sm:block bg-[#1D8751] blur-3xl w-90 h-70 bottom-30 right-40 opacity-20"
+                  aria-hidden
+                />
+                <div
+                  className="absolute pointer-events-none z-1 sm:hidden bottom-20 right-8 w-48 h-48 opacity-25"
+                  style={{
+                    background:
+                      "radial-gradient(circle, rgba(29, 135, 81, 0.35) 0%, transparent 70%)",
+                  }}
+                  aria-hidden
+                />
 
                 {/* Overlay to fade card background to page background at bottom */}
                 <div
@@ -1000,37 +1011,35 @@ export default function MarketingPage() {
       </div>
 
       {/* Easy Onboarding Section */}
-      <div className="w-full bg-white dark:bg-[var(--bg-color)] pt-4 md:pt-6 pb-16 md:pb-24 relative overflow-hidden isolate">
-        {/* Dark gradient background with green dots */}
-        <div className="absolute inset-0 overflow-hidden">
-          {/* Green glowing particles background */}
+      <div className="w-full bg-white dark:bg-[var(--bg-color)] pt-4 md:pt-6 pb-16 md:pb-24 relative overflow-hidden">
+        {/* Background effects — radial gradients on mobile (no filter blur) to avoid GPU line artifacts */}
+        <div className="absolute inset-0 overflow-hidden pointer-events-none" aria-hidden>
           <div className="hidden sm:block">
             <FloatingParticles count={6} size={{ min: 5, max: 11 }} />
           </div>
 
-          {/* <div className="absolute top-20 left-10 w-2 h-2 bg-[#1D8751] rounded-full opacity-60 blur-sm animate-pulse"></div>
-          <div className="absolute top-40 right-20 w-3 h-3 bg-[#1D8751] rounded-full opacity-40 blur-md animate-pulse" style={{ animationDelay: '0.5s' }}></div>
-          <div className="absolute bottom-32 left-1/4 w-2 h-2 bg-[#1D8751] rounded-full opacity-50 blur-sm animate-pulse" style={{ animationDelay: '1s' }}></div>
-          <div className="absolute top-1/3 right-1/3 w-2.5 h-2.5 bg-[#1D8751] rounded-full opacity-45 blur-sm animate-pulse" style={{ animationDelay: '1.5s' }}></div>
-          <div className="absolute bottom-20 right-1/4 w-3 h-3 bg-[#1D8751] rounded-full opacity-35 blur-md animate-pulse" style={{ animationDelay: '2s' }}></div> */}
+          {/* Mobile: gradient-only glow */}
+          <div className="absolute inset-0 opacity-40 sm:hidden">
+            <div
+              className="absolute top-4 left-8 w-36 h-44"
+              style={{
+                background:
+                  "radial-gradient(circle, rgba(29, 135, 81, 0.4) 0%, transparent 72%)",
+              }}
+            />
+            <div
+              className="absolute top-56 right-4 w-40 h-52"
+              style={{
+                background:
+                  "radial-gradient(circle, rgba(29, 135, 81, 0.32) 0%, transparent 72%)",
+              }}
+            />
+          </div>
 
-          {/* Subtle gradient overlays */}
-          {/* <div
-            className="absolute inset-0 opacity-30"
-            style={{
-              background: `
-                radial-gradient(circle at 20% 30%, ${tokens.colors.brand.lightGreen}15 0%, transparent 50%),
-                radial-gradient(circle at 80% 70%, ${tokens.colors.brand.lightGreen}10 0%, transparent 50%)
-              `,
-            }}
-          ></div> */}
-
-          {/* Subtle gradient overlays */}
-          <div className="relative inset-0 opacity-30">
-            {/* Mobile browsers can show artifact lines with very large blur layers.
-               Keep the effect but reduce blur/size on small screens. */}
-            <div className="absolute top-5 left-10 sm:left-20 w-40 h-56 sm:w-65 sm:h-80 rounded-full bg-[#1D8751] blur-2xl sm:blur-3xl opacity-40 sm:opacity-60" />
-            <div className="absolute top-80 sm:top-145 right-6 sm:right-10 w-44 h-64 sm:w-75 sm:h-90 rounded-full bg-[#1D8751] blur-2xl sm:blur-3xl opacity-35 sm:opacity-60" />
+          {/* sm+: blur orbs (hidden on phones where blur causes stripe glitches) */}
+          <div className="absolute inset-0 opacity-30 hidden sm:block">
+            <div className="absolute top-5 left-20 w-[260px] h-[320px] rounded-full bg-[#1D8751] blur-3xl opacity-60" />
+            <div className="absolute bottom-24 right-10 w-[300px] h-[360px] rounded-full bg-[#1D8751] blur-3xl opacity-60" />
           </div>
         </div>
 

@@ -1578,7 +1578,7 @@ export default function Exchanging({ transactionData }: ExchangingProps) {
 
       <div className="flex items-center justify-between w-full max-w-4xl mb-2 sm:mb-4 relative px-2 sm:px-0 overflow-x-auto">
         {/* Connecting Lines */}
-        <div className="absolute top-5 left-[12.5%] right-[12.5%] h-0.5 z-0 hidden sm:block">
+        <div className="absolute top-3 sm:top-4 md:top-5 left-[10%] sm:left-[12.5%] right-[10%] sm:right-[12.5%] h-0.5 z-0">
           <div
             className={`h-0.5 transition-all duration-500 ${currentStatus === "completed" || currentStatus === "finished"
               ? "bg-[#1D8751] w-full"
