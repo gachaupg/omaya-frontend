@@ -594,6 +594,7 @@ const FaceDetectionKYC: React.FC<FaceDetectionKYCProps> = ({
               className="hidden"
               onChange={handleManualFileChange}
             />
+            {/* Gallery upload disabled — camera capture only
             <button
               type="button"
               onClick={() => manualFileInputRef.current?.click()}
@@ -602,6 +603,7 @@ const FaceDetectionKYC: React.FC<FaceDetectionKYCProps> = ({
             >
               {isManualUploadInProgress ? "Uploading selfie…" : "Upload selfie from gallery"}
             </button>
+            */}
           </>
         )}
       </div>

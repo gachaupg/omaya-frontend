@@ -363,11 +363,9 @@ export default function Exchanging({ transactionData, isHomePage = false }: Exch
   const effectiveDataForExpiry = transactionData || persistedTransactionData;
   useEffect(() => {
     if (timeRemaining !== 0 || hasRedirectedOnExpiry.current) return;
-    const txId = effectiveDataForExpiry?.transactionId;
-    if (!txId) return;
     hasRedirectedOnExpiry.current = true;
     handleCancelTransaction();
-  }, [timeRemaining, effectiveDataForExpiry?.transactionId]);
+  }, [timeRemaining, effectiveTransactionId]);
 
   // Format time as MM:SS
   const formatTime = (seconds: number) => {
@@ -376,31 +374,36 @@ export default function Exchanging({ transactionData, isHomePage = false }: Exch
     return `${mins.toString().padStart(2, "0")}:${secs.toString().padStart(2, "0")}`;
   };
 
-  // Handle transaction cancellation
+  /** Leave exchanging flow — home widget must reload to reset parent showExchanging state. */
+  const exitAfterTransactionEnd = () => {
+    localStorage.removeItem("express_transaction_data");
+    localStorage.removeItem("express_transaction_expiry");
+    expiryTimestampRef.current = null;
+    if (isHomePage) {
+      window.location.reload();
+      return;
+    }
+    router.push("/");
+  };
+
+  // Handle transaction cancellation (also runs when the 15-minute timer expires)
   const handleCancelTransaction = async () => {
-    if (!effectiveTransactionData?.transactionId) return;
+    const txId = effectiveTransactionId;
+    if (!txId) {
+      exitAfterTransactionEnd();
+      return;
+    }
 
     try {
-      if (effectiveTransactionData.type === "deposit") {
-        await dispatch(
-          cancelDepositTransaction(effectiveTransactionData.transactionId)
-        ).unwrap();
-      } else if (effectiveTransactionData.type === "withdrawal") {
-        await dispatch(
-          cancelWithdrawalTransaction(effectiveTransactionData.transactionId)
-        ).unwrap();
+      if (effectiveTransactionData?.type === "deposit") {
+        await dispatch(cancelDepositTransaction(txId)).unwrap();
+      } else if (effectiveTransactionData?.type === "withdrawal") {
+        await dispatch(cancelWithdrawalTransaction(txId)).unwrap();
       }
-
-      // Clear localStorage
-      localStorage.removeItem("express_transaction_data");
-      localStorage.removeItem("express_transaction_expiry");
-
-      // Redirect to home page
-      router.push("/");
+      exitAfterTransactionEnd();
     } catch (error) {
-      logger.error('general', "Failed to cancel transaction:", error);
-      // Still redirect even if cancel fails
-      router.push("/");
+      logger.error("general", "Failed to cancel transaction:", error);
+      exitAfterTransactionEnd();
     }
   };
 
@@ -1540,7 +1543,7 @@ export default function Exchanging({ transactionData, isHomePage = false }: Exch
 
       <div className="flex items-center justify-between w-full max-w-4xl mb-2 sm:mb-4 relative px-2 sm:px-0 overflow-x-auto">
         {/* Connecting Lines */}
-        <div className="absolute top-5 left-[12.5%] right-[12.5%] h-0.5 z-0 hidden sm:block">
+        <div className="absolute top-3 sm:top-4 md:top-5 left-[10%] sm:left-[12.5%] right-[10%] sm:right-[12.5%] h-0.5 z-0">
           <div
             className={`h-0.5 transition-all duration-500 ${currentStatus === "completed" || currentStatus === "finished"
               ? "bg-[#1D8751] w-full"
