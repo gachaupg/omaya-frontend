@@ -330,25 +330,34 @@ export default function Footer() {
                   className={`hover:text-[#1D8751] text-xs md:text-sm transition-colors ${isActive("/legal/cookies-policy") ? "text-[#1D8751]" : "text-gray-700 dark:text-white/80"
                     }`}
                 >
-                  Cookies Policy
+                  Cookie Policy
                 </Link>
               </li>
               <li>
                 <Link
-                  href="/legal/data-use-policy"
-                  className={`hover:text-[#1D8751] text-xs md:text-sm transition-colors ${isActive("/legal/data-use-policy") ? "text-[#1D8751]" : "text-gray-700 dark:text-white/80"
+                  href="/legal/aml-kyc-policy"
+                  className={`hover:text-[#1D8751] text-xs md:text-sm transition-colors ${isActive("/legal/aml-kyc-policy") || isActive("/legal/aml-policy") ? "text-[#1D8751]" : "text-gray-700 dark:text-white/80"
                     }`}
                 >
-                  Data Use Policy
+                  AML/KYC Policy
                 </Link>
               </li>
               <li>
                 <Link
-                  href="/legal/disclaimer-policy"
-                  className={`hover:text-[#1D8751] text-xs md:text-sm transition-colors ${isActive("/legal/disclaimer-policy") ? "text-[#1D8751]" : "text-gray-700 dark:text-white/80"
+                  href="/legal/risk-disclosure-statement"
+                  className={`hover:text-[#1D8751] text-xs md:text-sm transition-colors ${isActive("/legal/risk-disclosure-statement") ? "text-[#1D8751]" : "text-gray-700 dark:text-white/80"
                     }`}
                 >
-                  Disclaimer Policy
+                  Risk Disclosure Statement
+                </Link>
+              </li>
+              <li>
+                <Link
+                  href="/legal/law-enforcement-request-guidelines"
+                  className={`hover:text-[#1D8751] text-xs md:text-sm transition-colors ${isActive("/legal/law-enforcement-request-guidelines") ? "text-[#1D8751]" : "text-gray-700 dark:text-white/80"
+                    }`}
+                >
+                  Law Enforcement Request Guidelines
                 </Link>
               </li>
               <li>
@@ -358,6 +367,15 @@ export default function Footer() {
                     }`}
                 >
                   Payment Policy
+                </Link>
+              </li>
+              <li>
+                <Link
+                  href="/legal/referral-program-terms"
+                  className={`hover:text-[#1D8751] text-xs md:text-sm transition-colors ${isActive("/legal/referral-program-terms") ? "text-[#1D8751]" : "text-gray-700 dark:text-white/80"
+                    }`}
+                >
+                  Referral Program Terms
                 </Link>
               </li>
             </ul>

@@ -55,6 +55,8 @@ RUN addgroup --system --gid 1001 nodejs && \
 COPY --from=builder /app/public ./public
 COPY --from=builder --chown=nextjs:nodejs /app/.next/standalone ./
 COPY --from=builder --chown=nextjs:nodejs /app/.next/static ./.next/static
+# Legal policy markdown (read at runtime by /legal/[slug])
+COPY --from=builder --chown=nextjs:nodejs /app/content ./content
 
 # Set environment variables for runtime
 ENV NODE_ENV=production

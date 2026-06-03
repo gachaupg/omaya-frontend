@@ -22,6 +22,9 @@ const nextConfig: NextConfig = {
   output: 'standalone',
   trailingSlash: true,
   reactStrictMode: true,
+  outputFileTracingIncludes: {
+    '/legal/[slug]': ['./content/legal/**/*'],
+  },
   async headers() {
     // Prevent document caching on auth/protected routes.
     // This avoids serving cached RSC flight payloads as full HTML pages on back/forward.
