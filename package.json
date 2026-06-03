@@ -4,8 +4,9 @@
   "private": true,
   "scripts": {
     "dev": "next dev",
-    "build": "next build",
-    "build:docker": "next build",
+    "build": "node scripts/embed-legal-policies.mjs && next build",
+    "build:docker": "node scripts/embed-legal-policies.mjs && next build",
+    "embed-legal-policies": "node scripts/embed-legal-policies.mjs",
     "start": "next start",
     "lint": "next lint",
     "download-assets": "node scripts/download-cloudinary-assets.mjs"

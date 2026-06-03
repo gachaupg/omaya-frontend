@@ -88,3 +88,5 @@ docs/
 *.md
 **/*.md
 !README.md
+!content/legal/**
+!content/legal/**/*.md
