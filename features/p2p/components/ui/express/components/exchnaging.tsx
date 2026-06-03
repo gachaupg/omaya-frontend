@@ -864,7 +864,11 @@ export default function Exchanging({ transactionData }: ExchangingProps) {
               } else if (status === "confirming") {
                 uiStatus = "confirming"; // confirming stays the same
               } else if (status === "processing") {
-                uiStatus = "confirming"; // processing -> confirming (transaction is being processed)
+                uiStatus =
+                  effectiveTransactionData?.type === "deposit" ||
+                  (data.data as any)?.transaction_type === "deposit"
+                    ? "pending"
+                    : "confirming";
               } else if (status === "exchanging") {
                 uiStatus = "sending"; // exchanging -> sending (skip exchanging step)
               } else if (status === "sending") {
@@ -881,7 +885,11 @@ export default function Exchanging({ transactionData }: ExchangingProps) {
               } else if (status === "transaction_created") {
                 uiStatus = "confirming";
               } else if (status === "processing") {
-                uiStatus = "confirming"; // processing -> confirming (transaction is being processed)
+                uiStatus =
+                  effectiveTransactionData?.type === "deposit" ||
+                  (data.data as any)?.transaction_type === "deposit"
+                    ? "pending"
+                    : "confirming";
               } else if (status === "processing_transfer") {
                 uiStatus = "sending"; // processing_transfer -> sending (skip exchanging)
               } else if (status === "approval_required") {

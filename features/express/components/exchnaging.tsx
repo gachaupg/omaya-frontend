@@ -29,6 +29,7 @@ import { resolveExpressTransactionFailureMessage } from "@/lib/utils/websocketUt
 import { OMAYA_IO_ACCOUNT_DETAILS_TITLE } from "../utils/paymentDetailDisplay";
 import { useScrollAppToTopWhen } from "@/hooks/useScrollAppToTopWhen";
 import { encodeQrScanData } from "@/lib/utils/ussdDial";
+import { mapExpressBackendStatusToUi } from "@/features/express/utils/exchangeStatusMapping";
 
 interface ExchangingProps {
   transactionData?: {
@@ -958,6 +959,13 @@ export default function Exchanging({ transactionData }: ExchangingProps) {
                 uiStatus = "sending"; // Show as "sending to you" when agent approved
               }
             }
+
+            uiStatus = mapExpressBackendStatusToUi(uiStatus, {
+              transactionType: effectiveTransactionData?.type,
+              wsTransactionType:
+                (statusPayload as any)?.transaction_type ??
+                (data.data as any)?.transaction_type,
+            });
 
             // Prevent backward UI jumps for withdrawal pipeline after it reaches sending.
             if (

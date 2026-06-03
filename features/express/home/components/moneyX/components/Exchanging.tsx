@@ -29,6 +29,7 @@ import FailureStatusModal from "@/features/express/components/FailureStatusModal
 import { resolveExpressTransactionFailureMessage } from "@/lib/utils/websocketUtils";
 import { useScrollAppToTopWhen } from "@/hooks/useScrollAppToTopWhen";
 import { encodeQrScanData } from "@/lib/utils/ussdDial";
+import { isExpressDepositTransaction } from "@/features/express/utils/exchangeStatusMapping";
 const formatDateTimeEastAfrica = (input: Date | number | string): string => {
   const d = input instanceof Date ? input : new Date(input);
   if (Number.isNaN(d.getTime())) return "";
@@ -618,7 +619,12 @@ export default function Exchanging({ transactionData, onBackToTransfer, isHomePa
           if (effectiveStatus === "pending_review" || effectiveStatus === "pending_blockchain") {
             uiStatus = "confirming";
           } else if (effectiveStatus === "processing") {
-            uiStatus = "confirming";
+            uiStatus = isExpressDepositTransaction(
+              effectiveTransactionData?.type,
+              wsData.transaction_type
+            )
+              ? "pending"
+              : "confirming";
           } else if (effectiveStatus === "exchanging") {
             uiStatus = "sending"; // skip exchanging step (match dashboard UX)
           } else if (effectiveStatus === "processing_transfer") {
@@ -839,6 +845,13 @@ export default function Exchanging({ transactionData, onBackToTransfer, isHomePa
 
             if (status === "pending_blockchain") {
               uiStatus = "confirming";
+            } else if (status === "processing") {
+              uiStatus = isExpressDepositTransaction(
+                effectiveTransactionData?.type,
+                (data.data as any)?.transaction_type
+              )
+                ? "pending"
+                : "confirming";
             } else if (status === "transaction_created") {
               uiStatus = "confirming";
             } else if (status === "processing_transfer") {

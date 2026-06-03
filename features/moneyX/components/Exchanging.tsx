@@ -29,6 +29,10 @@ import FailureStatusModal from "@/features/express/components/FailureStatusModal
 import { resolveExpressTransactionFailureMessage } from "@/lib/utils/websocketUtils";
 import { useScrollAppToTopWhen } from "@/hooks/useScrollAppToTopWhen";
 import { encodeQrScanData } from "@/lib/utils/ussdDial";
+import {
+  isExpressDepositTransaction,
+  mapExpressBackendStatusToUi,
+} from "@/features/express/utils/exchangeStatusMapping";
 const formatDateTimeEastAfrica = (input: Date | number | string): string => {
   const d = input instanceof Date ? input : new Date(input);
   if (Number.isNaN(d.getTime())) return "";
@@ -594,6 +598,13 @@ export default function Exchanging({ transactionData, onBackToTransfer }: Exchan
           let uiStatus = effectiveStatus;
           if (effectiveStatus === "pending_review" || effectiveStatus === "pending_blockchain") {
             uiStatus = "confirming";
+          } else if (effectiveStatus === "processing") {
+            uiStatus = isExpressDepositTransaction(
+              effectiveTransactionData?.type,
+              wsData.transaction_type
+            )
+              ? "pending"
+              : "confirming";
           } else if (effectiveStatus === "completed" || effectiveStatus === "finished" || effectiveStatus === "approved") {
             uiStatus = "completed";
           }
@@ -804,6 +815,13 @@ export default function Exchanging({ transactionData, onBackToTransfer }: Exchan
 
           if (status === "pending_blockchain") {
             uiStatus = "confirming";
+          } else if (status === "processing") {
+            uiStatus = isExpressDepositTransaction(
+              effectiveTransactionData?.type,
+              (data.data as any)?.transaction_type
+            )
+              ? "pending"
+              : "confirming";
           } else if (status === "transaction_created") {
             uiStatus = "confirming";
           } else if (status === "processing_transfer") {
@@ -827,6 +845,11 @@ export default function Exchanging({ transactionData, onBackToTransfer }: Exchan
           } else if (status === "agent_approve") {
             uiStatus = "sending";
           }
+
+          uiStatus = mapExpressBackendStatusToUi(uiStatus, {
+            transactionType: effectiveTransactionData?.type,
+            wsTransactionType: (data.data as any)?.transaction_type,
+          });
 
             setCurrentStatus((prev) => {
               if (
