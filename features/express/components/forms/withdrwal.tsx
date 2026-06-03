@@ -1198,7 +1198,7 @@ export default function WithdrawalForm({
     }
   }, [payBank, enhancedFilteredUserPaymentDetails, selectedPaymentDetails]);
 
-  // Reset form if user changes asset or payment method after submission
+  // Reset form if user changes asset, payment method, or amount after submission
   useEffect(() => {
     // Only reset if the transaction was already submitted
     if (isTransactionSubmitted) {
@@ -1213,7 +1213,7 @@ export default function WithdrawalForm({
       setWalletAddress("");
       setWalletError(null);
     }
-  }, [selectedAsset, payBank]);
+  }, [selectedAsset, payBank, payAmount, getAmount]);
 
   // Track isTransactionSubmitted changes
   useEffect(() => {
