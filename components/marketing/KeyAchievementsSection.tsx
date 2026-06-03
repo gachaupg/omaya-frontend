@@ -7,11 +7,24 @@ import { useMarketingI18n } from "@/lib/useMarketingI18n";
 
 /** Home Key Achievements — values are fixed in code (not from API). */
 const HOME_STATS = {
-  volume: "100M+",
-  clients: "50000+",
-  transactions: "300000+",
-  years: "8",
+  volume: { amount: 100_000_000, suffix: "+" },
+  clients: { amount: 50_000, suffix: "+" },
+  transactions: { amount: 300_000, suffix: "+" },
+  years: { amount: 8, suffix: "" },
 } as const;
+
+function formatAchievementValue(
+  amount: number,
+  suffix = "",
+  options?: { compactMillions?: boolean }
+): string {
+  if (options?.compactMillions && amount >= 1_000_000) {
+    const n = amount / 1_000_000;
+    const label = Number.isInteger(n) ? String(n) : parseFloat(n.toFixed(1)).toString();
+    return `${label}M${suffix}`;
+  }
+  return `${amount.toLocaleString("en-US")}${suffix}`;
+}
 
 export default function KeyAchievementsSection() {
   const { t } = useMarketingI18n();
@@ -37,6 +50,7 @@ export default function KeyAchievementsSection() {
         </div>
 
         <div className="mx-auto mb-8 sm:mb-10 md:mb-12 max-w-5xl px-2">
+          
           <div className="relative flex justify-center mb-3 sm:mb-4">
             <h2 className="text-center text-xl sm:text-2xl md:text-3xl lg:text-4xl 2xl:text-5xl font-bold">
               <span className="text-gray-900 dark:text-white">
@@ -59,13 +73,20 @@ export default function KeyAchievementsSection() {
         <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-5 md:gap-6 mb-6 sm:mb-8 md:mb-10 max-w-7xl mx-auto">
           <AchievementCard
             icon={DollarSign}
-            value={HOME_STATS.volume}
+            value={formatAchievementValue(
+              HOME_STATS.volume.amount,
+              HOME_STATS.volume.suffix,
+              { compactMillions: true }
+            )}
             title={t("marketing.achievements.card1.title", "USD Fiat Transactions")}
             description={t("marketing.achievements.card1.desc", "Total trading volume.")}
           />
           <AchievementCard
             icon={Users}
-            value={HOME_STATS.clients}
+            value={formatAchievementValue(
+              HOME_STATS.clients.amount,
+              HOME_STATS.clients.suffix
+            )}
             title={t("marketing.achievements.card2.title", "Satisfied Users")}
             description={t(
               "marketing.achievements.card2.desc",
@@ -74,7 +95,10 @@ export default function KeyAchievementsSection() {
           />
           <AchievementCard
             icon={TrendingUp}
-            value={HOME_STATS.transactions}
+            value={formatAchievementValue(
+              HOME_STATS.transactions.amount,
+              HOME_STATS.transactions.suffix
+            )}
             title={t(
               "marketing.achievements.card3.title",
               "Successful Transactions"
@@ -86,7 +110,10 @@ export default function KeyAchievementsSection() {
           />
           <AchievementCard
             icon={Shield}
-            value={HOME_STATS.years}
+            value={formatAchievementValue(
+              HOME_STATS.years.amount,
+              HOME_STATS.years.suffix
+            )}
             title={t("marketing.achievements.card4.title", "Years Of Experience")}
             description={t(
               "marketing.achievements.card4.desc",
