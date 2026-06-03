@@ -9,9 +9,9 @@ export const MARKETING_HIGHLIGHT_STATS = {
 /** Keep in sync with `HOME_STATS` in KeyAchievementsSection.tsx */
 export const HOME_KEY_ACHIEVEMENT_VALUES = {
   volume: "100M+",
-  clients: "50000",
-  transactions: "459",
-  years: "7",
+  clients: "50,000+",
+  transactions: "300,000+",
+  years: "8",
 } as const;
 
 export const HOME_ACHIEVEMENT_STATS = [
