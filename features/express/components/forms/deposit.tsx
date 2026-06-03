@@ -1271,7 +1271,7 @@ export default function DepositForm({
 
   // Skip reset when restoring from legal pages (user was on second step)
   const hasRestoredFromLegalRef = useRef(!!initialState?.isFirstCardSubmitted);
-  // Close expanded section when user changes payment method or asset (user must post again)
+  // Close expanded section when user changes asset, payment method, or amount (must submit again)
   useEffect(() => {
     if (hasRestoredFromLegalRef.current) {
       const t = setTimeout(() => {
@@ -1284,7 +1284,7 @@ export default function DepositForm({
       setApiResponse(null);
       setTransactionCode("");
     }
-  }, [selectedAsset, payBank]);
+  }, [selectedAsset, payBank, payAmount, getAmount]);
 
   // Fetch public payment methods (same as home: always use public API when available)
   useEffect(() => {

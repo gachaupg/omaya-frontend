@@ -1321,7 +1321,7 @@ export default function DepositForm({
     dispatch(fetchAdminPaymentMethods());
   }, [dispatch, isHomePage]);
 
-  // When user changes asset or payment method, reset post state so they can post again
+  // When user changes asset, payment method, or amount, reset post state so they can post again
   const selectedAssetKey = selectedAsset
     ? (selectedAsset.asset_id ?? selectedAsset.ticker ?? selectedAsset.symbol ?? selectedAsset.name ?? "")
     : "";
@@ -1330,7 +1330,7 @@ export default function DepositForm({
     setApiResponse(null);
     setTransactionCode("");
     setShowForexForm(false);
-  }, [selectedAssetKey, payBank]);
+  }, [selectedAssetKey, payBank, payAmount, getAmount]);
 
   // Fetch public payment methods for home page
   useEffect(() => {
