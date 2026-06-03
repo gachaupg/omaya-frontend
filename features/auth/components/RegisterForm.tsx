@@ -1750,13 +1750,13 @@ export default function RegistrationPage() {
                   >
                     {t(
                       "auth.register.terms",
-                      "By clicking Register, you agree to our Terms of Services and that you have read our Data Use Policy, including our Cookie Use"
-                    ).split(/(Terms of Services|Data Use Policy|Cookie Use)/).map((part, i) =>
+                      "By clicking Register, you agree to our Terms of Services and that you have read our Privacy Policy, including our Cookie Policy"
+                    ).split(/(Terms of Services|Privacy Policy|Cookie Policy)/).map((part, i) =>
                       part === "Terms of Services" ? (
                         <Link key={i} href="/legal/terms-of-service" className="text-[#1D8751] hover:underline" onClick={persistRegisterDraft}>{part}</Link>
-                      ) : part === "Data Use Policy" ? (
-                        <Link key={i} href="/legal/data-use-policy" className="text-[#1D8751] hover:underline" onClick={persistRegisterDraft}>{part}</Link>
-                      ) : part === "Cookie Use" ? (
+                      ) : part === "Privacy Policy" ? (
+                        <Link key={i} href="/legal/privacy-policy" className="text-[#1D8751] hover:underline" onClick={persistRegisterDraft}>{part}</Link>
+                      ) : part === "Cookie Policy" ? (
                         <Link key={i} href="/legal/cookies-policy" className="text-[#1D8751] hover:underline" onClick={persistRegisterDraft}>{part}</Link>
                       ) : (
                         part
