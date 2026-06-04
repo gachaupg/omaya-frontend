@@ -400,27 +400,23 @@ export default function MarketingPage() {
           <div className="absolute top-0 left-0 right-0 h-[80px] bg-[#000000] z-10 hidden dark:block"></div>
           <div className="absolute top-0 left-0 right-0 h-[80px] bg-white z-10 dark:hidden"></div>
 
-          {/* Very subtle purple glow - top left (faint, diffused) - positioned lower to not show behind navbar */}
-          <div className="absolute top-[150px] left-0 w-[500px] h-[500px] bg-purple-600/3 dark:bg-purple-600/5 rounded-full blur-[150px]"></div>
-          <div className="absolute top-[200px] left-[50px] w-[400px] h-[400px] bg-purple-500/2 dark:bg-purple-500/4 rounded-full blur-[120px]"></div>
-
-          {/* Faint blue glow - top right to center (faint, diffused) - positioned lower */}
-          <div className="absolute top-[150px] right-0 w-[600px] h-[600px] bg-blue-600/3 dark:bg-blue-600/5 rounded-full blur-[160px]"></div>
-          <div className="absolute top-[250px] right-[100px] w-[450px] h-[450px] bg-blue-500/2 dark:bg-blue-500/4 rounded-full blur-[130px]"></div>
-
-          {/* More noticeable green glow - mid-left and bottom-left (still subtle but more visible) */}
-          <div className="absolute bottom-0 left-0 w-[700px] h-[700px] bg-[#0D4D2E]/8 dark:bg-[#0D4D2E]/12 rounded-full blur-[140px]"></div>
-          <div className="absolute bottom-[100px] left-[100px] w-[600px] h-[600px] bg-[#1D8751]/6 dark:bg-[#1D8751]/10 rounded-full blur-[120px]"></div>
-          <div className="absolute top-[400px] left-[150px] w-[500px] h-[500px] bg-[#13B562]/4 dark:bg-[#13B562]/8 rounded-full blur-[110px]"></div>
-
-          {/* Very faint, sparse glowing green particles - only in lower areas, not near navbar */}
-          <div className="absolute top-[300px] left-1/4 w-1.5 h-1.5 bg-[#1D8751] rounded-full opacity-8 dark:opacity-15 blur-sm animate-pulse"></div>
-          <div className="absolute top-[500px] left-1/3 w-2 h-2 bg-[#13B562] rounded-full opacity-6 dark:opacity-12 blur-sm animate-pulse" style={{ animationDelay: '0.8s' }}></div>
-          <div className="absolute bottom-32 left-1/5 w-1.5 h-1.5 bg-[#1D8751] rounded-full opacity-8 dark:opacity-15 blur-sm animate-pulse" style={{ animationDelay: '1.5s' }}></div>
-          <div className="absolute top-[600px] right-1/3 w-2 h-2 bg-[#13B562] rounded-full opacity-5 dark:opacity-10 blur-sm animate-pulse" style={{ animationDelay: '0.4s' }}></div>
-          <div className="absolute bottom-1/4 right-1/4 w-1.5 h-1.5 bg-[#1D8751] rounded-full opacity-7 dark:opacity-12 blur-sm animate-pulse" style={{ animationDelay: '1.2s' }}></div>
-          <div className="absolute top-[700px] left-1/2 w-2 h-2 bg-[#13B562] rounded-full opacity-6 dark:opacity-11 blur-sm animate-pulse" style={{ animationDelay: '0.6s' }}></div>
-          <FloatingParticles count={4} size={{ min: 5, max: 11 }} />
+          {/* Colored glows / particles — sm+ only (filter blur breaks compositing on mobile) */}
+          <div className="hidden sm:contents" aria-hidden>
+            <div className="absolute top-[150px] left-0 w-[500px] h-[500px] bg-purple-600/3 dark:bg-purple-600/5 rounded-full blur-[150px]"></div>
+            <div className="absolute top-[200px] left-[50px] w-[400px] h-[400px] bg-purple-500/2 dark:bg-purple-500/4 rounded-full blur-[120px]"></div>
+            <div className="absolute top-[150px] right-0 w-[600px] h-[600px] bg-blue-600/3 dark:bg-blue-600/5 rounded-full blur-[160px]"></div>
+            <div className="absolute top-[250px] right-[100px] w-[450px] h-[450px] bg-blue-500/2 dark:bg-blue-500/4 rounded-full blur-[130px]"></div>
+            <div className="absolute bottom-0 left-0 w-[700px] h-[700px] bg-[#0D4D2E]/8 dark:bg-[#0D4D2E]/12 rounded-full blur-[140px]"></div>
+            <div className="absolute bottom-[100px] left-[100px] w-[600px] h-[600px] bg-[#1D8751]/6 dark:bg-[#1D8751]/10 rounded-full blur-[120px]"></div>
+            <div className="absolute top-[400px] left-[150px] w-[500px] h-[500px] bg-[#13B562]/4 dark:bg-[#13B562]/8 rounded-full blur-[110px]"></div>
+            <div className="absolute top-[300px] left-1/4 w-1.5 h-1.5 bg-[#1D8751] rounded-full opacity-8 dark:opacity-15 blur-sm animate-pulse"></div>
+            <div className="absolute top-[500px] left-1/3 w-2 h-2 bg-[#13B562] rounded-full opacity-6 dark:opacity-12 blur-sm animate-pulse" style={{ animationDelay: '0.8s' }}></div>
+            <div className="absolute bottom-32 left-1/5 w-1.5 h-1.5 bg-[#1D8751] rounded-full opacity-8 dark:opacity-15 blur-sm animate-pulse" style={{ animationDelay: '1.5s' }}></div>
+            <div className="absolute top-[600px] right-1/3 w-2 h-2 bg-[#13B562] rounded-full opacity-5 dark:opacity-10 blur-sm animate-pulse" style={{ animationDelay: '0.4s' }}></div>
+            <div className="absolute bottom-1/4 right-1/4 w-1.5 h-1.5 bg-[#1D8751] rounded-full opacity-7 dark:opacity-12 blur-sm animate-pulse" style={{ animationDelay: '1.2s' }}></div>
+            <div className="absolute top-[700px] left-1/2 w-2 h-2 bg-[#13B562] rounded-full opacity-6 dark:opacity-11 blur-sm animate-pulse" style={{ animationDelay: '0.6s' }}></div>
+            <FloatingParticles count={4} size={{ min: 5, max: 11 }} />
+          </div>
 
         </div>
 
@@ -471,7 +467,7 @@ export default function MarketingPage() {
               <p className="leading-relaxed max-w-full sm:max-w-md md:max-w-xl mx-auto lg:mx-0 px-4 sm:px-0 text-xs sm:text-base lg:text-xl relative">
                 {/* Soft, diffused purple glow - only on left side, behind text - more visible */}
 
-                <span className="absolute -left-4 sm:-left-6 md:-left-8 top-1/2 -translate-y-1/2 w-60 h-52 -z-10 bg-linear-to-br  from-[#9810FA] to-[#E60076] rounded-full blur-3xl opacity-20"></span>
+                <span className="absolute -left-4 sm:-left-6 md:-left-8 top-1/2 -translate-y-1/2 w-60 h-52 -z-10 bg-linear-to-br from-[#9810FA] to-[#E60076] rounded-full blur-3xl opacity-20 hidden sm:block"></span>
 
                 {/* <span className="absolute -left-8 sm:-left-12 md:-left-16 top-1/2 -translate-y-1/2 w-32 sm:w-40 md:w-48 h-full -z-10 bg-gradient-to-r from-purple-500/20 via-purple-400/12 to-transparent dark:from-purple-500/30 dark:via-purple-400/18 dark:to-transparent rounded-full blur-3xl"></span>
                 <span className="absolute -left-4 sm:-left-6 md:-left-8 top-1/2 -translate-y-1/2 w-24 sm:w-32 md:w-40 h-3/4 -z-10 bg-gradient-to-br from-purple-600/15 via-purple-500/10 to-transparent dark:from-purple-600/25 dark:via-purple-500/15 dark:to-transparent rounded-full blur-2xl"></span>
@@ -504,7 +500,7 @@ export default function MarketingPage() {
               {/* Stats */}
               <div className="flex flex-wrap gap-2 sm:gap-3 justify-center lg:justify-start pt-2 md:pt-2 w-full">
                 {heroStats.map((stat, index) => (
-                  <div key={index} className="bg-white/5 dark:bg-white/5 backdrop-blur-sm rounded-2xl px-2 py-2 sm:px-4 sm:py-3 flex flex-col items-center sm:items-start gap-2 shadow-lg border border-white/10 flex-1 min-w-[120px] max-w-[180px]">
+                  <div key={index} className="bg-white/5 dark:bg-white/5 sm:backdrop-blur-sm rounded-2xl px-2 py-2 sm:px-4 sm:py-3 flex flex-col items-center sm:items-start gap-2 shadow-lg border border-white/10 flex-1 min-w-[120px] max-w-[180px]">
                     <div className={`w-10 h-10 rounded-xl bg-linear-to-br ${stat.gradient} flex items-center justify-center shadow-lg`}>
                       <stat.icon className="w-5 h-5 text-white" />
                     </div>
@@ -574,7 +570,7 @@ export default function MarketingPage() {
           </div>
           <div className="relative flex justify-center mb-4">
             {/* Greenish glow behind title */}
-            <div className="pointer-events-none absolute inset-0 flex justify-center items-center -z-10">
+            <div className="pointer-events-none absolute inset-0 hidden sm:flex justify-center items-center -z-10" aria-hidden>
               {/* Wide soft glow */}
               <div className="w-[440px] sm:w-[700px] h-[120px] sm:h-[150px] bg-gradient-to-r from-transparent via-[#1D8751]/32 to-transparent blur-3xl rounded-full" />
               {/* Brighter core glow */}
@@ -836,7 +832,7 @@ export default function MarketingPage() {
       </div>
 
       {/* Safe & Reliable Section */}
-      <div className="w-full bg-white dark:bg-[var(--bg-color)] pt-8 pb-8 sm:pb-16 max-sm:overflow-visible sm:overflow-hidden sm:isolate">
+      <div className="w-full bg-white dark:bg-[var(--bg-color)] pt-8 pb-8 sm:pb-16 overflow-hidden isolate marketing-mobile-safe">
         <div className="container mx-auto max-w-6xl 2xl:max-w-screen-2xl px-4">
           {/* Outer card with border that fades downward (no rounded top edge) */}
           <div className="relative rounded-b-3xl">
@@ -849,15 +845,6 @@ export default function MarketingPage() {
                   className="absolute pointer-events-none z-1 hidden sm:block bg-[#1D8751] blur-3xl w-90 h-70 bottom-30 right-40 opacity-20"
                   aria-hidden
                 />
-                <div
-                  className="absolute pointer-events-none z-1 sm:hidden bottom-20 right-8 w-48 h-48 opacity-25"
-                  style={{
-                    background:
-                      "radial-gradient(circle, rgba(29, 135, 81, 0.35) 0%, transparent 70%)",
-                  }}
-                  aria-hidden
-                />
-
                 {/* Bottom fade overlays — desktop only; on mobile they bleed into the next section and cause stripe glitches */}
                 <div
                   className="absolute inset-x-0 bottom-0 h-3/4 rounded-b-3xl pointer-events-none dark:hidden hidden sm:block"
@@ -1010,8 +997,12 @@ export default function MarketingPage() {
       </div>
 
       {/* Easy Onboarding Section — no decorative layers on mobile (they paint in the gap between stacked cards and cause GPU static) */}
-      <div className="w-full bg-white dark:bg-[var(--bg-color)] pt-4 md:pt-6 pb-16 md:pb-24 relative max-sm:overflow-visible sm:overflow-hidden">
-        <div className="absolute inset-0 overflow-hidden pointer-events-none hidden sm:block" aria-hidden>
+      <div className="w-full pt-4 md:pt-6 pb-16 md:pb-24 relative overflow-hidden isolate marketing-mobile-safe marketing-mobile-no-blur">
+        <div
+          className="pointer-events-none absolute inset-0 z-0 bg-white dark:bg-[var(--bg-color)]"
+          aria-hidden
+        />
+        <div className="absolute inset-0 overflow-hidden pointer-events-none hidden sm:block z-0" aria-hidden>
           <FloatingParticles count={6} size={{ min: 5, max: 11 }} />
           <div className="absolute inset-0 opacity-30">
             <div className="absolute top-5 left-20 w-[260px] h-[320px] rounded-full bg-[#1D8751] blur-3xl opacity-60" />
@@ -1041,9 +1032,9 @@ export default function MarketingPage() {
             Begin your crypto journey in 4 simple steps. Join thousands of traders who trust OMAYA.io.
           </p>
 
-          {/* Steps Cards — flex column on mobile avoids grid + overlay compositor bugs */}
+          {/* Steps Cards — margin spacing on mobile (flex gap + GPU layers causes stripe artifacts) */}
           <div className="w-full max-w-6xl mx-auto">
-            <div className="flex flex-col gap-8 sm:grid sm:grid-cols-2 lg:grid-cols-4 sm:gap-6 lg:gap-4">
+            <div className="flex flex-col max-sm:gap-0 sm:grid sm:grid-cols-2 lg:grid-cols-4 sm:gap-6 lg:gap-4">
               {[
                 {
                   number: 1,
@@ -1098,8 +1089,11 @@ export default function MarketingPage() {
                   ],
                 },
               ].map((step, index) => (
-                <div key={step.number} className="relative w-full">
-                  <div className="relative w-full bg-white dark:bg-[#141419] sm:dark:bg-white/5 rounded-3xl p-6 pt-2 border-2 border-[#1D8751]/80 max-sm:shadow-none sm:shadow-lg flex flex-col items-center text-center">
+                <div
+                  key={step.number}
+                  className={`relative w-full marketing-step-card max-sm:mb-8 ${index === 3 ? "max-sm:mb-0" : ""}`}
+                >
+                  <div className="relative w-full bg-white dark:bg-[#141419] sm:dark:bg-white/5 rounded-3xl p-6 pt-2 border border-[#1D8751]/80 sm:border-2 max-sm:shadow-none sm:shadow-lg flex flex-col items-center text-center">
                     <div className="absolute top-4 right-4 w-10 h-10 rounded-full bg-[#1D8751]/20 border border-[#1D8751]/30 flex items-center justify-center">
                       <span className="text-[#1D8751] text-base font-bold">{step.number}</span>
                     </div>

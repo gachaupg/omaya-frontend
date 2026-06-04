@@ -289,6 +289,27 @@ textarea:active {
   border-color: var(--color-border);
 }
 
+/* Mobile marketing: avoid GPU stripe artifacts between stacked cards (flex gap + blur layers) */
+@media (max-width: 639px) {
+  .marketing-mobile-safe {
+    overflow: hidden;
+    isolation: isolate;
+  }
+
+  .marketing-step-card {
+    isolation: isolate;
+    contain: paint;
+    overflow: hidden;
+  }
+
+  .marketing-mobile-no-blur,
+  .marketing-mobile-no-blur * {
+    filter: none !important;
+    backdrop-filter: none !important;
+    -webkit-backdrop-filter: none !important;
+  }
+}
+
 /* Reusable background and card color utility classes */
 .bg-app {
   background-color: var(--bg-color);
