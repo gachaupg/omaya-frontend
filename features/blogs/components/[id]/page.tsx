@@ -42,7 +42,7 @@ const SingleBlogPage = () => {
 
   if (loading) {
     return (
-      <div className="bg-white dark:bg-[var(--bg-color)] text-gray-900 dark:text-white min-h-screen p-4 sm:p-6 md:p-8 flex items-center justify-center">
+      <div className="bg-white dark:bg-[var(--bg-color)] text-gray-900 dark:text-white min-h-screen pt-20 sm:pt-24 px-4 pb-8 sm:px-6 md:px-8 flex items-center justify-center">
         <div className="text-center">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#1D8751] mx-auto mb-4"></div>
           <p className="text-gray-600 dark:text-gray-400">
@@ -55,7 +55,7 @@ const SingleBlogPage = () => {
 
   if (error) {
     return (
-      <div className="bg-white dark:bg-[var(--bg-color)] text-gray-900 dark:text-white min-h-screen p-4 sm:p-6 md:p-8 flex items-center justify-center">
+      <div className="bg-white dark:bg-[var(--bg-color)] text-gray-900 dark:text-white min-h-screen pt-20 sm:pt-24 px-4 pb-8 sm:px-6 md:px-8 flex items-center justify-center">
         <div className="text-center">
           <p className="text-red-400 mb-4">Error: {error}</p>
           <button
@@ -71,7 +71,7 @@ const SingleBlogPage = () => {
 
   if (!blogPost) {
     return (
-      <div className="bg-white dark:bg-[var(--bg-color)] text-gray-900 dark:text-white min-h-screen p-4 sm:p-6 md:p-8 flex items-center justify-center">
+      <div className="bg-white dark:bg-[var(--bg-color)] text-gray-900 dark:text-white min-h-screen pt-20 sm:pt-24 px-4 pb-8 sm:px-6 md:px-8 flex items-center justify-center">
         <div className="text-center">
           <p className="text-gray-600 dark:text-gray-400 mb-4">
             Blog post not found
@@ -88,7 +88,7 @@ const SingleBlogPage = () => {
   }
 
   return (
-    <div className="bg-white dark:bg-[var(--bg-color)] text-gray-900 dark:text-white min-h-screen px-4 sm:p-6 md:p-8 mt-16">
+    <div className="bg-white dark:bg-[var(--bg-color)] text-gray-900 dark:text-white min-h-screen pt-20 sm:pt-24 px-4 pb-8 sm:px-6 md:px-8 md:pb-8">
       <div className="w-full max-w-4xl min-w-0 mx-auto px-0 sm:px-4 md:px-6 lg:px-8">
         {/* Back Button */}
         <button

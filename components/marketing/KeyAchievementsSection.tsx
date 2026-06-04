@@ -35,10 +35,25 @@ export default function KeyAchievementsSection() {
       data-stats-version="2026-06-01"
       className="pt-4 sm:pt-6 md:pt-8 pb-12 sm:pb-16 md:pb-20 px-4 md:px-10 lg:px-16 xl:px-[100px] bg-white dark:bg-(--card-color) relative z-10 overflow-hidden"
     >
-      <div className="absolute top-0 left-90 w-[200px] sm:w-[300px] h-[200px] sm:h-[300px] bg-[#1D8751]/10 blur-3xl rounded-full" />
+      <div
+        className="absolute top-0 left-90 w-[200px] sm:w-[300px] h-[200px] sm:h-[300px] rounded-full pointer-events-none sm:hidden opacity-30"
+        style={{
+          background:
+            "radial-gradient(circle, rgba(29, 135, 81, 0.25) 0%, transparent 70%)",
+        }}
+        aria-hidden
+      />
+      <div className="absolute top-0 left-90 w-[200px] sm:w-[300px] h-[200px] sm:h-[300px] bg-[#1D8751]/10 blur-3xl rounded-full hidden sm:block pointer-events-none" aria-hidden />
 
-      <div className="absolute inset-0 overflow-hidden pointer-events-none -z-1">
-        <div className="absolute w-[280px] sm:w-[300px] h-[600px] right-90 bottom-25 sm:h-24 blur-3xl bg-[#9810FA] rounded-full opacity-15" />
+      <div className="absolute inset-0 overflow-hidden pointer-events-none -z-1" aria-hidden>
+        <div
+          className="absolute w-[280px] right-90 bottom-25 h-44 sm:hidden opacity-20"
+          style={{
+            background:
+              "radial-gradient(circle, rgba(152, 16, 250, 0.2) 0%, transparent 72%)",
+          }}
+        />
+        <div className="absolute w-[280px] sm:w-[300px] h-[600px] right-90 bottom-25 sm:h-24 blur-3xl bg-[#9810FA] rounded-full opacity-15 hidden sm:block" />
       </div>
 
       <div className="container mx-auto max-w-6xl 2xl:max-w-screen-2xl">
@@ -191,9 +206,17 @@ function AchievementCard({
   description: string;
 }) {
   return (
-    <div className="bg-gray-50 dark:bg-white/2 rounded-lg sm:rounded-3xl p-4 sm:p-5 md:p-6 flex flex-col relative overflow-hidden border border-gray-200 dark:border-white/10">
-      <div className="absolute inset-0 bg-linear-to-b from-white/5 via-white/2 to-transparent pointer-events-none rounded-lg sm:rounded-3xl" />
-      <div className="absolute top-2 right-7 w-25 h-25 bg-[#1D8751] opacity-45 blur-3xl rounded-full pointer-events-none" />
+    <div className="bg-gray-50 dark:bg-[#141419] sm:dark:bg-white/2 rounded-lg sm:rounded-3xl p-4 sm:p-5 md:p-6 flex flex-col relative overflow-hidden isolate border border-gray-200 dark:border-white/10">
+      <div className="absolute inset-0 bg-linear-to-b from-white/5 via-white/2 to-transparent pointer-events-none rounded-lg sm:rounded-3xl hidden sm:block" />
+      <div
+        className="absolute top-2 right-7 w-25 h-25 rounded-full pointer-events-none sm:hidden opacity-25"
+        style={{
+          background:
+            "radial-gradient(circle, rgba(29, 135, 81, 0.35) 0%, transparent 70%)",
+        }}
+        aria-hidden
+      />
+      <div className="absolute top-2 right-7 w-25 h-25 bg-[#1D8751] opacity-45 blur-3xl rounded-full pointer-events-none hidden sm:block" aria-hidden />
 
       <div className="relative z-10 flex flex-col">
         <div className="relative mb-3 sm:mb-4 self-start">

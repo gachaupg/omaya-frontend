@@ -558,8 +558,8 @@ export default function MarketingPage() {
         id="supported-assets"
         className="w-full bg-white dark:bg-[var(--bg-color)] pt-4 md:pt-6 pb-16 px-4 md:px-10 lg:px-16 xl:px-[100px] relative overflow-hidden"
       >
-        {/* Subtle green glowing dots background */}
-        <div className="absolute inset-0 overflow-hidden">
+        {/* Subtle green glowing dots — desktop only (blur + pulse breaks compositing on some mobile GPUs) */}
+        <div className="absolute inset-0 overflow-hidden hidden sm:block" aria-hidden>
           <div className="absolute top-20 left-10 w-2 h-2 bg-[#13B562] rounded-full opacity-60 blur-sm animate-pulse"></div>
           <div className="absolute top-40 right-20 w-3 h-3 bg-[#13B562] rounded-full opacity-40 blur-md animate-pulse" style={{ animationDelay: '0.5s' }}></div>
           <div className="absolute bottom-32 left-1/4 w-2 h-2 bg-[#1D8751] rounded-full opacity-50 blur-sm animate-pulse" style={{ animationDelay: '1s' }}></div>
@@ -836,7 +836,7 @@ export default function MarketingPage() {
       </div>
 
       {/* Safe & Reliable Section */}
-      <div className="w-full bg-white dark:bg-[var(--bg-color)] pt-8 pb-16 overflow-hidden isolate">
+      <div className="w-full bg-white dark:bg-[var(--bg-color)] pt-8 pb-8 sm:pb-16 max-sm:overflow-visible sm:overflow-hidden sm:isolate">
         <div className="container mx-auto max-w-6xl 2xl:max-w-screen-2xl px-4">
           {/* Outer card with border that fades downward (no rounded top edge) */}
           <div className="relative rounded-b-3xl">
@@ -858,28 +858,27 @@ export default function MarketingPage() {
                   aria-hidden
                 />
 
-                {/* Overlay to fade card background to page background at bottom */}
+                {/* Bottom fade overlays — desktop only; on mobile they bleed into the next section and cause stripe glitches */}
                 <div
-                  className="absolute inset-x-0 bottom-0 h-3/4 rounded-b-3xl pointer-events-none dark:hidden"
+                  className="absolute inset-x-0 bottom-0 h-3/4 rounded-b-3xl pointer-events-none dark:hidden hidden sm:block"
                   style={{
                     background: 'linear-gradient(to top, rgb(255, 255, 255) 0%, rgba(255, 255, 255, 0.95) 25%, rgba(255, 255, 255, 0.8) 50%, rgba(255, 255, 255, 0.5) 75%, transparent 100%)',
                   }}
                 ></div>
                 <div
-                  className="absolute inset-x-0 bottom-0 h-3/4 rounded-b-3xl pointer-events-none hidden dark:block"
+                  className="absolute inset-x-0 bottom-0 h-3/4 rounded-b-3xl pointer-events-none hidden sm:dark:block"
                   style={{
                     background: 'linear-gradient(to top, rgb(10, 10, 15) 0%, rgba(10, 10, 15, 0.95) 25%, rgba(10, 10, 15, 0.8) 50%, rgba(10, 10, 15, 0.5) 75%, transparent 100%)',
                   }}
                 ></div>
-                {/* Overlay to fade border at bottom - keep behind content */}
                 <div
-                  className="absolute inset-x-0 bottom-0 h-1/2 rounded-b-3xl pointer-events-none z-0 dark:hidden"
+                  className="absolute inset-x-0 bottom-0 h-1/2 rounded-b-3xl pointer-events-none z-0 dark:hidden hidden sm:block"
                   style={{
                     background: 'linear-gradient(to top, rgb(255, 255, 255) 0%, transparent 100%)',
                   }}
                 ></div>
                 <div
-                  className="absolute inset-x-0 bottom-0 h-1/2 rounded-b-3xl pointer-events-none hidden dark:block z-0"
+                  className="absolute inset-x-0 bottom-0 h-1/2 rounded-b-3xl pointer-events-none hidden sm:dark:block z-0"
                   style={{
                     background: 'linear-gradient(to top, rgb(10, 10, 15) 0%, transparent 100%)',
                   }}
@@ -1010,34 +1009,11 @@ export default function MarketingPage() {
         </div>
       </div>
 
-      {/* Easy Onboarding Section */}
-      <div className="w-full bg-white dark:bg-[var(--bg-color)] pt-4 md:pt-6 pb-16 md:pb-24 relative overflow-hidden">
-        {/* Background effects — radial gradients on mobile (no filter blur) to avoid GPU line artifacts */}
-        <div className="absolute inset-0 overflow-hidden pointer-events-none" aria-hidden>
-          <div className="hidden sm:block">
-            <FloatingParticles count={6} size={{ min: 5, max: 11 }} />
-          </div>
-
-          {/* Mobile: gradient-only glow */}
-          <div className="absolute inset-0 opacity-40 sm:hidden">
-            <div
-              className="absolute top-4 left-8 w-36 h-44"
-              style={{
-                background:
-                  "radial-gradient(circle, rgba(29, 135, 81, 0.4) 0%, transparent 72%)",
-              }}
-            />
-            <div
-              className="absolute top-56 right-4 w-40 h-52"
-              style={{
-                background:
-                  "radial-gradient(circle, rgba(29, 135, 81, 0.32) 0%, transparent 72%)",
-              }}
-            />
-          </div>
-
-          {/* sm+: blur orbs (hidden on phones where blur causes stripe glitches) */}
-          <div className="absolute inset-0 opacity-30 hidden sm:block">
+      {/* Easy Onboarding Section — no decorative layers on mobile (they paint in the gap between stacked cards and cause GPU static) */}
+      <div className="w-full bg-white dark:bg-[var(--bg-color)] pt-4 md:pt-6 pb-16 md:pb-24 relative max-sm:overflow-visible sm:overflow-hidden">
+        <div className="absolute inset-0 overflow-hidden pointer-events-none hidden sm:block" aria-hidden>
+          <FloatingParticles count={6} size={{ min: 5, max: 11 }} />
+          <div className="absolute inset-0 opacity-30">
             <div className="absolute top-5 left-20 w-[260px] h-[320px] rounded-full bg-[#1D8751] blur-3xl opacity-60" />
             <div className="absolute bottom-24 right-10 w-[300px] h-[360px] rounded-full bg-[#1D8751] blur-3xl opacity-60" />
           </div>
@@ -1065,9 +1041,9 @@ export default function MarketingPage() {
             Begin your crypto journey in 4 simple steps. Join thousands of traders who trust OMAYA.io.
           </p>
 
-          {/* Steps Cards */}
+          {/* Steps Cards — flex column on mobile avoids grid + overlay compositor bugs */}
           <div className="w-full max-w-6xl mx-auto">
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 lg:gap-4">
+            <div className="flex flex-col gap-8 sm:grid sm:grid-cols-2 lg:grid-cols-4 sm:gap-6 lg:gap-4">
               {[
                 {
                   number: 1,
@@ -1122,29 +1098,21 @@ export default function MarketingPage() {
                   ],
                 },
               ].map((step, index) => (
-                <div key={step.number} className="relative">
-                  {/* Step Card */}
-                  <div className="relative bg-white dark:bg-white/5 rounded-3xl p-6 pt-2 border-2 border-[#1D8751]/80 shadow-lg h-full flex flex-col items-center text-center mx-auto">
-                    {/* Number Badge - Inside card, top right */}
-                    <div className="absolute top-4 right-4 w-10 h-10  rounded-full bg-[#1D8751]/20 border border-[#1D8751]/30 flex items-center justify-center">
-                      <span className="text-[#1D8751] dark:text-[#1D8751] text-base font-bold">{step.number}</span>
+                <div key={step.number} className="relative w-full">
+                  <div className="relative w-full bg-white dark:bg-[#141419] sm:dark:bg-white/5 rounded-3xl p-6 pt-2 border-2 border-[#1D8751]/80 max-sm:shadow-none sm:shadow-lg flex flex-col items-center text-center">
+                    <div className="absolute top-4 right-4 w-10 h-10 rounded-full bg-[#1D8751]/20 border border-[#1D8751]/30 flex items-center justify-center">
+                      <span className="text-[#1D8751] text-base font-bold">{step.number}</span>
                     </div>
 
-                    {/* Icon Container with gradient background */}
                     <div className="relative mb-5 mt-2">
-                      {/* Outer darker background container */}
-                      <div className={`relative ${step.ringColor} rounded-[20px] p-2 w-fit`}>
-                        {/* Green dots decoration - positioned on the outer container */}
-                        <div className="absolute top-1 left-1 w-2 h-2 lg:w-3 lg:h-3 bg-[#1D8751] rounded-full z-10"></div>
-                        <div className="absolute bottom-1 right-1 w-2 h-2 lg:w-3 lg:h-3 bg-[#1D8751] rounded-full z-10"></div>
-
-                        {/* Inner gradient icon background */}
-                        <div className="relative">
-                          <div className={`${step.iconBg} w-[72px] h-[72px] rounded-[16px] flex items-center justify-center shadow-lg relative overflow-hidden`}>
-                            {/* Gradient overlay for depth */}
-                            <div className="absolute inset-0 bg-gradient-to-br from-white/10 to-transparent rounded-[16px]"></div>
-                            <step.icon className="w-8 h-8 text-white relative z-10" strokeWidth={2} />
-                          </div>
+                      <div className={`relative ${step.ringColor} rounded-[20px] p-2 w-fit mx-auto`}>
+                        <div className="hidden sm:block absolute top-1 left-1 w-2 h-2 lg:w-3 lg:h-3 bg-[#1D8751] rounded-full z-10" />
+                        <div className="hidden sm:block absolute bottom-1 right-1 w-2 h-2 lg:w-3 lg:h-3 bg-[#1D8751] rounded-full z-10" />
+                        <div
+                          className={`relative ${step.iconBg} w-[72px] h-[72px] rounded-[16px] flex items-center justify-center max-sm:shadow-none sm:shadow-lg`}
+                        >
+                          <div className="hidden sm:block absolute inset-0 bg-gradient-to-br from-white/10 to-transparent rounded-[16px]" />
+                          <step.icon className="w-8 h-8 text-white relative z-10" strokeWidth={2} />
                         </div>
                       </div>
                     </div>
@@ -1217,8 +1185,10 @@ export default function MarketingPage() {
   px-4 sm:px-6 md:px-10 lg:px-20 xl:px-28
   relative overflow-hidden
 ">
-        {/* Subtle floating particles */}
-        <FloatingParticles count={8} size={{ min: 5, max: 11 }} />
+        {/* Subtle floating particles — hidden on mobile (animated layers + blur cause compositor artifacts) */}
+        <div className="hidden sm:block absolute inset-0 pointer-events-none" aria-hidden>
+          <FloatingParticles count={8} size={{ min: 5, max: 11 }} />
+        </div>
         {/* <div className="pointer-events-none absolute inset-0 hidden sm:block">
           <div className="absolute top-16 left-1/4 w-2 h-2 bg-[#1D8751] rounded-full opacity-60"></div>
           <div className="absolute top-32 right-1/3 w-3 h-3 bg-[#13B562] rounded-full opacity-40 "></div>
@@ -1283,8 +1253,8 @@ export default function MarketingPage() {
 
             {/* Right Side - Content */}
             <div className="relative space-y-6 sm:space-y-8 max-w-xl lg:max-w-none order-1 lg:order-2">
-              {/* Background glows */}
-              <div className="pointer-events-none absolute inset-0 -z-10">
+              {/* Background glows — sm+ only */}
+              <div className="pointer-events-none absolute inset-0 -z-10 hidden sm:block" aria-hidden>
                 <div className="absolute inset-0 bg-gradient-to-br from-[#1D8751]/15 via-[#0E5531]/10 to-transparent rounded-[40px] blur-3xl opacity-60 dark:from-[#1D8751]/25 dark:via-[#0E5531]/20 dark:opacity-70"></div>
                 <div className="absolute -bottom-1 -right-10 w-90 h-110 rounded-full blur-3xl opacity-60 bg-[#1D8751]/30 dark:opacity-80"></div>
               </div>

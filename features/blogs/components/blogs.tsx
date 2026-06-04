@@ -113,7 +113,7 @@ const BlogPage = () => {
 
   if (loading) {
     return (
-      <div className="bg-white dark:bg-[var(--bg-color)] text-gray-900 dark:text-white min-h-screen p-4 sm:p-6 md:p-8 flex items-center justify-center">
+      <div className="bg-white dark:bg-[var(--bg-color)] text-gray-900 dark:text-white min-h-screen pt-20 sm:pt-24 px-4 pb-8 sm:px-6 md:px-8 flex items-center justify-center">
         <div className="text-center">
           <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-[#1D8751] mx-auto mb-4"></div>
           <p className="text-gray-600 dark:text-gray-400">
@@ -126,7 +126,7 @@ const BlogPage = () => {
 
   if (error) {
     return (
-      <div className="bg-white dark:bg-[var(--bg-color)] text-gray-900 dark:text-white min-h-screen p-4 sm:p-6 md:p-8 flex items-center justify-center">
+      <div className="bg-white dark:bg-[var(--bg-color)] text-gray-900 dark:text-white min-h-screen pt-20 sm:pt-24 px-4 pb-8 sm:px-6 md:px-8 flex items-center justify-center">
         <div className="text-center">
           <p className="text-red-400 mb-4">
             {t("blogs.error.title", "Error:")} {error}
@@ -149,9 +149,9 @@ const BlogPage = () => {
   }
 
   return (
-    <div className="bg-white dark:bg-[var(--bg-color)] text-gray-900 dark:text-white min-h-screen p-0 pb-14 sm:p-6 md:p-8 mt-14 sm:mt-16">
-      <div className="w-full px-4 md:px-6 lg:px-8">
-        <header className="mb-4 md:mb-6 text-center md:text-left">
+    <div className="bg-white dark:bg-[var(--bg-color)] text-gray-900 dark:text-white min-h-screen pt-20 sm:pt-24 pb-14 px-4 sm:px-6 sm:pb-8 md:px-8 md:pb-8">
+      <div className="w-full md:px-2 lg:px-0 max-w-7xl mx-auto">
+        <header className="mb-4 md:mb-6 text-center md:text-left scroll-mt-24">
           <h1 className="text-2xl sm:text-2xl md:text-3xl font-bold leading-tight">
             {(() => {
               const title = t("blogs.title", "Enjoy Our Blog the Latest Company Updates");
