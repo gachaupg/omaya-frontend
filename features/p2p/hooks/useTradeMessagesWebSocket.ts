@@ -279,7 +279,9 @@ export const useTradeMessagesWebSocket = (options: UseTradeMessagesWebSocketOpti
               candidatePayload.sender_name ??
               candidatePayload.sender_email ??
               String(candidatePayload.sender ?? ""),
-            message: candidatePayload.message ?? candidatePayload.content ?? "",
+            message: String(
+              candidatePayload.message ?? candidatePayload.content ?? ""
+            ),
             images:
               candidatePayload.images ||
               candidatePayload.uploaded_images ||
@@ -366,7 +368,9 @@ export const useTradeMessagesWebSocket = (options: UseTradeMessagesWebSocketOpti
                   message.data.sender_name ??
                   message.data.sender_email ??
                   String(message.data.sender ?? ""),
-                message: message.data.message ?? message.data.content ?? "",
+                message: String(
+                  message.data.message ?? message.data.content ?? ""
+                ),
                 // IMPORTANT: Set images array even if empty - this signals that refresh is needed
                 images: message.data.images || [],
                 audios: message.data.audios || message.data.uploaded_audios || [],

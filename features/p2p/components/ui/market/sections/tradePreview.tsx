@@ -18,7 +18,6 @@ import { fetchWallets } from "@/features/p2p/slices/walletSlice";
 import { setConfirmOrderSnapshot } from "@/features/p2p/slices/orderSlice";
 import { getTransactionSummary, matchP2POrder } from "@/features/p2p/api";
 import { PresenceIndicator } from "./UserStatusBadge";
-import { PendingAcceptanceWaitModal } from "./PendingAcceptanceWaitModal";
 import { isTradeAcceptedFromConfirmOrder } from "@/features/p2p/utils/tradeWsAcceptanceGate";
 import {
   extractTradeIdFromMatchResponse,
@@ -43,12 +42,24 @@ import {
 import PaymentMethodsModal from "@/features/p2p/components/ui/p2pdashboard/sections/PaymentMethodsModal";
 import { logger } from "@/lib/logger";
 
+export type PendingAcceptanceSession = {
+  tradeId: string;
+  advertiserOrderId: string;
+  advertiserName: string;
+  advertiserPhoto?: string;
+  advertiserInitials: string;
+  isOnline: boolean;
+  tradeType: "buy" | "sell";
+  commission: string;
+};
+
 interface TradePreviewProps {
   advertiserData: MarketRow;
   onClose?: () => void;
   tradeType?: "buy" | "sell";
   paymentDetails?: any[];
   scrollContainerRef?: React.RefObject<HTMLDivElement | null>;
+  onPendingAcceptanceStart?: (session: PendingAcceptanceSession) => void;
 }
 
 /** Shorten long names to "first last" (e.g. "visual company limited Kariuki Beth" → "visual Beth") */
@@ -83,6 +94,7 @@ const TradePreview: React.FC<TradePreviewProps> = ({
   tradeType,
   paymentDetails,
   scrollContainerRef,
+  onPendingAcceptanceStart,
 }) => {
   const dispatch = useDispatch<AppDispatch>();
   const router = useRouter();
@@ -115,8 +127,6 @@ const TradePreview: React.FC<TradePreviewProps> = ({
     maxHeight: number;
   } | null>(null);
   const [activeField, setActiveField] = useState<"send" | "receive" | null>(null);
-  const [awaitingAcceptanceTradeId, setAwaitingAcceptanceTradeId] = useState<string | null>(null);
-
   const paymentDropdownRef = useRef<HTMLDivElement>(null);
   const pendingTradeIdRef = useRef<string | null>(null);
 
@@ -149,7 +159,6 @@ const TradePreview: React.FC<TradePreviewProps> = ({
 
       logTradePreview("navigate → matched page", { tradeId: id, path });
 
-      // Full navigation so market modal unmount / table refetch cannot cancel client routing.
       if (typeof window !== "undefined") {
         window.location.assign(path);
         return;
@@ -158,22 +167,6 @@ const TradePreview: React.FC<TradePreviewProps> = ({
     },
     [tradeType, advertiserData.commission, router]
   );
-
-  const navigateToMatchedRef = useRef(navigateToMatched);
-  navigateToMatchedRef.current = navigateToMatched;
-
-  const handleNavigateToMatched = useCallback((resolvedTradeId: string) => {
-    const id =
-      resolvedTradeId?.trim() ||
-      pendingTradeIdRef.current?.trim() ||
-      (typeof window !== "undefined"
-        ? localStorage.getItem("p2p_trade_id")?.trim()
-        : null) ||
-      "";
-    if (!id) return;
-    pendingTradeIdRef.current = id;
-    navigateToMatchedRef.current(id);
-  }, []);
 
   const { userPaymentDetails, userDetailsLoading } = useSelector(
     (state: RootState) => state.paymentMethods || { userPaymentDetails: [], userDetailsLoading: false }
@@ -706,7 +699,16 @@ const TradePreview: React.FC<TradePreviewProps> = ({
         return;
       }
       logTradePreview("showing wait modal (pending acceptance)", { tradeId });
-      setAwaitingAcceptanceTradeId(tradeId);
+      onPendingAcceptanceStart?.({
+        tradeId,
+        advertiserOrderId: advertiserData.id,
+        advertiserName: advertiserData.advertiser,
+        advertiserPhoto: advertiserData.advertiser_photo,
+        advertiserInitials: advertiserData.advertiserInitials,
+        isOnline: advertiserData.online,
+        tradeType: tradeType === "sell" ? "sell" : "buy",
+        commission: advertiserData.commission,
+      });
       setIsSubmitting(false);
     } catch (error: any) {
       let errorMessage = "";
@@ -1307,7 +1309,7 @@ const TradePreview: React.FC<TradePreviewProps> = ({
               <button
                 className="w-full sm:flex-1 py-2.5 sm:py-2 rounded-lg border font-semibold text-sm sm:text-base transition border-gray-400 dark:border-[#788099] text-gray-700 dark:text-[#788099] hover:bg-gray-200 dark:hover:bg-[var(--card-color)]"
                 onClick={onClose}
-                disabled={isSubmitting || !!awaitingAcceptanceTradeId}
+                disabled={isSubmitting}
               >
                 Close
               </button>
@@ -1315,12 +1317,12 @@ const TradePreview: React.FC<TradePreviewProps> = ({
                 className={`w-full sm:flex-1 py-2.5 sm:py-2 rounded-lg font-semibold text-sm sm:text-base transition text-white ${tradeType === "sell"
                     ? "bg-[#E23D3A] hover:bg-[#b71c1c]"
                     : "bg-[#1D8751] hover:bg-[#17643a]"
-                  } ${!isFormValid() || isSubmitting || !!awaitingAcceptanceTradeId
+                  } ${!isFormValid() || isSubmitting
                     ? "opacity-50 cursor-not-allowed"
                     : ""
                   }`}
                 onClick={handleSubmit}
-                disabled={!isFormValid() || isSubmitting || !!awaitingAcceptanceTradeId}
+                disabled={!isFormValid() || isSubmitting}
               >
                 {isSubmitting ? (
                   <div className="flex items-center justify-center gap-2">
@@ -1369,22 +1371,6 @@ const TradePreview: React.FC<TradePreviewProps> = ({
         filterByProviderName={tradeType === "sell" ? paymentMethod || undefined : undefined}
       />
 
-      {awaitingAcceptanceTradeId && (
-        <PendingAcceptanceWaitModal
-          open
-          tradeId={awaitingAcceptanceTradeId}
-          advertiserOrderId={advertiserData.id}
-          advertiserName={advertiserData.advertiser}
-          advertiserPhoto={advertiserData.advertiser_photo}
-          advertiserInitials={advertiserData.advertiserInitials}
-          isOnline={advertiserData.online}
-          onNavigateToMatched={handleNavigateToMatched}
-          onClose={() => {
-            setAwaitingAcceptanceTradeId(null);
-            onClose?.();
-          }}
-        />
-      )}
     </>
   );
 };

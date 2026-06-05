@@ -554,26 +554,12 @@ function FinalBuy({ orderData }: FinalBuyProps) {
             </div>
           )}
           <div className="flex items-center justify-between gap-2 flex-wrap mb-2">
-            <div className="flex items-center gap-3 flex-wrap min-w-0">
-              <p
-                className="text-gray-900 dark:text-white text-[13px] shrink-0"
-                style={{ fontSize: "16px" }}
-              >
-                Advertiser Info
-              </p>
-              <span className="text-xs sm:text-sm text-[#1D8751] flex items-center gap-1 whitespace-nowrap">
-                Transaction time:{" "}
-                {isClient ? (
-                  <TimeDisplay
-                    seconds={
-                      transactionTimerActive ? countdown : displaySeconds
-                    }
-                  />
-                ) : (
-                  <span>--:--</span>
-                )}
-              </span>
-            </div>
+            <p
+              className="text-gray-900 dark:text-white text-[13px] shrink-0"
+              style={{ fontSize: "16px" }}
+            >
+              Advertiser Information
+            </p>
             <div className="flex items-center gap-2 shrink-0">
               <button
                 type="button"
@@ -619,6 +605,18 @@ function FinalBuy({ orderData }: FinalBuyProps) {
                   {singleOrder?.advertiser_name || singleOrder?.advertiser_first_name || "Advertiser"}
                 </span>
                 <UserStatusBadge isLive={statusWsConnected} className="flex-shrink-0" />
+                <span className="text-[10px] sm:text-xs text-[#1D8751] flex items-center gap-1 whitespace-nowrap">
+                  Transaction time:{" "}
+                  {isClient ? (
+                    <TimeDisplay
+                      seconds={
+                        transactionTimerActive ? countdown : displaySeconds
+                      }
+                    />
+                  ) : (
+                    <span>--:--</span>
+                  )}
+                </span>
               </div>
 
               <div>

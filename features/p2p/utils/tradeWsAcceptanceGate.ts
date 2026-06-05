@@ -1,5 +1,10 @@
 /** Shared helpers for p2p-trade-confirm WebSocket payloads (pending_acceptance, flags, decline). */
 
+import {
+  isHalfMatchedTradeStatus,
+  normalizeP2PTradeStatus,
+} from "@/features/p2p/utils/normalizeP2PTradeStatus";
+
 export const PENDING_ACCEPTANCE_AUTO_CANCEL_MS = 3 * 60 * 1000;
 
 export type TradeLifecycleBanner = {
@@ -23,8 +28,20 @@ export function getEffectiveTradeStatus(
   snap: WsTradeSnapshot
 ): string {
   const ws = snap.rawStatus.trim();
-  if (ws) return ws;
-  return String(confirmStatus ?? "").trim();
+  const raw = ws || String(confirmStatus ?? "").trim();
+  return normalizeP2PTradeStatus(raw) ?? raw;
+}
+
+/** Sell-ad owner may confirm fiat received (step 3 button). */
+export function canSellerConfirmReceipt(
+  effectiveStatus: string,
+  flags: { can_confirm_receipt?: boolean },
+  inPendingAcceptance: boolean
+): boolean {
+  if (flags.can_confirm_receipt === false) return false;
+  if (inPendingAcceptance && flags.can_confirm_receipt !== true) return false;
+  if (flags.can_confirm_receipt === true) return true;
+  return isHalfMatchedTradeStatus(effectiveStatus);
 }
 
 export function getEffectiveConfirmFlags(
@@ -121,16 +138,15 @@ const ACCEPTED_TRADE_STATUSES = new Set([
   "accepted",
 ]);
 
-/** True when owner has accepted — via status or confirm flags from REST/WS. */
+/** True when owner has accepted — explicit flags or known post-acceptance statuses only. */
 export function isTradeAcceptedFromWsSnapshot(snap: WsTradeSnapshot): boolean {
+  if (isPendingAcceptanceStatus(snap.rawStatus)) return false;
   if (snap.can_confirm_payment === true || snap.can_confirm_receipt === true) {
     return true;
   }
   const s = snap.rawStatus.trim().toLowerCase();
-  if (!s || isPendingAcceptanceStatus(s) || TERMINAL_REJECT_STATUSES.has(s)) {
-    return false;
-  }
-  return true;
+  if (!s || TERMINAL_REJECT_STATUSES.has(s)) return false;
+  return ACCEPTED_TRADE_STATUSES.has(s);
 }
 
 export function isTradeAcceptedFromConfirmOrder(order: {
@@ -138,18 +154,15 @@ export function isTradeAcceptedFromConfirmOrder(order: {
   can_confirm_payment?: boolean;
   can_confirm_receipt?: boolean;
 }): boolean {
+  const st = String(order.status ?? "").trim();
+  if (isPendingAcceptanceStatus(st)) return false;
   if (order.can_confirm_payment === true || order.can_confirm_receipt === true) {
     return true;
   }
-  const st = String(order.status ?? "").trim();
-  if (!st) {
-    return false;
-  }
-  if (isPendingAcceptanceStatus(st)) return false;
+  if (!st) return false;
   const lowered = st.toLowerCase();
   if (TERMINAL_REJECT_STATUSES.has(lowered)) return false;
-  if (ACCEPTED_TRADE_STATUSES.has(lowered)) return true;
-  return true;
+  return ACCEPTED_TRADE_STATUSES.has(lowered);
 }
 
 /** trade_id / id from flat or nested p2p-trade-confirm WebSocket payload */

@@ -389,6 +389,16 @@ const FinalSell: React.FC<FinalSellProps> = ({ orderData }) => {
               >
                 Advertiser Information
               </p>
+              <span className="text-[10px] sm:text-xs text-[#1D8751] flex items-center gap-1 whitespace-nowrap">
+                Transaction time:{" "}
+                {isClient ? (
+                  <TimeDisplay
+                    seconds={transactionTimerActive ? countdown : displaySeconds}
+                  />
+                ) : (
+                  <span>--:--</span>
+                )}
+              </span>
             </div>
             <div className="flex items-center gap-2">
               <button
@@ -453,16 +463,6 @@ const FinalSell: React.FC<FinalSellProps> = ({ orderData }) => {
                     <span className="truncate block sm:inline">Advertiser User Name</span>
                   )}
                   <UserStatusBadge isLive={statusWsConnected} className="flex-shrink-0 ml-1" />
-                  <span className="text-[10px] sm:text-xs text-[#1D8751] flex items-center gap-1 whitespace-nowrap ml-1 mb-4">
-                    Transaction time:{" "}
-                    {isClient ? (
-                      <TimeDisplay
-                        seconds={transactionTimerActive ? countdown : displaySeconds}
-                      />
-                    ) : (
-                      <span>--:--</span>
-                    )}
-                  </span>
                 </div>
                 <div className="text-[10px] sm:text-xs text-gray-500 dark:text-[#788099] mt-0.5 sm:mt-0">
                   <span className="whitespace-nowrap">{singleOrder?.user_total_buy_orders || 120} Orders</span>{" "}

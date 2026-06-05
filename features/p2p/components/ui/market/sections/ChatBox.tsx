@@ -8,8 +8,12 @@ import {
   TradeMessage,
   setMessages,
   replaceOptimisticMessage,
+  clearMessagesForTrade,
 } from "@/features/p2p/slices/messageSlice";
-import { dedupeTradeMessages } from "@/features/p2p/utils/tradeMessageDedupe";
+import {
+  dedupeTradeMessages,
+  messageBelongsToTrade,
+} from "@/features/p2p/utils/tradeMessageDedupe";
 import { getTradeMessages, postTradeMessage, GroupedMessage } from "@/features/p2p/api";
 import { MdAccountCircle } from "react-icons/md";
 import { useTradeMessagesWebSocket } from "@/features/p2p/hooks/useTradeMessagesWebSocket";
@@ -18,6 +22,11 @@ import P2PTradeCanceledModal from "./P2PTradeCanceledModal";
 import { useTheme } from "@/context/theme";
 import { P2P_TRADE_CANCELED_EVENT } from "@/features/p2p/constants/tradeSocketEvents";
 import { Copy, RefreshCw } from "lucide-react";
+import { VoiceAudioPlayer } from "@/features/p2p/components/ui/VoiceAudioPlayer";
+import {
+  formatRecordingDuration,
+  normalizeAudioList,
+} from "@/features/p2p/utils/messageMedia";
 
 interface MessageImage {
   id: string;
@@ -70,36 +79,6 @@ const getMessageImageList = (msg: any): any[] => {
   for (const img of primary) pushUnique(img);
   for (const img of secondary) pushUnique(img);
   return merged;
-};
-
-const normalizeAudioList = (msg: any): Array<{ id?: string; audio_url: string; duration?: number }> => {
-  const rawList = Array.isArray(msg?.audios) && msg.audios.length > 0
-    ? msg.audios
-    : Array.isArray(msg?.uploaded_audios) && msg.uploaded_audios.length > 0
-    ? msg.uploaded_audios
-    : Array.isArray(msg?.voice_notes) && msg.voice_notes.length > 0
-    ? msg.voice_notes
-    : msg?.audio_url || msg?.audio || msg?.recording_url || msg?.voice_note
-    ? [{
-        id: msg?.id,
-        audio_url: msg?.audio_url || msg?.audio || msg?.recording_url || msg?.voice_note,
-        duration: msg?.duration,
-      }]
-    : [];
-
-  return rawList
-    .map((a: any, idx: number) => {
-      if (typeof a === "string") {
-        return { id: `${msg?.id || "audio"}-${idx}`, audio_url: a, duration: msg?.duration };
-      }
-      const audioUrl = a?.audio_url || a?.audio || a?.url || a?.file || a?.recording_url || a?.voice_note || "";
-      return {
-        id: a?.id || `${msg?.id || "audio"}-${idx}`,
-        audio_url: audioUrl,
-        duration: a?.duration ?? msg?.duration,
-      };
-    })
-    .filter((a: { id?: string; audio_url: string; duration?: number }) => typeof a.audio_url === "string" && a.audio_url.trim() !== "");
 };
 
 const isValidTradeIdForMessages = (value: unknown): value is string => {
@@ -236,28 +215,11 @@ const ChatBox: React.FC<{
     (state: RootState) => state.message.messages[tradeId] || []
   );
 
-  // Sort messages by timestamp; Redux already dedupes optimistic + WS/API echoes.
   const sortedMessages = React.useMemo(() => {
-    const numericTradeId = Number(tradeId);
-    const hasNumericTradeId = Number.isFinite(numericTradeId) && String(tradeId).trim() !== "";
-
-    const messages = [...messagesFromRedux].filter((msg: any) => {
-      const messageId = String(msg?.id ?? "").trim();
-      if (messageId.startsWith("temp-")) return true;
-
-      if (msg?.trade_id != null) {
-        return String(msg.trade_id).trim() === String(tradeId).trim();
-      }
-
-      if (msg?.trade != null && hasNumericTradeId) {
-        const msgTradeNum = Number(msg.trade);
-        return Number.isFinite(msgTradeNum) && msgTradeNum === numericTradeId;
-      }
-
-      return false;
-    });
-
-    return dedupeTradeMessages(messages, currentUserEmail);
+    const scoped = messagesFromRedux.filter((msg) =>
+      messageBelongsToTrade(msg, tradeId)
+    );
+    return dedupeTradeMessages([...scoped], currentUserEmail);
   }, [messagesFromRedux, tradeId, currentUserEmail]);
 
   const apiTradeId = React.useMemo(() => {
@@ -399,15 +361,17 @@ const ChatBox: React.FC<{
     }
   }, [handleScroll]);
 
-  // Live seconds counter while recording audio
+  // Live mm:ss counter while recording audio
   useEffect(() => {
     if (!isRecording) {
       setRecordingSeconds(0);
       return;
     }
-    const interval = setInterval(() => {
+    const tick = () => {
       setRecordingSeconds(Math.floor((Date.now() - recordingStartRef.current) / 1000));
-    }, 1000);
+    };
+    tick();
+    const interval = setInterval(tick, 250);
     return () => clearInterval(interval);
   }, [isRecording]);
 
@@ -427,38 +391,66 @@ const ChatBox: React.FC<{
     }
   }, [sortedMessages, userHasScrolled, isAtBottom]);
 
-  // Fetch messages initially (WebSocket will keep them updated)
-  const fetchMessages = React.useCallback(async () => {
-    if (isAuthenticated && apiTradeId) {
-      setIsRefreshing(true);
-      try {
-        const data = await getTradeMessages(apiTradeId);
-        // Dispatch to Redux instead of local state
-        const { setMessages } = await import("@/features/p2p/slices/messageSlice");
-        if (data && (data as any).results) {
-          dispatch(setMessages({
-            tradeId,
-            messages: (data as any).results,
-          }));
+  const lastFetchFingerprintRef = React.useRef<string>("");
+  const fetchGenerationRef = React.useRef(0);
+
+  // Fetch messages — merge by default; replace only on trade switch / initial load.
+  const fetchMessages = React.useCallback(
+    async (options?: { replace?: boolean }) => {
+      if (isAuthenticated && apiTradeId) {
+        const generation = fetchGenerationRef.current;
+        const replace = options?.replace === true;
+        setIsRefreshing(true);
+        try {
+          const data = await getTradeMessages(apiTradeId);
+          if (generation !== fetchGenerationRef.current) return;
+          const { setMessages } = await import("@/features/p2p/slices/messageSlice");
+          const results = (data as any)?.results;
+          if (!Array.isArray(results)) return;
+
+          const fingerprint = results
+            .map((m: any) =>
+              [
+                m?.id,
+                m?.message ?? m?.content ?? "",
+                Array.isArray(m?.audios) ? m.audios.length : 0,
+                m?.audios?.[0]?.audio_url ?? m?.audio_url ?? "",
+                Array.isArray(m?.images) ? m.images.length : 0,
+                m?.timestamp ?? "",
+              ].join("|")
+            )
+            .join(";;");
+          if (!replace && fingerprint === lastFetchFingerprintRef.current) return;
+          lastFetchFingerprintRef.current = fingerprint;
+
+          dispatch(
+            setMessages({
+              tradeId,
+              messages: results,
+              replace,
+            })
+          );
+        } catch (error) {
+          // Silent error
+        } finally {
+          setIsRefreshing(false);
         }
-      } catch (error) {
-        // Silent error
-      } finally {
-        setIsRefreshing(false);
       }
-    }
-  }, [isAuthenticated, apiTradeId, dispatch, tradeId]);
+    },
+    [isAuthenticated, apiTradeId, dispatch, tradeId]
+  );
 
   // Polling interval for support/fallback refresh
   const pollingIntervalRef = React.useRef<NodeJS.Timeout | null>(null);
   const SUPPORT_POLL_MS = 5000;
   const P2P_FALLBACK_POLL_MS = 1500;
 
-  // On trade change, clear current trade message list immediately to avoid
-  // briefly showing stale messages from a previously open chat.
+  // On trade change, wipe this trade's bucket and ignore in-flight fetches.
   useEffect(() => {
+    fetchGenerationRef.current += 1;
+    lastFetchFingerprintRef.current = "";
     if (!tradeId) return;
-    dispatch(setMessages({ tradeId, messages: [] }));
+    dispatch(clearMessagesForTrade(tradeId));
   }, [tradeId, dispatch]);
 
   useEffect(() => {
@@ -477,33 +469,31 @@ const ChatBox: React.FC<{
         timestamp: msg.timestamp,
         seller_photo: seller_photo || '',
       }));
-      dispatch(setMessages({
-        tradeId,
-        messages: convertedMessages,
-      }));
+      dispatch(
+        setMessages({
+          tradeId,
+          messages: convertedMessages,
+          replace: true,
+        })
+      );
       return;
     }
 
-    // Fetch initial messages once on mount
+    lastFetchFingerprintRef.current = "";
+
+    // Fetch initial messages once on mount (replace after bucket was cleared)
     if (messageType === 'p2p') {
-      // For P2P: WebSocket is primary, but keep a lightweight polling safety net
-      // even while connected. Some backend deployments emit partial WS payloads
-      // and this ensures message UI stays near-instant.
-      fetchMessages();
-      pollingIntervalRef.current = setInterval(() => {
-        if (typeof document !== "undefined" && document.visibilityState !== "visible") return;
-        fetchMessages();
-      }, P2P_FALLBACK_POLL_MS);
+      fetchMessages({ replace: true });
     } else if (messageType === 'support') {
       // For support: Use API polling (only if not passed as props)
       if (!supportMessages || supportMessages.length === 0) {
-        fetchMessages();
+        fetchMessages({ replace: true });
         pollingIntervalRef.current = setInterval(() => {
           fetchMessages();
         }, SUPPORT_POLL_MS);
       }
     } else {
-      fetchMessages();
+      fetchMessages({ replace: true });
     }
 
     return () => {
@@ -511,7 +501,27 @@ const ChatBox: React.FC<{
         clearInterval(pollingIntervalRef.current);
       }
     };
-  }, [tradeId, messageType, fetchMessages, supportMessages, dispatch, wsConnected]);
+  }, [tradeId, messageType, fetchMessages, supportMessages, dispatch]);
+
+  // Poll only when WebSocket is disconnected — avoids audio player reload flicker.
+  useEffect(() => {
+    if (messageType !== "p2p") return;
+    if (pollingIntervalRef.current) {
+      clearInterval(pollingIntervalRef.current);
+      pollingIntervalRef.current = null;
+    }
+    if (wsConnected) return;
+    pollingIntervalRef.current = setInterval(() => {
+      if (typeof document !== "undefined" && document.visibilityState !== "visible") return;
+      fetchMessages();
+    }, P2P_FALLBACK_POLL_MS);
+    return () => {
+      if (pollingIntervalRef.current) {
+        clearInterval(pollingIntervalRef.current);
+        pollingIntervalRef.current = null;
+      }
+    };
+  }, [messageType, wsConnected, fetchMessages]);
 
   // Auto-refresh when websocket message may still be incomplete (media delayed by backend processing).
   const lastMessageIdRef = React.useRef<string | null>(null);
@@ -623,7 +633,8 @@ const ChatBox: React.FC<{
     const tempId = `temp-${Date.now()}-${Math.random()}`;
     const optimisticMessage: TradeMessage = {
       id: tempId,
-      trade: parseInt(tradeId),
+      trade: parseInt(tradeId) || tradeId,
+      trade_id: tradeId,
       sender: currentUserEmail || "",
       sender_name: currentUserEmail || "",
       sender_username: userName || "",
@@ -644,7 +655,7 @@ const ChatBox: React.FC<{
     dispatch(addMessageFromWS({ tradeId, message: optimisticMessage }));
 
     try {
-      await postTradeMessage(apiTradeId, {
+      const response = await postTradeMessage(apiTradeId, {
         message: "",
         uploaded_images: [],
         uploaded_audios: [audioFile],
@@ -652,11 +663,32 @@ const ChatBox: React.FC<{
         sender_name: currentUserEmail || "",
       });
 
-      // Refresh immediately to get real audio URLs/IDs
+      const created = (response as any)?.id != null ? (response as TradeMessage) : null;
+      if (created?.id) {
+        dispatch(
+          replaceOptimisticMessage({
+            tradeId,
+            tempId,
+            message: {
+              ...created,
+              id: String(created.id),
+              trade_id: (created as any).trade_id || tradeId,
+              message: "",
+              sender_name: created.sender_name || currentUserEmail || "",
+              audios:
+                Array.isArray(created.audios) && created.audios.length > 0
+                  ? created.audios
+                  : optimisticMessage.audios,
+              audio_url: (created as any).audio_url || optimisticMessage.audios?.[0]?.audio_url,
+            },
+          })
+        );
+      }
+
+      // Refresh for final audio URLs when uploads are still processing
       fetchMessages();
     } catch (e) {
       console.error("Failed to send voice message:", e);
-      // Let polling/WebSocket refresh correct the UI on failure
       fetchMessages();
     }
   };
@@ -696,7 +728,8 @@ const ChatBox: React.FC<{
     const tempId = `temp-${Date.now()}`;
     const optimisticMessage: TradeMessage = {
       id: tempId,
-      trade: parseInt(tradeId),
+      trade: parseInt(tradeId) || tradeId,
+      trade_id: tradeId,
       sender: currentUserEmail || '',
       sender_name: currentUserEmail || '',
       sender_username: userName || '',
@@ -724,6 +757,9 @@ const ChatBox: React.FC<{
 
       const created = (response as any)?.id != null ? (response as TradeMessage) : null;
       if (created?.id) {
+        const createdText = String(
+          (created as any).message ?? (created as any).content ?? messageContent
+        );
         dispatch(
           replaceOptimisticMessage({
             tradeId,
@@ -731,6 +767,8 @@ const ChatBox: React.FC<{
             message: {
               ...created,
               id: String(created.id),
+              trade_id: (created as any).trade_id || tradeId,
+              message: createdText,
               sender_name: created.sender_name || currentUserEmail || "",
               images:
                 Array.isArray(created.images) && created.images.length > 0
@@ -764,23 +802,29 @@ const ChatBox: React.FC<{
     <div>
       <div className="flex items-center justify-between gap-2 text-xs mb-2">
         <span className="truncate">Chat with {otherPersonData.displayName}</span>
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-1.5 shrink-0">
           <button
+            type="button"
             onClick={handleRefresh}
             disabled={isRefreshing}
-            className="flex items-center justify-center px-1 py-1  dark:bg-[#1D8751] bg-[#1D8751] text-white rounded hover:bg-[#166b3e] transition-colors disabled:opacity-50 text-xs font-medium shrink-0"
+            className="flex items-center justify-center w-6 h-6 sm:w-8 sm:h-8 rounded-md bg-[#1D8751] dark:bg-[#1D8751] text-white hover:bg-[#166b3e] transition-colors disabled:opacity-50 shrink-0"
             title="Refresh messages and load images"
+            aria-label="Refresh messages"
           >
+            <RefreshCw
+              className={`w-3 h-3 sm:w-4 sm:h-4 ${isRefreshing ? "animate-spin" : ""}`}
+            />
           </button>
           {onClose && (
             <button
+              type="button"
               onClick={onClose}
-              className="p-1.5 rounded-full hover:bg-gray-100 dark:hover:bg-accent transition-colors text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 shrink-0"
+              className="flex items-center justify-center w-6 h-6 sm:w-8 sm:h-8 rounded-full hover:bg-gray-100 dark:hover:bg-accent transition-colors text-gray-500 dark:text-gray-400 hover:text-gray-700 dark:hover:text-gray-200 shrink-0"
               aria-label="Close chat"
               title="Close"
             >
               <svg
-                className="w-5 h-5"
+                className="w-3 h-3 sm:w-4 sm:h-4"
                 fill="none"
                 stroke="currentColor"
                 viewBox="0 0 24 24"
@@ -964,31 +1008,13 @@ const ChatBox: React.FC<{
                     if (audioList.length === 0) return null;
                     return (
                       <div className="mt-1 flex flex-col gap-2">
-                        {audioList.map(
-                          (
-                            a: { id?: string; audio_url: string; duration?: number },
-                            idx: number
-                          ) => (
-                            <div
-                              key={a.id || `audio-${idx}`}
-                              className="flex items-center gap-2"
-                            >
-                              <audio
-                                controls
-                                className="max-w-full h-8 min-w-[180px]"
-                                src={a.audio_url}
-                                preload="metadata"
-                              >
-                                Your browser does not support audio playback.
-                              </audio>
-                              {typeof a.duration === "number" && a.duration > 0 && (
-                                <span className="text-[10px] opacity-75">
-                                  {a.duration}s
-                                </span>
-                              )}
-                            </div>
-                          )
-                        )}
+                        {audioList.map((a, idx) => (
+                          <VoiceAudioPlayer
+                            key={a.id || `audio-${msg.id}-${idx}`}
+                            src={a.audio_url}
+                            duration={a.duration}
+                          />
+                        ))}
                       </div>
                     );
                   })()}
@@ -1037,8 +1063,8 @@ const ChatBox: React.FC<{
               controls
               className="h-8 max-w-[160px]"
             />
-            <span className="text-[11px] text-gray-600 dark:text-gray-400">
-              {audioPreview.duration}s
+            <span className="text-[11px] text-gray-600 dark:text-gray-400 tabular-nums">
+              {formatRecordingDuration(audioPreview.duration)}
             </span>
             <div className="flex gap-2 ml-auto">
               <button
@@ -1100,8 +1126,8 @@ const ChatBox: React.FC<{
           {/* Audio recording - record voice message with seconds count */}
           <div className="flex items-center gap-1.5 flex-shrink-0">
             {isRecording && (
-              <span className="text-[10px] sm:text-xs font-medium text-red-500 tabular-nums min-w-[2ch]">
-                {recordingSeconds}s
+              <span className="text-[10px] sm:text-xs font-medium text-red-500 tabular-nums min-w-[5ch]">
+                {formatRecordingDuration(recordingSeconds)}
               </span>
             )}
             <button
