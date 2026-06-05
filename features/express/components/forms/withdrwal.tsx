@@ -65,7 +65,10 @@ import { stripLeadingZerosFromDecimalInput } from "@/lib/utils/decimalAmountInpu
 import {
   assetMatchesSearchTerm,
   compareAssetsForDisplay,
+  dedupeAssetsForDisplay,
 } from "@/lib/utils/assetSearch";
+import { shouldShowAssetNetworkBadge } from "@/lib/utils/networkDisplay";
+import { SwapAssetOptionDisplay } from "@/features/swap/components/SwapAssetOptionDisplay";
 import {
   useAssetsDisplay,
   usePaymentMethodsDisplay,
@@ -1253,11 +1256,6 @@ export default function WithdrawalForm({
     selectedPaymentStatus &&
     !isSelectedPaymentApproved
   );
-  const hasDecimalPlacesError =
-    /decimal places/i.test(String(apiValidationError || "")) ||
-    /decimal places/i.test(String(receiveAmountError || "")) ||
-    /decimal places/i.test(String(calculationError || ""));
-
   // Sync selectedPaymentDetails when WebSocket refetches and status changes (e.g. Pending → APPROVED)
   useEffect(() => {
     if (selectedPaymentDetails.length === 0 || enhancedFilteredUserPaymentDetails.length === 0) return;
@@ -2153,6 +2151,56 @@ export default function WithdrawalForm({
     return null;
   };
 
+  const isTransientAmountMessage = (msg: string | null | undefined): boolean => {
+    if (!msg) return false;
+    return (
+      msg === "Calculating..." ||
+      msg.includes("Rough estimate") ||
+      msg.includes("Using estimated rate")
+    );
+  };
+
+  const hasBlockingAmountMessage = (msg: string | null | undefined): boolean =>
+    !!msg && !isTransientAmountMessage(msg);
+
+  const isPayBelowFixedMin =
+    !!selectedAsset &&
+    isFixedMinWithdrawalAsset(selectedAsset) &&
+    payAmount > 0 &&
+    payAmount < getMinimumAmount(selectedAsset);
+
+  const receiveMinError =
+    getAmount > 0 ? validateReceiveAmount(getAmount, selectedAsset) : null;
+
+  const hasBlockingValidationError =
+    isPayBelowFixedMin ||
+    !!receiveMinError ||
+    hasBlockingAmountMessage(apiValidationError) ||
+    hasBlockingAmountMessage(receiveAmountError) ||
+    hasBlockingAmountMessage(calculationError) ||
+    validationErrors.length > 0;
+
+  const isFirstCardSubmitDisabled =
+    requiresLoginRedirect
+      ? (isOtcPopupAsset(selectedAsset) &&
+          (payAmount >= 15000 || getAmount >= 15000)) ||
+        isSelectedPaymentPending ||
+        hasBlockingValidationError
+      : isSubmitting ||
+        isTransactionSubmitted ||
+        isInfoModalOpen ||
+        (isOtcPopupAsset(selectedAsset) && (payAmount >= 15000 || getAmount >= 15000)) ||
+        isSelectedPaymentPending ||
+        hasBlockingValidationError;
+
+  const isSecondCardSubmitDisabled =
+    isSubmitting ||
+    isInfoModalOpen ||
+    (isOtcPopupAsset(selectedAsset) && getAmount > 15000) ||
+    !isTermsAccepted ||
+    isSelectedPaymentPending ||
+    hasBlockingValidationError;
+
   // Manual estimate trigger for non-direct assets (avoids blocking navigation on every keystroke)
   useEffect(() => {
     if (isExpressCancelled()) return;
@@ -2821,8 +2869,10 @@ export default function WithdrawalForm({
 
   const sortedSwapAssets = useMemo(
     () =>
-      [...filteredSwapAssets].sort((a, b) =>
-        compareAssetsForDisplay(a, b, assetSearchTerm)
+      dedupeAssetsForDisplay(
+        [...filteredSwapAssets].sort((a, b) =>
+          compareAssetsForDisplay(a, b, assetSearchTerm)
+        )
       ),
     [filteredSwapAssets, assetSearchTerm]
   );
@@ -3339,13 +3389,23 @@ export default function WithdrawalForm({
 
   // Auto-validate receive amount whenever it changes
   useEffect(() => {
+    const fixedMin = getMinimumAmount(selectedAsset);
+    if (
+      selectedAsset &&
+      isFixedMinWithdrawalAsset(selectedAsset) &&
+      payAmount > 0 &&
+      payAmount < fixedMin
+    ) {
+      setReceiveAmountError(formatExpressMinAmountMessage(fixedMin));
+      return;
+    }
+
     if (getAmount > 0) {
-      const validationError = validateReceiveAmount(getAmount, selectedAsset);
-      setReceiveAmountError(validationError);
+      setReceiveAmountError(validateReceiveAmount(getAmount, selectedAsset));
     } else {
       setReceiveAmountError(null);
     }
-  }, [getAmount, selectedAsset]);
+  }, [getAmount, payAmount, selectedAsset]);
 
   // Cleanup timeouts on unmount (prevents delayed navigation / late state updates)
   useEffect(() => {
@@ -4241,6 +4301,7 @@ export default function WithdrawalForm({
                               asset={selectedAsset}
                               size={24}
                               assetIconSrc={getHighResAssetIcon(selectedAsset, 72)}
+                              showNetworkBadge={shouldShowAssetNetworkBadge(selectedAsset)}
                               onAssetIconError={(e) => {
                                 console.log(
                                   "Image failed to load for asset:",
@@ -4249,31 +4310,12 @@ export default function WithdrawalForm({
                                 e.currentTarget.src = getHighResAssetIcon(null, 72);
                               }}
                             />
-                            <div className="flex flex-col text-left">
-                              <div className="flex items-center gap-2">
-                                <span className={`font-medium text-base ${isDark ? "text-white" : "text-[#1F2937]"
-                                  }`}>
-                                  {(
-                                    selectedAsset.ticker ||
-                                    selectedAsset.symbol ||
-                                    selectedAsset.name ||
-                                    "Unknown"
-                                  ).toUpperCase()}
-                                </span>
-                                <span className="bg-[#1D8751] text-[#ffffff] dark:text-[#ffffff] text-xs font-normal px-2 py-0.5 rounded-full">
-                                  {getNetworkDisplayName(selectedAsset.network)}
-                                </span>
-                              </div>
-                              <span className="text-[#788099] text-sm">
-                                {selectedAsset.name ||
-                                  selectedAsset.ticker ||
-                                  selectedAsset.symbol ||
-                                  "Unknown"}{" "}
-                                (
-                                {getNetworkDisplayName(selectedAsset.network)}
-                                )
-                              </span>
-                            </div>
+                            <SwapAssetOptionDisplay
+                              asset={selectedAsset}
+                              primaryClassName={`font-medium text-base ${isDark ? "text-white" : "text-[#1F2937]"}`}
+                              subtitleClassName="text-[#788099] text-sm truncate"
+                              badgeClassName="bg-[#1D8751] text-[#ffffff] dark:text-[#ffffff] text-xs font-normal px-2 py-0.5 rounded-full"
+                            />
                           </>
                         ) : (
                           <>
@@ -4946,17 +4988,9 @@ export default function WithdrawalForm({
               <div className="relative">
                 <button
                   type="button"
-                  className={`w-full text-[#35353e] dark:text-[#788099] text-base font-medium py-1.5 rounded-full flex items-center justify-center gap-2 transition-colors ${isHomePage
-                    ? (isOtcPopupAsset(selectedAsset) && (payAmount >= 15000 || getAmount >= 15000)) || isSelectedPaymentPending
-                      ? "bg-gray-500 cursor-not-allowed"
-                      : "bg-[#1D8751] hover:bg-[#1D8751]/80 cursor-pointer"
-                    : isSubmitting ||
-                      isTransactionSubmitted ||
-                      isInfoModalOpen ||
-                      (isOtcPopupAsset(selectedAsset) && (payAmount >= 15000 || getAmount >= 15000)) ||
-                      isSelectedPaymentPending
-                      ? "bg-gray-500 cursor-not-allowed"
-                      : "bg-[#1D8751] hover:bg-[#1D8751]/80"
+                  className={`w-full text-[#35353e] dark:text-[#788099] text-base font-medium py-1.5 rounded-full flex items-center justify-center gap-2 transition-colors ${isFirstCardSubmitDisabled
+                    ? "bg-gray-500 cursor-not-allowed"
+                    : "bg-[#1D8751] hover:bg-[#1D8751]/80"
                     }`}
                   onClick={() => {
                     if (requiresLoginRedirect) {
@@ -4996,19 +5030,7 @@ export default function WithdrawalForm({
                       handleFirstCardSubmit();
                     }
                   }}
-                  disabled={
-                    requiresLoginRedirect
-                      ? (isOtcPopupAsset(selectedAsset) &&
-                          (payAmount >= 15000 || getAmount >= 15000)) ||
-                        isSelectedPaymentPending ||
-                        hasDecimalPlacesError
-                      : isSubmitting ||
-                      isTransactionSubmitted ||
-                      isInfoModalOpen ||
-                      (isOtcPopupAsset(selectedAsset) && (payAmount >= 15000 || getAmount >= 15000)) ||
-                      isSelectedPaymentPending ||
-                      hasDecimalPlacesError
-                  }
+                  disabled={isFirstCardSubmitDisabled}
                 >
                   {isSubmitting ? (
                     <div className="flex items-center gap-2">
@@ -5389,7 +5411,7 @@ export default function WithdrawalForm({
                   </div>
                 )}
                 <button
-                  className={`w-full text-white text-base font-medium py-2 rounded-2xl flex items-center justify-center gap-2 transition-colors ${isSubmitting || isInfoModalOpen || (isOtcPopupAsset(selectedAsset) && getAmount > 15000) || !isTermsAccepted || isSelectedPaymentPending
+                  className={`w-full text-white text-base font-medium py-2 rounded-2xl flex items-center justify-center gap-2 transition-colors ${isSecondCardSubmitDisabled
                     ? "bg-gray-500 cursor-not-allowed"
                     : "bg-[#1D8751] hover:bg-[#166b3e]"
                     }`}
@@ -5420,14 +5442,7 @@ export default function WithdrawalForm({
                       onExchange(transactionData);
                     }
                   }}
-                  disabled={
-                    isSubmitting ||
-                    isInfoModalOpen ||
-                    (isOtcPopupAsset(selectedAsset) && getAmount > 15000) ||
-                    !isTermsAccepted ||
-                    isSelectedPaymentPending ||
-                    hasDecimalPlacesError
-                  }
+                  disabled={isSecondCardSubmitDisabled}
                 >
                   {isSubmitting ? (
                     <div className="flex items-center gap-2">

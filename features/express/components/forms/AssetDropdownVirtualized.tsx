@@ -9,6 +9,8 @@ import React, {
 } from "react";
 import type { SupportedAsset } from "@/features/swap/types";
 import { AssetWithNetworkIcon } from "@/components/ui/AssetWithNetworkIcon";
+import { SwapAssetOptionDisplay } from "@/features/swap/components/SwapAssetOptionDisplay";
+import { shouldShowAssetNetworkBadge } from "@/lib/utils/networkDisplay";
 import { getHighResAssetIcon } from "../../utils/imageHelpers";
 
 export type AssetDropdownRow =
@@ -55,25 +57,6 @@ function visibleSlice(
   return { start, end };
 }
 
-const getNetworkDisplayName = (network: string) => {
-  const networkMap: Record<string, string> = {
-    bsc: "BSC",
-    matic: "Polygon",
-    avaxc: "Avalanche",
-    eth: "Ethereum",
-    osmo: "Osmosis",
-    band: "Band Protocol",
-    sol: "Solana",
-    nano: "Nano",
-    sxp: "Solar",
-    luna: "Terra",
-    base: "Base",
-    trc20: "TRON",
-    trx: "TRON",
-  };
-  return networkMap[network?.toLowerCase()] || network || "Unknown";
-};
-
 const AssetRow = React.memo(function AssetRow({
   asset,
   selected,
@@ -94,28 +77,23 @@ const AssetRow = React.memo(function AssetRow({
         asset={asset}
         size={24}
         assetIconSrc={getHighResAssetIcon(asset, 72)}
+        showNetworkBadge={shouldShowAssetNetworkBadge(asset)}
         onAssetIconError={(e) => {
           (e.currentTarget as HTMLImageElement).src = getHighResAssetIcon(null, 72);
         }}
       />
       <div className="flex-1 min-w-0">
-        <div className="text-[#1F2937] dark:text-[#ffffff] font-medium text-sm flex items-center gap-2 flex-wrap">
-          {(asset.ticker || asset.symbol || asset.name || "Unknown").toUpperCase()}
-          <span className="bg-[#1D8751] text-[#ffffff] dark:text-[#ffffff] text-[10px] font-normal px-2 py-0.5 rounded-full shrink-0">
-            {getNetworkDisplayName(asset.network || "")}
+        <SwapAssetOptionDisplay
+          asset={asset}
+          primaryClassName="text-[#1F2937] dark:text-[#ffffff] font-medium text-sm"
+          subtitleClassName="text-xs text-gray-500 dark:text-gray-400 truncate"
+          badgeClassName="bg-[#1D8751] text-[#ffffff] dark:text-[#ffffff] text-[10px] font-normal px-2 py-0.5 rounded-full shrink-0"
+        />
+        {asset.legacy_ticker && (
+          <span className="text-[10px] text-[#f7c624] dark:text-[#f7c624] bg-[#f7c6241a] px-1 py-0.5 rounded-full mt-0.5 inline-block">
+            {asset.legacy_ticker}
           </span>
-        </div>
-        <div className="text-xs text-gray-500 dark:text-gray-400 truncate">
-          {asset.name ||
-            (asset.ticker || "").toUpperCase() ||
-            (asset.symbol || "").toUpperCase() ||
-            "Unknown Asset"}
-          {asset.legacy_ticker && (
-            <span className="text-[10px] text-[#f7c624] dark:text-[#f7c624] bg-[#f7c6241a] px-1 py-0.5 rounded-full ml-1">
-              {asset.legacy_ticker}
-            </span>
-          )}
-        </div>
+        )}
       </div>
       {selected && (
         <div className="w-2 h-2 bg-[#1D8751] rounded-full shrink-0" />

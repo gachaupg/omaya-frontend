@@ -80,7 +80,13 @@ import { stripLeadingZerosFromDecimalInput } from "@/lib/utils/decimalAmountInpu
 import {
   assetMatchesSearchTerm,
   compareAssetsForDisplay,
+  dedupeAssetsForDisplay,
 } from "@/lib/utils/assetSearch";
+import {
+  getNetworkDisplayName,
+  shouldShowAssetNetworkBadge,
+} from "@/lib/utils/networkDisplay";
+import { SwapAssetOptionDisplay } from "@/features/swap/components/SwapAssetOptionDisplay";
 import {
   findPaymentMethodInList,
   getPaymentMethodKey,
@@ -2451,8 +2457,14 @@ export default function DepositForm({
       assetMatchesSearchTerm(asset, assetSearchTerm)
     ) || [];
 
-  const sortedSwapAssets = [...filteredSwapAssets].sort((a, b) =>
-    compareAssetsForDisplay(a, b, assetSearchTerm)
+  const sortedSwapAssets = useMemo(
+    () =>
+      dedupeAssetsForDisplay(
+        [...filteredSwapAssets].sort((a, b) =>
+          compareAssetsForDisplay(a, b, assetSearchTerm)
+        )
+      ),
+    [filteredSwapAssets, assetSearchTerm]
   );
 
   const whitelistKeys = useMemo(() => {
@@ -2858,12 +2870,26 @@ export default function DepositForm({
   const exceedsDecimalPrecisionLimit =
     hasMoreThanFiveDecimals(payAmountInput);
 
+  const EXPRESS_MIN_AMOUNT = 5;
+  const isAmountBelowMin =
+    !!selectedAsset &&
+    isExchangeCommissionLookupAsset(selectedAsset) &&
+    payAmount > 0 &&
+    payAmount < EXPRESS_MIN_AMOUNT;
+
+  const isFirstCardSubmitDisabled =
+    isSubmitting ||
+    exceedsDecimalPrecisionLimit ||
+    isAmountBelowMin ||
+    (isOtcPopupAsset(selectedAsset) && (payAmount >= 15000 || getAmount >= 15000));
+
   const isProceedDisabled =
     isSubmitting ||
     !walletAddress.trim() ||
     !!walletError ||
     !termsAccepted ||
     exceedsDecimalPrecisionLimit ||
+    isAmountBelowMin ||
     (isOtcPopupAsset(selectedAsset) && (payAmount >= 15000 || getAmount >= 15000));
 
   // Save form state before navigating to legal pages so back button restores it
@@ -4465,38 +4491,17 @@ export default function DepositForm({
                           asset={selectedAsset}
                           size={24}
                           assetIconSrc={getHighResAssetIcon(selectedAsset, 72)}
+                          showNetworkBadge={shouldShowAssetNetworkBadge(selectedAsset)}
                           onAssetIconError={(e) => {
                             e.currentTarget.src = getHighResAssetIcon(null, 72);
                           }}
                         />
-                        <div className="flex flex-col">
-                          <div className="flex items-center gap-2">
-                            <span className="text-[#35353e] dark:text-white font-medium text-base">
-                              {(
-                                selectedAsset.ticker ||
-                                selectedAsset.symbol ||
-                                selectedAsset.name ||
-                                "Unknown"
-                              ).toUpperCase()}
-                            </span>
-                            <span className="bg-[#1D8751] text-[#ffffff] dark:text-[#ffffff] text-xs font-semibold px-2 py-0.5 rounded-full">
-                              {getNetworkDisplayName(
-                                getAssetNetwork(selectedAsset)
-                              )}
-                            </span>
-                          </div>
-                          <span className="text-[#788099] text-sm">
-                            {selectedAsset.name ||
-                              selectedAsset.ticker ||
-                              selectedAsset.symbol ||
-                              "Unknown"}{" "}
-                            (
-                            {getNetworkDisplayName(
-                              getAssetNetwork(selectedAsset)
-                            )}
-                            )
-                          </span>
-                        </div>
+                        <SwapAssetOptionDisplay
+                          asset={selectedAsset}
+                          primaryClassName="text-[#35353e] dark:text-white font-medium text-base"
+                          subtitleClassName="text-[#788099] text-sm truncate"
+                          badgeClassName="bg-[#1D8751] text-[#ffffff] dark:text-[#ffffff] text-xs font-semibold px-2 py-0.5 rounded-full"
+                        />
                       </>
                     ) : (
                       <>
@@ -4578,18 +4583,11 @@ export default function DepositForm({
         {!isFirstCardSubmitted && !showForexForm && (
           <div className="mt-2 sm:mt-3 md:mt-4 relative">
             <button
-              className={`w-full text-white dark:text-white text-sm sm:text-base font-medium py-3 sm:py-2 rounded-xl sm:rounded-2xl flex items-center justify-center gap-2 transition-colors min-h-[44px] sm:min-h-0 ${isHomePage
-                ? isSubmitting
-                  ? "bg-gray-500 cursor-not-allowed"
-                  : "bg-[#1D8751] hover:bg-[#166b3e] cursor-pointer"
-                : isSubmitting
-                  ? "bg-gray-500 cursor-not-allowed"
-                  : "bg-[#1D8751] hover:bg-[#166b3e]"
+              className={`w-full text-white dark:text-white text-sm sm:text-base font-medium py-3 sm:py-2 rounded-xl sm:rounded-2xl flex items-center justify-center gap-2 transition-colors min-h-[44px] sm:min-h-0 ${isFirstCardSubmitDisabled
+                ? "bg-gray-500 cursor-not-allowed"
+                : "bg-[#1D8751] hover:bg-[#166b3e] cursor-pointer"
                 }`}
-              disabled={isHomePage
-                ? isSubmitting
-                : isSubmitting
-              }
+              disabled={isFirstCardSubmitDisabled}
               onClick={() => {
                 // Prevent submission if amount is >= 15000
                 if (exceedsDecimalPrecisionLimit) {

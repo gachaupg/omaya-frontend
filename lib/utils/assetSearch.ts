@@ -1,6 +1,8 @@
 import {
   getAssetPrimaryLabel,
   getNetworkDisplayName,
+  getAssetNetworkValue,
+  type AssetLike,
 } from "@/lib/utils/networkDisplay";
 
 /** Resolve network string from asset records (swap, exchange, or rates). */
@@ -322,4 +324,34 @@ export function compareAssetsForDisplay(a: any, b: any, searchTerm: string): num
 
 export function sortAssetsForDisplay<T>(assets: T[], searchTerm: string): T[] {
   return [...assets].sort((a, b) => compareAssetsForDisplay(a, b, searchTerm));
+}
+
+function canonicalNetworkKey(network: string): string {
+  const raw = normalizeNetworkKey(network);
+  if (!raw) return "";
+  return normalizeNetworkKey(getNetworkDisplayName(raw));
+}
+
+/** Collapse duplicate rows that share the same display ticker + network (e.g. SOL/Solana on Solana). */
+export function dedupeAssetsForDisplay<T extends AssetLike>(assets: T[]): T[] {
+  const seen = new Set<string>();
+  const result: T[] = [];
+
+  for (const asset of assets) {
+    let primary = getAssetPrimaryLabel(asset).toLowerCase();
+    const network = canonicalNetworkKey(
+      resolveAssetNetwork(asset) || getAssetNetworkValue(asset)
+    );
+
+    if (network === "solana" && (primary === "solana" || primary === "sol")) {
+      primary = "sol";
+    }
+
+    const key = `${primary}|${network}`;
+    if (seen.has(key)) continue;
+    seen.add(key);
+    result.push(asset);
+  }
+
+  return result;
 }
