@@ -148,6 +148,39 @@ export function getSellAdOwnerCounterpartyBuyerName(
   return "—";
 }
 
+export type TradePhotoContext = {
+  buyer?: string | null;
+  seller?: string | null;
+  buyer_photo?: string | null;
+  seller_photo?: string | null;
+  owner?: string | null;
+  order_type?: string | null;
+};
+
+/** Profile photo for a trade party identified by email (buyer or seller). */
+export function getTradePartyPhotoByEmail(
+  email: string | null | undefined,
+  trade: TradePhotoContext
+): string | null | undefined {
+  const normalized = normalizeEmail(email);
+  if (!normalized) return undefined;
+  if (normalizeEmail(trade.buyer) === normalized) return trade.buyer_photo;
+  if (normalizeEmail(trade.seller) === normalized) return trade.seller_photo;
+  return undefined;
+}
+
+/** Counterparty profile photo for the logged-in user in a trade chat. */
+export function getTradeCounterpartyPhoto(
+  currentUserEmail: string | null | undefined,
+  trade: TradePhotoContext
+): string | null | undefined {
+  const user = normalizeEmail(currentUserEmail);
+  if (!user) return undefined;
+  if (normalizeEmail(trade.buyer) === user) return trade.seller_photo;
+  if (normalizeEmail(trade.seller) === user) return trade.buyer_photo;
+  return getMatchedTradeNotificationProfileImage(trade, currentUserEmail);
+}
+
 /** Profile photo for the person shown in getMatchedTradeNotificationDisplayName. */
 export function getMatchedTradeNotificationProfileImage(
   trade: {

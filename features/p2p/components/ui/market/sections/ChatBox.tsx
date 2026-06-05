@@ -27,6 +27,10 @@ import {
   formatRecordingDuration,
   normalizeAudioList,
 } from "@/features/p2p/utils/messageMedia";
+import {
+  getTradeCounterpartyPhoto,
+  getTradePartyPhotoByEmail,
+} from "@/features/p2p/utils/matchedTradeNotifications";
 
 interface MessageImage {
   id: string;
@@ -110,8 +114,9 @@ const ChatBox: React.FC<{
   buyer?: string;
   seller?: string;
   currentUserEmail?: string;
-  /** Order advertiser email — when set, peer photo: advertiser → buyer_photo, else seller_photo */
   advertiserEmail?: string;
+  /** `buy` | `sell` — used when buyer/seller emails alone cannot resolve counterparty photo */
+  orderType?: string;
   owner: string;
   buyerName?: string;
   sellerName?: string;
@@ -119,93 +124,87 @@ const ChatBox: React.FC<{
   peerName?: string;
   supportMessages?: GroupedMessage[];
   onClose?: () => void;
-}> = ({ tradeId, userId, userName, autoreply, seller_photo, buyer_photo, buyer, seller, currentUserEmail, advertiserEmail, owner, buyerName, sellerName, messageType = 'p2p', peerName, supportMessages, onClose }) => {
+}> = ({ tradeId, userId, userName, autoreply, seller_photo, buyer_photo, buyer, seller, currentUserEmail, orderType, owner, buyerName, sellerName, messageType = 'p2p', peerName, supportMessages, onClose }) => {
 
   const emailsEqual = (a?: string, b?: string) =>
     !!a &&
     !!b &&
     String(a).trim().toLowerCase() === String(b).trim().toLowerCase();
 
+  const tradePhotoContext = React.useMemo(
+    () => ({
+      buyer,
+      seller,
+      buyer_photo,
+      seller_photo,
+      owner,
+      order_type: orderType,
+    }),
+    [buyer, seller, buyer_photo, seller_photo, owner, orderType]
+  );
+
   // Determine which photo and display name to show for the other person
   const otherPersonData = React.useMemo(() => {
-    const isLoggedInAdvertiser =
-      advertiserEmail &&
-      currentUserEmail &&
-      emailsEqual(currentUserEmail, advertiserEmail);
+    const peerPhoto =
+      getTradeCounterpartyPhoto(currentUserEmail, tradePhotoContext) ||
+      seller_photo ||
+      buyer_photo;
 
-    // Peer photo by advertiser rule (matches API: advertiser sees buyer_photo, buyer sees seller_photo)
-    if (advertiserEmail && currentUserEmail) {
-      const peerPhoto = isLoggedInAdvertiser ? buyer_photo : seller_photo;
-      const peerDisplay = isLoggedInAdvertiser
-        ? peerName || buyerName || buyer || "Buyer"
-        : peerName || sellerName || seller || userName || "Seller";
-
-      if (messageType === "p2p") {
-        return {
-          photo: peerPhoto,
-          displayName: peerDisplay,
-        };
-      }
-      if (messageType === "support") {
-        return {
-          photo: peerPhoto || seller_photo || buyer_photo,
-          displayName: peerName || "Support",
-        };
-      }
-    }
-
-    // For P2P messages, use peerName from API if available, otherwise use existing logic
-    if (messageType === 'p2p' && peerName) {
-      if (currentUserEmail && owner) {
-        // If current user is the owner, show buyer's info (the other person)
-        if (currentUserEmail === owner) {
-          return {
-            photo: buyer_photo,
-            displayName: peerName || buyerName || userName || buyer || "Buyer"
-          };
-        }
-        // If current user is not the owner, show seller's info (the owner's info)
-        return {
-          photo: seller_photo,
-          displayName: peerName || sellerName || userName || seller || "Seller"
-        };
-      }
-      // Fallback with peerName
+    if (messageType === "support") {
       return {
-        photo: seller_photo || buyer_photo,
-        displayName: peerName || userName || sellerName || buyerName || seller || buyer || "Unknown"
+        photo: peerPhoto,
+        displayName: peerName || "Support",
       };
     }
 
-    // Support messages - use peerName if available
-    if (messageType === 'support' && peerName) {
+    const isCurrentBuyer = emailsEqual(currentUserEmail, buyer);
+    const isCurrentSeller = emailsEqual(currentUserEmail, seller);
+
+    if (isCurrentBuyer) {
       return {
-        photo: seller_photo || buyer_photo,
-        displayName: peerName || "Support"
+        photo: peerPhoto,
+        displayName: peerName || sellerName || seller || "Seller",
+      };
+    }
+    if (isCurrentSeller) {
+      return {
+        photo: peerPhoto,
+        displayName: peerName || buyerName || buyer || "Buyer",
       };
     }
 
-    // Original logic for P2P messages without peerName
-    if (currentUserEmail && owner) {
-      // If current user is the owner, show buyer's info (the other person)
-      if (currentUserEmail === owner) {
-        return {
-          photo: buyer_photo,
-          displayName: buyerName || userName || buyer || "Buyer"
-        };
-      }
-      // If current user is not the owner, show seller's info (the owner's info)
+    if (peerName) {
       return {
-        photo: seller_photo,
-        displayName: sellerName || userName || seller || "Seller"
+        photo: peerPhoto,
+        displayName: peerName,
       };
     }
-    // Fallback
+
+    if (currentUserEmail && owner && emailsEqual(currentUserEmail, owner)) {
+      return {
+        photo: peerPhoto,
+        displayName: buyerName || userName || buyer || "Buyer",
+      };
+    }
+
     return {
-      photo: seller_photo || buyer_photo,
-      displayName: userName || sellerName || buyerName || seller || buyer || "Unknown"
+      photo: peerPhoto,
+      displayName: sellerName || userName || seller || "Seller",
     };
-  }, [currentUserEmail, advertiserEmail, owner, seller_photo, buyer_photo, buyer, seller, buyerName, sellerName, userName, messageType, peerName]);
+  }, [
+    currentUserEmail,
+    tradePhotoContext,
+    seller_photo,
+    buyer_photo,
+    buyer,
+    seller,
+    buyerName,
+    sellerName,
+    userName,
+    messageType,
+    peerName,
+    owner,
+  ]);
   const dispatch = useDispatch();
   const message = useSelector((state: RootState) => state.message.message);
   const [uploadedImages, setUploadedImages] = useState<File[]>([]);
@@ -891,15 +890,9 @@ const ChatBox: React.FC<{
               : "Unknown User";
 
             if (!isSender && msg.sender_name) {
-              if (advertiserEmail && emailsEqual(msg.sender_name, advertiserEmail)) {
-                messagePhoto = seller_photo;
-              } else if (advertiserEmail) {
-                messagePhoto = buyer_photo;
-              } else if (msg.sender_name === seller) {
-                messagePhoto = seller_photo;
-              } else if (msg.sender_name === buyer) {
-                messagePhoto = buyer_photo;
-              }
+              messagePhoto =
+                getTradePartyPhotoByEmail(msg.sender_name, tradePhotoContext) ||
+                otherPersonData.photo;
             }
 
             const messageImages = getMessageImageList(msg);
