@@ -90,3 +90,64 @@ export const shouldHideBodyTextForMediaPlaceholder = (
   if (/^voice\s*message$/i.test(t)) return hasRenderableAudios;
   return false;
 };
+
+/** mm:ss for recording timers and voice-note labels. */
+export const formatRecordingDuration = (totalSeconds: number): string => {
+  const safe = Math.max(0, Math.floor(totalSeconds));
+  const mins = Math.floor(safe / 60);
+  const secs = safe % 60;
+  return `${mins.toString().padStart(2, "0")}:${secs.toString().padStart(2, "0")}`;
+};
+
+export type VoiceNoteItem = { id?: string; audio_url: string; duration?: number };
+
+export const normalizeAudioList = (msg: any): VoiceNoteItem[] => {
+  const rawList =
+    Array.isArray(msg?.audios) && msg.audios.length > 0
+      ? msg.audios
+      : Array.isArray(msg?.uploaded_audios) && msg.uploaded_audios.length > 0
+        ? msg.uploaded_audios
+        : Array.isArray(msg?.voice_notes) && msg.voice_notes.length > 0
+          ? msg.voice_notes
+          : msg?.audio_url || msg?.audio || msg?.recording_url || msg?.voice_note
+            ? [
+                {
+                  id: msg?.id,
+                  audio_url:
+                    msg?.audio_url ||
+                    msg?.audio ||
+                    msg?.recording_url ||
+                    msg?.voice_note,
+                  duration: msg?.duration,
+                },
+              ]
+            : [];
+
+  return rawList
+    .map((a: any, idx: number) => {
+      if (typeof a === "string") {
+        return {
+          id: `${msg?.id || "audio"}-${idx}`,
+          audio_url: a,
+          duration: msg?.duration,
+        };
+      }
+      const audioUrl =
+        a?.audio_url ||
+        a?.audio ||
+        a?.url ||
+        a?.file ||
+        a?.recording_url ||
+        a?.voice_note ||
+        "";
+      return {
+        id: a?.id || `${msg?.id || "audio"}-${idx}`,
+        audio_url: audioUrl,
+        duration: a?.duration ?? msg?.duration,
+      };
+    })
+    .filter(
+      (a: VoiceNoteItem) =>
+        typeof a.audio_url === "string" && a.audio_url.trim() !== ""
+    );
+};

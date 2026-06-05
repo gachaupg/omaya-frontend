@@ -2,6 +2,7 @@
 
 import React, { useEffect, useMemo, useState, useRef, useCallback } from "react";
 import { useSelector } from "react-redux";
+import { store } from "@/store";
 import { RootState } from "@/store/rootReducer";
 import { useGroupedMessages } from "@/features/p2p/hooks/useGroupedMessages";
 import { useTradeStatusWebSocket } from "@/features/p2p/hooks/useTradeStatusWebSocket";
@@ -24,13 +25,22 @@ import { cookieUtils } from "@/lib/utils/cookieUtils";
 import Link from "next/link";
 import TermsAndConditionsModal from "@/features/p2p/components/ui/TermsAndConditionsModal";
 import { showToast } from "@/lib/utils/toast";
+import { VoiceAudioPlayer } from "@/features/p2p/components/ui/VoiceAudioPlayer";
 import {
   coalesceMessageImages,
+  formatRecordingDuration,
+  normalizeAudioList,
   resolveMessageImageUrl,
   shouldHideBodyTextForMediaPlaceholder,
   hasRenderableMessageImages,
-  normalizeMessageCaptionForDedupe,
 } from "@/features/p2p/utils/messageMedia";
+import {
+  dedupeMixedChatMessages,
+  isBlankMediaShell,
+  isTempMessageId,
+  normalizeTradeMessageForDedupe,
+  tradeMessagesAreDuplicates,
+} from "@/features/p2p/utils/tradeMessageDedupe";
 
 interface ConversationItemProps {
   group: any;
@@ -236,17 +246,35 @@ export const Chats: React.FC = () => {
             audios: [],
           };
 
-          const existingMessages = Array.isArray(group.messages)
-            ? [...group.messages]
-            : [];
-          const exists = existingMessages.some(
-            (m: any) => String(m?.id) === incomingMessage.id
+          const existingMessages = (
+            Array.isArray(group.messages) ? group.messages : []
+          ).filter((m: any) => !isTempMessageId(m?.id));
+
+          const alreadyPresent = existingMessages.some((m: any) => {
+            if (String(m?.id) === incomingMessage.id) return true;
+            return tradeMessagesAreDuplicates(
+              normalizeTradeMessageForDedupe(m),
+              normalizeTradeMessageForDedupe(incomingMessage),
+              user?.email,
+              60000,
+              user?.id
+            );
+          });
+          if (alreadyPresent) continue;
+
+          const mergedMessages = dedupeMixedChatMessages(
+            [incomingMessage, ...existingMessages],
+            user?.email,
+            user?.id
+          ).sort(
+            (a: any, b: any) =>
+              new Date(String(b?.timestamp || 0)).getTime() -
+              new Date(String(a?.timestamp || 0)).getTime()
           );
-          if (exists) continue;
 
           next[i] = {
             ...group,
-            messages: [incomingMessage, ...existingMessages],
+            messages: mergedMessages,
           } as GroupedUser;
           changed = true;
         }
@@ -335,6 +363,7 @@ export const Chats: React.FC = () => {
   const mediaRefetchTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const unreadRefetchTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const [optimisticMessages, setOptimisticMessages] = useState<Map<string, any[]>>(new Map());
+  const [activeThreadId, setActiveThreadId] = useState("");
   const [statusOverridesByEntity, setStatusOverridesByEntity] = useState<Map<string, string>>(new Map());
   const justAddedOptimisticRef = useRef<boolean>(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
@@ -352,6 +381,57 @@ export const Chats: React.FC = () => {
     isSender: boolean;
   } | null>(null);
   const longPressTimerRef = useRef<number | null>(null);
+
+  const revokeOptimisticBlobUrls = useCallback((images: unknown) => {
+    if (!Array.isArray(images)) return;
+    for (const u of images) {
+      if (typeof u === "string" && u.startsWith("blob:")) {
+        URL.revokeObjectURL(u);
+      }
+    }
+  }, []);
+
+  const removeOptimisticMessage = useCallback(
+    (entityId: string, tempId: string, images?: unknown) => {
+      revokeOptimisticBlobUrls(images);
+      setOptimisticMessages((prev) => {
+        const newMap = new Map(prev);
+        const existing = newMap.get(entityId) || [];
+        const filtered = existing.filter((msg) => msg.id !== tempId);
+        if (filtered.length === 0) newMap.delete(entityId);
+        else newMap.set(entityId, filtered);
+        return newMap;
+      });
+      setLiveGroupedUsers((prev) =>
+        prev.map((g) => {
+          if (String(g?.entity_id ?? "").trim() !== String(entityId).trim()) return g;
+          const messages = Array.isArray(g.messages)
+            ? g.messages.filter(
+                (m: any) =>
+                  String(m?.id ?? "") !== tempId && !isTempMessageId(m?.id)
+              )
+            : [];
+          return { ...g, messages };
+        })
+      );
+    },
+    [revokeOptimisticBlobUrls]
+  );
+
+  const getLatestMessageForGroup = useCallback(
+    (group: GroupedUser | null | undefined) => {
+      if (!group?.entity_id) return group?.messages?.[0];
+      const pending = optimisticMessages.get(group.entity_id) || [];
+      const newestPending = pending[0];
+      const newestReal = group.messages?.[0];
+      if (!newestPending) return newestReal;
+      if (!newestReal) return newestPending;
+      const pendingTs = new Date(String(newestPending.timestamp || 0)).getTime();
+      const realTs = new Date(String(newestReal.timestamp || 0)).getTime();
+      return pendingTs >= realTs ? newestPending : newestReal;
+    },
+    [optimisticMessages]
+  );
 
   useEffect(() => {
     setLiveGroupedUsers((prev) => {
@@ -378,9 +458,9 @@ export const Chats: React.FC = () => {
           continue;
         }
 
-        const existingMessages = Array.isArray(existing?.messages)
-          ? existing.messages
-          : [];
+        const existingMessages = (
+          Array.isArray(existing?.messages) ? existing.messages : []
+        ).filter((m: any) => !isTempMessageId(m?.id));
         const incomingMessages = Array.isArray(g?.messages) ? g.messages : [];
         const mergedById = new Map<string, any>();
         for (const m of existingMessages) mergedById.set(String(m?.id ?? ""), m);
@@ -389,7 +469,15 @@ export const Chats: React.FC = () => {
           const prevMsg = mergedById.get(id);
           mergedById.set(id, prevMsg ? { ...prevMsg, ...m } : m);
         }
-        const mergedMessages = Array.from(mergedById.values()).sort(
+        const mergedMessages = dedupeMixedChatMessages(
+          Array.from(mergedById.values()).sort(
+            (a: any, b: any) =>
+              new Date(String(b?.timestamp || 0)).getTime() -
+              new Date(String(a?.timestamp || 0)).getTime()
+          ),
+          user?.email,
+          user?.id
+        ).sort(
           (a: any, b: any) =>
             new Date(String(b?.timestamp || 0)).getTime() -
             new Date(String(a?.timestamp || 0)).getTime()
@@ -484,6 +572,173 @@ export const Chats: React.FC = () => {
     }
     return "";
   }, [selectedUser, resolvedTradeId]);
+
+  const getMessageThreadId = useCallback((msg: any, messageType: string): string => {
+    const type = messageType.toLowerCase();
+    if (type === "support") {
+      return String(
+        msg?.support_request_id ?? extractIdFromMessageId(msg?.id) ?? ""
+      ).trim();
+    }
+    if (type === "appeal") {
+      return String(msg?.appeal_id ?? extractIdFromMessageId(msg?.id) ?? "").trim();
+    }
+    if (type === "p2p") {
+      return String(msg?.trade_id ?? msg?.trade ?? "").trim();
+    }
+    return "";
+  }, []);
+
+  const isOwnChatMessage = useCallback(
+    (msg: any) => {
+      if (!user) return false;
+      if (user.id != null && msg?.sender_id != null && msg.sender_id === user.id) {
+        return true;
+      }
+      const userEmail = String(user.email ?? "").trim().toLowerCase();
+      const senderEmail = String(msg?.sender_email ?? "").trim().toLowerCase();
+      if (userEmail && senderEmail && userEmail === senderEmail) return true;
+      const senderName = String(msg?.sender_name ?? "").trim().toLowerCase();
+      return Boolean(userEmail && senderName && senderName === userEmail);
+    },
+    [user]
+  );
+
+  const enrichMessageForActiveThread = useCallback(
+    (msg: any, messageType: string, threadId: string) => {
+      if (!threadId || !msg) return msg;
+      const existing = getMessageThreadId(msg, messageType);
+      if (existing) return msg;
+      if (!isOwnChatMessage(msg)) return msg;
+
+      const type = messageType.toLowerCase();
+      if (type === "support") return { ...msg, support_request_id: threadId };
+      if (type === "appeal") return { ...msg, appeal_id: threadId };
+      if (type === "p2p") return { ...msg, trade_id: threadId };
+      return msg;
+    },
+    [getMessageThreadId, isOwnChatMessage]
+  );
+
+  useEffect(() => {
+    if (!selectedUser) {
+      setActiveThreadId("");
+      return;
+    }
+    const messageType = String(selectedUser.message_type || "")
+      .trim()
+      .toLowerCase();
+    const id = messageType === "p2p" ? resolvedTradeId : resolvedThreadId;
+    if (id) setActiveThreadId(id);
+  }, [
+    selectedUser?.entity_id,
+    selectedUser?.message_type,
+    resolvedTradeId,
+    resolvedThreadId,
+  ]);
+
+  const filterMessagesForActiveThread = useCallback(
+    (messages: any[], threadIdOverride?: string) => {
+      if (!selectedUser || !Array.isArray(messages)) return messages;
+      const messageType = String(selectedUser.message_type || "")
+        .trim()
+        .toLowerCase();
+      const activeId = String(threadIdOverride || activeThreadId || "").trim();
+      if (!activeId) return messages;
+
+      const prepared = messages.map((msg) =>
+        enrichMessageForActiveThread(msg, messageType, activeId)
+      );
+
+      if (
+        messageType === "p2p" &&
+        isValidTradeIdForMessages(selectedUser.entity_id) &&
+        String(selectedUser.entity_id).trim() === activeId
+      ) {
+        return prepared.filter((msg) => {
+          const threadId = getMessageThreadId(msg, messageType);
+          return !threadId || threadId === activeId;
+        });
+      }
+
+      if (messageType !== "support" && messageType !== "appeal") {
+        return prepared;
+      }
+
+      return prepared.filter((msg) => {
+        const threadId = getMessageThreadId(msg, messageType);
+        if (!threadId) return isOwnChatMessage(msg);
+        return threadId === activeId;
+      });
+    },
+    [
+      selectedUser,
+      activeThreadId,
+      enrichMessageForActiveThread,
+      getMessageThreadId,
+      isOwnChatMessage,
+    ]
+  );
+
+  const hasServerEchoForOptimistic = useCallback(
+    (serverMessages: any[], optimisticMessage: any, threadId: string) => {
+      const filtered = filterMessagesForActiveThread(serverMessages, threadId);
+      return filtered.some((m: any) => {
+        const real = normalizeTradeMessageForDedupe(m);
+        return (
+          !isTempMessageId(m?.id) &&
+          !isBlankMediaShell(real) &&
+          tradeMessagesAreDuplicates(
+            normalizeTradeMessageForDedupe(optimisticMessage),
+            real,
+            user?.email,
+            60000,
+            user?.id
+          )
+        );
+      });
+    },
+    [filterMessagesForActiveThread, user?.email, user?.id]
+  );
+
+  // Drop optimistic rows once the refetched server echo is in the active thread.
+  useEffect(() => {
+    if (!selectedUser?.entity_id) return;
+    const entityId = selectedUser.entity_id;
+    const pending = optimisticMessages.get(entityId);
+    if (!pending?.length) return;
+
+    const realMessages = filterMessagesForActiveThread(
+      (selectedUser.messages || []).filter((m: any) => !isTempMessageId(m?.id))
+    );
+
+    for (const opt of pending) {
+      const hasRealEcho = realMessages.some((real: any) => {
+        const normalized = normalizeTradeMessageForDedupe(real);
+        return (
+          !isBlankMediaShell(normalized) &&
+          tradeMessagesAreDuplicates(
+            normalizeTradeMessageForDedupe(opt),
+            normalized,
+            user?.email,
+            60000,
+            user?.id
+          )
+        );
+      });
+      if (hasRealEcho) {
+        removeOptimisticMessage(entityId, opt.id, opt.images);
+      }
+    }
+  }, [
+    selectedUser?.entity_id,
+    selectedUser?.messages,
+    optimisticMessages,
+    removeOptimisticMessage,
+    filterMessagesForActiveThread,
+    user?.email,
+    user?.id,
+  ]);
 
   const normalizeChatStatus = useCallback((value: unknown): string => {
     const s = String(value || "").trim().toLowerCase();
@@ -672,62 +927,42 @@ export const Chats: React.FC = () => {
     }
   }, [liveGroupedUsers, selectedUser]);
 
-  // Compute displayed messages by merging real messages with optimistic ones
+  // Compute displayed messages: server rows first, then only optimistic rows with no server echo.
   const displayedMessages = useMemo(() => {
     if (!selectedUser || !selectedUser.entity_id) return [];
 
     const hiddenForEntity = hiddenMessageIdsByEntity.get(selectedUser.entity_id) || new Set<string>();
-    const realMessages = selectedUser.messages || [];
+    const threadMessages = filterMessagesForActiveThread(
+      (selectedUser.messages || []).filter((m: any) => !isTempMessageId(m?.id))
+    );
+    const serverMessages = dedupeMixedChatMessages(
+      threadMessages,
+      user?.email,
+      user?.id
+    );
     const optimistic = optimisticMessages.get(selectedUser.entity_id) || [];
 
-    const sameMessageSender = (a: any, b: any) => {
-      if (a?.sender_id && b?.sender_id && a.sender_id === b.sender_id) return true;
-      const ae = String(a?.sender_email ?? "").trim().toLowerCase();
-      const be = String(b?.sender_email ?? "").trim().toLowerCase();
-      return !!ae && ae === be;
-    };
-
-    // Filter out optimistic messages that have been replaced by real ones
-    const filteredOptimistic = optimistic.filter((optMsg) => {
-      const hasRealMatch = realMessages.some((realMsg) => {
-        if (!sameMessageSender(realMsg, optMsg)) return false;
-
-        const realText = String(realMsg?.content ?? realMsg?.message ?? "").trim();
-        const optText = String(optMsg?.content ?? optMsg?.message ?? "").trim();
-        const realNorm = normalizeMessageCaptionForDedupe(realText);
-        const optNorm = normalizeMessageCaptionForDedupe(optText);
-        const sameNormalizedCaption = realNorm === optNorm;
-        const realRenderable = hasRenderableMessageImages(realMsg);
-        const optRenderable = hasRenderableMessageImages(optMsg);
-        const bothMediaOnly =
-          sameNormalizedCaption &&
-          realNorm === "" &&
-          realRenderable &&
-          optRenderable;
-        const sameContent = (sameNormalizedCaption && realNorm !== "") || bothMediaOnly;
-        const timeDiff = Math.abs(
-          new Date(realMsg.timestamp).getTime() - new Date(optMsg.timestamp).getTime()
+    const pendingOptimistic = optimistic.filter((optMsg) =>
+      !serverMessages.some((realMsg) => {
+        const normalized = normalizeTradeMessageForDedupe(realMsg);
+        return (
+          !isBlankMediaShell(normalized) &&
+          tradeMessagesAreDuplicates(
+            normalizeTradeMessageForDedupe(optMsg),
+            normalized,
+            user?.email,
+            60000,
+            user?.id
+          )
         );
-        return sameContent && timeDiff < 10000;
-      });
-      return !hasRealMatch;
-    });
+      })
+    );
 
-    // Clean up replaced optimistic messages
-    if (filteredOptimistic.length !== optimistic.length) {
-      setOptimisticMessages((prev) => {
-        const newMap = new Map(prev);
-        const entityId = selectedUser.entity_id;
-        if (filteredOptimistic.length === 0) {
-          newMap.delete(entityId);
-        } else {
-          newMap.set(entityId, filteredOptimistic);
-        }
-        return newMap;
-      });
-    }
-
-    const merged = [...realMessages, ...filteredOptimistic];
+    const merged = dedupeMixedChatMessages(
+      [...serverMessages, ...pendingOptimistic],
+      user?.email,
+      user?.id
+    );
     if (hiddenForEntity.size === 0) return merged;
     return merged.filter((m: any) => !hiddenForEntity.has(String(m?.id ?? "")));
   }, [
@@ -735,6 +970,7 @@ export const Chats: React.FC = () => {
     selectedUser?.entity_id,
     optimisticMessages,
     hiddenMessageIdsByEntity,
+    filterMessagesForActiveThread,
     user?.id,
     user?.email,
   ]);
@@ -1114,17 +1350,29 @@ export const Chats: React.FC = () => {
         timestamp: String(payload.timestamp ?? new Date().toISOString()),
       };
 
+      const normalizedForDedupe = normalizeTradeMessageForDedupe(normalizedMessage);
+
       setSelectedUser((prev) => {
         if (!prev) return prev;
         const existing = Array.isArray((prev as any).messages) ? (prev as any).messages : [];
-        const existingIndex = existing.findIndex(
+        const withoutReplacedTemps = existing.filter((m: any) => {
+          if (!isTempMessageId(m?.id)) return true;
+          return !tradeMessagesAreDuplicates(
+            normalizeTradeMessageForDedupe(m),
+            normalizedForDedupe,
+            user?.email,
+            15000,
+            user?.id
+          );
+        });
+        const existingIndex = withoutReplacedTemps.findIndex(
           (m: any) => String(m?.id) === normalizedMessage.id
         );
 
         // Some backends emit the same message twice: first without media,
         // then again with images/audios attached. Merge instead of dropping.
         if (existingIndex !== -1) {
-          const current = existing[existingIndex] || {};
+          const current = withoutReplacedTemps[existingIndex] || {};
           const merged = {
             ...current,
             ...normalizedMessage,
@@ -1160,7 +1408,7 @@ export const Chats: React.FC = () => {
               (current as any).support_document ||
               "",
           };
-          const nextMessages = [...existing];
+          const nextMessages = [...withoutReplacedTemps];
           nextMessages[existingIndex] = merged;
           return {
             ...prev,
@@ -1171,7 +1419,7 @@ export const Chats: React.FC = () => {
         // Keep latest-first order expected by this tab.
         return {
           ...prev,
-          messages: [normalizedMessage as any, ...existing],
+          messages: [normalizedMessage as any, ...withoutReplacedTemps],
         } as GroupedUser;
       });
       // Keep conversation sidebar in sync immediately for incoming messages too.
@@ -1264,6 +1512,7 @@ export const Chats: React.FC = () => {
     isAuthenticated,
     normalizeChatStatus,
     refetch,
+    user?.email,
   ]);
 
   const conversations = useMemo(() => {
@@ -1382,20 +1631,6 @@ export const Chats: React.FC = () => {
     setUploadedImages((prev) => prev.filter((_, i) => i !== index));
   };
 
-  // Update recording seconds display while recording
-  useEffect(() => {
-    if (!isRecording) {
-      setRecordingSeconds(0);
-      return;
-    }
-    setRecordingSeconds(0);
-    const interval = setInterval(() => {
-      const elapsed = Math.floor((Date.now() - recordingStartRef.current) / 1000);
-      setRecordingSeconds(elapsed);
-    }, 1000);
-    return () => clearInterval(interval);
-  }, [isRecording]);
-
   const startRecording = async () => {
     if (!selectedUser || !termsAccepted || isSending) return;
     try {
@@ -1435,15 +1670,17 @@ export const Chats: React.FC = () => {
     }
   };
 
-  // Live seconds counter while recording
+  // Live mm:ss counter while recording
   useEffect(() => {
     if (!isRecording) {
       setRecordingSeconds(0);
       return;
     }
-    const interval = setInterval(() => {
+    const tick = () => {
       setRecordingSeconds(Math.floor((Date.now() - recordingStartRef.current) / 1000));
-    }, 1000);
+    };
+    tick();
+    const interval = setInterval(tick, 250);
     return () => clearInterval(interval);
   }, [isRecording]);
 
@@ -1608,6 +1845,7 @@ export const Chats: React.FC = () => {
       });
       return;
     }
+    setActiveThreadId(targetId);
 
     const messageContent = messageInput.trim();
     const tempId = `temp-${Date.now()}-${Math.random()}`;
@@ -1624,30 +1862,18 @@ export const Chats: React.FC = () => {
       images: imagesToSend.map((file) => URL.createObjectURL(file)),
       sender_id: user?.id || 0,
       sender_email: user?.email || "",
-      sender_name: user?.email || "",
+      sender_name:
+        (user as any)?.full_name ||
+        (user as any)?.name ||
+        user?.email ||
+        "",
       timestamp: new Date().toISOString(),
-      isOptimistic: true, // Flag to identify optimistic messages
+      isOptimistic: true,
+      ...(messageType === "p2p" ? { trade_id: targetId } : {}),
+      ...(messageType === "support" ? { support_request_id: targetId } : {}),
+      ...(messageType === "appeal" ? { appeal_id: targetId } : {}),
     };
-    const applyOptimisticPreviewToSidebar = (entityId: string, optimisticMsg: any) => {
-      setLiveGroupedUsers((prev) => {
-        const list = Array.isArray(prev) ? [...prev] : [];
-        const idx = list.findIndex(
-          (g: any) => String(g?.entity_id ?? "").trim() === String(entityId).trim()
-        );
-        if (idx === -1) return prev;
-        const group: any = list[idx];
-        const existing = Array.isArray(group?.messages) ? group.messages : [];
-        const nextGroup = {
-          ...group,
-          messages: [optimisticMsg, ...existing],
-        };
-        list.splice(idx, 1);
-        list.unshift(nextGroup);
-        return list;
-      });
-    };
-
-    // Add optimistic message immediately - this will be picked up by displayedMessages useMemo
+    // Add optimistic message immediately - displayedMessages reads from optimisticMessages only
     setOptimisticMessages((prev) => {
       const newMap = new Map(prev);
       const entityId = selectedUser.entity_id;
@@ -1656,10 +1882,9 @@ export const Chats: React.FC = () => {
       if (existing.some(msg => msg.id === tempId)) {
         return prev;
       }
-      newMap.set(entityId, [...existing, optimisticMessage]);
+      newMap.set(entityId, [optimisticMessage, ...existing]);
       return newMap;
     });
-    applyOptimisticPreviewToSidebar(selectedUser.entity_id, optimisticMessage);
 
     // Set flag to prevent useEffect from overwriting selectedUser immediately
     justAddedOptimisticRef.current = true;
@@ -1694,59 +1919,40 @@ export const Chats: React.FC = () => {
         throw new Error(`Unsupported message type: ${messageType || "unknown"}`);
       }
 
-      // Immediately refetch to get the real message
-      refetch();
-
-      // Drop optimistic row only after a long fallback so blob previews survive until
-      // the server message includes a real image URL (dedupe removes it earlier when it does).
-      setTimeout(() => {
-        setOptimisticMessages((prev) => {
-          const newMap = new Map(prev);
-          const entityId = selectedUser.entity_id;
-          const existing = newMap.get(entityId) || [];
-          const removed = existing.find((m) => m.id === tempId);
-          if (removed?.images && Array.isArray(removed.images)) {
-            for (const u of removed.images) {
-              if (typeof u === "string" && u.startsWith("blob:")) {
-                URL.revokeObjectURL(u);
-              }
-            }
-          }
-          const filtered = existing.filter((msg) => msg.id !== tempId);
-          if (filtered.length === 0) {
-            newMap.delete(entityId);
-          } else {
-            newMap.set(entityId, filtered);
-          }
-          return newMap;
+      await refetch();
+      justAddedOptimisticRef.current = false;
+      const entityId = selectedUser.entity_id;
+      const refreshedGroup = (store.getState() as RootState).unreadMessages
+        .groupedUsers?.find((g) => String(g?.entity_id ?? "").trim() === String(entityId).trim());
+      if (refreshedGroup?.messages) {
+        setSelectedUser((prev) => {
+          if (!prev || prev.entity_id !== entityId) return prev;
+          return {
+            ...prev,
+            messages: refreshedGroup.messages,
+          } as GroupedUser;
         });
-      }, 45000);
+      }
+
+      if (
+        hasServerEchoForOptimistic(
+          refreshedGroup?.messages || [],
+          optimisticMessage,
+          targetId
+        )
+      ) {
+        removeOptimisticMessage(entityId, tempId, optimisticMessage.images);
+      }
     } catch (error) {
       console.error("Failed to send message:", error);
       const msg = error instanceof Error ? error.message : String(error);
       showToast.error("Could not send message", msg);
 
-      if (Array.isArray(optimisticMessage.images)) {
-        for (const u of optimisticMessage.images) {
-          if (typeof u === "string" && u.startsWith("blob:")) {
-            URL.revokeObjectURL(u);
-          }
-        }
-      }
-
-      // Remove optimistic message on error
-      setOptimisticMessages((prev) => {
-        const newMap = new Map(prev);
-        const entityId = selectedUser.entity_id;
-        const existing = newMap.get(entityId) || [];
-        const filtered = existing.filter((msg) => msg.id !== tempId);
-        if (filtered.length === 0) {
-          newMap.delete(entityId);
-        } else {
-          newMap.set(entityId, filtered);
-        }
-        return newMap;
-      });
+      removeOptimisticMessage(
+        selectedUser.entity_id,
+        tempId,
+        optimisticMessage.images
+      );
 
       // Restore message and attachments so user can retry
       setMessageInput(messageContent);
@@ -1787,14 +1993,15 @@ export const Chats: React.FC = () => {
       );
     }
 
-    const reversedMessages = allMessages.slice().reverse();
+    // Oldest at top, newest at bottom (standard chat order; scroll anchors to bottom).
+    const chronologicalMessages = allMessages;
 
     return (
       <div
         ref={messagesContainerRef}
         className="flex flex-col gap-1 px-4 py-4 overflow-y-scroll flex-1 min-h-0 scrollbar-thin"
       >
-        {reversedMessages.map((msg: any, index: number) => {
+        {chronologicalMessages.map((msg: any, index: number) => {
             // Determine if this message is from the logged-in user
             const isSender =
               (user?.id && msg.sender_id && msg.sender_id === user.id) ||
@@ -1824,7 +2031,7 @@ export const Chats: React.FC = () => {
                 hasRenderableAudios
               );
 
-            const prevMsg = index > 0 ? reversedMessages[index - 1] : null;
+            const prevMsg = index > 0 ? chronologicalMessages[index - 1] : null;
             const prevDate = prevMsg?.timestamp ? new Date(prevMsg.timestamp).toDateString() : "";
             const currDate = msg.timestamp ? new Date(msg.timestamp).toDateString() : "";
             const showDateSeparator = !msg.timestamp || index === 0 || prevDate !== currDate;
@@ -1893,30 +2100,18 @@ export const Chats: React.FC = () => {
                     </div>
                   )}
 
-                  {/* Voice/audio messages - API: audios: [{ id, audio_url, duration }], or legacy audio_url/audio */}
+                  {/* Voice/audio messages */}
                   {(() => {
-                    const audioList = Array.isArray(msg.audios) && msg.audios.length > 0
-                      ? msg.audios
-                      : (msg.audio_url || msg.audio)
-                        ? [{ id: msg.id, audio_url: msg.audio_url || msg.audio, duration: 0 }]
-                        : [];
+                    const audioList = normalizeAudioList(msg);
                     if (audioList.length === 0) return null;
                     return (
                       <div className="mt-1 flex flex-col gap-2">
-                        {audioList.map((a: { id?: string; audio_url: string; duration?: number }, idx: number) => (
-                          <div key={a.id || `audio-${idx}`} className="flex items-center gap-2">
-                            <audio
-                              controls
-                              className="max-w-full h-8 min-w-[180px]"
-                              src={a.audio_url}
-                              preload="metadata"
-                            >
-                              Your browser does not support audio playback.
-                            </audio>
-                            {typeof a.duration === 'number' && a.duration > 0 && (
-                              <span className="text-[10px] opacity-75">{a.duration}s</span>
-                            )}
-                          </div>
+                        {audioList.map((a, idx) => (
+                          <VoiceAudioPlayer
+                            key={a.id || `audio-${msg.id}-${idx}`}
+                            src={a.audio_url}
+                            duration={a.duration}
+                          />
                         ))}
                       </div>
                     );
@@ -2089,7 +2284,7 @@ export const Chats: React.FC = () => {
             )}
             {filteredConversations.map((group: any) => {
               const displayName = getDisplayName(group);
-              const latestMessage = group.messages?.[0];
+              const latestMessage = getLatestMessageForGroup(group);
               const isActive = Boolean(
                 selectedUser && selectedUser.entity_id === group.entity_id
               );
@@ -2150,7 +2345,7 @@ export const Chats: React.FC = () => {
               </button>
 
               {selectedUser && (() => {
-                const latestMessage = selectedUser.messages?.[0];
+                const latestMessage = getLatestMessageForGroup(selectedUser);
                 const photoUrl = getPhotoUrl(selectedUser, latestMessage);
                 const displayName = getDisplayName(selectedUser);
 
@@ -2271,8 +2466,8 @@ export const Chats: React.FC = () => {
                   controls
                   className="h-9 max-w-[180px]"
                 />
-                <span className="text-xs text-gray-600 dark:text-gray-400">
-                  {audioPreview.duration}s
+                <span className="text-xs text-gray-600 dark:text-gray-400 tabular-nums">
+                  {formatRecordingDuration(audioPreview.duration)}
                 </span>
                 <div className="flex gap-2 ml-auto">
                   <button
@@ -2341,8 +2536,8 @@ export const Chats: React.FC = () => {
               {/* Audio recording - record voice message with seconds count */}
               <div className="flex items-center gap-1.5 flex-shrink-0">
                 {isRecording && (
-                  <span className="text-xs font-medium text-red-500 tabular-nums min-w-[2ch]">
-                    {recordingSeconds}s
+                  <span className="text-xs font-medium text-red-500 tabular-nums min-w-[5ch]">
+                    {formatRecordingDuration(recordingSeconds)}
                   </span>
                 )}
                 <button

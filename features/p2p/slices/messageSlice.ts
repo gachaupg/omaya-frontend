@@ -1,7 +1,9 @@
 import { createSlice, PayloadAction } from "@reduxjs/toolkit";
 import {
   dedupeTradeMessages,
+  isBlankMediaShell,
   isTempMessageId,
+  normalizeTradeMessageForDedupe,
   tradeMessagesAreDuplicates,
 } from "@/features/p2p/utils/tradeMessageDedupe";
 
@@ -42,8 +44,32 @@ const messageSlice = createSlice({
       state.message = "";
     },
     // WebSocket actions
-    setMessages(state, action: PayloadAction<{ tradeId: string; messages: TradeMessage[] }>) {
-      const { tradeId, messages } = action.payload;
+    setMessages(
+      state,
+      action: PayloadAction<{
+        tradeId: string;
+        messages: TradeMessage[];
+        /** When true, drop existing rows for this trade (trade switch / full API list). */
+        replace?: boolean;
+      }>
+    ) {
+      const { tradeId, messages, replace } = action.payload;
+
+      const normalizedIncoming = messages.map((msg) =>
+        normalizeTradeMessageForDedupe(msg)
+      );
+
+      if (replace) {
+        state.messages[tradeId] = dedupeTradeMessages(
+          [...normalizedIncoming].sort(
+            (a, b) =>
+              new Date(String(a.timestamp || 0)).getTime() -
+              new Date(String(b.timestamp || 0)).getTime()
+          )
+        );
+        return;
+      }
+
       const existing = state.messages[tradeId] || [];
 
       // Merge instead of replace so websocket-delivered messages are not lost
@@ -52,7 +78,7 @@ const messageSlice = createSlice({
       for (const msg of existing) {
         byId.set(String(msg.id), msg);
       }
-      for (const msg of messages) {
+      for (const msg of normalizedIncoming) {
         const id = String(msg.id);
         const prev = byId.get(id);
         if (!prev) {
@@ -63,19 +89,19 @@ const messageSlice = createSlice({
           ...prev,
           ...msg,
           message:
-            String((msg as any).message ?? "").trim() !== ""
+            String(msg.message ?? "").trim() !== ""
               ? msg.message
               : prev.message,
           images:
-            Array.isArray((msg as any).images) && (msg as any).images.length > 0
-              ? (msg as any).images
+            Array.isArray(msg.images) && msg.images.length > 0
+              ? msg.images
               : prev.images || [],
           audios:
-            Array.isArray((msg as any).audios) && (msg as any).audios.length > 0
-              ? (msg as any).audios
+            Array.isArray(msg.audios) && msg.audios.length > 0
+              ? msg.audios
               : (prev as any).audios || [],
-          audio_url: (msg as any).audio_url || (prev as any).audio_url,
-          audio: (msg as any).audio || (prev as any).audio,
+          audio_url: msg.audio_url || (prev as any).audio_url,
+          audio: msg.audio || (prev as any).audio,
         } as TradeMessage);
       }
 
@@ -88,18 +114,20 @@ const messageSlice = createSlice({
       );
     },
     addMessageFromWS(state, action: PayloadAction<{ tradeId: string; message: TradeMessage }>) {
-      const { tradeId, message } = action.payload;
+      const { tradeId, message: rawMessage } = action.payload;
+      const message = normalizeTradeMessageForDedupe(rawMessage);
       if (!state.messages[tradeId]) {
         state.messages[tradeId] = [];
       }
 
       const incomingIsTemp = isTempMessageId(message.id);
       if (!incomingIsTemp) {
-        state.messages[tradeId] = state.messages[tradeId].filter(
-          (existing) =>
-            !isTempMessageId(existing.id) ||
-            !tradeMessagesAreDuplicates(existing, message)
-        );
+        state.messages[tradeId] = state.messages[tradeId].filter((existing) => {
+          if (!isTempMessageId(existing.id)) return true;
+          if (!tradeMessagesAreDuplicates(existing, message)) return true;
+          if (isBlankMediaShell(message)) return true;
+          return false;
+        });
       } else {
         const hasRealEcho = state.messages[tradeId].some(
           (existing) =>
@@ -145,7 +173,11 @@ const messageSlice = createSlice({
         message: TradeMessage;
       }>
     ) {
-      const { tradeId, tempId, message } = action.payload;
+      const { tradeId, tempId, message: rawMessage } = action.payload;
+      const message = normalizeTradeMessageForDedupe({
+        ...rawMessage,
+        trade_id: rawMessage.trade_id || tradeId,
+      });
       const list = state.messages[tradeId] || [];
       const withoutTemp = list.filter((m) => String(m.id) !== String(tempId));
       const idx = withoutTemp.findIndex((m) => String(m.id) === String(message.id));

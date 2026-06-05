@@ -2,6 +2,28 @@ import type { TradeMessage } from "@/features/p2p/slices/messageSlice";
 
 const normalize = (v: unknown) => String(v ?? "").trim().toLowerCase();
 
+/** API rows may use `message`, `content`, or both. */
+export const getTradeMessageText = (msg: unknown): string => {
+  const m = msg as Record<string, unknown> | null | undefined;
+  return String(m?.message ?? m?.content ?? "").trim();
+};
+
+export const normalizeTradeMessageForDedupe = (msg: unknown): TradeMessage => {
+  const m = msg as Record<string, unknown> | null | undefined;
+  const text = getTradeMessageText(msg);
+  return {
+    ...(msg as TradeMessage),
+    id: String(m?.id ?? ""),
+    sender: (m?.sender_id ?? m?.sender ?? "") as string | number,
+    sender_name: String(m?.sender_name ?? m?.sender_email ?? ""),
+    message: text,
+    images: (Array.isArray(m?.images) ? m.images : []) as any[],
+    audios: (Array.isArray(m?.audios) ? m.audios : []) as any[],
+    timestamp: String(m?.timestamp ?? ""),
+    seller_photo: String(m?.seller_photo ?? ""),
+  };
+};
+
 const extractImageUrl = (img: unknown): string => {
   if (!img) return "";
   if (typeof img === "string") return img;
@@ -34,10 +56,32 @@ const getAudioCount = (msg: unknown): number => {
 export const isTempMessageId = (id: unknown): boolean =>
   String(id ?? "").startsWith("temp-");
 
-export const isSameSender = (
+/** Drop rows explicitly tagged for a different trade; trust the Redux bucket otherwise. */
+export const messageBelongsToTrade = (
+  msg: TradeMessage,
+  tradeId: string
+): boolean => {
+  const tid = String(tradeId ?? "").trim();
+  if (!tid) return false;
+  if (isTempMessageId(msg.id)) return true;
+
+  const msgTradeId = String(msg.trade_id ?? "").trim();
+  if (msgTradeId && msgTradeId !== tid) return false;
+
+  return true;
+};
+
+/** Server/WS placeholder before text or media URLs are attached. */
+export const isBlankMediaShell = (msg: TradeMessage): boolean => {
+  if (normalize(getTradeMessageText(msg))) return false;
+  return getMessageImageCount(msg) === 0 && getAudioCount(msg) === 0;
+};
+
+export const isSameChatSender = (
   a: TradeMessage,
   b: TradeMessage,
-  currentUserEmail?: string
+  currentUserEmail?: string,
+  currentUserId?: string | number
 ): boolean => {
   const aName = normalize(a.sender_name);
   const bName = normalize(b.sender_name);
@@ -45,6 +89,12 @@ export const isSameSender = (
   const bSender = normalize(b.sender);
   if (aName && bName && aName === bName) return true;
   if (aSender && bSender && aSender === bSender) return true;
+
+  const userId = normalize(currentUserId);
+  if (userId) {
+    const isMineById = (msg: TradeMessage) => normalize(msg.sender) === userId;
+    if (isMineById(a) && isMineById(b)) return true;
+  }
 
   const user = normalize(currentUserEmail);
   if (!user) return false;
@@ -61,7 +111,8 @@ export const tradeMessagesAreDuplicates = (
   a: TradeMessage,
   b: TradeMessage,
   currentUserEmail?: string,
-  windowMs = 15000
+  windowMs = 15000,
+  currentUserId?: string | number
 ): boolean => {
   const timeDiff = Math.abs(
     new Date(String(a.timestamp || 0)).getTime() -
@@ -70,10 +121,10 @@ export const tradeMessagesAreDuplicates = (
   if (timeDiff >= windowMs) return false;
 
   const oneIsTemp = isTempMessageId(a.id) !== isTempMessageId(b.id);
-  if (!oneIsTemp && !isSameSender(a, b, currentUserEmail)) return false;
+  if (!oneIsTemp && !isSameChatSender(a, b, currentUserEmail, currentUserId)) return false;
 
-  const textA = normalize(a.message);
-  const textB = normalize(b.message);
+  const textA = normalize(getTradeMessageText(a));
+  const textB = normalize(getTradeMessageText(b));
   const sameText = textA === textB;
 
   const imageCountA = getMessageImageCount(a);
@@ -96,7 +147,7 @@ export const tradeMessagesAreDuplicates = (
     audioCountA > 0 &&
     audioCountA === audioCountB;
 
-  if (imageOnly || audioOnly) return true;
+  if ((imageOnly || audioOnly) && oneIsTemp) return true;
 
   const contentMatch =
     sameText &&
@@ -105,20 +156,26 @@ export const tradeMessagesAreDuplicates = (
 
   if (!contentMatch) return false;
   if (oneIsTemp) return true;
-  return isSameSender(a, b, currentUserEmail);
+  return isSameChatSender(a, b, currentUserEmail, currentUserId);
 };
 
 /** Drop optimistic rows once a matching real message exists; collapse near-identical echoes. */
 export const dedupeTradeMessages = (
   messages: TradeMessage[],
-  currentUserEmail?: string
+  currentUserEmail?: string,
+  currentUserId?: string | number
 ): TradeMessage[] => {
   const real = messages.filter((m) => !isTempMessageId(m.id));
   const temps = messages.filter((m) => isTempMessageId(m.id));
 
-  const filteredTemps = temps.filter(
-    (temp) => !real.some((r) => tradeMessagesAreDuplicates(temp, r, currentUserEmail))
-  );
+  const filteredTemps = temps.filter((temp) => {
+    const matchingReals = real.filter((r) =>
+      tradeMessagesAreDuplicates(temp, r, currentUserEmail, 15000, currentUserId)
+    );
+    if (matchingReals.length === 0) return true;
+    // Keep the optimistic row until a matching server row has visible content.
+    return !matchingReals.some((r) => !isBlankMediaShell(r));
+  });
 
   const combined = [...real, ...filteredTemps].sort(
     (a, b) =>
@@ -128,7 +185,7 @@ export const dedupeTradeMessages = (
 
   const seen = new Map<string, number>();
   return combined.filter((msg) => {
-    const systemText = normalize((msg as any)?.message);
+    const systemText = normalize(getTradeMessageText(msg));
     const senderName = normalize(msg.sender_name);
     const isSystemConnectionRow =
       systemText === "websocket connected for p2p trade messages" ||
@@ -143,7 +200,7 @@ export const dedupeTradeMessages = (
       .filter((u) => u && !u.startsWith("blob:"))
       .join(",");
 
-    const baseKey = `${normalize(msg.sender_name)}|${normalize(msg.sender)}|${normalize(msg.message)}|${getMessageImageCount(msg)}|${getAudioCount(msg)}|${imageKey}`;
+    const baseKey = `${normalize(msg.sender_name)}|${normalize(getTradeMessageText(msg))}|${getMessageImageCount(msg)}|${getAudioCount(msg)}|${imageKey}`;
     const ts = new Date(String(msg.timestamp || 0)).getTime();
     const prev = seen.get(baseKey);
     if (prev != null && Math.abs(ts - prev) < 15000) return false;
@@ -151,3 +208,15 @@ export const dedupeTradeMessages = (
     return true;
   });
 };
+
+/** Normalize mixed API/chat-tab rows then dedupe optimistic + server echoes. */
+export const dedupeMixedChatMessages = (
+  messages: unknown[],
+  currentUserEmail?: string,
+  currentUserId?: string | number
+): TradeMessage[] =>
+  dedupeTradeMessages(
+    messages.map((m) => normalizeTradeMessageForDedupe(m)),
+    currentUserEmail,
+    currentUserId
+  );

@@ -1,10 +1,14 @@
-import React, { useState, useEffect, useRef } from "react";
+import React, { useState, useEffect, useRef, useCallback } from "react";
+import { createPortal } from "react-dom";
 import Button from "../../Common/Button";
 import { FaCheckCircle, FaRegClock, FaTimes } from "react-icons/fa";
 import { ThumbsUp } from "lucide-react";
 import { TiArrowUnsorted } from "react-icons/ti";
 import { MarketTableProps } from "./types";
-import TradePreview from "./sections/tradePreview";
+import TradePreview, {
+  type PendingAcceptanceSession,
+} from "./sections/tradePreview";
+import { PendingAcceptanceWaitModal } from "./sections/PendingAcceptanceWaitModal";
 import { PresenceIndicator } from "./sections/UserStatusBadge";
 import Loader from "../../Common/Loader";
 import Image from "next/image";
@@ -135,6 +139,8 @@ const MarketTable: React.FC<MarketTableProps> = ({
   activeTab = "buy",
 }) => {
   const [selectedRowIndex, setSelectedRowIndex] = useState<number | null>(null);
+  const [pendingAcceptance, setPendingAcceptance] =
+    useState<PendingAcceptanceSession | null>(null);
   const [expandedPaymentsRowIndex, setExpandedPaymentsRowIndex] =
     useState<number | null>(null);
   const [sortConfig, setSortConfig] = useState<{
@@ -216,12 +222,34 @@ const MarketTable: React.FC<MarketTableProps> = ({
   // Display all data from parent - no extra filtering (parent already filters)
   const filteredData = data;
 
-  // Reset selection when data changes to avoid stale/wrong row in modal
+  const navigateToMatchedTrade = useCallback((session: PendingAcceptanceSession, tradeId: string) => {
+    const id = String(tradeId || session.tradeId || "").trim();
+    if (!id) return;
+    try {
+      localStorage.setItem("p2p_trade_id", id);
+    } catch {
+      /* no-op */
+    }
+    const searchParams = new URLSearchParams();
+    searchParams.set(
+      "orderData",
+      JSON.stringify({
+        order_type: session.tradeType === "buy" ? "sell" : "buy",
+        commission: session.commission,
+      })
+    );
+    window.location.assign(
+      `/p2p/${encodeURIComponent(id)}/matched/?${searchParams.toString()}`
+    );
+  }, []);
+
+  // Reset selection when data changes — keep wait modal alive while owner acceptance is pending
   const dataIds = data.map((r) => r?.id).join(",");
   useEffect(() => {
+    if (pendingAcceptance) return;
     setSelectedRowIndex(null);
     setExpandedPaymentsRowIndex(null);
-  }, [dataIds]);
+  }, [dataIds, pendingAcceptance]);
 
   const handleTogglePaymentExpand = (
     rowIndex: number,
@@ -513,7 +541,10 @@ const MarketTable: React.FC<MarketTableProps> = ({
           {selectedRowIndex !== null && filteredData[selectedRowIndex] && (
             <div 
               className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4"
-              onClick={() => setSelectedRowIndex(null)}
+              onClick={() => {
+                if (pendingAcceptance) return;
+                setSelectedRowIndex(null);
+              }}
             >
               <div 
                 ref={modalScrollRef}
@@ -526,6 +557,10 @@ const MarketTable: React.FC<MarketTableProps> = ({
                   tradeType={activeTab as "buy" | "sell"}
                   paymentDetails={filteredData[selectedRowIndex].payment_details}
                   scrollContainerRef={modalScrollRef}
+                  onPendingAcceptanceStart={(session) => {
+                    setSelectedRowIndex(null);
+                    setPendingAcceptance(session);
+                  }}
                 />
               </div>
             </div>
@@ -597,6 +632,25 @@ const MarketTable: React.FC<MarketTableProps> = ({
           })()}
         </div>
       </div>
+
+      {typeof document !== "undefined" &&
+        pendingAcceptance &&
+        createPortal(
+          <PendingAcceptanceWaitModal
+            open
+            tradeId={pendingAcceptance.tradeId}
+            advertiserOrderId={pendingAcceptance.advertiserOrderId}
+            advertiserName={pendingAcceptance.advertiserName}
+            advertiserPhoto={pendingAcceptance.advertiserPhoto}
+            advertiserInitials={pendingAcceptance.advertiserInitials}
+            isOnline={pendingAcceptance.isOnline}
+            onNavigateToMatched={(tradeId) =>
+              navigateToMatchedTrade(pendingAcceptance, tradeId)
+            }
+            onClose={() => setPendingAcceptance(null)}
+          />,
+          document.body
+        )}
 
       {/* Image Modal */}
       {imageModal.isOpen && (

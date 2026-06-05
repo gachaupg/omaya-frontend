@@ -128,29 +128,6 @@ interface DepositFormProps {
   initialState?: any;
 }
 
-// Network mapping function
-const getNetworkDisplayName = (network: string) => {
-  const networkMap: { [key: string]: string } = {
-    bsc: "BSC",
-    bep20: "BSC",
-    bep2: "BSC",
-    matic: "Polygon",
-    avaxc: "Avalanche",
-    eth: "Ethereum",
-    osmo: "Osmosis",
-    band: "Band Protocol",
-    sol: "Solana",
-    nano: "Nano",
-    sxp: "Solar",
-    luna: "Terra",
-    base: "Base",
-    trc20: "TRON",
-    trx: "TRON",
-  };
-
-  return networkMap[network?.toLowerCase()] || network || "Unknown";
-};
-
 const resolveSelectedPaymentHowToSend = (
   selectedPaymentDetail: any,
   exchangeAdminPaymentDetails: any

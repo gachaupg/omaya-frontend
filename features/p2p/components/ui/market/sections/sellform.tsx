@@ -31,6 +31,7 @@ import { logger } from '@/lib/utils/logger';
 import {
   PENDING_ACCEPTANCE_AUTO_CANCEL_MS,
   type TradeLifecycleBanner,
+  canSellerConfirmReceipt,
   getEffectiveConfirmFlags,
   getEffectiveTradeStatus,
   isPendingAcceptanceStatus,
@@ -143,7 +144,7 @@ const FinalSell: React.FC<FinalSellProps> = ({ orderData }) => {
 
   const mapSellerWsSnapshot = (snap: WsTradeSnapshot) => ({
     rawStatus: snap.rawStatus,
-    can_confirm_receipt: snap.can_confirm_receipt ?? snap.can_confirm_payment,
+    can_confirm_receipt: snap.can_confirm_receipt,
     can_confirm_payment: snap.can_confirm_payment,
   });
 
@@ -517,10 +518,11 @@ const FinalSell: React.FC<FinalSellProps> = ({ orderData }) => {
     }
   };
 
-  const sellerMayMarkReceived =
-    effectiveStatus === "half-matched" &&
-    effectiveFlags.can_confirm_receipt !== false &&
-    (!inPendingAcceptanceSeller || effectiveFlags.can_confirm_receipt === true);
+  const sellerMayMarkReceived = canSellerConfirmReceipt(
+    effectiveStatus,
+    effectiveFlags,
+    inPendingAcceptanceSeller
+  );
 
   const pendingAcceptanceSecondsLeft =
     pendingAcceptanceStartedAt != null
@@ -951,7 +953,7 @@ const FinalSell: React.FC<FinalSellProps> = ({ orderData }) => {
                         {cancelLoading ? "Cancelling..." : "Cancel Transaction"}
                       </button>
                       <button
-                        className={`w-full md:w-auto flex-1 py-2 rounded-2xl text-lg ${confirmOrder?.status === "matched" || !sellerMayMarkReceived
+                        className={`w-full md:w-auto flex-1 py-2 rounded-2xl text-lg ${!sellerMayMarkReceived
                           ? "bg-gray-100 dark:bg-[var(--card-color)] text-gray-400 dark:text-[#888]"
                           : "bg-[#1D8751] text-white hover:bg-[#167a45] transition-colors"
                           } ${(() => {

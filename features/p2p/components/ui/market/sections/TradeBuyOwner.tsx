@@ -36,6 +36,7 @@ import { useMarketTradeStatusWsHandler } from "@/features/p2p/hooks/useMarketTra
 import { useBackgroundAwareCountdown } from "@/features/p2p/hooks/useBackgroundAwareCountdown";
 import { getSellAdOwnerCounterpartyBuyerName } from "@/features/p2p/utils/matchedTradeNotifications";
 import {
+  canSellerConfirmReceipt,
   getEffectiveConfirmFlags,
   getEffectiveTradeStatus,
   isPendingAcceptanceStatus,
@@ -91,7 +92,7 @@ const FinalSell: React.FC<FinalSellProps> = ({ orderData }) => {
 
   const mapSellerWsSnapshot = (snap: WsTradeSnapshot) => ({
     rawStatus: snap.rawStatus,
-    can_confirm_receipt: snap.can_confirm_receipt ?? snap.can_confirm_payment,
+    can_confirm_receipt: snap.can_confirm_receipt,
     can_confirm_payment: snap.can_confirm_payment,
   });
 
@@ -125,10 +126,11 @@ const FinalSell: React.FC<FinalSellProps> = ({ orderData }) => {
     isPendingAcceptanceStatus(String(confirmOrder?.status || ""));
   const sellerPaymentPhaseActive =
     effectiveStatus === "matched" && !inPendingAcceptanceSeller;
-  const sellerMayMarkReceived =
-    effectiveStatus === "half-matched" &&
-    effectiveFlags.can_confirm_receipt !== false &&
-    (!inPendingAcceptanceSeller || effectiveFlags.can_confirm_receipt === true);
+  const sellerMayMarkReceived = canSellerConfirmReceipt(
+    effectiveStatus,
+    effectiveFlags,
+    inPendingAcceptanceSeller
+  );
   const appealTimerMatched = sellerPaymentPhaseActive;
   const handleCancelTransactionRef = useRef<() => void>(() => {});
   const confirmStatusRef = useRef(confirmOrder?.status);
@@ -765,7 +767,7 @@ const FinalSell: React.FC<FinalSellProps> = ({ orderData }) => {
                 </button>
               )}
               <button
-                className={`${effectiveStatus === "matched" || !sellerMayMarkReceived
+                className={`${!sellerMayMarkReceived
                   ? "bg-gray-100 dark:bg-[var(--card-color)]"
                   : "bg-[#1D8751] text-white hover:bg-[#167a45] transition-colors"
                   } dark:text-white rounded-lg px-4 sm:px-6 py-2 text-sm sm:text-base font-semibold w-full sm:w-auto ${(() => {
