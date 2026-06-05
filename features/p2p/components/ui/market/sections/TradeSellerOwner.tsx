@@ -842,6 +842,11 @@ const FinalSell: React.FC<FinalSellProps> = ({ orderData }) => {
               (singleOrder as { advertiser_email?: string })?.advertiser_email ||
               (confirmOrder as { advertiser_email?: string })?.advertiser_email
             }
+            orderType={
+              confirmOrder?.order_type ||
+              singleOrder?.order_type ||
+              orderType
+            }
             owner={confirmOrder?.owner || ""}
             sellerName={
               singleOrder?.advertiser_first_name && singleOrder?.advertiser_last_name
