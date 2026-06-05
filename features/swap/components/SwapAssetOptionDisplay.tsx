@@ -6,6 +6,7 @@ import {
   formatAssetSubtitle,
   getAssetPrimaryLabel,
   getNetworkDisplayName,
+  shouldShowAssetNetworkBadge,
   type AssetLike,
 } from "@/lib/utils/networkDisplay";
 import { SWAP_FIELD_SUBTEXT, SWAP_FIELD_TEXT } from "./swapFieldStyles";
@@ -27,6 +28,8 @@ export function SwapAssetOptionDisplay({
 }: SwapAssetOptionDisplayProps) {
   const networkLabel = getNetworkDisplayName(resolveAssetNetwork(asset));
   const primaryLabel = getAssetPrimaryLabel(asset);
+  const subtitleLabel = formatAssetSubtitle(asset);
+  const showNetworkBadge = shouldShowAssetNetworkBadge(asset);
 
   const primary =
     primaryClassName ??
@@ -39,10 +42,12 @@ export function SwapAssetOptionDisplay({
     <div className="flex flex-col min-w-0 text-left justify-center gap-0.5 leading-tight">
       <div className="flex items-center gap-1.5 min-w-0">
         <span className={`truncate ${primary}`}>{primaryLabel}</span>
-        <span className={badgeClassName}>{networkLabel}</span>
+        {showNetworkBadge ? (
+          <span className={badgeClassName}>{networkLabel}</span>
+        ) : null}
       </div>
-      {showSubtitle ? (
-        <span className={subtitle}>{formatAssetSubtitle(asset)}</span>
+      {showSubtitle && subtitleLabel ? (
+        <span className={subtitle}>{subtitleLabel}</span>
       ) : null}
     </div>
   );

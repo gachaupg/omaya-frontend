@@ -940,7 +940,6 @@ export default function DepositForm({
   // Precision validation should only gate user-entered send amount.
   const exceedsDecimalPrecisionLimit = hasMoreThanFiveDecimals(payAmountInput);
 
-
   // Add transaction code state
   const [transactionCode, setTransactionCode] = useState<string>("");
   const paymentDetailsRef = useRef<HTMLDivElement>(null);
@@ -3898,6 +3897,37 @@ export default function DepositForm({
     }
   }, [selectedPaymentDetail]);
 
+  const EXPRESS_MIN_AMOUNT = 5;
+  const isAmountBelowMin =
+    !!selectedAsset &&
+    isExchangeCommissionLookupAsset(selectedAsset) &&
+    payAmount > 0 &&
+    payAmount < EXPRESS_MIN_AMOUNT;
+
+  const isFirstCardSubmitDisabled =
+    requiresLoginRedirect
+      ? (isOtcPopupAsset(selectedAsset) && payAmount >= 15000) ||
+        exceedsDecimalPrecisionLimit ||
+        isAmountBelowMin
+      : isSubmitting ||
+        !selectedAsset ||
+        (walletAddress.trim() && !!walletError) ||
+        exceedsDecimalPrecisionLimit ||
+        isAmountBelowMin ||
+        (selectedAsset &&
+          !isSimpleCalculationAsset(selectedAsset) &&
+          !isForexAsset(selectedAsset) &&
+          estimateLoading);
+
+  const isProceedDisabled =
+    isSubmitting ||
+    !walletAddress.trim() ||
+    !!walletError ||
+    !isTermsAccepted ||
+    exceedsDecimalPrecisionLimit ||
+    isAmountBelowMin ||
+    (isOtcPopupAsset(selectedAsset) && (payAmount >= 15000 || getAmount >= 15000));
+
   return (
     <div className="w-full flex flex-col dark:bg-[#18181D]  ">
       <div className="mb-2" />
@@ -4532,20 +4562,9 @@ export default function DepositForm({
           <div className="relative">
             <button
               type="button"
-              className={`w-full text-base font-medium py-1.5 rounded-full flex items-center justify-center gap-2 transition-colors text-white ${isHomePage
-                ? (isOtcPopupAsset(selectedAsset) && payAmount >= 15000) || exceedsDecimalPrecisionLimit
-                  ? "bg-gray-500 cursor-not-allowed"
-                  : "bg-[#1D8751] hover:bg-[#1D8751]/80 cursor-pointer"
-                : isSubmitting ||
-                  !selectedAsset ||
-                  (isOtcPopupAsset(selectedAsset) && payAmount >= 15000) ||
-                  exceedsDecimalPrecisionLimit ||
-                  (selectedAsset &&
-                    !isSimpleCalculationAsset(selectedAsset) &&
-                    !isForexAsset(selectedAsset) &&
-                    estimateLoading)
-                  ? "bg-gray-500 cursor-not-allowed"
-                  : "bg-[#1D8751] hover:bg-[#1D8751]/80"
+              className={`w-full text-base font-medium py-1.5 rounded-full flex items-center justify-center gap-2 transition-colors text-white ${isFirstCardSubmitDisabled
+                ? "bg-gray-500 cursor-not-allowed"
+                : "bg-[#1D8751] hover:bg-[#1D8751]/80 cursor-pointer"
                 }`}
               onClick={async () => {
                 if (exceedsDecimalPrecisionLimit) {
@@ -4612,14 +4631,7 @@ export default function DepositForm({
                   handleFirstCardSubmit();
                 }
               }}
-              disabled={
-                requiresLoginRedirect
-                  ? (isOtcPopupAsset(selectedAsset) && payAmount >= 15000) || exceedsDecimalPrecisionLimit
-                  : isSubmitting ||
-                  !selectedAsset ||
-                  (walletAddress.trim() && !!walletError) ||
-                  exceedsDecimalPrecisionLimit
-              }
+              disabled={isFirstCardSubmitDisabled}
             >
               {isSubmitting ? (
                 <div className="flex items-center gap-2">
@@ -5470,12 +5482,12 @@ export default function DepositForm({
           {/* Button outside the card */}
           <div className="flex flex-col gap-3 w-full px-2">
             <button
-              className={`w-full text-base font-medium py-2 rounded-2xl flex items-center justify-center gap-2 transition-colors text-white ${isSubmitting || (isOtcPopupAsset(selectedAsset) && (payAmount >= 15000 || getAmount >= 15000)) || !isTermsAccepted
+              className={`w-full text-base font-medium py-2 rounded-2xl flex items-center justify-center gap-2 transition-colors text-white ${isProceedDisabled
                 ? "bg-gray-500 cursor-not-allowed"
                 : "bg-[#1D8751] hover:bg-[#166b3e]"
                 }`}
               onClick={handleProceedToNext}
-              disabled={isSubmitting || !walletAddress.trim() || !!walletError || (isOtcPopupAsset(selectedAsset) && (payAmount >= 15000 || getAmount >= 15000)) || !isTermsAccepted}
+              disabled={isProceedDisabled}
             >
               {isSubmitting ? (
                 <div className="flex items-center gap-2">

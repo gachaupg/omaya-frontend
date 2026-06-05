@@ -1227,10 +1227,6 @@ export default function WithdrawalForm({
     selectedPaymentStatus &&
     !isSelectedPaymentApproved
   );
-  const hasDecimalPlacesError =
-    /decimal places/i.test(String(apiValidationError || "")) ||
-    /decimal places/i.test(String(receiveAmountError || "")) ||
-    /decimal places/i.test(String(calculationError || ""));
 
   // Fetch admin wallet list
   useEffect(() => {
@@ -2109,6 +2105,64 @@ export default function WithdrawalForm({
     }
     return null;
   };
+
+  const isTransientAmountMessage = (msg: string | null | undefined): boolean => {
+    if (!msg) return false;
+    return (
+      msg === "Calculating..." ||
+      msg.includes("Rough estimate") ||
+      msg.includes("Using estimated rate")
+    );
+  };
+
+  const hasBlockingAmountMessage = (msg: string | null | undefined): boolean =>
+    !!msg && !isTransientAmountMessage(msg);
+
+  const isPayBelowFixedMin =
+    !!selectedAsset &&
+    isFixedMinWithdrawalAsset(selectedAsset) &&
+    payAmount > 0 &&
+    payAmount < getMinimumAmount(selectedAsset);
+
+  const receiveMinError =
+    getAmount > 0 ? validateReceiveAmount(getAmount, selectedAsset) : null;
+
+  const hasBlockingValidationError =
+    isPayBelowFixedMin ||
+    !!receiveMinError ||
+    hasBlockingAmountMessage(apiValidationError) ||
+    hasBlockingAmountMessage(receiveAmountError) ||
+    hasBlockingAmountMessage(calculationError) ||
+    validationErrors.length > 0;
+
+  const inlineAmountError =
+    (hasBlockingAmountMessage(calculationError) ? calculationError : null) ||
+    (hasBlockingAmountMessage(apiValidationError) ? apiValidationError : null) ||
+    (hasBlockingAmountMessage(receiveAmountError) ? receiveAmountError : null);
+
+  const nonInlineValidationErrors = inlineAmountError
+    ? validationErrors.filter((error) => error !== inlineAmountError)
+    : validationErrors;
+
+  const isFirstCardSubmitDisabled =
+    requiresLoginRedirect
+      ? (isOtcPopupAsset(selectedAsset) && payAmount >= 15000) ||
+        isSelectedPaymentPending ||
+        hasBlockingValidationError
+      : isSubmitting ||
+        isTransactionSubmitted ||
+        isInfoModalOpen ||
+        (isOtcPopupAsset(selectedAsset) && payAmount >= 15000) ||
+        isSelectedPaymentPending ||
+        hasBlockingValidationError;
+
+  const isSecondCardSubmitDisabled =
+    isSubmitting ||
+    isInfoModalOpen ||
+    (isOtcPopupAsset(selectedAsset) && getAmount > 15000) ||
+    !isTermsAccepted ||
+    isSelectedPaymentPending ||
+    hasBlockingValidationError;
 
   // Fetch estimate for non-direct assets with debouncing for better performance
   useEffect(() => {
@@ -3565,13 +3619,23 @@ export default function WithdrawalForm({
 
   // Auto-validate receive amount whenever it changes
   useEffect(() => {
+    const fixedMin = getMinimumAmount(selectedAsset);
+    if (
+      selectedAsset &&
+      isFixedMinWithdrawalAsset(selectedAsset) &&
+      payAmount > 0 &&
+      payAmount < fixedMin
+    ) {
+      setReceiveAmountError(formatExpressMinAmountMessage(fixedMin));
+      return;
+    }
+
     if (getAmount > 0) {
-      const validationError = validateReceiveAmount(getAmount, selectedAsset);
-      setReceiveAmountError(validationError);
+      setReceiveAmountError(validateReceiveAmount(getAmount, selectedAsset));
     } else {
       setReceiveAmountError(null);
     }
-  }, [getAmount, selectedAsset]);
+  }, [getAmount, payAmount, selectedAsset]);
 
   // Cleanup timeouts on unmount
   useEffect(() => {
@@ -3659,11 +3723,22 @@ export default function WithdrawalForm({
       return false;
     }
 
+    // Check if pay amount meets minimum for fixed-min assets
+    if (isPayBelowFixedMin) {
+      const minMsg = formatExpressMinAmountMessage(getMinimumAmount(selectedAsset));
+      errors.push(minMsg);
+      showToast.error(minMsg);
+      setValidationErrors(errors);
+      return false;
+    }
+
     // Check if receive amount meets minimum requirements (only if user has entered a value)
     if (getAmount > 0) {
       const validationError = validateReceiveAmount(getAmount, selectedAsset);
       if (validationError) {
         errors.push(validationError);
+        showToast.error(validationError);
+        setValidationErrors(errors);
         return false;
       }
     }
@@ -4413,20 +4488,16 @@ export default function WithdrawalForm({
                       )}
                     {/* No input highlighting; message-only UX */}
                   </div>
-                  {(calculationError || apiValidationError) && (
+                  {inlineAmountError && (
                     <p
                       className={`mt-2 text-sm font-medium ${
-                        (calculationError || apiValidationError || "").includes(
-                          "Rough estimate"
-                        ) ||
-                        (calculationError || apiValidationError || "").includes(
-                          "Using estimated rate"
-                        )
+                        inlineAmountError.includes("Rough estimate") ||
+                        inlineAmountError.includes("Using estimated rate")
                           ? "text-[#F79330]"
                           : "text-red-500 dark:text-red-400"
                       }`}
                     >
-                      {calculationError || apiValidationError}
+                      {inlineAmountError}
                     </p>
                   )}
                 </div>
@@ -5137,17 +5208,9 @@ export default function WithdrawalForm({
               <div className="relative">
                 <button
                   type="button"
-                  className={`w-full text-[#35353e] dark:text-[#788099] text-base font-medium py-1.5 rounded-full flex items-center justify-center gap-2 transition-colors ${isHomePage
-                    ? (isOtcPopupAsset(selectedAsset) && payAmount >= 15000) || isSelectedPaymentPending
-                      ? "bg-gray-500 cursor-not-allowed"
-                      : "bg-[#1D8751] hover:bg-[#1D8751]/80 cursor-pointer"
-                    : isSubmitting ||
-                      isTransactionSubmitted ||
-                      isInfoModalOpen ||
-                      (isOtcPopupAsset(selectedAsset) && payAmount >= 15000) ||
-                      isSelectedPaymentPending
-                      ? "bg-gray-500 cursor-not-allowed"
-                      : "bg-[#1D8751] hover:bg-[#1D8751]/80"
+                  className={`w-full text-[#35353e] dark:text-[#788099] text-base font-medium py-1.5 rounded-full flex items-center justify-center gap-2 transition-colors ${isFirstCardSubmitDisabled
+                    ? "bg-gray-500 cursor-not-allowed"
+                    : "bg-[#1D8751] hover:bg-[#1D8751]/80 cursor-pointer"
                     }`}
                   onClick={() => {
                     if (requiresLoginRedirect) {
@@ -5190,18 +5253,7 @@ export default function WithdrawalForm({
                       handleFirstCardSubmit();
                     }
                   }}
-                  disabled={
-                    requiresLoginRedirect
-                      ? (isOtcPopupAsset(selectedAsset) && payAmount >= 15000) ||
-                        isSelectedPaymentPending ||
-                        hasDecimalPlacesError
-                      : isSubmitting ||
-                      isTransactionSubmitted ||
-                      isInfoModalOpen ||
-                      (isOtcPopupAsset(selectedAsset) && payAmount >= 15000) ||
-                      isSelectedPaymentPending ||
-                      hasDecimalPlacesError
-                  }
+                  disabled={isFirstCardSubmitDisabled}
                 >
                   {isSubmitting ? (
                     <div className="flex items-center gap-2">
@@ -5556,7 +5608,7 @@ export default function WithdrawalForm({
                   </div>
                 )}
                 <button
-                  className={`w-full text-[#35353e] dark:text-[#788099] text-base font-medium py-2 rounded-2xl flex items-center justify-center gap-2 transition-colors ${isSubmitting || isInfoModalOpen || (isOtcPopupAsset(selectedAsset) && getAmount > 15000) || !isTermsAccepted || isSelectedPaymentPending
+                  className={`w-full text-[#35353e] dark:text-[#788099] text-base font-medium py-2 rounded-2xl flex items-center justify-center gap-2 transition-colors ${isSecondCardSubmitDisabled
                     ? "bg-gray-500 cursor-not-allowed"
                     : "bg-[#1D8751] hover:bg-[#166b3e]"
                     }`}
@@ -5588,14 +5640,7 @@ export default function WithdrawalForm({
                       onExchange(transactionData);
                     }
                   }}
-                  disabled={
-                    isSubmitting ||
-                    isInfoModalOpen ||
-                    (isOtcPopupAsset(selectedAsset) && getAmount > 15000) ||
-                    !isTermsAccepted ||
-                    isSelectedPaymentPending ||
-                    hasDecimalPlacesError
-                  }
+                  disabled={isSecondCardSubmitDisabled}
                 >
                   {isSubmitting ? (
                     <div className="flex items-center gap-2">
@@ -5618,12 +5663,12 @@ export default function WithdrawalForm({
           )}
 
           {/* Validation Errors Display */}
-          {validationErrors.length > 0 && (
+          {nonInlineValidationErrors.length > 0 && (
             <div className="w-full mt-4 px-2 mb-4">
               <div className="bg-[#23232b] dark:bg-[#35353E] border border-[#1D8751] rounded-2xl p-4">
 
                 <ul className="list-disc list-inside text-[#1D8751] space-y-1">
-                  {validationErrors.map((error, index) => (
+                  {nonInlineValidationErrors.map((error, index) => (
                     <li key={index}>{error}</li>
                   ))}
                 </ul>
