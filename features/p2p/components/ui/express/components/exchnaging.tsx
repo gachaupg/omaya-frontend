@@ -25,6 +25,7 @@ import { P2P_STATUS_SCROLL_FRACTION } from "@/lib/utils/scrollAppToTop";
 import HowToSendDialBlock from "@/components/ui/HowToSendDialBlock";
 import CryptoSendToAddressBlock from "@/components/ui/CryptoSendToAddressBlock";
 import { shouldSkipAssetFetchError } from "@/lib/utils/assetLoadNotice";
+import { formatHowToSend } from "@/features/moneyX/utils/howToSend";
 
 const EVM_ADDRESS_RE = /^0x[a-fA-F0-9]{40}$/i;
 
@@ -207,29 +208,6 @@ export default function Exchanging({ transactionData }: ExchangingProps) {
       if (v) return v;
     }
     return "";
-  };
-
-  const formatHowToSend = (raw: string, amount: number | string | null | undefined): string => {
-    const base = String(raw || "").trim();
-    if (!base) return "";
-
-    const parsedAmt =
-      typeof amount === "number"
-        ? amount
-        : amount != null && String(amount).trim() !== ""
-          ? Number(String(amount))
-          : NaN;
-
-    const amt = Number.isFinite(parsedAmt) ? String(parsedAmt) : "";
-    if (!amt) return base;
-
-    if (/\bamount\b/i.test(base)) {
-      return base.replace(/\bamount\b/gi, amt);
-    }
-    if (base.endsWith("#")) {
-      return base.slice(0, -1) + `*${amt}#`;
-    }
-    return base + `*${amt}#`;
   };
 
   const renderSendInstructionsBlock = () => {

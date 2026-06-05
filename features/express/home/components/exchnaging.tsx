@@ -28,6 +28,7 @@ import { resolveExpressTransactionFailureMessage } from "@/lib/utils/websocketUt
 import { OMAYA_IO_ACCOUNT_DETAILS_TITLE } from "../../utils/paymentDetailDisplay";
 import { useScrollAppToTopWhen } from "@/hooks/useScrollAppToTopWhen";
 import { encodeQrScanData } from "@/lib/utils/ussdDial";
+import { formatHowToSend } from "@/features/moneyX/utils/howToSend";
 import { mapExpressBackendStatusToUi } from "@/features/express/utils/exchangeStatusMapping";
 
 interface ExchangingProps {
@@ -136,39 +137,6 @@ const resolveHowToSendFromTx = (tx: { paymentDetail?: any; paymentDetails?: any[
     if (v) return v;
   }
   return "";
-};
-
-const formatHowToSend = (raw: string, amount: number | string | null | undefined): string => {
-  const base = String(raw || "").trim();
-  if (!base) return "";
-
-  // Crypto wallet addresses should NOT have `*amount#` appended.
-  // Backend sometimes provides them with a trailing `#` which our USSD formatter would treat as a template.
-  // Normalize `0x...#` → `0x...`.
-  if (/^0x[a-fA-F0-9]{40}#?$/.test(base)) {
-    return base.replace(/#$/, "");
-  }
-
-  const parsedAmt =
-    typeof amount === "number"
-      ? amount
-      : amount != null && String(amount).trim() !== ""
-        ? Number(String(amount))
-        : NaN;
-
-  const amt = Number.isFinite(parsedAmt) ? String(parsedAmt) : "";
-  if (!amt) return base;
-
-  // Replace any 'Amount' placeholder (case-insensitive).
-  if (/\bamount\b/i.test(base)) {
-    return base.replace(/\bamount\b/gi, amt);
-  }
-
-  // If no placeholder exists, inject "*{amt}" before trailing '#', or append it.
-  if (base.endsWith("#")) {
-    return base.slice(0, -1) + `*${amt}#`;
-  }
-  return base + `*${amt}#`;
 };
 
 /** Deposit "From" bank or withdrawal payout: try paymentDetails[0] then paymentDetail. */

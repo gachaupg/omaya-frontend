@@ -9,7 +9,8 @@ type BankPaymentInfoResponse = {
 };
 
 const TRAILING_USSD_AMOUNT_PATTERN = /\*[0-9]+(?:\.[0-9]+)?#\s*$/;
-const AMOUNT_PLACEHOLDER_PATTERN = /\bamount\b/gi;
+/** Matches `Amount`, `{amount}`, `[amount]`, etc. (case-insensitive). */
+const AMOUNT_PLACEHOLDER_PATTERN = /(?:\{amount\}|\[amount\]|\bamount\b)/gi;
 const USSD_LIKE_PATTERN = /\*/;
 
 const normalizeAmount = (amount: number | string): string => {
