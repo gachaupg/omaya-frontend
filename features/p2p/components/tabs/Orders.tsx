@@ -260,7 +260,7 @@ const Orders = memo(() => {
       />
       <div className="flex flex-col w-full">
         {filters.status === "processing" ? (
-          <ProcessingNotifications matchedTrades={matchedTrades} />
+          <ProcessingNotifications />
         ) : (
           <OrdersTransactions
             transformedData={transformedData}

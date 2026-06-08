@@ -32,16 +32,11 @@ import { useP2pTradeCanceledRedirect } from "@/features/p2p/hooks/useP2pTradeCan
 import { useMarketTradeStatusWsHandler } from "@/features/p2p/hooks/useMarketTradeStatusWsHandler";
 import { useBackgroundAwareCountdown } from "@/features/p2p/hooks/useBackgroundAwareCountdown";
 import {
-  buildPendingAcceptanceBannerText,
-  clearPendingAcceptanceStartedAt,
   getEffectiveConfirmFlags,
   getEffectiveTradeStatus,
-  getPendingAcceptanceSecondsLeft,
   isPendingAcceptanceStatus,
   isTransactionCountdownActive,
-  resolvePendingAcceptanceStartedAt,
 } from "@/features/p2p/utils/tradeWsAcceptanceGate";
-import { PendingAcceptanceBanner } from "./PendingAcceptanceBanner";
 
 import { logger } from '@/lib/utils/logger';
 
@@ -77,10 +72,6 @@ const FinalSell: React.FC<FinalSellProps> = ({ orderData }) => {
     can_confirm_receipt?: boolean;
   }>({ rawStatus: "" });
   const wsSnapshotRef = useRef(wsTradeSnapshot);
-  const [pendingAcceptanceStartedAt, setPendingAcceptanceStartedAt] = useState<
-    number | null
-  >(null);
-  const [, setPendingAcceptanceTick] = useState(0);
   const { user, isAuthenticated } = useSelector(
     (state: RootState) => state.auth
   );
@@ -98,26 +89,6 @@ const FinalSell: React.FC<FinalSellProps> = ({ orderData }) => {
     onSnapshot: (snap) => {
       setWsTradeSnapshot(snap);
       wsSnapshotRef.current = snap;
-    },
-    onPendingAcceptance: (active) => {
-      if (active) {
-        setPendingAcceptanceStartedAt((prev) => {
-          if (prev != null) return prev;
-          let storedOrder: { id?: unknown; timestamp?: unknown } | null = null;
-          try {
-            const raw = localStorage.getItem("new_order");
-            if (raw) storedOrder = JSON.parse(raw);
-          } catch {
-            /* no-op */
-          }
-          return resolvePendingAcceptanceStartedAt(confirmOrder?.id, {
-            storedOrder,
-          });
-        });
-      } else {
-        clearPendingAcceptanceStartedAt(confirmOrder?.id);
-        setPendingAcceptanceStartedAt(null);
-      }
     },
   });
 
@@ -176,20 +147,6 @@ const FinalSell: React.FC<FinalSellProps> = ({ orderData }) => {
     if (!confirmOrder?.id) return;
     const st = String(confirmOrder.status || "");
     if (isPendingAcceptanceStatus(st)) {
-      let storedOrder: { id?: unknown; timestamp?: unknown } | null = null;
-      try {
-        const raw = localStorage.getItem("new_order");
-        if (raw) storedOrder = JSON.parse(raw);
-      } catch {
-        /* no-op */
-      }
-      setPendingAcceptanceStartedAt((prev) =>
-        prev ??
-        resolvePendingAcceptanceStartedAt(confirmOrder.id, {
-          tradeTimestamp: confirmOrder.timestamp,
-          storedOrder,
-        })
-      );
       setWsTradeSnapshot((prev) => ({
         rawStatus: "pending_acceptance",
         can_confirm_payment: confirmOrder.can_confirm_payment ?? prev.can_confirm_payment,
@@ -211,12 +168,6 @@ const FinalSell: React.FC<FinalSellProps> = ({ orderData }) => {
       };
     }
   }, [confirmOrder?.id, confirmOrder?.status, confirmOrder?.can_confirm_payment]);
-
-  useEffect(() => {
-    if (pendingAcceptanceStartedAt == null) return;
-    const id = window.setInterval(() => setPendingAcceptanceTick((t) => t + 1), 1000);
-    return () => window.clearInterval(id);
-  }, [pendingAcceptanceStartedAt]);
 
   // Keep WS snapshot aligned when REST reaches a terminal phase (avoids stale "matched" from WS)
   useEffect(() => {
@@ -418,13 +369,6 @@ const FinalSell: React.FC<FinalSellProps> = ({ orderData }) => {
     }
   };
 
-  const pendingAcceptanceBannerText = inPendingAcceptance
-    ? buildPendingAcceptanceBannerText(
-        "owner",
-        getPendingAcceptanceSecondsLeft(pendingAcceptanceStartedAt)
-      )
-    : null;
-
   return (
     <div className="md:mt-20">
       {/* Breadcrumb */}
@@ -438,9 +382,6 @@ const FinalSell: React.FC<FinalSellProps> = ({ orderData }) => {
       <div className="final-buy-container grid grid-cols-1 md:grid-cols-[minmax(0,1fr)_minmax(0,1fr)_minmax(0,1fr)] gap-2 sm:gap-4 md:gap-6 p-1 sm:p-2 md:p-6 min-h-screen bg-[#EEF1F4] dark:bg-[var(--bg-color)] overflow-x-hidden">
         {/* Left Column: Main Info */}
         <div className="md:col-span-2 flex flex-col gap-6 min-w-0">
-          {pendingAcceptanceBannerText && (
-            <PendingAcceptanceBanner text={pendingAcceptanceBannerText} />
-          )}
           <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
             <div className="flex items-center gap-2 sm:gap-3 flex-wrap">
               <p

@@ -14,7 +14,10 @@ import { createSelector } from "@reduxjs/toolkit";
 import { RootState } from "@/store/rootReducer";
 import { toNumber } from "@/lib/finanacial";
 import { getWalletAmountsFromSummary } from "@/features/p2p/walletAmounts";
-import { filterPendingMatchedTradeNotifications } from "@/features/p2p/utils/matchedTradeNotifications";
+import {
+  filterPendingMatchedTradeNotifications,
+  sortMatchedTradeNotificationsNewestFirst,
+} from "@/features/p2p/utils/matchedTradeNotifications";
 
 // ======================
 // Base Selectors (Input Selectors)
@@ -130,7 +133,9 @@ export const selectActiveMatchedTrades = createSelector(
 export const selectPendingMatchedTradeNotifications = createSelector(
   [selectMatchedTradesState],
   (tradesState) =>
-    filterPendingMatchedTradeNotifications(tradesState.data?.results || [])
+    sortMatchedTradeNotificationsNewestFirst(
+      filterPendingMatchedTradeNotifications(tradesState.data?.results || [])
+    )
 );
 
 /** Badge count — always derived from pending rows (stays in sync with WS +/-). */
