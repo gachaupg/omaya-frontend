@@ -117,6 +117,7 @@ const PaymentMethods = () => {
   } | null>(null);
   const [sendOtpLoading, setSendOtpLoading] = useState(false);
   const [verifyOtpLoading, setVerifyOtpLoading] = useState(false);
+  const [otpError, setOtpError] = useState<string | null>(null);
 
   // Edit modal states
   const [editingPaymentMethod, setEditingPaymentMethod] = useState<PaymentMethod | null>(null);
@@ -155,6 +156,7 @@ const PaymentMethods = () => {
       setAccountNumber("");
       setAddStep("form");
       setOtpCode("");
+      setOtpError(null);
       setPendingPayload(null);
       dispatch(clearPostStatus());
     }
@@ -276,6 +278,7 @@ const PaymentMethods = () => {
       const result = await dispatch(sendPaymentDetailAddOtp() as any);
       if (sendPaymentDetailAddOtp.fulfilled.match(result)) {
         setInlineError(null);
+        setOtpError(null);
         setPendingPayload(payload);
         setAddStep("otp");
       } else if (sendPaymentDetailAddOtp.rejected.match(result)) {
@@ -289,17 +292,21 @@ const PaymentMethods = () => {
   // Handle OTP verify - then add payment detail
   const handleVerifyOtp = async () => {
     if (!pendingPayload || !otpCode.trim() || otpCode.length < 6) {
-      setInlineError("Please enter a valid 6-digit OTP");
+      setOtpError("Please enter a valid 6-digit OTP");
       return;
     }
     setVerifyOtpLoading(true);
+    setOtpError(null);
     try {
       const verifyResult = await dispatch(verifyPaymentDetailAddOtp(otpCode) as any);
       if (verifyPaymentDetailAddOtp.fulfilled.match(verifyResult)) {
-        setInlineError(null);
+        setOtpError(null);
         dispatch(postUserPaymentDetail(pendingPayload));
       } else if (verifyPaymentDetailAddOtp.rejected.match(verifyResult)) {
-        setInlineError((verifyResult.payload as string) || "Invalid OTP");
+        setOtpError(
+          (verifyResult.payload as string) ||
+            "Invalid verification code. Please try again."
+        );
       }
     } finally {
       setVerifyOtpLoading(false);
@@ -324,6 +331,7 @@ const PaymentMethods = () => {
     setAccountName(getDefaultAccountName());
     setAddStep("form");
     setOtpCode("");
+    setOtpError(null);
     setPendingPayload(null);
   };
 
@@ -332,6 +340,7 @@ const PaymentMethods = () => {
     if (postSuccess) {
       setShowAddDropdown(false);
       setInlineError(null);
+      setOtpError(null);
       setAddStep("form");
       setOtpCode("");
       setPendingPayload(null);
@@ -348,16 +357,16 @@ const PaymentMethods = () => {
   // Handle errors - show inline instead of toast
   const [inlineError, setInlineError] = React.useState<string | null>(null);
   useEffect(() => {
-    if (postError) {
-      // Rewrite backend message to be user-friendly
-      const friendlyMsg = postError.toLowerCase().includes('already registered')
-        ? 'Account number already exists'
-        : postError;
-      setInlineError(friendlyMsg);
+    if (!postError) return;
+    const friendlyMsg = postError.toLowerCase().includes("already registered")
+      ? "Account number already exists"
+      : postError;
+    if (addStep === "otp") {
+      setOtpError(friendlyMsg);
     } else {
-      setInlineError(null);
+      setInlineError(friendlyMsg);
     }
-  }, [postError]);
+  }, [postError, addStep]);
 
   const openEditPaymentMethod = useCallback((method: PaymentMethod) => {
     setEditingPaymentMethod({
@@ -932,10 +941,29 @@ const PaymentMethods = () => {
                   autoComplete="one-time-code"
                   placeholder="Enter 6-digit OTP"
                   value={otpCode}
-                  onChange={(e) => setOtpCode(e.target.value.replace(/\D/g, "").slice(0, 6))}
-                  className="w-full px-4 py-3 rounded-xl bg-white dark:bg-[#1D1D23] border border-gray-200 dark:border-[#35353E] text-gray-900 dark:text-white text-center text-lg tracking-[0.4em] focus:outline-none focus:ring-2 focus:ring-[#1D8751] placeholder:text-gray-400 dark:placeholder:text-[#788099]"
+                  onChange={(e) => {
+                    setOtpCode(e.target.value.replace(/\D/g, "").slice(0, 6));
+                    if (otpError) setOtpError(null);
+                  }}
+                  className={`w-full px-4 py-3 rounded-xl bg-white dark:bg-[#1D1D23] border text-gray-900 dark:text-white text-center text-lg tracking-[0.4em] focus:outline-none focus:ring-2 placeholder:text-gray-400 dark:placeholder:text-[#788099] ${
+                    otpError
+                      ? "border-red-500 focus:ring-red-500/40"
+                      : "border-gray-200 dark:border-[#35353E] focus:ring-[#1D8751]"
+                  }`}
                   maxLength={6}
                 />
+                {otpError && (
+                  <div className="flex items-start gap-2 text-red-600 dark:text-red-400 text-sm">
+                    <svg className="w-4 h-4 shrink-0 mt-0.5" fill="currentColor" viewBox="0 0 20 20">
+                      <path
+                        fillRule="evenodd"
+                        d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z"
+                        clipRule="evenodd"
+                      />
+                    </svg>
+                    <span>{otpError}</span>
+                  </div>
+                )}
                 <div className="flex flex-col sm:flex-row gap-3">
                   <Button
                     variant="outline"
@@ -943,6 +971,7 @@ const PaymentMethods = () => {
                     onClick={() => {
                       setAddStep("form");
                       setOtpCode("");
+                      setOtpError(null);
                       setPendingPayload(null);
                     }}
                     disabled={verifyOtpLoading}

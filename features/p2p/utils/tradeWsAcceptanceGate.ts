@@ -7,6 +7,121 @@ import {
 
 export const PENDING_ACCEPTANCE_AUTO_CANCEL_MS = 3 * 60 * 1000;
 
+export const PENDING_ACCEPTANCE_WAIT_MESSAGE =
+  "Waiting for the trade owner to accept this trade before you can make the payments.";
+
+export const PENDING_ACCEPTANCE_OWNER_WAIT_MESSAGE =
+  "An incoming trade is waiting for your approval before payments can begin.";
+
+export const PENDING_ACCEPTANCE_AUTO_CANCEL_NOTE =
+  "Trade will be cancelled automatically after the timer.";
+
+const PENDING_ACCEPTANCE_STARTED_PREFIX = "p2p_pending_acceptance_started_";
+
+export function pendingAcceptanceStartedAtStorageKey(tradeId: string): string {
+  return `${PENDING_ACCEPTANCE_STARTED_PREFIX}${tradeId.trim()}`;
+}
+
+export function recordPendingAcceptanceStartedAt(
+  tradeId: string,
+  startedAtMs?: number
+): void {
+  if (typeof window === "undefined") return;
+  const id = tradeId.trim();
+  if (!id) return;
+  try {
+    const key = pendingAcceptanceStartedAtStorageKey(id);
+    if (localStorage.getItem(key)) return;
+    localStorage.setItem(key, String(startedAtMs ?? Date.now()));
+  } catch {
+    /* no-op */
+  }
+}
+
+export function clearPendingAcceptanceStartedAt(
+  tradeId: string | null | undefined
+): void {
+  if (typeof window === "undefined") return;
+  const id = String(tradeId ?? "").trim();
+  if (!id) return;
+  try {
+    localStorage.removeItem(pendingAcceptanceStartedAtStorageKey(id));
+  } catch {
+    /* no-op */
+  }
+}
+
+export function parseTradeTimestampMs(value: unknown): number | null {
+  if (value == null) return null;
+  if (typeof value === "number" && Number.isFinite(value)) return value;
+  const parsed = Date.parse(String(value).trim());
+  return Number.isFinite(parsed) ? parsed : null;
+}
+
+export function resolvePendingAcceptanceStartedAt(
+  tradeId: string | undefined | null,
+  options?: {
+    tradeTimestamp?: unknown;
+    storedOrder?: { id?: unknown; timestamp?: unknown } | null;
+  }
+): number {
+  const id = String(tradeId ?? "").trim();
+  if (id && typeof window !== "undefined") {
+    try {
+      const stored = localStorage.getItem(pendingAcceptanceStartedAtStorageKey(id));
+      if (stored) {
+        const n = Number(stored);
+        if (Number.isFinite(n)) return n;
+      }
+    } catch {
+      /* no-op */
+    }
+  }
+
+  const fromStoredOrder =
+    options?.storedOrder &&
+    String(options.storedOrder.id ?? "").trim() === id
+      ? parseTradeTimestampMs(options.storedOrder.timestamp)
+      : null;
+  const fromTimestamp = parseTradeTimestampMs(options?.tradeTimestamp);
+  const resolved = fromStoredOrder ?? fromTimestamp;
+  if (resolved != null) {
+    if (id) recordPendingAcceptanceStartedAt(id, resolved);
+    return resolved;
+  }
+
+  const now = Date.now();
+  if (id) recordPendingAcceptanceStartedAt(id, now);
+  return now;
+}
+
+export function getPendingAcceptanceSecondsLeft(
+  startedAtMs: number | null | undefined
+): number | null {
+  if (startedAtMs == null) return null;
+  return Math.max(
+    0,
+    Math.ceil(
+      (PENDING_ACCEPTANCE_AUTO_CANCEL_MS - (Date.now() - startedAtMs)) / 1000
+    )
+  );
+}
+
+export type PendingAcceptanceBannerRole = "counterparty" | "owner";
+
+export function buildPendingAcceptanceBannerText(
+  role: PendingAcceptanceBannerRole,
+  secondsLeft: number | null
+): string {
+  const base =
+    role === "owner"
+      ? PENDING_ACCEPTANCE_OWNER_WAIT_MESSAGE
+      : PENDING_ACCEPTANCE_WAIT_MESSAGE;
+  const countdown =
+    secondsLeft != null ? ` (${formatCountdownSeconds(secondsLeft)})` : "";
+  return `${base} ${PENDING_ACCEPTANCE_AUTO_CANCEL_NOTE}${countdown}`;
+}
+
 export type TradeLifecycleBanner = {
   tone: "info" | "warning" | "danger";
   message: string;

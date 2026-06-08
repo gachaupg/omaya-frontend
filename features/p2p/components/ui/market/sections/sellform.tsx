@@ -31,14 +31,19 @@ import { logger } from '@/lib/utils/logger';
 import {
   PENDING_ACCEPTANCE_AUTO_CANCEL_MS,
   type TradeLifecycleBanner,
+  buildPendingAcceptanceBannerText,
   canSellerConfirmReceipt,
+  clearPendingAcceptanceStartedAt,
   getEffectiveConfirmFlags,
   getEffectiveTradeStatus,
+  getPendingAcceptanceSecondsLeft,
   isPendingAcceptanceStatus,
   formatCountdownSeconds,
   isTransactionCountdownActive,
+  resolvePendingAcceptanceStartedAt,
   type WsTradeSnapshot,
 } from "@/features/p2p/utils/tradeWsAcceptanceGate";
+import { PendingAcceptanceBanner } from "./PendingAcceptanceBanner";
 
 interface FinalSellProps {
   orderData?: P2POrder;
@@ -172,8 +177,20 @@ const FinalSell: React.FC<FinalSellProps> = ({ orderData }) => {
     },
     onPendingAcceptance: (active) => {
       if (active) {
-        setPendingAcceptanceStartedAt((prev) => prev ?? Date.now());
+        setPendingAcceptanceStartedAt((prev) => {
+          if (prev != null) return prev;
+          const id = confirmOrderIdRef.current;
+          let storedOrder: { id?: unknown; timestamp?: unknown } | null = null;
+          try {
+            const raw = localStorage.getItem("new_order");
+            if (raw) storedOrder = JSON.parse(raw);
+          } catch {
+            /* no-op */
+          }
+          return resolvePendingAcceptanceStartedAt(id, { storedOrder });
+        });
       } else {
+        clearPendingAcceptanceStartedAt(confirmOrderIdRef.current);
         setPendingAcceptanceStartedAt(null);
       }
     },
@@ -277,7 +294,20 @@ const FinalSell: React.FC<FinalSellProps> = ({ orderData }) => {
     if (!confirmOrder?.id) return;
     const st = String(confirmOrder.status || "");
     if (isPendingAcceptanceStatus(st)) {
-      setPendingAcceptanceStartedAt((prev) => prev ?? Date.now());
+      let storedOrder: { id?: unknown; timestamp?: unknown } | null = null;
+      try {
+        const raw = localStorage.getItem("new_order");
+        if (raw) storedOrder = JSON.parse(raw);
+      } catch {
+        /* no-op */
+      }
+      setPendingAcceptanceStartedAt((prev) =>
+        prev ??
+        resolvePendingAcceptanceStartedAt(confirmOrder.id, {
+          tradeTimestamp: confirmOrder.timestamp,
+          storedOrder,
+        })
+      );
       setWsTradeSnapshot((prev) => ({
         rawStatus: "pending_acceptance",
         can_confirm_receipt:
@@ -541,6 +571,13 @@ const FinalSell: React.FC<FinalSellProps> = ({ orderData }) => {
         : tradeLifecycleBanner.message
       : null;
 
+  const pendingAcceptanceBannerText = inPendingAcceptanceSeller
+    ? buildPendingAcceptanceBannerText(
+        "counterparty",
+        getPendingAcceptanceSecondsLeft(pendingAcceptanceStartedAt)
+      )
+    : null;
+
   return (
     <div className="md:mt-20">
       {/* Breadcrumb */}
@@ -553,6 +590,9 @@ const FinalSell: React.FC<FinalSellProps> = ({ orderData }) => {
       />
       <div className="final-buy-container grid grid-cols-1 lg:grid-cols-3 gap-2 sm:gap-3 lg:gap-6 p-1 sm:p-2 lg:p-6 min-h-screen bg-[#EEF1F4] dark:bg-(--bg-color)">
         <div className="lg:col-span-2 flex flex-col gap-4 lg:gap-6">
+          {pendingAcceptanceBannerText && (
+            <PendingAcceptanceBanner text={pendingAcceptanceBannerText} />
+          )}
           {lifecycleBannerText && tradeLifecycleBanner && (
             <div
               role="status"
@@ -1029,11 +1069,17 @@ const FinalSell: React.FC<FinalSellProps> = ({ orderData }) => {
             }
             owner={confirmOrder?.owner || ""}
             sellerName={
-              singleOrder?.advertiser_first_name && singleOrder?.advertiser_last_name
+              confirmOrder?.seller_full_name?.trim() ||
+              (singleOrder?.advertiser_first_name && singleOrder?.advertiser_last_name
                 ? `${singleOrder.advertiser_first_name} ${singleOrder.advertiser_last_name}`
-                : singleOrder?.advertiser_name || confirmOrder?.advertiser_name || "Seller"
+                : singleOrder?.advertiser_name || confirmOrder?.advertiser_name || "Seller")
             }
-            buyerName={user?.email === confirmOrder?.buyer ? `${user?.first_name || ""} ${user?.last_name || ""}`.trim() || "You" : "Buyer"}
+            buyerName={
+              confirmOrder?.buyer_full_name?.trim() ||
+              (user?.email === confirmOrder?.buyer
+                ? `${user?.first_name || ""} ${user?.last_name || ""}`.trim() || "You"
+                : "Buyer")
+            }
           />
 
           <section className="advertiser-terms rounded-lg p-4 bg-gray-50 dark:bg-[var(--card-color)]">

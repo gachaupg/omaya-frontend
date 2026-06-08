@@ -1,4 +1,4 @@
-import React, { useState } from 'react'
+import React, { useMemo, useState } from 'react'
 import { useSelector } from 'react-redux'
 import { RootState } from '@/store/rootReducer'
 import { useRouter, usePathname } from 'next/navigation'
@@ -12,44 +12,10 @@ import {
   hasRenderableMessageImages,
 } from "@/features/p2p/utils/messageMedia";
 
-/** Resolve real trade/support thread id when entity_id is a placeholder (e.g. "support"). */
-const resolveSupportTradeId = (entityId: string, userGroup?: any): string => {
-  const isInvalid = (v: unknown) => {
-    const s = String(v ?? "").trim().toLowerCase();
-    return !s || s === "support" || s === "undefined" || s === "null";
-  };
-
-  if (!isInvalid(entityId)) return entityId;
-
-  const extractIdFromMessageId = (value: unknown) => {
-    const v = String(value ?? "").trim();
-    if (!v) return "";
-    if (v.includes("_initial")) {
-      const candidate = v.split("_initial")[0]?.trim();
-      if (!isInvalid(candidate)) return candidate;
-    }
-    return "";
-  };
-
-  const candidates: unknown[] = [
-    userGroup?.trade_id,
-    userGroup?.support_request_id,
-    ...(Array.isArray(userGroup?.messages)
-      ? userGroup.messages.flatMap((m: any) => [
-          m?.trade_id,
-          m?.trade,
-          m?.entity_id,
-          m?.support_request_id,
-          extractIdFromMessageId(m?.id),
-        ])
-      : []),
-  ];
-
-  for (const c of candidates) {
-    if (!isInvalid(c)) return String(c).trim();
-  }
-  return entityId;
-};
+import {
+  expandBucketGroupedUsers,
+  resolveThreadIdFromGroup,
+} from "@/features/p2p/utils/chatThreadIds";
 
 interface UnreadMessagesProps {
   loading?: boolean;
@@ -256,6 +222,11 @@ const UnreadMessages: React.FC<UnreadMessagesProps> = ({ loading = false, onBack
     refetchInterval: isOnMessagesPage ? 0 : 30000, // Stop polling when on messages page
   })
 
+  const expandedGroupedUsers = useMemo(
+    () => expandBucketGroupedUsers(groupedUsers),
+    [groupedUsers]
+  )
+
   const formatTimestamp = (timestamp: string) => {
     const date = new Date(timestamp)
     const now = new Date()
@@ -282,30 +253,34 @@ const UnreadMessages: React.FC<UnreadMessagesProps> = ({ loading = false, onBack
   }
 
   const handleMessageClick = (entityId: string, messageType: string, userGroup?: any) => {
-    // Navigate to the appropriate page based on message type
-    if (entityId) {
-      if (messageType === 'p2p') {
-        // P2P messages use the API, just navigate
-        router.push(`/p2p/messages/${entityId}`)
-      } else if (messageType === 'support') {
-        const resolvedTradeId = resolveSupportTradeId(entityId, userGroup)
-        // Support messages: pass data as URL params
-        if (userGroup) {
-          const params = new URLSearchParams({
-            type: 'support',
-            sender_id: userGroup.sender_id?.toString() || '',
-            sender_name: userGroup.sender_name || '',
-            sender_email: userGroup.sender_email || '',
-            messages: JSON.stringify(userGroup.messages || []),
-            trade_id: resolvedTradeId
-          })
-          router.push(`/p2p/messages/${resolvedTradeId}?${params.toString()}`)
-        } else {
-          router.push(`/p2p/messages/${resolvedTradeId}?type=support&trade_id=${encodeURIComponent(resolvedTradeId)}`)
-        }
+    if (!entityId) return;
+
+    if (messageType === "p2p") {
+      router.push(`/p2p/messages/${entityId}`);
+      return;
+    }
+
+    if (messageType === "support" || messageType === "appeal") {
+      const resolvedThreadId = userGroup
+        ? resolveThreadIdFromGroup(userGroup as GroupedUser)
+        : entityId;
+      if (userGroup) {
+        const params = new URLSearchParams({
+          type: messageType,
+          sender_id: userGroup.sender_id?.toString() || "",
+          sender_name: userGroup.sender_name || "",
+          sender_email: userGroup.sender_email || "",
+          messages: JSON.stringify(userGroup.messages || []),
+          trade_id: resolvedThreadId,
+        });
+        router.push(`/p2p/messages/${resolvedThreadId}?${params.toString()}`);
+      } else {
+        router.push(
+          `/p2p/messages/${resolvedThreadId}?type=${messageType}&trade_id=${encodeURIComponent(resolvedThreadId)}`
+        );
       }
     }
-  }
+  };
 
   if (!isAuthenticated) {
     return (
@@ -344,7 +319,7 @@ const UnreadMessages: React.FC<UnreadMessagesProps> = ({ loading = false, onBack
     )
   }
 
-  if (totalUnreadCount === 0 || groupedUsers.length === 0) {
+  if (totalUnreadCount === 0 || expandedGroupedUsers.length === 0) {
     return (
       <div className="flex flex-col items-center justify-center h-64 space-y-4">
         <svg className="w-16 h-16 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -409,7 +384,7 @@ const UnreadMessages: React.FC<UnreadMessagesProps> = ({ loading = false, onBack
 
       {/* Messages List - Grouped by User */}
       <div className="space-y-2 max-h-96 overflow-y-auto">
-        {groupedUsers.map((userGroup: GroupedUser, index: number) => {
+        {expandedGroupedUsers.map((userGroup: GroupedUser, index: number) => {
           const isCurrentUser = user?.email === userGroup.sender_email
           // For support messages, show "Support" as display name
           // For p2p messages, show peer name
@@ -455,7 +430,7 @@ const UnreadMessages: React.FC<UnreadMessagesProps> = ({ loading = false, onBack
       </div>
 
       {/* Empty State if no messages in array */}
-      {groupedUsers.length === 0 && totalUnreadCount > 0 && (
+      {expandedGroupedUsers.length === 0 && totalUnreadCount > 0 && (
         <div className="text-center py-8">
           <p className="text-gray-500 dark:text-gray-400">
             Loading recent messages...

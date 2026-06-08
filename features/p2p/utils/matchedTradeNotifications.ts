@@ -183,12 +183,10 @@ export function getTradeCounterpartyPhoto(
 
 /** Profile photo for the person shown in getMatchedTradeNotificationDisplayName. */
 export function getMatchedTradeNotificationProfileImage(
-  trade: {
-    owner?: string;
-    order_type?: string;
-    buyer_photo?: string | null;
-    seller_photo?: string | null;
-  },
+  trade: Pick<
+    TradePhotoContext,
+    "owner" | "order_type" | "buyer_photo" | "seller_photo"
+  >,
   userEmail: string | null | undefined
 ): string | null | undefined {
   const isOwner =

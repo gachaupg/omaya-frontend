@@ -10,6 +10,19 @@ import { formatCurrency } from '@/lib/globalFormatter'
 import { parseSummaryNumber } from '@/lib/utils/normalizeTransactionSummary'
 
 import { logger } from '@/lib/utils/logger';
+import type { MerchantApplicationStatus } from '@/features/p2p/types';
+
+const normalizeMerchantStatus = (value?: string | null) =>
+  String(value ?? "").trim().toLowerCase();
+
+/** Users may submit fresh or resubmit after rejection — not while pending/approved. */
+const canSubmitMerchantApplication = (
+  applicationStatus: MerchantApplicationStatus | null
+) => {
+  if (!applicationStatus) return true;
+  const status = normalizeMerchantStatus(applicationStatus.status);
+  return status === "not_submitted" || status === "rejected";
+};
 
 const Merchant = () => {
   const dispatch = useDispatch()
@@ -131,10 +144,11 @@ const Merchant = () => {
   }
 
   const handleSubmit = async () => {
-    // Check if application already submitted
-    if (status && status.status !== 'not_submitted') {
-      showToast.warning(`You have already submitted a merchant application. Status: ${status.status_display}`)
-      return
+    if (!canSubmitMerchantApplication(status)) {
+      showToast.warning(
+        `You have already submitted a merchant application. Status: ${status?.status_display ?? "Pending"}`
+      );
+      return;
     }
 
     const formData = new FormData()
@@ -184,13 +198,25 @@ const Merchant = () => {
       return
     }
 
-    try {
-      await dispatch(submitMerchantApplicationThunk(formData) as any)
-      // Refresh status after successful submission
-      dispatch(fetchMerchantApplicationStatusThunk() as any)
-    } catch (err) {
-      console.error('Error submitting merchant application:', err)
-      showToast.error('Failed to submit merchant application. Please try again.')
+    dispatch(clearMerchantError());
+
+    const result = await dispatch(submitMerchantApplicationThunk(formData) as any);
+    if (submitMerchantApplicationThunk.fulfilled.match(result)) {
+      const isResubmit = normalizeMerchantStatus(status?.status) === "rejected";
+      showToast.success(
+        isResubmit
+          ? "Merchant application resubmitted successfully"
+          : "Merchant application submitted successfully"
+      );
+      setFiles({
+        bank_account_ownership_proof: null,
+        business_registration_certificate: null,
+        tax_identification_number_certificate: null,
+        articles_of_association: null,
+        proof_of_address: null,
+      });
+      setCurrentUploadType(null);
+      dispatch(fetchMerchantApplicationStatusThunk() as any);
     }
   }
 
@@ -221,8 +247,14 @@ const Merchant = () => {
     )
   }
 
+  const merchantStatus = normalizeMerchantStatus(status?.status);
+  const isRejectedApplication = merchantStatus === "rejected";
+  const isPendingApplication = merchantStatus === "pending";
+  const isApprovedApplication = merchantStatus === "approved";
+
   // Show status banner if already submitted
-  const showStatusBanner = status && status.status !== 'not_submitted'
+  const showStatusBanner = Boolean(status) && merchantStatus !== "not_submitted";
+  const canSubmitApplication = canSubmitMerchantApplication(status);
 
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-[#18181D] text-gray-900 dark:text-white">
@@ -250,41 +282,41 @@ const Merchant = () => {
         </div>
 
         {/* Status Banner */}
-        {showStatusBanner && (
+        {showStatusBanner && status && (
           <div className="mb-6 pl-6 pr-6">
-            <div className={`p-4 rounded-lg border-2 ${status.status === 'pending' ? 'bg-amber-500/10 dark:bg-yellow-900/20 border-amber-500/50' :
-              status.status === 'approved' ? 'bg-emerald-500/10 dark:bg-green-900/20 border-emerald-500/50' :
-                status.status === 'rejected' ? 'bg-rose-500/10 dark:bg-red-900/20 border-rose-500/50' :
+            <div className={`p-4 rounded-lg border-2 ${isPendingApplication ? 'bg-amber-500/10 dark:bg-yellow-900/20 border-amber-500/50' :
+              isApprovedApplication ? 'bg-emerald-500/10 dark:bg-green-900/20 border-emerald-500/50' :
+                isRejectedApplication ? 'bg-rose-500/10 dark:bg-red-900/20 border-rose-500/50' :
                   'bg-slate-500/10 dark:bg-gray-800/20 border-slate-500/50'
               }`}>
               <div className="flex items-start gap-3">
-                {status.status === 'pending' && (
+                {isPendingApplication && (
                   <svg className="w-6 h-6 text-amber-600 dark:text-yellow-400 mt-0.5 flex-shrink-0" fill="currentColor" viewBox="0 0 24 24">
                     <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-2h2v2zm0-4h-2V7h2v6z" />
                   </svg>
                 )}
-                {status.status === 'approved' && (
+                {isApprovedApplication && (
                   <svg className="w-6 h-6 text-emerald-600 dark:text-green-400 mt-0.5 flex-shrink-0" fill="currentColor" viewBox="0 0 24 24">
                     <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z" />
                   </svg>
                 )}
-                {status.status === 'rejected' && (
+                {isRejectedApplication && (
                   <svg className="w-6 h-6 text-rose-600 dark:text-red-400 mt-0.5 flex-shrink-0" fill="currentColor" viewBox="0 0 24 24">
                     <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm1 15h-2v-2h2v2zm0-4h-2V7h2v6z" />
                   </svg>
                 )}
                 <div className="flex-1">
-                  <p className={`font-semibold mb-1 ${status.status === 'pending' ? 'text-amber-700 dark:text-yellow-400' :
-                    status.status === 'approved' ? 'text-emerald-700 dark:text-green-400' :
-                      status.status === 'rejected' ? 'text-rose-700 dark:text-red-400' :
+                  <p className={`font-semibold mb-1 ${isPendingApplication ? 'text-amber-700 dark:text-yellow-400' :
+                    isApprovedApplication ? 'text-emerald-700 dark:text-green-400' :
+                      isRejectedApplication ? 'text-rose-700 dark:text-red-400' :
                         'text-slate-700 dark:text-gray-400'
                     }`}>
                     Application Status: {status.status_display}
                   </p>
                   <p className="text-muted-foreground text-sm">
-                    {status.status === 'pending' && 'Your application is currently under review. We will notify you once a decision is made.'}
-                    {status.status === 'approved' && 'Congratulations! Your merchant application has been approved. You now have merchant privileges.'}
-                    {status.status === 'rejected' && 'Your application has been rejected. Please contact support for more information or submit a new application.'}
+                    {isPendingApplication && 'Your application is currently under review. We will notify you once a decision is made.'}
+                    {isApprovedApplication && 'Congratulations! Your merchant application has been approved. You now have merchant privileges.'}
+                    {isRejectedApplication && 'Your application was rejected. Review the reason below, upload updated documents, and resubmit your application.'}
                   </p>
                   {status.application?.rejection_reason && (
                     <p className="text-rose-600 dark:text-red-300 text-sm mt-2">
@@ -448,11 +480,14 @@ const Merchant = () => {
         </div>
 
         {/* Upload Documents Section - Disable if already submitted */}
-        <div className={`mb-12 pl-6 pr-6 ${showStatusBanner && status.status !== 'rejected' ? 'opacity-50 pointer-events-none' : ''}`}>
+        <div className={`mb-12 pl-6 pr-6 ${showStatusBanner && !canSubmitApplication ? 'opacity-50 pointer-events-none' : ''}`}>
           <h3 className="text-xl font-semibold mb-6 text-foreground">
             Upload Supporting Documents
-            {showStatusBanner && status.status !== 'rejected' && (
+            {showStatusBanner && !canSubmitApplication && (
               <span className="text-sm text-muted-foreground ml-2">(Application already submitted)</span>
+            )}
+            {isRejectedApplication && (
+              <span className="text-sm text-rose-600 dark:text-red-400 ml-2">(Resubmission allowed)</span>
             )}
           </h3>
           <div className="mb-6">
@@ -680,10 +715,16 @@ const Merchant = () => {
           </button>
           <button
             onClick={handleSubmit}
-            disabled={loading || (!!showStatusBanner && status?.status !== 'rejected')}
+            disabled={loading || !canSubmitApplication}
             className="min-w-[140px] px-12 py-3 bg-[#1D8751] text-white rounded-lg hover:bg-[#1D8851]/90 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed font-medium"
           >
-            {loading ? 'Submitting...' : showStatusBanner && status?.status !== 'rejected' ? 'Already Submitted' : 'Submit'}
+            {loading
+              ? "Submitting..."
+              : !canSubmitApplication
+                ? "Already Submitted"
+                : isRejectedApplication
+                  ? "Resubmit Application"
+                  : "Submit"}
           </button>
         </div>
 

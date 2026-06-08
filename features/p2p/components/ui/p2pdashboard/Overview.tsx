@@ -23,34 +23,27 @@ const Overview = () => {
     }
   }, [dispatch, isAuthenticated]);
 
-  // Prefer HTTP summary (full API) — WS summary defaults missing fields to 0 and blocks ?? fallback
-  const p2pDeposits =
-    parseSummaryNumber(summary?.total_approved_p2p_deposits) ||
-    Number(wsWallet.summary.total_approved_p2p_deposits) ||
-    0;
-  const p2pTradeVolume =
-    parseSummaryNumber(summary?.total_approved_p2p_volume) ||
-    Number(wsWallet.summary.total_approved_p2p_volume) ||
-    0;
+  // Prefer live wallet-balance WebSocket; fall back to REST until first WS message
+  const activeSummary = wsWallet.overviewSummary ?? summary;
+
+  const p2pDeposits = parseSummaryNumber(
+    activeSummary?.total_approved_p2p_deposits
+  );
+  const p2pTradeVolume = parseSummaryNumber(
+    activeSummary?.total_approved_p2p_volume
+  );
   /** Trades + approved P2P deposits (funding); matches API total_volume */
   const p2p = p2pTradeVolume + p2pDeposits;
-  const withdrawals =
-    parseSummaryNumber(summary?.total_approved_p2p_withdrawals) ||
-    Number(wsWallet.summary.total_approved_p2p_withdrawals) ||
-    0;
+  const withdrawals = parseSummaryNumber(
+    activeSummary?.total_approved_p2p_withdrawals
+  );
   const inProgress =
-    (parseSummaryNumber(summary?.total_pending_p2p_deposits) ||
-      Number(wsWallet.summary.total_pending_p2p_deposits) ||
-      0) +
-    (parseSummaryNumber(summary?.total_pending_p2p_withdrawals) ||
-      Number(wsWallet.summary.total_pending_p2p_withdrawals) ||
-      0);
+    parseSummaryNumber(activeSummary?.total_pending_p2p_deposits) +
+    parseSummaryNumber(activeSummary?.total_pending_p2p_withdrawals);
   const segmentTotal = withdrawals + inProgress + p2p;
   /** API `total_volume` (e.g. "91.09 USD") is the canonical dashboard total. */
   const totalVolume =
-    parseSummaryNumber(summary?.total_volume) ||
-    segmentTotal ||
-    0;
+    parseSummaryNumber(activeSummary?.total_volume) || segmentTotal || 0;
   const chartTotal = segmentTotal > 0 ? segmentTotal : totalVolume || 1;
   const circumference = 2 * Math.PI * 90;
   // Order: Pending, Withdrawals, P2P (deposits included in P2P)
@@ -74,14 +67,20 @@ const Overview = () => {
     return Math.max(0, 173 - (value / safeTotal) * 691);
   };
 
-  const buyByStatus = (summary as any)?.total_buy_trades_by_status || {};
+  const buyByStatus =
+    (activeSummary as any)?.total_buy_trades_by_status ||
+    activeSummary?.total_buy_orders_by_status ||
+    {};
   const buyCompleted = Number(buyByStatus.completed) || 0;
   const buyPending = Number(buyByStatus.pending) || 0;
   const buyCanceled = Number(buyByStatus.canceled ?? buyByStatus.cancelled) || 0;
   const buyOffline = Number(buyByStatus.offline) || 0;
   const buyTotal = buyCompleted + buyPending + buyCanceled + buyOffline;
 
-  const sellByStatus = (summary as any)?.total_sell_trades_by_status || {};
+  const sellByStatus =
+    (activeSummary as any)?.total_sell_trades_by_status ||
+    activeSummary?.total_sell_orders_by_status ||
+    {};
   const sellCompleted = Number(sellByStatus.completed) || 0;
   const sellPending = Number(sellByStatus.pending) || 0;
   const sellCanceled = Number(sellByStatus.canceled ?? sellByStatus.cancelled) || 0;
@@ -234,7 +233,7 @@ const Overview = () => {
             {/* Header */}
             <div className="flex items-center justify-between gap-2 mb-1 sm:mb-1.5">
               <span className="text-[13px] sm:text-base md:text-lg text-[#0D0D0D] dark:text-white/90">
-                {buyTotal.toLocaleString()} <span className="text-xs text-gray-500">orders</span>
+                {buyTotal.toLocaleString()} <span className="text-xs text-gray-500">USD</span>
               </span>
             </div>
 
@@ -313,7 +312,7 @@ const Overview = () => {
             {/* Header */}
             <div className="flex items-center justify-between gap-2 mb-1 sm:mb-1.5">
               <span className="text-[13px] sm:text-base md:text-lg text-[#0D0D0D] dark:text-white/90">
-                {sellTotal.toLocaleString()} <span className="text-xs text-gray-500">orders</span>
+                {sellTotal.toLocaleString()} <span className="text-xs text-gray-500">USD</span>
               </span>
 
               <div className="relative flex-shrink-0">

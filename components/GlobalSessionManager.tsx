@@ -12,6 +12,7 @@ import { useTokenRefresh } from "@/hooks/useTokenRefresh";
 import { useUserPaymentDetailsWebSocket } from "@/features/p2p/hooks/useUserPaymentDetailsWebSocket";
 import { useP2PWithdrawalStatusWebSocket } from "@/features/p2p/hooks/useP2PWithdrawalStatusWebSocket";
 import { useFreezeStatusWebSocket } from "@/features/auth/hooks/useFreezeStatusWebSocket";
+import { useKycStatusWebSocket } from "@/features/auth/hooks/useKycStatusWebSocket";
 import { usePresenceWebSocket } from "@/features/auth/hooks/usePresenceWebSocket";
 import { useDeviceSessionsWebSocket } from "@/features/settings/hooks/useDeviceSessionsWebSocket";
 
@@ -22,6 +23,7 @@ const GlobalSessionManager = () => {
   useUserPaymentDetailsWebSocket({ enabled: isAuthenticated });
   useP2PWithdrawalStatusWebSocket();
   useFreezeStatusWebSocket({ enabled: isAuthenticated });
+  useKycStatusWebSocket({ enabled: isAuthenticated });
   usePresenceWebSocket();
   useDeviceSessionsWebSocket({ enabled: isAuthenticated });
 

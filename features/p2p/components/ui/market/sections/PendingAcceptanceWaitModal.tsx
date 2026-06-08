@@ -7,6 +7,10 @@ import { useTradeStatusWebSocket } from "@/features/p2p/hooks/useTradeStatusWebS
 import { cancelP2POrder } from "@/features/p2p/api";
 import {
   PENDING_ACCEPTANCE_AUTO_CANCEL_MS,
+  PENDING_ACCEPTANCE_AUTO_CANCEL_NOTE,
+  PENDING_ACCEPTANCE_WAIT_MESSAGE,
+  recordPendingAcceptanceStartedAt,
+  clearPendingAcceptanceStartedAt,
   wsPayloadToSnapshot,
   isDeclinedLikeStatus,
   formatCountdownSeconds,
@@ -40,12 +44,6 @@ interface PendingAcceptanceWaitModalProps {
   onNavigateToMatched: (tradeId: string) => void;
   onClose: () => void;
 }
-
-const WAIT_MESSAGE =
-  "Waiting for the trade owner to accept this trade before you can make the payments.";
-
-const AUTO_CANCEL_TIMER_NOTE =
-  "Trade will be cancelled automatically after the timer.";
 
 const USER_NOT_FOUND_MESSAGE = "We couldn't find the user.";
 
@@ -108,6 +106,7 @@ export const PendingAcceptanceWaitModal: React.FC<PendingAcceptanceWaitModalProp
       activeTradeIdRef.current = id;
       try {
         localStorage.setItem("p2p_trade_id", id);
+        clearPendingAcceptanceStartedAt(id);
       } catch {
         /* no-op */
       }
@@ -130,6 +129,7 @@ export const PendingAcceptanceWaitModal: React.FC<PendingAcceptanceWaitModalProp
       });
       try {
         localStorage.removeItem("p2p_trade_id");
+        clearPendingAcceptanceStartedAt(activeTradeIdRef.current || tradeId);
       } catch {
         /* no-op */
       }
@@ -226,6 +226,7 @@ export const PendingAcceptanceWaitModal: React.FC<PendingAcceptanceWaitModalProp
     setClosingMessage(null);
     setImageError(false);
     activeTradeIdRef.current = tradeId;
+    recordPendingAcceptanceStartedAt(tradeId);
     setStartedAt((prev) => prev ?? Date.now());
 
     logTradePreview("wait modal opened (WS only — confirm already fetched on submit)", {
@@ -342,8 +343,8 @@ export const PendingAcceptanceWaitModal: React.FC<PendingAcceptanceWaitModalProp
   const bannerText =
     closingMessage ??
     (secondsLeft != null
-      ? `${WAIT_MESSAGE} ${AUTO_CANCEL_TIMER_NOTE} (${formatCountdownSeconds(secondsLeft)})`
-      : WAIT_MESSAGE);
+      ? `${PENDING_ACCEPTANCE_WAIT_MESSAGE} ${PENDING_ACCEPTANCE_AUTO_CANCEL_NOTE} (${formatCountdownSeconds(secondsLeft)})`
+      : PENDING_ACCEPTANCE_WAIT_MESSAGE);
 
   return (
     <div
@@ -354,15 +355,7 @@ export const PendingAcceptanceWaitModal: React.FC<PendingAcceptanceWaitModalProp
       onClick={(e) => e.stopPropagation()}
     >
       <div className="relative w-full max-w-md rounded-2xl border border-gray-200 bg-white p-5 shadow-xl dark:border-[#35353E] dark:bg-[var(--card-color)]">
-        <button
-          type="button"
-          aria-label="Close"
-          className="absolute top-3 right-3 p-1.5 rounded-full text-gray-500 hover:bg-gray-100 dark:text-[#788099] dark:hover:bg-[#35353E] transition"
-          onClick={() => finishAndReturnToTable(true)}
-        >
-          <span className="text-xl leading-none">&times;</span>
-        </button>
-        <div className="flex items-center gap-3 mb-4 pr-8">
+        <div className="flex items-center gap-3 mb-4">
           <div className="relative shrink-0">
             {advertiserPhoto && !imageError ? (
               <img

@@ -41,6 +41,15 @@ import {
   normalizeTradeMessageForDedupe,
   tradeMessagesAreDuplicates,
 } from "@/features/p2p/utils/tradeMessageDedupe";
+import {
+  expandBucketGroupedUsers,
+  extractIdFromMessageId,
+  getMessageThreadId,
+  isBucketEntityId,
+  isValidThreadId,
+  resolveThreadIdFromGroup,
+} from "@/features/p2p/utils/chatThreadIds";
+import { resolveGroupedChatSenderDisplayName } from "@/features/p2p/utils/chatMessageDisplay";
 
 interface ConversationItemProps {
   group: any;
@@ -435,7 +444,7 @@ export const Chats: React.FC = () => {
 
   useEffect(() => {
     setLiveGroupedUsers((prev) => {
-      const incoming = (groupedUsers || []).filter((g: any) => {
+      const incoming = expandBucketGroupedUsers(groupedUsers).filter((g: any) => {
         const entityId = String(g?.entity_id ?? "").trim();
         return !entityId || !closedEntityIdsRef.current.has(entityId);
       });
@@ -498,96 +507,31 @@ export const Chats: React.FC = () => {
     });
   }, [groupedUsers]);
 
-  const isUuid = (value: unknown): boolean =>
-    /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(
-      String(value ?? "").trim()
-    );
-
-  const isValidTradeIdForMessages = (value: unknown): boolean => {
-    const v = String(value ?? "").trim();
-    if (!v) return false;
-    const lower = v.toLowerCase();
-    if (lower === "undefined" || lower === "null" || lower === "support") return false;
-    // Support both UUID and numeric/string trade identifiers so WS can attach
-    // regardless of backend ID format.
-    return isUuid(v) || /^[0-9]+$/.test(v) || /^[0-9a-z-]+$/i.test(v);
-  };
-
-  const extractIdFromMessageId = (value: unknown): string => {
-    const v = String(value ?? "").trim();
-    if (!v) return "";
-    // Support seeds often use "<uuid>_initial" ids.
-    if (v.includes("_initial")) {
-      const candidate = v.split("_initial")[0]?.trim();
-      if (isValidTradeIdForMessages(candidate)) return candidate;
-    }
-    return "";
-  };
+  const isValidTradeIdForMessages = isValidThreadId;
 
   const resolvedTradeId = useMemo(() => {
     if (!selectedUser) return "";
-    if (isValidTradeIdForMessages(selectedUser.entity_id)) {
+    const messageType = String(selectedUser.message_type || "")
+      .trim()
+      .toLowerCase();
+    if (messageType !== "p2p") return "";
+    if (
+      isValidThreadId(selectedUser.entity_id) &&
+      !isBucketEntityId(selectedUser.entity_id)
+    ) {
       return String(selectedUser.entity_id).trim();
     }
-    const candidates: unknown[] = [
-      (selectedUser as any)?.trade_id,
-      (selectedUser as any)?.support_request_id,
-      ...(Array.isArray((selectedUser as any)?.messages)
-        ? (selectedUser as any).messages.flatMap((m: any) => [
-            m?.trade_id,
-            m?.trade,
-            m?.entity_id,
-            m?.support_request_id,
-            extractIdFromMessageId(m?.id),
-          ])
-        : []),
-    ];
-    for (const c of candidates) {
-      if (isValidTradeIdForMessages(c)) return String(c).trim();
-    }
-    return "";
+    return resolveThreadIdFromGroup(selectedUser);
   }, [selectedUser]);
 
   const resolvedThreadId = useMemo(() => {
-    const rawType = String((selectedUser as any)?.message_type || "")
+    if (!selectedUser) return "";
+    const rawType = String(selectedUser.message_type || "")
       .trim()
       .toLowerCase();
-    if (!selectedUser) return "";
     if (rawType === "p2p") return resolvedTradeId;
-    const candidates: unknown[] = [
-      selectedUser.entity_id,
-      (selectedUser as any)?.support_request_id,
-      (selectedUser as any)?.appeal_id,
-      ...(Array.isArray((selectedUser as any)?.messages)
-        ? (selectedUser as any).messages.flatMap((m: any) => [
-            m?.entity_id,
-            m?.support_request_id,
-            m?.appeal_id,
-            extractIdFromMessageId(m?.id),
-          ])
-        : []),
-    ];
-    for (const c of candidates) {
-      if (isValidTradeIdForMessages(c)) return String(c).trim();
-    }
-    return "";
+    return resolveThreadIdFromGroup(selectedUser);
   }, [selectedUser, resolvedTradeId]);
-
-  const getMessageThreadId = useCallback((msg: any, messageType: string): string => {
-    const type = messageType.toLowerCase();
-    if (type === "support") {
-      return String(
-        msg?.support_request_id ?? extractIdFromMessageId(msg?.id) ?? ""
-      ).trim();
-    }
-    if (type === "appeal") {
-      return String(msg?.appeal_id ?? extractIdFromMessageId(msg?.id) ?? "").trim();
-    }
-    if (type === "p2p") {
-      return String(msg?.trade_id ?? msg?.trade ?? "").trim();
-    }
-    return "";
-  }, []);
 
   const isOwnChatMessage = useCallback(
     (msg: any) => {
@@ -609,12 +553,14 @@ export const Chats: React.FC = () => {
       if (!threadId || !msg) return msg;
       const existing = getMessageThreadId(msg, messageType);
       if (existing) return msg;
-      if (!isOwnChatMessage(msg)) return msg;
 
       const type = messageType.toLowerCase();
+      // Support/appeal rows from grouped API often omit thread ids on admin/counterparty messages.
       if (type === "support") return { ...msg, support_request_id: threadId };
       if (type === "appeal") return { ...msg, appeal_id: threadId };
-      if (type === "p2p") return { ...msg, trade_id: threadId };
+      if (type === "p2p" && isOwnChatMessage(msg)) {
+        return { ...msg, trade_id: threadId };
+      }
       return msg;
     },
     [getMessageThreadId, isOwnChatMessage]
@@ -652,7 +598,8 @@ export const Chats: React.FC = () => {
 
       if (
         messageType === "p2p" &&
-        isValidTradeIdForMessages(selectedUser.entity_id) &&
+        isValidThreadId(selectedUser.entity_id) &&
+        !isBucketEntityId(selectedUser.entity_id) &&
         String(selectedUser.entity_id).trim() === activeId
       ) {
         return prepared.filter((msg) => {
@@ -667,17 +614,12 @@ export const Chats: React.FC = () => {
 
       return prepared.filter((msg) => {
         const threadId = getMessageThreadId(msg, messageType);
-        if (!threadId) return isOwnChatMessage(msg);
+        // Grouped API already scopes messages to this conversation entity.
+        if (!threadId) return true;
         return threadId === activeId;
       });
     },
-    [
-      selectedUser,
-      activeThreadId,
-      enrichMessageForActiveThread,
-      getMessageThreadId,
-      isOwnChatMessage,
-    ]
+    [selectedUser, activeThreadId, enrichMessageForActiveThread]
   );
 
   const hasServerEchoForOptimistic = useCallback(
@@ -926,6 +868,20 @@ export const Chats: React.FC = () => {
       setSelectedUser(liveGroupedUsers[0]);
     }
   }, [liveGroupedUsers, selectedUser]);
+
+  // API buckets support/appeal under entity_id "support" | "appeal" — remap selection to real thread id.
+  useEffect(() => {
+    if (!selectedUser || !isBucketEntityId(selectedUser.entity_id)) return;
+    const threadId = resolveThreadIdFromGroup(selectedUser);
+    if (!threadId) return;
+
+    const match = liveGroupedUsers.find((g) => g.entity_id === threadId);
+    const next = match ?? expandBucketGroupedUsers([selectedUser])[0];
+    if (next && next.entity_id !== selectedUser.entity_id) {
+      setSelectedUser(next);
+      setActiveThreadId(threadId);
+    }
+  }, [selectedUser, liveGroupedUsers]);
 
   // Compute displayed messages: server rows first, then only optimistic rows with no server echo.
   const displayedMessages = useMemo(() => {
@@ -1566,6 +1522,9 @@ export const Chats: React.FC = () => {
     if (userGroup.message_type === "support") {
       return "Support";
     }
+    if (userGroup.message_type === "appeal") {
+      return "Appeal Support";
+    }
     return (
       (userGroup as any).sender_name ||
       (userGroup as any).sender_email?.split("@")[0] ||
@@ -1988,7 +1947,7 @@ export const Chats: React.FC = () => {
     if (allMessages.length === 0) {
       return (
         <div className="flex-1 min-h-0 flex items-center justify-center text-sm text-gray-600 dark:text-[#A2A4A9]">
-          Select a conversation on the left to start chatting.
+          No messages in this conversation yet.
         </div>
       );
     }
@@ -2008,8 +1967,10 @@ export const Chats: React.FC = () => {
               (user?.email && msg.sender_email &&
                 msg.sender_email.trim().toLowerCase() === user.email.trim().toLowerCase());
 
-            const displayName = msg.sender_name ||
-              (msg.sender_email ? msg.sender_email.split('@')[0] : "Unknown User");
+            const displayName = resolveGroupedChatSenderDisplayName(
+              msg,
+              selectedUser?.message_type
+            );
 
             const imageItems = coalesceMessageImages(msg);
             const hasRenderableImages = hasRenderableMessageImages(msg);
@@ -2308,7 +2269,11 @@ export const Chats: React.FC = () => {
                   isActive={isActive}
                   unreadCount={unreadCount}
                   onSelect={() => {
-                    setSelectedUser(group);
+                    const latest =
+                      liveGroupedUsers.find(
+                        (g) => g.entity_id === group.entity_id
+                      ) || group;
+                    setSelectedUser(latest);
                     // On mobile/tablet, show chat view when a conversation is selected
                     setShowChatView(true);
                   }}

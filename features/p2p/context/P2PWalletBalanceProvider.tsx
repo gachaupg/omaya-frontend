@@ -4,6 +4,7 @@ import React, { createContext, useContext, type ReactNode } from "react";
 import { useSelector } from "react-redux";
 import { RootState } from "@/store/rootReducer";
 import { useP2PWalletBalanceWebSocket } from "@/features/p2p/hooks/useP2PWalletBalanceWebSocket";
+import type { TransactionSummary } from "@/features/p2p/types";
 
 /**
  * Summary structure coming from WebSocket
@@ -26,6 +27,8 @@ export type P2PWalletBalanceWsState = {
   currency: string;
   connected: boolean;
   summary: P2PSummaryState;
+  /** Live overview stats from wallet-balance WebSocket */
+  overviewSummary: TransactionSummary | null;
 };
 
 /**
@@ -56,6 +59,7 @@ export function P2PWalletBalanceProvider({
     escrow: state.escrow,
     currency: state.currency || "USDT",
     connected: state.connected,
+    overviewSummary: state.overviewSummary,
 
     summary: {
       total_approved_p2p_deposits:

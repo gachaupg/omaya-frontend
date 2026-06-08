@@ -5,9 +5,9 @@ import { FaCheckCircle, FaRegClock, FaTimes } from "react-icons/fa";
 import { ThumbsUp } from "lucide-react";
 import { TiArrowUnsorted } from "react-icons/ti";
 import { MarketTableProps } from "./types";
-import TradePreview, {
-  type PendingAcceptanceSession,
-} from "./sections/tradePreview";
+import TradePreview from "./sections/tradePreview";
+import type { PendingAcceptanceSession } from "@/features/p2p/utils/pendingAcceptanceSession";
+import { navigateToMatchedTradeFromSession } from "@/features/p2p/utils/pendingAcceptanceSession";
 import { PendingAcceptanceWaitModal } from "./sections/PendingAcceptanceWaitModal";
 import { PresenceIndicator } from "./sections/UserStatusBadge";
 import Loader from "../../Common/Loader";
@@ -222,26 +222,12 @@ const MarketTable: React.FC<MarketTableProps> = ({
   // Display all data from parent - no extra filtering (parent already filters)
   const filteredData = data;
 
-  const navigateToMatchedTrade = useCallback((session: PendingAcceptanceSession, tradeId: string) => {
-    const id = String(tradeId || session.tradeId || "").trim();
-    if (!id) return;
-    try {
-      localStorage.setItem("p2p_trade_id", id);
-    } catch {
-      /* no-op */
-    }
-    const searchParams = new URLSearchParams();
-    searchParams.set(
-      "orderData",
-      JSON.stringify({
-        order_type: session.tradeType === "buy" ? "sell" : "buy",
-        commission: session.commission,
-      })
-    );
-    window.location.assign(
-      `/p2p/${encodeURIComponent(id)}/matched/?${searchParams.toString()}`
-    );
-  }, []);
+  const navigateToMatchedTrade = useCallback(
+    (session: PendingAcceptanceSession, tradeId: string) => {
+      navigateToMatchedTradeFromSession(session, tradeId);
+    },
+    []
+  );
 
   // Reset selection when data changes — keep wait modal alive while owner acceptance is pending
   const dataIds = data.map((r) => r?.id).join(",");

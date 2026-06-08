@@ -3,6 +3,7 @@ import {
   dedupeTradeMessages,
   isBlankMediaShell,
   isTempMessageId,
+  mergeChatMessageRow,
   normalizeTradeMessageForDedupe,
   tradeMessagesAreDuplicates,
 } from "@/features/p2p/utils/tradeMessageDedupe";
@@ -14,6 +15,7 @@ export interface TradeMessage {
   sender: number | string;
   sender_name: string;
   sender_username?: string;
+  sender_photo?: string | null;
   message: string;
   images: any[];
   audios?: any[];
@@ -85,24 +87,7 @@ const messageSlice = createSlice({
           byId.set(id, msg);
           continue;
         }
-        byId.set(id, {
-          ...prev,
-          ...msg,
-          message:
-            String(msg.message ?? "").trim() !== ""
-              ? msg.message
-              : prev.message,
-          images:
-            Array.isArray(msg.images) && msg.images.length > 0
-              ? msg.images
-              : prev.images || [],
-          audios:
-            Array.isArray(msg.audios) && msg.audios.length > 0
-              ? msg.audios
-              : (prev as any).audios || [],
-          audio_url: msg.audio_url || (prev as any).audio_url,
-          audio: msg.audio || (prev as any).audio,
-        } as TradeMessage);
+        byId.set(id, mergeChatMessageRow(prev, msg));
       }
 
       state.messages[tradeId] = dedupeTradeMessages(
@@ -141,26 +126,10 @@ const messageSlice = createSlice({
       if (existingIndex === -1) {
         state.messages[tradeId].push(message);
       } else {
-        const current = state.messages[tradeId][existingIndex] as any;
-        const incoming = message as any;
-        state.messages[tradeId][existingIndex] = {
-          ...current,
-          ...incoming,
-          message:
-            (incoming.message != null && String(incoming.message).trim() !== "")
-              ? incoming.message
-              : current.message,
-          images:
-            Array.isArray(incoming.images) && incoming.images.length > 0
-              ? incoming.images
-              : current.images || [],
-          audios:
-            Array.isArray(incoming.audios) && incoming.audios.length > 0
-              ? incoming.audios
-              : current.audios || [],
-          audio_url: incoming.audio_url || current.audio_url,
-          audio: incoming.audio || current.audio,
-        } as any;
+        state.messages[tradeId][existingIndex] = mergeChatMessageRow(
+          state.messages[tradeId][existingIndex],
+          message
+        );
       }
 
       state.messages[tradeId] = dedupeTradeMessages(state.messages[tradeId]);
@@ -184,7 +153,7 @@ const messageSlice = createSlice({
       if (idx === -1) {
         withoutTemp.push(message);
       } else {
-        withoutTemp[idx] = { ...withoutTemp[idx], ...message };
+        withoutTemp[idx] = mergeChatMessageRow(withoutTemp[idx], message);
       }
       state.messages[tradeId] = dedupeTradeMessages(withoutTemp);
     },

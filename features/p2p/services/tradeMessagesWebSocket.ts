@@ -9,6 +9,7 @@ export interface TradeMessage {
   sender: number | string;
   sender_name: string;
   sender_username?: string;
+  sender_photo?: string | null;
   message: string;
   images: any[];
   audios?: any[];

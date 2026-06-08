@@ -1,4 +1,7 @@
-import React from "react";
+"use client";
+
+import React, { useCallback, useState } from "react";
+import { createPortal } from "react-dom";
 import { FaUserCircle } from "react-icons/fa";
 import { useRouter } from "next/navigation";
 import { useSelector } from "react-redux";
@@ -9,6 +12,17 @@ import {
   getMatchedTradeNotificationProfileImage,
   getMatchedTradeNotificationStatus,
 } from "@/features/p2p/utils/matchedTradeNotifications";
+import {
+  isPendingAcceptanceStatus,
+  parseTradeTimestampMs,
+  recordPendingAcceptanceStartedAt,
+} from "@/features/p2p/utils/tradeWsAcceptanceGate";
+import { PendingAcceptanceWaitModal } from "@/features/p2p/components/ui/market/sections/PendingAcceptanceWaitModal";
+import {
+  buildPendingAcceptanceSessionFromNotificationTrade,
+  navigateToMatchedTradeFromSession,
+  type PendingAcceptanceSession,
+} from "@/features/p2p/utils/pendingAcceptanceSession";
 
 const getOrderType = (order_type: string) => {
   if (order_type === "buy") {
@@ -28,11 +42,29 @@ interface ProcessingNotificationsProps {
 const ProcessingNotifications: React.FC<ProcessingNotificationsProps> = ({ matchedTrades }) => {
   const router = useRouter();
   const { user } = useSelector((state: RootState) => state.auth);
+  const [pendingAcceptance, setPendingAcceptance] =
+    useState<PendingAcceptanceSession | null>(null);
   const pendingResults = filterPendingMatchedTradeNotifications(
     matchedTrades?.results || []
   );
 
+  const navigateToMatchedTrade = useCallback(
+    (session: PendingAcceptanceSession, tradeId: string) => {
+      setPendingAcceptance(null);
+      navigateToMatchedTradeFromSession(session, tradeId);
+    },
+    []
+  );
+
   const handleViewOrder = (trade: any) => {
+    const tradeId = String(trade?.id ?? "");
+    if (isPendingAcceptanceStatus(String(trade?.status ?? "")) && tradeId) {
+      recordPendingAcceptanceStartedAt(
+        tradeId,
+        parseTradeTimestampMs(trade?.timestamp) ?? Date.now()
+      );
+    }
+
     // Store the full order in local storage
     try {
       const fullOrderData = {
@@ -64,9 +96,30 @@ const ProcessingNotifications: React.FC<ProcessingNotificationsProps> = ({ match
       console.error("Error storing order in localStorage:", error);
     }
 
+    const isOwner = trade.owner === user?.email;
+
+    if (
+      !isOwner &&
+      isPendingAcceptanceStatus(String(trade?.status ?? ""))
+    ) {
+      const session = buildPendingAcceptanceSessionFromNotificationTrade(
+        trade,
+        user?.email
+      );
+      if (session) {
+        try {
+          localStorage.setItem("p2p_trade_id", tradeId);
+        } catch {
+          /* no-op */
+        }
+        setPendingAcceptance(session);
+        return;
+      }
+    }
+
     const status = getMatchedTradeNotificationStatus(trade, user?.email || "");
     if (status.text === `Pending ${trade.order_type === "sell" ? "Buy" : "Sell"} Trade`) {
-      if (trade.owner === user?.email) {
+      if (isOwner) {
         router.push(
           `/p2p/${trade.id}/matched?order_type=${
             trade.order_type === "sell" ? "sell" : "buy"
@@ -246,6 +299,25 @@ const ProcessingNotifications: React.FC<ProcessingNotificationsProps> = ({ match
             </div>
           );
         })}
+
+      {typeof document !== "undefined" &&
+        pendingAcceptance &&
+        createPortal(
+          <PendingAcceptanceWaitModal
+            open
+            tradeId={pendingAcceptance.tradeId}
+            advertiserOrderId={pendingAcceptance.advertiserOrderId}
+            advertiserName={pendingAcceptance.advertiserName}
+            advertiserPhoto={pendingAcceptance.advertiserPhoto}
+            advertiserInitials={pendingAcceptance.advertiserInitials}
+            isOnline={pendingAcceptance.isOnline}
+            onNavigateToMatched={(id) =>
+              navigateToMatchedTrade(pendingAcceptance, id)
+            }
+            onClose={() => setPendingAcceptance(null)}
+          />,
+          document.body
+        )}
     </div>
   );
 };
