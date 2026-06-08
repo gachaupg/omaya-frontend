@@ -34,6 +34,18 @@ export function filterPendingMatchedTradeNotifications<
   return trades.filter(isPendingMatchedTradeNotification);
 }
 
+/** Newest first; tie-break by id so list order stays stable across WS/HTTP updates. */
+export function sortMatchedTradeNotificationsNewestFirst<
+  T extends { id?: string | number | null; timestamp?: string | null },
+>(trades: T[]): T[] {
+  return [...trades].sort((a, b) => {
+    const timeA = new Date(String(a.timestamp || 0)).getTime();
+    const timeB = new Date(String(b.timestamp || 0)).getTime();
+    if (timeB !== timeA) return timeB - timeA;
+    return String(b.id ?? "").localeCompare(String(a.id ?? ""));
+  });
+}
+
 export type MatchedTradeNotificationStatus = {
   text: string;
   color: string;

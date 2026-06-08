@@ -83,9 +83,9 @@ const Notifications = () => {
 
   // Matched-trades WebSocket + polling live in dashboard layout (MatchedTradesWebSocketProvider).
   useEffect(() => {
-    if (!isAuthenticated) return;
+    if (!isAuthenticated || hasLoaded) return;
     dispatch(fetchLatestMatchedTradesPage());
-  }, [dispatch, isAuthenticated]);
+  }, [dispatch, isAuthenticated, hasLoaded]);
 
   const handlePageChange = (page: number) => {
     dispatch(fetchMatchedTrades(page));
@@ -207,8 +207,9 @@ const Notifications = () => {
   }
 
   const hasNotifications = pendingNotifications.length > 0;
+  const showEmptyState = hasLoaded && !hasNotifications && !refreshing;
 
-  if (hasLoaded && !hasNotifications)
+  if (showEmptyState)
     return (
       <div className="w-full px-2">
         <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 sm:gap-4 mb-4 sm:mb-6">

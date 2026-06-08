@@ -7,11 +7,11 @@ import { useRouter } from "next/navigation";
 import { useSelector } from "react-redux";
 import { RootState } from "@/store/rootReducer";
 import {
-  filterPendingMatchedTradeNotifications,
   getMatchedTradeNotificationDisplayName,
   getMatchedTradeNotificationProfileImage,
   getMatchedTradeNotificationStatus,
 } from "@/features/p2p/utils/matchedTradeNotifications";
+import { selectPendingMatchedTradeNotifications } from "@/features/p2p/selectors";
 import {
   isPendingAcceptanceStatus,
   parseTradeTimestampMs,
@@ -35,18 +35,15 @@ const getOrderType = (order_type: string) => {
 const truncate = (str: string, n: number) =>
   str.length > n ? str.slice(0, n - 3) + "..." : str;
 
-interface ProcessingNotificationsProps {
-  matchedTrades: any;
-}
-
-const ProcessingNotifications: React.FC<ProcessingNotificationsProps> = ({ matchedTrades }) => {
+const ProcessingNotifications: React.FC = () => {
   const router = useRouter();
   const { user } = useSelector((state: RootState) => state.auth);
+  const { refreshing, hasLoaded } = useSelector(
+    (state: RootState) => state.matchedTrades
+  );
+  const pendingResults = useSelector(selectPendingMatchedTradeNotifications);
   const [pendingAcceptance, setPendingAcceptance] =
     useState<PendingAcceptanceSession | null>(null);
-  const pendingResults = filterPendingMatchedTradeNotifications(
-    matchedTrades?.results || []
-  );
 
   const navigateToMatchedTrade = useCallback(
     (session: PendingAcceptanceSession, tradeId: string) => {
@@ -154,8 +151,13 @@ const ProcessingNotifications: React.FC<ProcessingNotificationsProps> = ({ match
   };
 
   const hasNotifications = pendingResults.length > 0;
+  const showEmptyState = hasLoaded && !hasNotifications && !refreshing;
 
-  if (!hasNotifications) {
+  if (!showEmptyState && !hasNotifications) {
+    return null;
+  }
+
+  if (showEmptyState) {
     return (
       <div className="dark:bg-[#23232B] bg-white rounded-xl p-0 text-center shadow-lg border dark:border-[#35353E] border-gray-200">
         <div className="flex flex-col items-center justify-center min-h-[400px]">
@@ -199,13 +201,7 @@ const ProcessingNotifications: React.FC<ProcessingNotificationsProps> = ({ match
 
   return (
     <div className="w-full">
-      {[...pendingResults]
-        .sort((a: any, b: any) => {
-          const timeA = new Date(a.timestamp || 0).getTime();
-          const timeB = new Date(b.timestamp || 0).getTime();
-          return timeB - timeA;
-        })
-        .map((trade: any) => {
+      {pendingResults.map((trade: any) => {
           const orderType = getOrderType(trade.order_type);
           const status = getMatchedTradeNotificationStatus(
             trade,
@@ -298,7 +294,7 @@ const ProcessingNotifications: React.FC<ProcessingNotificationsProps> = ({ match
               </div>
             </div>
           );
-        })}
+      })}
 
       {typeof document !== "undefined" &&
         pendingAcceptance &&

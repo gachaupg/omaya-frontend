@@ -36,17 +36,12 @@ import { useMarketTradeStatusWsHandler } from "@/features/p2p/hooks/useMarketTra
 import { useBackgroundAwareCountdown } from "@/features/p2p/hooks/useBackgroundAwareCountdown";
 import { getSellAdOwnerCounterpartyBuyerName } from "@/features/p2p/utils/matchedTradeNotifications";
 import {
-  buildPendingAcceptanceBannerText,
   canSellerConfirmReceipt,
-  clearPendingAcceptanceStartedAt,
   getEffectiveConfirmFlags,
   getEffectiveTradeStatus,
-  getPendingAcceptanceSecondsLeft,
   isPendingAcceptanceStatus,
-  resolvePendingAcceptanceStartedAt,
   type WsTradeSnapshot,
 } from "@/features/p2p/utils/tradeWsAcceptanceGate";
-import { PendingAcceptanceBanner } from "./PendingAcceptanceBanner";
 
 import { logger } from "@/lib/utils/logger";
 
@@ -85,10 +80,6 @@ const FinalSell: React.FC<FinalSellProps> = ({ orderData }) => {
     can_confirm_payment?: boolean;
   }>({ rawStatus: "" });
   const wsSnapshotRef = useRef(wsTradeSnapshot);
-  const [pendingAcceptanceStartedAt, setPendingAcceptanceStartedAt] = useState<
-    number | null
-  >(null);
-  const [, setPendingAcceptanceTick] = useState(0);
   const { user, isAuthenticated } = useSelector(
     (state: RootState) => state.auth
   );
@@ -113,26 +104,6 @@ const FinalSell: React.FC<FinalSellProps> = ({ orderData }) => {
       const sellerSnap = mapSellerWsSnapshot(snap);
       setWsTradeSnapshot(sellerSnap);
       wsSnapshotRef.current = sellerSnap;
-    },
-    onPendingAcceptance: (active) => {
-      if (active) {
-        setPendingAcceptanceStartedAt((prev) => {
-          if (prev != null) return prev;
-          let storedOrder: { id?: unknown; timestamp?: unknown } | null = null;
-          try {
-            const raw = localStorage.getItem("new_order");
-            if (raw) storedOrder = JSON.parse(raw);
-          } catch {
-            /* no-op */
-          }
-          return resolvePendingAcceptanceStartedAt(confirmOrder?.id, {
-            storedOrder,
-          });
-        });
-      } else {
-        clearPendingAcceptanceStartedAt(confirmOrder?.id);
-        setPendingAcceptanceStartedAt(null);
-      }
     },
   });
 
@@ -197,20 +168,6 @@ const FinalSell: React.FC<FinalSellProps> = ({ orderData }) => {
     if (!confirmOrder?.id) return;
     const st = String(confirmOrder.status || "");
     if (isPendingAcceptanceStatus(st)) {
-      let storedOrder: { id?: unknown; timestamp?: unknown } | null = null;
-      try {
-        const raw = localStorage.getItem("new_order");
-        if (raw) storedOrder = JSON.parse(raw);
-      } catch {
-        /* no-op */
-      }
-      setPendingAcceptanceStartedAt((prev) =>
-        prev ??
-        resolvePendingAcceptanceStartedAt(confirmOrder.id, {
-          tradeTimestamp: confirmOrder.timestamp,
-          storedOrder,
-        })
-      );
       setWsTradeSnapshot((prev) => ({
         rawStatus: "pending_acceptance",
         can_confirm_receipt:
@@ -247,12 +204,6 @@ const FinalSell: React.FC<FinalSellProps> = ({ orderData }) => {
       };
     }
   }, [confirmOrder?.id, confirmOrder?.status, confirmOrder?.can_confirm_receipt, confirmOrder?.can_confirm_payment]);
-
-  useEffect(() => {
-    if (pendingAcceptanceStartedAt == null) return;
-    const id = window.setInterval(() => setPendingAcceptanceTick((t) => t + 1), 1000);
-    return () => window.clearInterval(id);
-  }, [pendingAcceptanceStartedAt]);
 
   // Keep WS snapshot aligned when REST reaches a terminal phase (avoids stale "matched" from WS)
   useEffect(() => {
@@ -504,13 +455,6 @@ const FinalSell: React.FC<FinalSellProps> = ({ orderData }) => {
     }
   };
 
-  const pendingAcceptanceBannerText = inPendingAcceptanceSeller
-    ? buildPendingAcceptanceBannerText(
-        "owner",
-        getPendingAcceptanceSecondsLeft(pendingAcceptanceStartedAt)
-      )
-    : null;
-
   logger.debug("p2p", "Confirm order:", confirmOrder);
   return (
     <div className="min-[900px]:mt-20">
@@ -526,9 +470,6 @@ const FinalSell: React.FC<FinalSellProps> = ({ orderData }) => {
       <div className="grid grid-cols-1 mt-6 sm:mt-10 min-[900px]:grid-cols-3 gap-4 sm:gap-6 p-3 sm:p-4 min-[900px]:p-6 min-h-screen bg-[#EEF1F4] dark:bg-[var(--bg-color)]">
         {/* Left: Timeline/Steps */}
         <div className="min-[900px]:col-span-2 flex flex-col gap-4">
-          {pendingAcceptanceBannerText && (
-            <PendingAcceptanceBanner text={pendingAcceptanceBannerText} />
-          )}
           {/* Title row with Chat button (small screens) */}
           <div className="flex items-center justify-between mb-2 min-[900px]:hidden">
             <p className="text-gray-900 dark:text-white text-[13px] font-medium">

@@ -5,6 +5,7 @@ import {
   filterPendingMatchedTradeNotifications,
   isPendingMatchedTradeNotification,
   isTerminalMatchedTradeNotificationStatus,
+  sortMatchedTradeNotificationsNewestFirst,
 } from "../utils/matchedTradeNotifications";
 import {
   fetchLatestMatchedTradesPage as fetchLatestMatchedTradesPageApi,
@@ -32,25 +33,24 @@ const initialState: MatchedTradesState = {
   totalPages: 1,
 };
 
-function withFilteredResults(
+function sortTradesNewestFirst(trades: MatchedTrade[]): MatchedTrade[] {
+  return sortMatchedTradeNotificationsNewestFirst(trades);
+}
+
+/** Merge HTTP page rows into existing pending list (avoids wipe on poll/refresh). */
+function mergeHttpPageIntoState(
+  state: MatchedTradesState,
   payload: MatchedTradesResponse
 ): MatchedTradesResponse {
-  const results = filterPendingMatchedTradeNotifications(
+  const merged = mergePendingTrades(
+    state.data?.results || [],
     payload.results || []
   );
   return {
     ...payload,
-    results,
-    count: results.length,
+    results: merged,
+    count: merged.length,
   };
-}
-
-function sortTradesNewestFirst(trades: MatchedTrade[]): MatchedTrade[] {
-  return [...trades].sort((a, b) => {
-    const timeA = new Date(String(a.timestamp || 0)).getTime();
-    const timeB = new Date(String(b.timestamp || 0)).getTime();
-    return timeB - timeA;
-  });
 }
 
 function mergePendingTrades(
@@ -75,13 +75,6 @@ function mergePendingTrades(
   return sortTradesNewestFirst(Array.from(byId.values()));
 }
 
-/** Full WS/HTTP list: pending rows only (excludes completed/cancelled). */
-function replacePendingTradesFromSnapshot(trades: MatchedTrade[]): MatchedTrade[] {
-  return sortTradesNewestFirst(
-    filterPendingMatchedTradeNotifications(trades)
-  );
-}
-
 function ensureMatchedTradesData(state: MatchedTradesState): MatchedTradesResponse {
   if (!state.data) {
     state.data = { results: [], count: 0, next: null, previous: null };
@@ -100,12 +93,9 @@ function syncPendingNotificationCount(state: MatchedTradesState) {
 
 function applyTradeListToState(
   state: MatchedTradesState,
-  trades: MatchedTrade[],
-  options?: { replace?: boolean }
+  trades: MatchedTrade[]
 ) {
-  const results = options?.replace
-    ? replacePendingTradesFromSnapshot(trades)
-    : mergePendingTrades(state.data?.results || [], trades);
+  const results = mergePendingTrades(state.data?.results || [], trades);
 
   state.data = {
     ...(state.data ?? { next: null, previous: null, count: 0 }),
@@ -140,7 +130,7 @@ function upsertMatchedTradeFromWSReducer(
   if (index !== -1) {
     data.results[index] = trade;
   } else {
-    data.results = sortTradesNewestFirst([trade, ...data.results]);
+    data.results = sortTradesNewestFirst([...data.results, trade]);
   }
   syncPendingNotificationCount(state);
 }
@@ -190,9 +180,7 @@ const matchedTradesSlice = createSlice({
     updateMatchedTradesFromWS: (state, action) => {
       const trades: MatchedTrade[] =
         action.payload.trades || action.payload.results || [];
-      applyTradeListToState(state, trades, {
-        replace: action.payload.replace === true,
-      });
+      applyTradeListToState(state, trades);
     },
     /** Single trade from matched-trades WS `trade_update` (+1 / update / -1 when terminal). */
     upsertMatchedTradeFromWS: upsertMatchedTradeFromWSReducer,
@@ -238,7 +226,7 @@ const matchedTradesSlice = createSlice({
       state.hasLoaded = true;
       state.activePage = page;
       if (totalPages != null) state.totalPages = totalPages;
-      state.data = withFilteredResults(payload);
+      state.data = mergeHttpPageIntoState(state, payload);
     };
 
     builder
