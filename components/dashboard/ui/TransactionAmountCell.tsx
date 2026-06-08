@@ -2,21 +2,28 @@
 
 import React from "react";
 import type { AllTransactionItem } from "@/features/transactions/api";
-import { getDashboardTransactionAmounts } from "@/lib/utils/dashboardTransactionAmounts";
+import {
+  getDashboardTransactionAmounts,
+  type DashboardTransactionAmountOptions,
+} from "@/lib/utils/dashboardTransactionAmounts";
 
 type TransactionAmountCellProps = {
   tx: AllTransactionItem;
   variant: "asset" | "usd";
   /** Deposit-style green vs withdrawal red (exchange asset column). */
   amountTone?: "positive" | "negative" | "neutral";
+  transactionUsdValues?: DashboardTransactionAmountOptions["transactionUsdValues"];
 };
 
 export function TransactionAmountCell({
   tx,
   variant,
   amountTone = "neutral",
+  transactionUsdValues,
 }: TransactionAmountCellProps) {
-  const { assetAmount, usdValue } = getDashboardTransactionAmounts(tx);
+  const { assetAmount, usdValue } = getDashboardTransactionAmounts(tx, {
+    transactionUsdValues,
+  });
   const value = variant === "asset" ? assetAmount : usdValue;
 
   if (!value) {

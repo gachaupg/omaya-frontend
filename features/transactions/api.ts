@@ -15,6 +15,8 @@ export interface AllTransactionItem {
   status: string;
   commission: string;
   net_amount: string;
+  /** Unit price in USD (P2P / exchange) when provided by API */
+  price?: string | null;
   created_at: string;
   updated_at: string;
   deposit_address: string | null;
