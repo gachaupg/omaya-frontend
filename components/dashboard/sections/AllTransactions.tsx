@@ -23,6 +23,7 @@ import { getMyTransactions as getMyP2PTransactions } from "@/features/p2p/api";
 import { TransactionFromToCell } from "@/components/dashboard/ui/TransactionFromToCell";
 import { TransactionStatusCell } from "@/components/dashboard/ui/TransactionStatusCell";
 import { TransactionAmountCell } from "@/components/dashboard/ui/TransactionAmountCell";
+import { useDashboardTransactionUsdValues } from "@/features/transactions/hooks/useDashboardTransactionUsdValues";
 import {
   isPendingAddressDashboardStatus,
   shouldOmitExchangeWithoutDepositOrWithdrawal,
@@ -302,6 +303,8 @@ const AllTransactions = ({
         currentPage * itemsPerPage
       )
     : filteredResults;
+
+  const transactionUsdValues = useDashboardTransactionUsdValues(results);
 
   const buildP2PFingerprint = (input: {
     kind?: string;
@@ -699,10 +702,15 @@ const AllTransactions = ({
             amountTone={
               isExchange ? (isDeposit ? "positive" : "negative") : "neutral"
             }
+            transactionUsdValues={transactionUsdValues}
           />
         </td>
         <td className="px-3 sm:px-4 lg:px-6 py-4 border-b border-gray-200 dark:border-[#35353E] align-middle whitespace-nowrap">
-          <TransactionAmountCell tx={tx} variant="usd" />
+          <TransactionAmountCell
+            tx={tx}
+            variant="usd"
+            transactionUsdValues={transactionUsdValues}
+          />
         </td>
         <td
           className="px-3 sm:px-4 lg:px-6 py-4 border-b border-gray-200 dark:border-[#35353E] align-middle"
@@ -835,13 +843,18 @@ const AllTransactions = ({
               amountTone={
                 isExchange ? (isDeposit ? "positive" : "negative") : "neutral"
               }
+              transactionUsdValues={transactionUsdValues}
             />
           </div>
           <div>
             <div className="text-xs text-gray-500 dark:text-[#A0A3BC] mb-1">
               {t("transactions.usdValue", "USD value")}
             </div>
-            <TransactionAmountCell tx={tx} variant="usd" />
+            <TransactionAmountCell
+              tx={tx}
+              variant="usd"
+              transactionUsdValues={transactionUsdValues}
+            />
           </div>
         </div>
         <div className="pt-2" onClick={(e) => e.stopPropagation()}>

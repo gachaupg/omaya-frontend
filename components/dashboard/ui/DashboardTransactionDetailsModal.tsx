@@ -16,6 +16,7 @@ import {
   isUsdOrMoneyXTransaction,
 } from "@/components/dashboard/ui/UsdFlagIcon";
 import { getDashboardTransactionAmounts } from "@/lib/utils/dashboardTransactionAmounts";
+import { useDashboardTransactionUsdValues } from "@/features/transactions/hooks/useDashboardTransactionUsdValues";
 import {
   downloadDashboardTransactionPdf,
   shareDashboardTransaction,
@@ -94,6 +95,9 @@ export function DashboardTransactionDetailsModal({
   const { t } = useDashboardI18n();
   const [pdfLoading, setPdfLoading] = useState(false);
   const [shareLoading, setShareLoading] = useState(false);
+  const transactionUsdValues = useDashboardTransactionUsdValues(
+    detail?.tx ? [detail.tx] : []
+  );
 
   useEffect(() => {
     if (!open) return;
@@ -116,7 +120,9 @@ export function DashboardTransactionDetailsModal({
   const headerLogo = resolveDashboardTransactionAssetImage(tx);
 
   const whenLabel = formatDashboardTransactionWhen(tx.created_at);
-  const amountDisplay = getDashboardTransactionAmounts(tx);
+  const amountDisplay = getDashboardTransactionAmounts(tx, {
+    transactionUsdValues,
+  });
   const transactionId = String(
     tx.referral_withdrawal_id || tx.withdrawal_id || tx.id || ""
   ).trim();

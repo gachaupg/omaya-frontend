@@ -15,6 +15,17 @@ const FIAT_TICKERS = new Set([
   "FDUSD",
 ]);
 
+/** Stablecoins sent/received as the on-chain leg of an exchange (not bank payout). */
+const STABLECOIN_TICKERS = new Set([
+  "USDT",
+  "USDC",
+  "BUSD",
+  "DAI",
+  "TUSD",
+  "USDP",
+  "FDUSD",
+]);
+
 const PAYMENT_NAME_PATTERN =
   /\b(bank|mobile|money|wallet|salaam|equity|hormuud|evc|zaad|premier|cooperative|transfer)\b/i;
 
@@ -26,6 +37,9 @@ export const isFiatTicker = (symbol: string): boolean => {
   if (FIAT_TICKERS.has(s)) return true;
   return s.includes("USD");
 };
+
+export const isStablecoinTicker = (symbol: string): boolean =>
+  STABLECOIN_TICKERS.has(normalize(symbol).toUpperCase());
 
 /** Read provider fields that may be a string or `{ name, provider, ... }` from the API. */
 export function resolveProviderDisplay(value: unknown): string {
@@ -70,6 +84,25 @@ export function parseExchangeTicker(value: unknown): string {
   return token;
 }
 
+/** Parse API asset slugs such as `usdt_bsc_0x55d398` → `USDT`. */
+export function parseExchangeAssetSlug(value: unknown): string {
+  const raw = normalize(value);
+  if (!raw || isLikelyPaymentProviderName(raw)) return "";
+
+  const fromTicker = parseExchangeTicker(raw);
+  if (fromTicker) return fromTicker;
+
+  const head = raw.split(/[_\-\s(/]+/)[0]?.trim().toUpperCase() ?? "";
+  if (head.length >= 2 && head.length <= 12 && /^[A-Z0-9]+$/.test(head)) {
+    return head;
+  }
+  return "";
+}
+
+function parseFieldTicker(value: unknown): string {
+  return parseExchangeTicker(value) || parseExchangeAssetSlug(value);
+}
+
 /** Crypto the client sent (deposit) or receives (withdrawal). */
 export function getExchangeCryptoTicker(tx: AllTransactionItem): string {
   const sub = normalizeExchangeSubType(tx.sub_type);
@@ -77,23 +110,9 @@ export function getExchangeCryptoTicker(tx: AllTransactionItem): string {
   const isWithdrawal = sub === "withdrawal";
 
   const ordered = isDeposit
-    ? [
-        tx.currency,
-        tx.asset,
-        tx.from_currency,
-        tx.from_asset,
-        tx.to_currency,
-        tx.to_asset,
-      ]
+    ? [tx.currency, tx.asset, tx.from_currency, tx.from_asset]
     : isWithdrawal
-      ? [
-          tx.from_asset,
-          tx.from_currency,
-          tx.currency,
-          tx.asset,
-          tx.to_currency,
-          tx.to_asset,
-        ]
+      ? [tx.to_asset, tx.to_currency, tx.currency, tx.asset, tx.from_asset]
       : [
           tx.currency,
           tx.asset,
@@ -104,8 +123,11 @@ export function getExchangeCryptoTicker(tx: AllTransactionItem): string {
         ];
 
   for (const c of ordered) {
-    const t = parseExchangeTicker(c);
-    if (t && !isFiatTicker(t)) return t;
+    if (isLikelyPaymentProviderName(c)) continue;
+    const t = parseFieldTicker(c);
+    if (!t) continue;
+    if (isStablecoinTicker(t)) return t;
+    if (!isFiatTicker(t)) return t;
   }
   return "";
 }
@@ -123,7 +145,7 @@ export function getExchangeFromAssetTicker(tx: AllTransactionItem): string {
   if (fiat) return fiat;
 
   for (const c of [tx.from_asset, tx.from_currency, tx.currency, tx.asset]) {
-    const t = parseExchangeTicker(c);
+    const t = parseFieldTicker(c);
     if (t) return t;
   }
   return "";
@@ -142,7 +164,7 @@ export function getExchangeToAssetTicker(tx: AllTransactionItem): string {
   if (fiat) return fiat;
 
   for (const c of [tx.to_asset, tx.to_currency, tx.currency, tx.asset]) {
-    const t = parseExchangeTicker(c);
+    const t = parseFieldTicker(c);
     if (t) return t;
   }
   return "";
@@ -155,15 +177,26 @@ export function getExchangeFiatTicker(tx: AllTransactionItem): string {
   const isWithdrawal = sub === "withdrawal";
 
   const ordered = isDeposit
-    ? [tx.to_currency, tx.to_asset, tx.currency, tx.asset]
+    ? [tx.to_currency, tx.to_asset]
     : isWithdrawal
-      ? [tx.from_currency, tx.from_asset, tx.currency, tx.asset]
-      : [tx.to_currency, tx.to_asset, tx.from_currency, tx.from_asset, tx.currency];
+      ? [tx.from_currency, tx.from_asset]
+      : [
+          tx.to_currency,
+          tx.to_asset,
+          tx.from_currency,
+          tx.from_asset,
+          tx.currency,
+          tx.asset,
+        ];
 
   for (const c of ordered) {
-    const t = parseExchangeTicker(c);
-    if (t && isFiatTicker(t)) return t;
+    if (isLikelyPaymentProviderName(c)) continue;
+    const t = parseFieldTicker(c);
+    if (!t || !isFiatTicker(t) || isStablecoinTicker(t)) continue;
+    return t;
   }
+
+  if (isDeposit && normalize(tx.to_amount)) return "USD";
   return "";
 }
 

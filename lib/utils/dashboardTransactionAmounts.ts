@@ -4,6 +4,7 @@ import {
   getExchangeCryptoTicker,
   getExchangeFiatTicker,
   isFiatTicker,
+  isStablecoinTicker,
 } from "@/lib/utils/exchangeCurrencyDisplay";
 import { formatP2pCryptoLabel } from "@/lib/utils/transactionFromTo";
 
@@ -12,6 +13,11 @@ export type DashboardTransactionAmountDisplay = {
   assetAmount: string | null;
   /** Fiat payout, e.g. "$25.50 USD" */
   usdValue: string | null;
+};
+
+export type DashboardTransactionAmountOptions = {
+  /** USDT equivalent per transaction id (from commission-lookup; 1 USDT ≈ $1 USD). */
+  transactionUsdValues?: Record<string, number>;
 };
 
 const parseAmount = (value: string | number | undefined | null): number | null => {
@@ -84,7 +90,92 @@ function pickUsdAmount(
   return null;
 }
 
-function exchangeAmounts(tx: AllTransactionItem): DashboardTransactionAmountDisplay {
+const isUsdPeggedSymbol = (symbol: string): boolean =>
+  isUsdtSymbol(symbol) ||
+  isUsdSymbol(symbol) ||
+  isStablecoinTicker(normalizeSymbol(symbol));
+
+/** Convert a non-USDT crypto qty to USD using API price or the USD/USDT leg. */
+function resolveCryptoUsdAmount(
+  cryptoAmount: number,
+  cryptoSymbol: string,
+  tx: AllTransactionItem,
+  context?: { isDeposit?: boolean; isWithdrawal?: boolean },
+  options?: DashboardTransactionAmountOptions
+): number | null {
+  if (isUsdPeggedSymbol(cryptoSymbol)) {
+    return cryptoAmount;
+  }
+
+  const txUsdtEquivalent = options?.transactionUsdValues?.[tx.id];
+  if (txUsdtEquivalent != null && txUsdtEquivalent > 0) {
+    return txUsdtEquivalent;
+  }
+
+  const unitPrice = parseAmount(tx.price);
+  if (unitPrice != null && unitPrice > 0) {
+    return cryptoAmount * unitPrice;
+  }
+
+  const toAmount = parseAmount(tx.to_amount);
+  const fromAmount = parseAmount(tx.amount);
+  const toSym = normalizeSymbol(tx.to_asset || tx.to_currency);
+  const fromSym = normalizeSymbol(tx.from_asset || tx.from_currency);
+
+  if (context?.isDeposit && isUsdPeggedSymbol(toSym) && toAmount != null) {
+    return toAmount;
+  }
+  if (context?.isWithdrawal && isUsdPeggedSymbol(fromSym) && fromAmount != null) {
+    return fromAmount;
+  }
+
+  if (isUsdPeggedSymbol(toSym) && toAmount != null) {
+    return toAmount;
+  }
+  if (isUsdPeggedSymbol(fromSym) && fromAmount != null) {
+    return fromAmount;
+  }
+
+  return null;
+}
+
+function cryptoWithUsdColumn(
+  cryptoAmount: number,
+  cryptoSymbol: string,
+  tx: AllTransactionItem,
+  context?: { isDeposit?: boolean; isWithdrawal?: boolean },
+  options?: DashboardTransactionAmountOptions
+): DashboardTransactionAmountDisplay {
+  if (isUsdtSymbol(cryptoSymbol)) {
+    return fiatDualColumn(cryptoAmount, "USDT");
+  }
+  if (isUsdSymbol(cryptoSymbol)) {
+    return fiatDualColumn(cryptoAmount, "USD");
+  }
+  if (isStablecoinTicker(cryptoSymbol)) {
+    return {
+      assetAmount: formatTokenAmount(cryptoAmount, cryptoSymbol),
+      usdValue: formatDashboardUsdValue(cryptoAmount),
+    };
+  }
+
+  const usd = resolveCryptoUsdAmount(
+    cryptoAmount,
+    cryptoSymbol,
+    tx,
+    context,
+    options
+  );
+  return {
+    assetAmount: formatTokenAmount(cryptoAmount, cryptoSymbol),
+    usdValue: usd != null ? formatDashboardUsdValue(usd) : null,
+  };
+}
+
+function exchangeAmounts(
+  tx: AllTransactionItem,
+  options?: DashboardTransactionAmountOptions
+): DashboardTransactionAmountDisplay {
   const subType = normalizeExchangeSubType(tx.sub_type);
   const isDeposit = subType === "deposit";
   const isWithdrawal = subType === "withdrawal";
@@ -110,41 +201,50 @@ function exchangeAmounts(tx: AllTransactionItem): DashboardTransactionAmountDisp
     if (fiatSymbol === "USDT") {
       const row = pickFiatDisplayAmount(
         "USDT",
-        isDeposit ? toAmount : amount,
-        toAmount,
-        netAmount
+        isDeposit ? amount : toAmount,
+        netAmount,
+        toAmount
       );
       if (row) return row;
     }
     if (fiatSymbol === "USD") {
       const row = pickFiatDisplayAmount(
         "USD",
-        isDeposit ? toAmount : amount,
-        toAmount,
-        netAmount
+        isDeposit ? amount : toAmount,
+        netAmount,
+        toAmount
       );
       if (row) return row;
     }
   }
 
+  if (cryptoSymbol && cryptoAmount != null) {
+    return cryptoWithUsdColumn(
+      cryptoAmount,
+      cryptoSymbol,
+      tx,
+      { isDeposit, isWithdrawal },
+      options
+    );
+  }
+
   const usdAmount = pickUsdAmount(
-    netAmount,
-    fiatSymbol === "USDT" ? (isDeposit ? toAmount : amount) : null,
-    fiatSymbol === "USDT" ? toAmount : null,
-    fiatSymbol === "USD" ? (isDeposit ? toAmount : amount) : null,
-    fiatSymbol === "USD" ? toAmount : null
+    isDeposit ? toAmount : null,
+    fiatSymbol === "USD" && isWithdrawal ? amount : null,
+    fiatSymbol === "USD" && isWithdrawal ? toAmount : null,
+    fiatSymbol === "USD" && !isDeposit ? netAmount : null
   );
 
   return {
-    assetAmount:
-      cryptoSymbol && cryptoAmount != null
-        ? formatTokenAmount(cryptoAmount, cryptoSymbol)
-        : null,
+    assetAmount: null,
     usdValue: usdAmount != null ? formatDashboardUsdValue(usdAmount) : null,
   };
 }
 
-function swapAmounts(tx: AllTransactionItem): DashboardTransactionAmountDisplay {
+function swapAmounts(
+  tx: AllTransactionItem,
+  options?: DashboardTransactionAmountOptions
+): DashboardTransactionAmountDisplay {
   const fromSym = normalizeSymbol(
     tx.from_asset || tx.from_currency || tx.currency || tx.asset
   );
@@ -177,11 +277,11 @@ function swapAmounts(tx: AllTransactionItem): DashboardTransactionAmountDisplay 
     if (row) return row;
   }
 
-  let assetAmount: string | null = null;
   if (fromSym && !isFiatLikeSymbol(fromSym) && amount != null) {
-    assetAmount = formatTokenAmount(amount, fromSym);
-  } else if (toSym && !isFiatLikeSymbol(toSym) && toAmount != null) {
-    assetAmount = formatTokenAmount(toAmount, toSym);
+    return cryptoWithUsdColumn(amount, fromSym, tx, undefined, options);
+  }
+  if (toSym && !isFiatLikeSymbol(toSym) && toAmount != null) {
+    return cryptoWithUsdColumn(toAmount, toSym, tx, undefined, options);
   }
 
   const usdAmount = pickUsdAmount(
@@ -199,14 +299,15 @@ function swapAmounts(tx: AllTransactionItem): DashboardTransactionAmountDisplay 
   );
 
   return {
-    assetAmount,
+    assetAmount: null,
     usdValue: usdAmount != null ? formatDashboardUsdValue(usdAmount) : null,
   };
 }
 
 function simpleTokenAmounts(
   tx: AllTransactionItem,
-  symbolOverride?: string
+  symbolOverride?: string,
+  options?: DashboardTransactionAmountOptions
 ): DashboardTransactionAmountDisplay {
   const symbol = normalizeSymbol(
     symbolOverride ||
@@ -222,54 +323,55 @@ function simpleTokenAmounts(
   if (isUsdtSymbol(symbol) || isUsdSymbol(symbol)) {
     const row = pickFiatDisplayAmount(
       symbol,
-      netAmount,
       amount,
+      netAmount,
       toAmount,
       isUsdtSymbol(tx.to_currency) || isUsdSymbol(tx.to_currency) ? toAmount : null
     );
     if (row) return row;
   }
 
-  const usd = pickUsdAmount(
-    netAmount,
-    isFiatLikeSymbol(symbol) && !isUsdtSymbol(symbol) && !isUsdSymbol(symbol)
-      ? amount
-      : null,
-    isFiatLikeSymbol(tx.to_currency) &&
-      !isUsdtSymbol(tx.to_currency) &&
-      !isUsdSymbol(tx.to_currency)
-      ? toAmount
-      : null
-  );
-
   if (
     !symbol ||
     (isFiatLikeSymbol(symbol) && !isUsdtSymbol(symbol) && !isUsdSymbol(symbol))
   ) {
+    const usd = pickUsdAmount(
+      netAmount,
+      isFiatLikeSymbol(symbol) && !isUsdtSymbol(symbol) && !isUsdSymbol(symbol)
+        ? amount
+        : null,
+      isFiatLikeSymbol(tx.to_currency) &&
+        !isUsdtSymbol(tx.to_currency) &&
+        !isUsdSymbol(tx.to_currency)
+        ? toAmount
+        : null
+    );
     return {
       assetAmount: null,
       usdValue: usd != null ? formatDashboardUsdValue(usd) : null,
     };
   }
 
-  return {
-    assetAmount: amount != null ? formatTokenAmount(amount, symbol) : null,
-    usdValue: usd != null ? formatDashboardUsdValue(usd) : null,
-  };
+  if (amount != null) {
+    return cryptoWithUsdColumn(amount, symbol, tx, undefined, options);
+  }
+
+  return { assetAmount: null, usdValue: null };
 }
 
 /** Resolve asset + USD lines for dashboard Recent Transactions (all tabs). */
 export function getDashboardTransactionAmounts(
-  tx: AllTransactionItem
+  tx: AllTransactionItem,
+  options?: DashboardTransactionAmountOptions
 ): DashboardTransactionAmountDisplay {
   if (tx.type === "exchange") {
-    return exchangeAmounts(tx);
+    return exchangeAmounts(tx, options);
   }
   if (tx.type === "swap") {
-    return swapAmounts(tx);
+    return swapAmounts(tx, options);
   }
   if (tx.type === "moneyx") {
-    return simpleTokenAmounts(tx, "USD");
+    return simpleTokenAmounts(tx, "USD", options);
   }
   if (tx.type === "p2p") {
     const cryptoLabel = formatP2pCryptoLabel({
@@ -280,8 +382,8 @@ export function getDashboardTransactionAmounts(
       to_network: tx.to_network,
     });
     const sym = normalizeSymbol(cryptoLabel.split("(")[0].trim() || tx.currency);
-    return simpleTokenAmounts(tx, sym || undefined);
+    return simpleTokenAmounts(tx, sym || undefined, options);
   }
 
-  return simpleTokenAmounts(tx);
+  return simpleTokenAmounts(tx, undefined, options);
 }
