@@ -54,7 +54,7 @@ const FeedbackTable: React.FC<FeedbackTableProps> = ({ data, loading }) => {
                 <th className="px-4 py-3 font-medium">Coin</th>
                 <th className="px-4 py-3 font-medium">Type</th>
                 <th className="px-4 py-3 font-medium">Transaction ID</th>
-                <th className="px-4 py-3 font-medium">User name</th>
+                <th className="px-4 py-3 font-medium">Email</th>
                 <th className="px-4 py-3 font-medium">Amount</th>
                 <th className="px-4 py-3 font-medium">Payment</th>
                 <th className="px-4 py-3 font-medium">Date</th>
@@ -109,7 +109,7 @@ const FeedbackTable: React.FC<FeedbackTableProps> = ({ data, loading }) => {
               <th className="px-4 py-3 font-medium">Coin</th>
               <th className="px-4 py-3 font-medium">Type</th>
               <th className="px-4 py-3 font-medium">Transaction ID</th>
-              <th className="px-4 py-3 font-medium">User name</th>
+              <th className="px-4 py-3 font-medium">Email</th>
               <th className="px-4 py-3 font-medium">Amount</th>
               <th className="px-4 py-3 font-medium">Payment</th>
               <th className="px-4 py-3 font-medium">Date</th>
@@ -148,7 +148,7 @@ const FeedbackTable: React.FC<FeedbackTableProps> = ({ data, loading }) => {
                   <td className="px-4 py-2 dark:text-white text-gray-900">
                     {item.transaction_id}
                   </td>
-                  {/* User name */}
+                  {/* Email */}
                   <td className="px-4 py-2 dark:text-white text-gray-900">
                     {maskEmail(item.reviewer_email)}
                   </td>
@@ -273,7 +273,7 @@ const FeedbackTable: React.FC<FeedbackTableProps> = ({ data, loading }) => {
                 </span>
               </div>
               <div className="flex items-center justify-between">
-                <span className="text-xs text-gray-500 dark:text-[#8C8CA1]">User</span>
+                <span className="text-xs text-gray-500 dark:text-[#8C8CA1]">Email</span>
                 <span className="text-xs dark:text-white text-gray-900">
                   {maskEmail(item.reviewer_email)}
                 </span>

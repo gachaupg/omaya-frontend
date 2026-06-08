@@ -1,36 +1,53 @@
 "use client";
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef, useMemo } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import { useRouter } from "next/navigation";
 import { AppDispatch } from "@/store";
 import { RootState } from "@/store/rootReducer";
 import { 
-  closeKYCModal, 
+  closeKYCModal,
+  openKYCModal,
   logout,
   sendPhoneOTP,
   verifyPhoneOTP,
   checkKYCStatus as checkAuthKYCStatus
 } from "@/features/auth/slices/authSlice";
-import { checkKYCStatus, verifyKYCStatus } from "@/features/kyc/slices/kycSlice";
+import { verifyKYCStatus } from "@/features/kyc/slices/kycSlice";
 import { showToast } from "@/lib/utils/toast";
 import { FaceDetectionKYC } from "@/features/kyc/components";
 import {
   isPassportDocumentType,
   requiresDocumentBackSide,
 } from "@/features/kyc/utils/kycDocumentUtils";
+import {
+  getKycApprovedOverlayDismissed,
+  isKycApproved,
+  isKycRejected,
+  isKycWaiting,
+  kycStatusSnapshotKey,
+  parseKycStatusSnapshotKey,
+  resolveKycStatusOverlay,
+  resolveKycUserId,
+  setKycApprovedOverlayDismissed,
+} from "@/features/kyc/utils/kycStatusOverlay";
 
 const KYCVerificationModal: React.FC = () => {
   const dispatch = useDispatch<AppDispatch>();
   const router = useRouter();
-  const { kycModalOpen, loading, user, profile: userProfile, tokens, isAuthenticated } = useSelector((state: RootState) => state.auth);
+  const { kycModalOpen, loading, user, profile: userProfile, tokens, isAuthenticated, kycStatus } = useSelector((state: RootState) => state.auth);
+  const prevKycStatusKeyRef = useRef<string | null>(null);
+  const kycUserId = resolveKycUserId(user);
   const registeredCountry = userProfile?.country?.trim() || "";
   const [storedCountry, setStoredCountry] = useState<string>("");
   const defaultCountry = registeredCountry || storedCountry || "Somalia";
   
   const [error, setError] = useState<string | null>(null);
   const [showManualVerification, setShowManualVerification] = useState(false);
-  const [showSuccessModal, setShowSuccessModal] = useState(false);
-  const [showPendingModal, setShowPendingModal] = useState(false);
+  const [showSubmittedModal, setShowSubmittedModal] = useState(false);
+  const [submittedOverlayDismissed, setSubmittedOverlayDismissed] = useState(false);
+  const [approvedOverlayDismissed, setApprovedOverlayDismissed] = useState(false);
+  const [showApprovedCelebration, setShowApprovedCelebration] = useState(false);
+  const [isResubmittingKyc, setIsResubmittingKyc] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   
   // Phone verification state
@@ -41,7 +58,6 @@ const KYCVerificationModal: React.FC = () => {
   const [otpSuccessMessage, setOtpSuccessMessage] = useState<string | null>(null);
   const [phoneVerified, setPhoneVerified] = useState(false);
   const [resendTimer, setResendTimer] = useState(0);
-  const [kycStatus, setKycStatus] = useState<any>(null);
   const [verificationData, setVerificationData] = useState({
     country: defaultCountry,
     documentType: '',
@@ -54,6 +70,7 @@ const KYCVerificationModal: React.FC = () => {
   const [documentFrontImage, setDocumentFrontImage] = useState<File | null>(null);
   const [documentBackImage, setDocumentBackImage] = useState<File | null>(null);
   const [faceImage, setFaceImage] = useState<File | null>(null);
+  const [faceVideo, setFaceVideo] = useState<File | null>(null);
   const [faceDetectionData, setFaceDetectionData] = useState<any>(null);
   const [documentFrontPreview, setDocumentFrontPreview] = useState<string | null>(null);
   const [documentBackPreview, setDocumentBackPreview] = useState<string | null>(null);
@@ -142,6 +159,13 @@ const KYCVerificationModal: React.FC = () => {
     }
   }, [user?.email, user?.phone_number, registeredCountry, storedCountry]);
 
+  // Restore approved-celebration dismiss flag across reloads / re-login (per user)
+  useEffect(() => {
+    if (kycUserId == null) return;
+    setApprovedOverlayDismissed(getKycApprovedOverlayDismissed(kycUserId));
+    setShowApprovedCelebration(false);
+  }, [kycUserId]);
+
   // Close KYC modal when user is not logged in (e.g. on market page for guests)
   useEffect(() => {
     if (kycModalOpen && (!isAuthenticated || !user)) {
@@ -149,14 +173,20 @@ const KYCVerificationModal: React.FC = () => {
     }
   }, [kycModalOpen, isAuthenticated, user, dispatch]);
 
+  // Reset status snapshot on logout so the next login is not treated as a live status transition.
+  useEffect(() => {
+    if (!isAuthenticated || !user) {
+      prevKycStatusKeyRef.current = null;
+      setShowApprovedCelebration(false);
+    }
+  }, [isAuthenticated, user]);
+
   // Check KYC status for OTP verification; close modal if user is already verified
   useEffect(() => {
     if (kycModalOpen && user) {
       dispatch(checkAuthKYCStatus()).then((result: any) => {
         if (result.payload) {
           const status = result.payload as any;
-          setKycStatus(status);
-          // If API says user is already verified, close modal and do not show it
           if (status?.is_verified === true || status?.status === "approved") {
             localStorage.removeItem("kyc_verification_status");
             dispatch(closeKYCModal());
@@ -169,6 +199,106 @@ const KYCVerificationModal: React.FC = () => {
       });
     }
   }, [kycModalOpen, user, dispatch]);
+
+  const kycStatusOverlay = useMemo(() => {
+    if (isResubmittingKyc) return null;
+    const approvedDismissed =
+      approvedOverlayDismissed ||
+      (kycUserId != null && getKycApprovedOverlayDismissed(kycUserId));
+    return resolveKycStatusOverlay(kycStatus, {
+      showSubmittedPrompt: showSubmittedModal,
+      dismissedSubmitted: submittedOverlayDismissed,
+      dismissedApproved: approvedDismissed,
+      showApprovedCelebration,
+    });
+  }, [
+    kycStatus,
+    showSubmittedModal,
+    submittedOverlayDismissed,
+    approvedOverlayDismissed,
+    showApprovedCelebration,
+    isResubmittingKyc,
+    kycUserId,
+  ]);
+
+  const kycStatusMessage =
+    String(kycStatus?.message || "").trim() ||
+    kycSubmitMessage ||
+    "Your verification documents were submitted successfully. Our team is reviewing them now.";
+
+  const kycRejectionMessage =
+    String(kycStatus?.rejection_reason || kycStatus?.reason || "").trim() ||
+    String(kycStatus?.message || "").trim() ||
+    rejectionMessage;
+
+  // Toast + side effects when live KYC status changes (WebSocket / REST)
+  useEffect(() => {
+    if (!kycStatus || !isAuthenticated) return;
+
+    const statusKey = kycStatusSnapshotKey(kycStatus);
+    const previousKey = prevKycStatusKeyRef.current;
+    if (previousKey === statusKey) return;
+
+    const isInitialSync = previousKey === null;
+    prevKycStatusKeyRef.current = statusKey;
+    if (isInitialSync) return;
+
+    if (kycStatus.email_verified === true) {
+      setPhoneVerified(true);
+    }
+
+    if (isKycApproved(kycStatus)) {
+      localStorage.removeItem("kyc_verification_status");
+      setShowSubmittedModal(false);
+      setShowManualVerification(false);
+      dispatch(closeKYCModal());
+
+      const previousSnapshot = parseKycStatusSnapshotKey(previousKey);
+      const wasApprovedBefore = isKycApproved(previousSnapshot);
+      const alreadyDismissed =
+        kycUserId != null && getKycApprovedOverlayDismissed(kycUserId);
+
+      // Only celebrate on a fresh approval — never on login/WS resync with existing approval.
+      if (!wasApprovedBefore && !alreadyDismissed) {
+        setSubmittedOverlayDismissed(false);
+        setShowApprovedCelebration(true);
+        showToast.success(
+          "Account Verified",
+          "Your account verification is complete"
+        );
+      }
+      return;
+    }
+
+    if (isKycRejected(kycStatus)) {
+      if (isResubmittingKyc) return;
+      setIsResubmittingKyc(false);
+      setSubmittedOverlayDismissed(false);
+      setShowSubmittedModal(false);
+      setShowManualVerification(false);
+      setShowApprovedCelebration(false);
+      if (kycUserId != null) {
+        setKycApprovedOverlayDismissed(kycUserId, false);
+        setApprovedOverlayDismissed(false);
+      }
+      dispatch(openKYCModal());
+      showToast.error("KYC Rejected", kycRejectionMessage);
+      return;
+    }
+
+    if (isKycWaiting(kycStatus)) {
+      setSubmittedOverlayDismissed(false);
+      setShowSubmittedModal(true);
+      setShowManualVerification(false);
+    }
+  }, [
+    kycStatus,
+    isAuthenticated,
+    dispatch,
+    kycRejectionMessage,
+    isResubmittingKyc,
+    kycUserId,
+  ]);
 
   // Resend OTP timer
   useEffect(() => {
@@ -196,7 +326,7 @@ const KYCVerificationModal: React.FC = () => {
           // Check if stored status is for current user and is pending
           if (parsed.user_id === user.user_id && parsed.status === 'pending') {
             // Fetch current KYC status from API
-            dispatch(checkKYCStatus()).then((result: any) => {
+            dispatch(checkAuthKYCStatus()).then((result: any) => {
               const payload = result.payload as any;
               const isVerified = payload?.is_verified;
               const apiStatus = payload?.status;
@@ -210,7 +340,7 @@ const KYCVerificationModal: React.FC = () => {
                 String(apiStatus || "").toLowerCase() === "under review"
               ) {
                 // Documents submitted, under review - show pending modal
-                setShowPendingModal(true);
+                setShowSubmittedModal(true);
               }
               // If status is "pending" (user must complete/submit KYC), show main KYC form, NOT pending modal
             });
@@ -229,6 +359,7 @@ const KYCVerificationModal: React.FC = () => {
     setDocumentFrontImage(null);
     setDocumentBackImage(null);
     setFaceImage(null);
+    setFaceVideo(null);
     setFaceDetectionData(null);
     setDocumentFrontPreview(null);
     setDocumentBackPreview(null);
@@ -284,8 +415,7 @@ const KYCVerificationModal: React.FC = () => {
         showToast.success("Success", "Email verified successfully");
         
         // Refresh KYC status
-        const kycResult = await dispatch(checkAuthKYCStatus()).unwrap();
-        setKycStatus(kycResult);
+        await dispatch(checkAuthKYCStatus()).unwrap();
         
         // Move to next step (document info)
         setCurrentStep(1);
@@ -370,6 +500,12 @@ const KYCVerificationModal: React.FC = () => {
           showToast.error("Please capture your face image before submitting");
           return false;
         }
+        const usedGalleryCapture = faceDetectionData?.captureSource === "gallery";
+        if (!usedGalleryCapture && !(faceVideo instanceof File)) {
+          setError("Please complete the short face verification video recording");
+          showToast.error("Please complete the short face verification video recording");
+          return false;
+        }
         return true;
       default:
         return true;
@@ -378,6 +514,7 @@ const KYCVerificationModal: React.FC = () => {
 
   const handleFaceDetectionComplete = async (data: any) => {
     setFaceDetectionData(data);
+    setFaceVideo(data.capturedVideo instanceof File ? data.capturedVideo : null);
     
     // Convert base64 face image to File object - FaceDetectionKYC sends capturedImage (camera) or manual upload
     const base64Image = data.capturedImage || data.faceImage;
@@ -406,7 +543,14 @@ const KYCVerificationModal: React.FC = () => {
       }
     }
     
-    showToast.success("Face Verified", "Your face has been successfully captured and verified");
+    showToast.success(
+      "Face Verified",
+      data.captureSource === "gallery"
+        ? "Your selfie photo was verified successfully"
+        : data.capturedVideo
+        ? "Your face photo and verification video were captured successfully"
+        : "Your face has been successfully captured and verified"
+    );
   };
 
   const handleDocumentFrontUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
@@ -566,6 +710,7 @@ const KYCVerificationModal: React.FC = () => {
           faceImagePreview: facePreview || faceDetectionData.faceImage,
         },
         kyc_images: kycImages.length > 0 ? kycImages : undefined,
+        face_video: faceVideo instanceof File ? faceVideo : undefined,
         country: verificationData.country,
         document_type: verificationData.documentType,
         document_number: verificationData.documentNumber,
@@ -581,11 +726,13 @@ const KYCVerificationModal: React.FC = () => {
       // Always show success modal and close form
       localStorage.removeItem('kyc_verification_status');
       setShowManualVerification(false);
-      setShowSuccessModal(true);
-      showToast.success("Verification Submitted", "Your verification has been submitted successfully");
-      
+      setIsResubmittingKyc(false);
+      setSubmittedOverlayDismissed(false);
+      setShowSubmittedModal(true);
+      dispatch(closeKYCModal());
+
       // Refetch KYC status after successful verification
-      dispatch(checkKYCStatus());
+      dispatch(checkAuthKYCStatus(true));
     } catch (error) {
       console.error("KYC Verification Error:", error);
       const raw =
@@ -606,84 +753,70 @@ const KYCVerificationModal: React.FC = () => {
     }
   };
 
-  const handleFinalSubmit = async () => {
-    setIsSubmitting(true);
-    try {
-      // Refetch KYC status to get the latest verification state
-      const kycResult = await dispatch(checkKYCStatus());
-      
-      if ((kycResult.payload as any)?.is_verified) {
-        // Clear localStorage when verified
-        localStorage.removeItem('kyc_verification_status');
-      showToast.success("Account Verified", "Your account verification is complete");
-      setShowSuccessModal(false);
-        setShowPendingModal(false);
-      dispatch(closeKYCModal());
-      } else {
-        showToast.info("Verification Pending", "Your verification is still under review");
-      }
-    } catch (error) {
-      setError("An error occurred");
-      showToast.error("Verification Error", "An error occurred");
-    } finally {
-      setIsSubmitting(false);
-    }
+  const reloadAppOnDashboard = () => {
+    setShowSubmittedModal(false);
+    dispatch(closeKYCModal());
+    window.location.href = "/dashboard";
   };
 
-  const handleClosePendingModal = async () => {
-    setIsSubmitting(true);
-    try {
-      // Query KYC status to check if verified
-      const kycResult = await dispatch(checkKYCStatus());
-      
-      if ((kycResult.payload as any)?.is_verified) {
-        // Verified! Clear localStorage and close
-        localStorage.removeItem('kyc_verification_status');
-        showToast.success("Account Verified", "Your account verification is complete");
-        setShowPendingModal(false);
-        dispatch(closeKYCModal());
-      } else {
-        // Still pending, just close modal but keep localStorage
-        showToast.info("Verification Pending", "Your verification is still under review");
-        setShowPendingModal(false);
-        dispatch(closeKYCModal());
-      }
-    } catch (error) {
-      console.error("Error checking KYC status:", error);
-      setShowPendingModal(false);
-      dispatch(closeKYCModal());
-    } finally {
-      setIsSubmitting(false);
+  const dismissApprovedOverlay = () => {
+    if (kycUserId != null) {
+      setKycApprovedOverlayDismissed(kycUserId, true);
     }
+    setApprovedOverlayDismissed(true);
+    setShowApprovedCelebration(false);
+  };
+
+  const handleContinueToDashboard = () => {
+    if (isKycApproved(kycStatus)) {
+      localStorage.removeItem("kyc_verification_status");
+      dismissApprovedOverlay();
+    } else {
+      setSubmittedOverlayDismissed(true);
+    }
+    reloadAppOnDashboard();
+  };
+
+  const handleCloseApprovedOverlay = () => {
+    if (isKycApproved(kycStatus)) {
+      dismissApprovedOverlay();
+    } else {
+      setSubmittedOverlayDismissed(true);
+    }
+    setShowSubmittedModal(false);
+    dispatch(closeKYCModal());
+  };
+
+  const handleResubmitAfterRejection = async () => {
+    setIsResubmittingKyc(true);
+    setSubmittedOverlayDismissed(true);
+    setShowSubmittedModal(false);
+    await handleManualVerificationClick();
+    dispatch(openKYCModal());
   };
 
   const handleCheckStatusClick = async () => {
     setIsSubmitting(true);
     try {
-      const kycResult = await dispatch(checkKYCStatus());
-      const latestStatus = (kycResult.payload as any) || null;
-      if (latestStatus) {
-        setKycStatus(latestStatus);
-      }
+      const kycResult = await dispatch(checkAuthKYCStatus(true));
+      const latestStatus = (kycResult.payload as any) || kycStatus;
       if (latestStatus?.is_verified) {
         localStorage.removeItem("kyc_verification_status");
-        showToast.success(
-          "Account Verified",
-          "Your account verification is complete"
-        );
-        setShowPendingModal(false);
+        const alreadyDismissed =
+          kycUserId != null && getKycApprovedOverlayDismissed(kycUserId);
+        if (!alreadyDismissed) {
+          setShowApprovedCelebration(true);
+          showToast.success(
+            "Account Verified",
+            "Your account verification is complete"
+          );
+        }
+        setShowSubmittedModal(false);
+        setSubmittedOverlayDismissed(true);
         dispatch(closeKYCModal());
       } else {
-        // Still under review – show pending modal
-        setShowPendingModal(true);
-        showToast.info(
-          "Verification Pending",
-          !latestStatus?.message ||
-            String(latestStatus.message).trim().toLowerCase() === "unknown status." ||
-            String(latestStatus.message).trim().toLowerCase() === "unknown status"
-            ? "Your KYC is under review. Please wait for admin approval."
-            : String(latestStatus.message)
-        );
+        setSubmittedOverlayDismissed(false);
+        setShowSubmittedModal(true);
       }
     } catch (error) {
       console.error("Error checking KYC status:", error);
@@ -699,13 +832,15 @@ const KYCVerificationModal: React.FC = () => {
   const handleClose = () => {
     dispatch(closeKYCModal());
     setShowManualVerification(false);
+    setIsResubmittingKyc(false);
     setError(null);
-    setShowSuccessModal(false);
-    setShowPendingModal(false);
+    setShowSubmittedModal(false);
+    setSubmittedOverlayDismissed(false);
     setCurrentStep(phoneVerified ? 1 : 0);
     setDocumentFrontImage(null);
     setDocumentBackImage(null);
     setFaceImage(null);
+    setFaceVideo(null);
     setFaceDetectionData(null);
     setDocumentFrontPreview(null);
     setDocumentBackPreview(null);
@@ -724,10 +859,17 @@ const KYCVerificationModal: React.FC = () => {
     });
   };
 
-  if (!kycModalOpen) return null;
-
   // Do not show KYC modal when user is not logged in
   if (!isAuthenticated || !user) return null;
+
+  const showStatusOverlay = kycStatusOverlay !== null;
+  const showManualForm =
+    kycModalOpen && showManualVerification && !kycStatusOverlay;
+  const showMainKycPrompt =
+    kycModalOpen && !showManualVerification && !kycStatusOverlay;
+  const hasVisibleContent =
+    showStatusOverlay || showManualForm || showMainKycPrompt;
+  if (!hasVisibleContent) return null;
 
   const stepperItems = [
     { key: "email", label: "Email" },
@@ -741,104 +883,115 @@ const KYCVerificationModal: React.FC = () => {
   return (
     <div className="fixed inset-0 flex items-center justify-center z-50 bg-black/50">
       
-      {/* Success Modal - Submitted Successfully */}
-      {showSuccessModal && (
+      {/* Single status overlay — content follows live kycStatus (WebSocket / REST) */}
+      {kycStatusOverlay && (
         <div className="bg-white dark:bg-[#1A1A1A] rounded-lg p-6 max-w-md w-full mx-4 border border-[#35353E] shadow-xl">
           <div className="flex flex-col items-center justify-center text-center">
-            <div className="flex items-center gap-2 mb-4">
-              <svg className="w-8 h-8 text-[#1D8751]" fill="currentColor" viewBox="0 0 20 20">
-                <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
-              </svg>
-              <h2 className="text-xl font-semibold text-gray-900 dark:text-white">Verification Submitted!</h2>
-            </div>
-            <p className="text-gray-600 dark:text-gray-300 text-sm mb-6">
-              {kycSubmitMessage ??
-                "Your verification has been submitted successfully. You can now continue using the platform."}
-            </p>
-            
-            <button
-              onClick={() => {
-                setShowSuccessModal(false);
-                dispatch(closeKYCModal());
-              }}
-              className="bg-[#1D8751] hover:bg-[#167a47] text-white w-full h-10 rounded-lg transition-colors duration-200 flex items-center justify-center gap-2"
-            >
-              Continue to Dashboard
-            </button>
-          </div>
-              </div>
+            {kycStatusOverlay === "approved" && (
+              <>
+                <div className="w-16 h-16 bg-[#1D8751]/15 rounded-full flex items-center justify-center mb-4">
+                  <svg className="w-8 h-8 text-[#1D8751]" fill="currentColor" viewBox="0 0 20 20">
+                    <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
+                  </svg>
+                </div>
+                <h2 className="text-xl font-semibold text-gray-900 dark:text-white mb-2">
+                  Account Verified!
+                </h2>
+                <p className="text-gray-600 dark:text-gray-300 text-sm mb-6">
+                  {kycStatusMessage ||
+                    "Your KYC has been approved. You now have full access to the platform."}
+                </p>
+                <button
+                  onClick={handleContinueToDashboard}
+                  className="bg-[#1D8751] hover:bg-[#167a47] text-white w-full h-10 rounded-lg transition-colors duration-200"
+                >
+                  Continue to Dashboard
+                </button>
+              </>
             )}
 
-      {/* Pending Verification Modal - Waiting for Admin Review */}
-      {showPendingModal && (
-        <div className="bg-white dark:bg-[#1A1A1A] rounded-lg p-6 max-w-md w-full mx-4 border border-[#35353E] shadow-xl">
-          <div className="flex flex-col items-center justify-center text-center">
-            {/* Animated pending icon */}
-            <div className="relative mb-4">
-              <div className="w-16 h-16 bg-[#F79330]/20 rounded-full flex items-center justify-center">
-                <svg className="w-8 h-8 text-[#F79330] animate-pulse" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
-                </svg>
-              </div>
-            </div>
-            
-            <h2 className="text-xl font-semibold text-gray-900 dark:text-white mb-2">Verification Pending</h2>
-            <p className="text-gray-600 dark:text-gray-300 text-sm mb-4">
-              Your verification documents were submitted successfully. Our team is reviewing them now.
-            </p>
-            <div className="bg-[#1D8751]/10 dark:bg-[#1D8751]/15 border border-[#1D8751]/30 dark:border-[#1D8751]/40 rounded-lg p-4 mb-6 w-full text-left">
-              <p className="text-sm font-semibold text-gray-900 dark:text-white mb-1">Typical processing time</p>
-              <p className="text-sm text-gray-700 dark:text-gray-300">
-                Most reviews are completed within <span className="font-semibold text-[#1D8751]">1–3 business days</span>.
-                During peak periods it may take a little longer. We will email you as soon as there is an update.
-              </p>
-            </div>
-            
-            {/* <div className="bg-gray-100 dark:bg-[#2A2A2A] border border-gray-200 dark:border-[#35353E] rounded-lg p-4 mb-6 w-full">
-              <div className="flex items-start gap-3 text-left">
-                <svg className="w-5 h-5 text-[#1D8751] flex-shrink-0 mt-0.5" fill="currentColor" viewBox="0 0 20 20">
-                  <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z" clipRule="evenodd" />
-                </svg>
-               
-              </div>
-            </div> */}
-            
-            <div className="flex gap-3 w-full">
-              <button
-                onClick={handleClosePendingModal}
-                disabled={isSubmitting}
-                className="flex-1 bg-[#1D8751] hover:bg-[#167a47] text-white h-10 rounded-lg transition-colors duration-200 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
-              >
-                {isSubmitting ? (
-                  <>
-                    <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
-                    <span>Checking Status...</span>
-                  </>
-                ) : (
-                  "OK"
-                )}
-              </button>
-              
-              <button
-                onClick={() => {
-                  dispatch(logout());
-                  handleClose();
-                }}
-                disabled={isSubmitting}
-                className="flex-1 bg-red-500 hover:bg-red-600 text-white h-10 rounded-lg transition-colors duration-200 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
-              >
-                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
-                </svg>
-                Logout
-              </button>
-            </div>
+            {kycStatusOverlay === "rejected" && (
+              <>
+                <div className="w-16 h-16 bg-red-500/15 rounded-full flex items-center justify-center mb-4">
+                  <svg className="w-8 h-8 text-red-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
+                  </svg>
+                </div>
+                <h2 className="text-xl font-semibold text-gray-900 dark:text-white mb-2">
+                  Verification Rejected
+                </h2>
+                <p className="text-gray-600 dark:text-gray-300 text-sm mb-6">
+                  {kycRejectionMessage}
+                </p>
+                <div className="flex gap-3 w-full">
+                  <button
+                    onClick={handleResubmitAfterRejection}
+                    className="flex-1 bg-[#1D8751] hover:bg-[#167a47] text-white h-10 rounded-lg transition-colors duration-200"
+                  >
+                    Resubmit KYC
+                  </button>
+                  <button
+                    onClick={handleCloseApprovedOverlay}
+                    className="flex-1 border border-[#35353E] text-gray-700 dark:text-gray-300 h-10 rounded-lg transition-colors duration-200"
+                  >
+                    Close
+                  </button>
+                </div>
+              </>
+            )}
+
+            {kycStatusOverlay === "submitted" && (
+              <>
+                <div className="w-16 h-16 bg-[#1D8751]/15 rounded-full flex items-center justify-center mb-4">
+                  <svg className="w-8 h-8 text-[#1D8751]" fill="currentColor" viewBox="0 0 20 20">
+                    <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
+                  </svg>
+                </div>
+                <h2 className="text-xl font-semibold text-gray-900 dark:text-white mb-2">
+                  Verification Submitted!
+                </h2>
+                <p className="text-gray-600 dark:text-gray-300 text-sm mb-4">
+                  {kycStatusMessage}
+                </p>
+                <div className="bg-[#1D8751]/10 dark:bg-[#1D8751]/15 border border-[#1D8751]/30 dark:border-[#1D8751]/40 rounded-lg p-4 mb-6 w-full text-left">
+                  <p className="text-sm font-semibold text-gray-900 dark:text-white mb-1">
+                    Typical processing time
+                  </p>
+                  <p className="text-sm text-gray-700 dark:text-gray-300">
+                    Most reviews are completed within{" "}
+                    <span className="font-semibold text-[#1D8751]">1–3 business days</span>. During peak
+                    periods it may take a little longer. We will email you as soon as there is an update.
+                  </p>
+                </div>
+                <div className="flex gap-3 w-full">
+                  <button
+                    onClick={handleCloseApprovedOverlay}
+                    className="flex-1 border border-[#35353E] text-gray-700 dark:text-gray-300 h-10 rounded-lg transition-colors duration-200 hover:bg-gray-100 dark:hover:bg-[#35353E]"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    onClick={() => {
+                      dispatch(logout());
+                      handleClose();
+                    }}
+                    disabled={isSubmitting}
+                    className="flex-1 bg-red-500 hover:bg-red-600 text-white h-10 rounded-lg transition-colors duration-200 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+                  >
+                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
+                    </svg>
+                    Logout
+                  </button>
+                </div>
+              </>
+            )}
           </div>
         </div>
       )}
 
       {/* Step-by-Step Verification Form */}
-      {showManualVerification && !showSuccessModal && !showPendingModal && (
+      {kycModalOpen && showManualVerification && !kycStatusOverlay && (
         <div className="bg-white dark:bg-[var(--card-color)] rounded-[24px] p-0 max-w-5xl w-full mx-4 border border-[#35353E] max-h-[90vh] overflow-y-auto shadow-xl">
           <div className="px-4 sm:px-6 pt-3 sm:pt-4 pb-3 border-b border-[#35353E]">
             <div className="flex justify-between items-center mb-3">
@@ -1189,6 +1342,7 @@ const KYCVerificationModal: React.FC = () => {
                  onVerificationComplete={handleFaceDetectionComplete}
                 onRetake={() => {
                   setFaceImage(null);
+                  setFaceVideo(null);
                   setFacePreview(null);
                   setFaceDetectionData(null);
                 }}
@@ -1203,7 +1357,7 @@ const KYCVerificationModal: React.FC = () => {
                    <div className="flex-1">
                      <p className="font-semibold mb-1 text-sm">Face Verification Complete!</p>
                      <p className="text-xs text-green-500 dark:text-green-300">
-                       Your face has been successfully captured and verified.
+                       Your face photo and short verification video were captured successfully.
                      </p>
                    </div>
                  </div>
@@ -1307,7 +1461,7 @@ const KYCVerificationModal: React.FC = () => {
       )}
 
       {/* Main KYC Modal */}
-      {!showManualVerification && !showSuccessModal && !showPendingModal && (
+      {kycModalOpen && !showManualVerification && !kycStatusOverlay && (
         <div className="bg-white dark:bg-[#1A1A1A] rounded-lg p-6 max-w-md w-full mx-4 border border-[#35353E] shadow-xl">
           <div className="flex justify-between items-center mb-4">
             <h2 className="text-xl font-semibold text-gray-900 dark:text-white">

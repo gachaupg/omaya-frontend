@@ -28,9 +28,14 @@ import {
   normalizeAudioList,
 } from "@/features/p2p/utils/messageMedia";
 import {
-  getTradeCounterpartyPhoto,
-  getTradePartyPhotoByEmail,
-} from "@/features/p2p/utils/matchedTradeNotifications";
+  getCounterpartyEmail,
+  isCurrentUserChatMessage,
+  looksLikeEmail,
+  resolveChatSenderDisplayName,
+  resolveChatSenderPhoto,
+  resolveCounterpartyChatPhoto,
+} from "@/features/p2p/utils/chatMessageDisplay";
+import { getTradePartyPhotoByEmail } from "@/features/p2p/utils/matchedTradeNotifications";
 
 interface MessageImage {
   id: string;
@@ -131,6 +136,15 @@ const ChatBox: React.FC<{
     !!b &&
     String(a).trim().toLowerCase() === String(b).trim().toLowerCase();
 
+  const pickPartyDisplayName = (
+    name: string | undefined,
+    fallbackLabel: string
+  ) => {
+    const trimmed = String(name ?? "").trim();
+    if (trimmed && !looksLikeEmail(trimmed)) return trimmed;
+    return fallbackLabel;
+  };
+
   const tradePhotoContext = React.useMemo(
     () => ({
       buyer,
@@ -143,68 +157,6 @@ const ChatBox: React.FC<{
     [buyer, seller, buyer_photo, seller_photo, owner, orderType]
   );
 
-  // Determine which photo and display name to show for the other person
-  const otherPersonData = React.useMemo(() => {
-    const peerPhoto =
-      getTradeCounterpartyPhoto(currentUserEmail, tradePhotoContext) ||
-      seller_photo ||
-      buyer_photo;
-
-    if (messageType === "support") {
-      return {
-        photo: peerPhoto,
-        displayName: peerName || "Support",
-      };
-    }
-
-    const isCurrentBuyer = emailsEqual(currentUserEmail, buyer);
-    const isCurrentSeller = emailsEqual(currentUserEmail, seller);
-
-    if (isCurrentBuyer) {
-      return {
-        photo: peerPhoto,
-        displayName: peerName || sellerName || seller || "Seller",
-      };
-    }
-    if (isCurrentSeller) {
-      return {
-        photo: peerPhoto,
-        displayName: peerName || buyerName || buyer || "Buyer",
-      };
-    }
-
-    if (peerName) {
-      return {
-        photo: peerPhoto,
-        displayName: peerName,
-      };
-    }
-
-    if (currentUserEmail && owner && emailsEqual(currentUserEmail, owner)) {
-      return {
-        photo: peerPhoto,
-        displayName: buyerName || userName || buyer || "Buyer",
-      };
-    }
-
-    return {
-      photo: peerPhoto,
-      displayName: sellerName || userName || seller || "Seller",
-    };
-  }, [
-    currentUserEmail,
-    tradePhotoContext,
-    seller_photo,
-    buyer_photo,
-    buyer,
-    seller,
-    buyerName,
-    sellerName,
-    userName,
-    messageType,
-    peerName,
-    owner,
-  ]);
   const dispatch = useDispatch();
   const message = useSelector((state: RootState) => state.message.message);
   const [uploadedImages, setUploadedImages] = useState<File[]>([]);
@@ -220,6 +172,80 @@ const ChatBox: React.FC<{
     );
     return dedupeTradeMessages([...scoped], currentUserEmail);
   }, [messagesFromRedux, tradeId, currentUserEmail]);
+
+  const counterpartyEmail = React.useMemo(
+    () => getCounterpartyEmail(currentUserEmail, { buyer, seller }),
+    [currentUserEmail, buyer, seller]
+  );
+
+  const otherPersonData = React.useMemo(() => {
+    const peerPhoto =
+      resolveCounterpartyChatPhoto(
+        sortedMessages,
+        currentUserEmail,
+        tradePhotoContext
+      ) ||
+      getTradePartyPhotoByEmail(counterpartyEmail, tradePhotoContext);
+
+    if (messageType === "support") {
+      return {
+        photo: peerPhoto,
+        displayName: peerName || "Support",
+      };
+    }
+
+    const isCurrentBuyer = emailsEqual(currentUserEmail, buyer);
+    const isCurrentSeller = emailsEqual(currentUserEmail, seller);
+
+    if (isCurrentBuyer) {
+      return {
+        photo: peerPhoto,
+        displayName:
+          pickPartyDisplayName(peerName, "") ||
+          pickPartyDisplayName(sellerName, "Seller"),
+      };
+    }
+    if (isCurrentSeller) {
+      return {
+        photo: peerPhoto,
+        displayName:
+          pickPartyDisplayName(peerName, "") ||
+          pickPartyDisplayName(buyerName, "Buyer"),
+      };
+    }
+
+    if (peerName && !looksLikeEmail(peerName)) {
+      return {
+        photo: peerPhoto,
+        displayName: peerName,
+      };
+    }
+
+    if (currentUserEmail && owner && emailsEqual(currentUserEmail, owner)) {
+      return {
+        photo: peerPhoto,
+        displayName: pickPartyDisplayName(buyerName || userName, "Buyer"),
+      };
+    }
+
+    return {
+      photo: peerPhoto,
+      displayName: pickPartyDisplayName(sellerName || userName, "Seller"),
+    };
+  }, [
+    sortedMessages,
+    currentUserEmail,
+    tradePhotoContext,
+    counterpartyEmail,
+    buyer,
+    seller,
+    buyerName,
+    sellerName,
+    userName,
+    messageType,
+    peerName,
+    owner,
+  ]);
 
   const apiTradeId = React.useMemo(() => {
     if (isValidTradeIdForMessages(tradeId)) return tradeId;
@@ -878,22 +904,25 @@ const ChatBox: React.FC<{
             </p>
           )}
           {sortedMessages.map((msg) => {
-            // Use sender_name (email) to determine if this is the current user's message
-            const isSender = msg.sender_name?.trim() === currentUserEmail?.trim();
+            const isSender = isCurrentUserChatMessage(
+              msg,
+              currentUserEmail,
+              userId
+            );
 
-            // Determine photo and display name for this specific message
-            let messagePhoto = otherPersonData.photo;
+            const displayName = resolveChatSenderDisplayName(msg, {
+              isCurrentUser: isSender,
+              buyerName,
+              sellerName,
+              buyerEmail: buyer,
+              sellerEmail: seller,
+              counterpartyDisplayName: otherPersonData.displayName,
+            });
 
-            // For consistency, always extract username from email (part before @)
-            let displayName = msg.sender_name
-              ? msg.sender_name.split('@')[0]
-              : "Unknown User";
-
-            if (!isSender && msg.sender_name) {
-              messagePhoto =
-                getTradePartyPhotoByEmail(msg.sender_name, tradePhotoContext) ||
-                otherPersonData.photo;
-            }
+            const messagePhoto = resolveChatSenderPhoto(msg, {
+              currentUserEmail,
+              tradePhotoContext,
+            });
 
             const messageImages = getMessageImageList(msg);
 
@@ -926,7 +955,7 @@ const ChatBox: React.FC<{
                 >
                   {/* Show sender username - "You" for own messages, username for their messages */}
                   <div className={`text-xs font-semibold mb-1 ${isSender ? "text-green-100" : "text-[#1D8751] dark:text-[#1D8751]"}`}>
-                    {isSender ? "You" : displayName}
+                    {displayName}
                   </div>
                   {msg.message && msg.message.trim() && <div className="text-xs sm:text-sm break-words mb-2">{msg.message}</div>}
 

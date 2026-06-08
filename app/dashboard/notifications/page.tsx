@@ -1,5 +1,6 @@
 "use client";
-import React, { useEffect, useState } from "react";
+import React, { useCallback, useEffect, useState } from "react";
+import { createPortal } from "react-dom";
 import { Breadcrumb } from "@/components/ui/Breadcrumb";
 import { useSelector, useDispatch } from "react-redux";
 import { RootState, AppDispatch } from "@/store/rootReducer";
@@ -13,13 +14,23 @@ import { respondToP2PTrade } from "@/features/p2p/api";
 import { showToast } from "@/lib/utils/toast";
 import { getMessageFromApiError } from "@/lib/utils/errorHandler";
 import { waitForTradeConfirmStatus } from "@/features/p2p/utils/waitTradeConfirmSocketStatus";
-import { isPendingAcceptanceStatus } from "@/features/p2p/utils/tradeWsAcceptanceGate";
+import {
+  isPendingAcceptanceStatus,
+  parseTradeTimestampMs,
+  recordPendingAcceptanceStartedAt,
+} from "@/features/p2p/utils/tradeWsAcceptanceGate";
 import {
   getMatchedTradeNotificationDisplayName,
   getMatchedTradeNotificationProfileImage,
   getMatchedTradeNotificationStatus,
 } from "@/features/p2p/utils/matchedTradeNotifications";
 import { selectPendingMatchedTradeNotifications } from "@/features/p2p/selectors";
+import { PendingAcceptanceWaitModal } from "@/features/p2p/components/ui/market/sections/PendingAcceptanceWaitModal";
+import {
+  buildPendingAcceptanceSessionFromNotificationTrade,
+  navigateToMatchedTradeFromSession,
+  type PendingAcceptanceSession,
+} from "@/features/p2p/utils/pendingAcceptanceSession";
 
 /** When owner === logged user: show order_type as-is (Buy/Sell). When not owner: show counterparty action (buy ad → Sell, sell ad → Buy). */
 const getOrderType = (order_type: string, isOwner: boolean) => {
@@ -59,6 +70,16 @@ const Notifications = () => {
   const { user, isAuthenticated } = useSelector((state: RootState) => state.auth);
 
   const [respondingTradeId, setRespondingTradeId] = useState<string | null>(null);
+  const [pendingAcceptance, setPendingAcceptance] =
+    useState<PendingAcceptanceSession | null>(null);
+
+  const navigateToMatchedTrade = useCallback(
+    (session: PendingAcceptanceSession, tradeId: string) => {
+      setPendingAcceptance(null);
+      navigateToMatchedTradeFromSession(session, tradeId);
+    },
+    []
+  );
 
   // Matched-trades WebSocket + polling live in dashboard layout (MatchedTradesWebSocketProvider).
   useEffect(() => {
@@ -109,6 +130,13 @@ const Notifications = () => {
       }
     }
 
+    if (isPendingAcceptanceStatus(String(trade?.status ?? ""))) {
+      recordPendingAcceptanceStartedAt(
+        tradeId,
+        parseTradeTimestampMs(trade?.timestamp) ?? Date.now()
+      );
+    }
+
     try {
       const fullOrderData = {
         ...trade,
@@ -143,6 +171,22 @@ const Notifications = () => {
         `/p2p/${trade.id}/matched?order_type=${trade.order_type}&trade=${trade.order_type === "buy" ? "buyer" : "seller"}`
       );
       return;
+    }
+
+    if (isPendingAcceptanceStatus(String(trade?.status ?? ""))) {
+      const session = buildPendingAcceptanceSessionFromNotificationTrade(
+        trade,
+        user?.email
+      );
+      if (session) {
+        try {
+          localStorage.setItem("p2p_trade_id", tradeId);
+        } catch {
+          /* no-op */
+        }
+        setPendingAcceptance(session);
+        return;
+      }
     }
 
     // Not owner: order_type "buy" → navigate to sellform (I am seller); order_type "sell" → navigate to buyform (I am buyer)
@@ -395,6 +439,25 @@ const Notifications = () => {
           </button>
         </div>
       )}
+
+      {typeof document !== "undefined" &&
+        pendingAcceptance &&
+        createPortal(
+          <PendingAcceptanceWaitModal
+            open
+            tradeId={pendingAcceptance.tradeId}
+            advertiserOrderId={pendingAcceptance.advertiserOrderId}
+            advertiserName={pendingAcceptance.advertiserName}
+            advertiserPhoto={pendingAcceptance.advertiserPhoto}
+            advertiserInitials={pendingAcceptance.advertiserInitials}
+            isOnline={pendingAcceptance.isOnline}
+            onNavigateToMatched={(tradeId) =>
+              navigateToMatchedTrade(pendingAcceptance, tradeId)
+            }
+            onClose={() => setPendingAcceptance(null)}
+          />,
+          document.body
+        )}
     </div>
   );
 };

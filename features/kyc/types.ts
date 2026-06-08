@@ -21,6 +21,7 @@ export interface KYCVerificationPayload {
   face_data?: any;
   verification_method?: string;
   kyc_images?: (File | null)[];
+  face_video?: File | null;
   country?: string;
   document_type?: string;
   document_number?: string;

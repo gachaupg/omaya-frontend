@@ -40,6 +40,49 @@ import {
 
 const CROSS_TAB_LOGOUT_FLAG = "__omayaCrossTabLogout";
 const KYC_STATUS_CACHE_TTL_MS = 5 * 60 * 1000;
+
+function applyKycStatusPayload(
+  state: AuthState,
+  incoming: Partial<KYCResponse>
+): void {
+  const merged: KYCResponse = {
+    ...(state.kycStatus || { is_verified: false }),
+    ...incoming,
+  };
+  state.kycStatus = { ...merged, _updatedAt: Date.now() };
+  state.kycStatusCheckedAt = Date.now();
+
+  if (state.user && typeof merged.is_verified === "boolean") {
+    state.user.is_verified = merged.is_verified;
+    if (state.tokens?.access) {
+      storage.setProfile({
+        user: state.user,
+        tokens: state.tokens,
+        profile: state.profile || undefined,
+      });
+    }
+  }
+
+  const status = String(merged.status || "").trim().toLowerCase();
+  const isApproved =
+    merged.is_verified === true ||
+    status === "approved" ||
+    status === "verified";
+
+  if (isApproved) {
+    state.kycModalOpen = false;
+  } else if (merged.is_verified === false && status === "rejected") {
+    state.kycModalOpen = true;
+  }
+
+  if (typeof window !== "undefined") {
+    try {
+      localStorage.setItem("kyc_status", JSON.stringify(merged));
+    } catch {
+      // ignore quota errors
+    }
+  }
+}
 /** Access cookie max-age when "Remember me" is checked (refresh still in localStorage per existing app behavior). */
 const REMEMBER_ME_ACCESS_COOKIE_MAX_AGE_SEC = 30 * 24 * 60 * 60;
 
@@ -59,6 +102,7 @@ const initialState: AuthState = {
   profile: null,
   kycStatusCheckedAt: null,
   kycStatusLoading: false,
+  kycStatus: null,
   kycModalOpen: false,
   twoFAModalOpen: false,
   twoFAEmail: "",
@@ -486,6 +530,7 @@ const authSlice = createSlice({
       state.profile = null;
       state.kycStatusCheckedAt = null;
       state.kycStatusLoading = false;
+      state.kycStatus = null;
       state.kycModalOpen = false;
       state.twoFAModalOpen = false;
       state.twoFAEmail = "";
@@ -500,6 +545,7 @@ const authSlice = createSlice({
         localStorage.removeItem("access_token");
         localStorage.removeItem("refresh_token");
         localStorage.removeItem("user");
+        localStorage.removeItem("kyc_status");
         // Don't clear p2p_terms_accepted on logout - it should persist across sessions
         // Terms acceptance is user-specific and should remain accepted
         clearPersistedDeviceSessionId();
@@ -673,6 +719,9 @@ const authSlice = createSlice({
     closeKYCModal(state) {
       state.kycModalOpen = false;
     },
+    applyKycStatusUpdate(state, action: PayloadAction<Partial<KYCResponse>>) {
+      applyKycStatusPayload(state, action.payload);
+    },
     open2FAModal(
       state,
       action: PayloadAction<{
@@ -782,15 +831,9 @@ const authSlice = createSlice({
       (state, action: PayloadAction<KYCResponse>) => {
         state.loading = false;
         state.kycStatusLoading = false;
-        state.kycStatusCheckedAt = Date.now();
-        if (state.user) {
-          state.user.is_verified = action.payload.is_verified;
-          // Keep modal state aligned with latest backend verification status.
-          if (!action.payload.is_verified) {
-            state.kycModalOpen = true;
-          } else {
-            state.kycModalOpen = false;
-          }
+        applyKycStatusPayload(state, action.payload);
+        if (state.user && !action.payload.is_verified) {
+          state.kycModalOpen = true;
         }
       }
     );
@@ -975,5 +1018,6 @@ export const {
   setCredentials,
   updateUser,
   updateTokens,
+  applyKycStatusUpdate,
 } = authSlice.actions;
 export default authSlice.reducer;

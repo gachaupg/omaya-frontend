@@ -161,6 +161,11 @@ export const verifyKYCStatus = createAsyncThunk<KYCVerificationResponse, KYCVeri
         imageTypes.push("selfie");
       }
 
+      if (payload.face_video instanceof File) {
+        formData.append("face_video", payload.face_video);
+        imageTypes.push("face_video");
+      }
+
       uploadedImages.forEach((file) => {
         formData.append("uploaded_images", file);
       });

@@ -23,6 +23,9 @@ export const API_CONFIG = {
     REFRESH_TOKEN: "/api/token/refresh/",
     PROFILE: "/api/profile/",
     KYC_STATUS: "/api/kyc/status/",
+    /** Live KYC status: `{ type: "kyc_status_update", data: { is_verified, status, message, ... } }` */
+    KYC_STATUS_WS: (token: string) =>
+      `${getWebSocketBaseUrl()}/ws/kyc-status/?token=${encodeURIComponent(token)}`,
     // Legacy KYC verify endpoint (no longer used for manual document submit)
     KYC_VERIFY: "/api/kyc/verify/",
     // New KYC submit endpoint for documents + selfies

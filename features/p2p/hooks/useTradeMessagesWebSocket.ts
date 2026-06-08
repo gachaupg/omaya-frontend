@@ -5,11 +5,11 @@ import {
   setMessages,
   addMessageFromWS,
   clearMessagesForTrade,
+  type TradeMessage,
 } from "../slices/messageSlice";
 import {
   getTradeMessagesWebSocket,
   cleanupTradeMessagesWebSocket,
-  TradeMessage,
 } from "../services/tradeMessagesWebSocket";
 import type { WebSocketMessage } from "../services/tradeMessagesWebSocket";
 import { cookieUtils } from "@/lib/utils/cookieUtils";
@@ -279,6 +279,11 @@ export const useTradeMessagesWebSocket = (options: UseTradeMessagesWebSocketOpti
               candidatePayload.sender_name ??
               candidatePayload.sender_email ??
               String(candidatePayload.sender ?? ""),
+            sender_username: String(candidatePayload.sender_username ?? ""),
+            sender_photo:
+              candidatePayload.sender_photo != null
+                ? String(candidatePayload.sender_photo)
+                : undefined,
             message: String(
               candidatePayload.message ?? candidatePayload.content ?? ""
             ),
@@ -368,6 +373,11 @@ export const useTradeMessagesWebSocket = (options: UseTradeMessagesWebSocketOpti
                   message.data.sender_name ??
                   message.data.sender_email ??
                   String(message.data.sender ?? ""),
+                sender_username: String(message.data.sender_username ?? ""),
+                sender_photo:
+                  message.data.sender_photo != null
+                    ? String(message.data.sender_photo)
+                    : undefined,
                 message: String(
                   message.data.message ?? message.data.content ?? ""
                 ),

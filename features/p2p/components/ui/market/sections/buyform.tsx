@@ -34,12 +34,17 @@ import {
 import {
   PENDING_ACCEPTANCE_AUTO_CANCEL_MS,
   type TradeLifecycleBanner,
+  buildPendingAcceptanceBannerText,
+  clearPendingAcceptanceStartedAt,
   getEffectiveConfirmFlags,
   getEffectiveTradeStatus,
+  getPendingAcceptanceSecondsLeft,
   isPendingAcceptanceStatus,
   formatCountdownSeconds,
   isTransactionCountdownActive,
+  resolvePendingAcceptanceStartedAt,
 } from "@/features/p2p/utils/tradeWsAcceptanceGate";
+import { PendingAcceptanceBanner } from "./PendingAcceptanceBanner";
 
 interface FinalBuyProps {
   orderData?: P2POrder;
@@ -144,8 +149,20 @@ function FinalBuy({ orderData }: FinalBuyProps) {
     },
     onPendingAcceptance: (active) => {
       if (active) {
-        setPendingAcceptanceStartedAt((prev) => prev ?? Date.now());
+        setPendingAcceptanceStartedAt((prev) => {
+          if (prev != null) return prev;
+          const id = confirmOrderIdRef.current;
+          let storedOrder: { id?: unknown; timestamp?: unknown } | null = null;
+          try {
+            const raw = localStorage.getItem("new_order");
+            if (raw) storedOrder = JSON.parse(raw);
+          } catch {
+            /* no-op */
+          }
+          return resolvePendingAcceptanceStartedAt(id, { storedOrder });
+        });
       } else {
+        clearPendingAcceptanceStartedAt(confirmOrderIdRef.current);
         setPendingAcceptanceStartedAt(null);
       }
     },
@@ -266,7 +283,20 @@ function FinalBuy({ orderData }: FinalBuyProps) {
     if (!confirmOrder?.id) return;
     const st = String(confirmOrder.status || "");
     if (isPendingAcceptanceStatus(st)) {
-      setPendingAcceptanceStartedAt((prev) => prev ?? Date.now());
+      let storedOrder: { id?: unknown; timestamp?: unknown } | null = null;
+      try {
+        const raw = localStorage.getItem("new_order");
+        if (raw) storedOrder = JSON.parse(raw);
+      } catch {
+        /* no-op */
+      }
+      setPendingAcceptanceStartedAt((prev) =>
+        prev ??
+        resolvePendingAcceptanceStartedAt(confirmOrder.id, {
+          tradeTimestamp: confirmOrder.timestamp,
+          storedOrder,
+        })
+      );
       setWsTradeSnapshot((prev) => ({
         rawStatus: "pending_acceptance",
         can_confirm_payment: confirmOrder.can_confirm_payment ?? prev.can_confirm_payment,
@@ -508,6 +538,13 @@ function FinalBuy({ orderData }: FinalBuyProps) {
         : tradeLifecycleBanner.message
       : null;
 
+  const pendingAcceptanceBannerText = inPendingAcceptanceBuyer
+    ? buildPendingAcceptanceBannerText(
+        "counterparty",
+        getPendingAcceptanceSecondsLeft(pendingAcceptanceStartedAt)
+      )
+    : null;
+
   // Custom copy handler that shows "Copied" in button
   const handleCopyToClipboard = (value: string | undefined, buttonId: string) => {
     if (!value) return;
@@ -538,6 +575,9 @@ function FinalBuy({ orderData }: FinalBuyProps) {
             <div className="text-red-500 text-[13px] mb-2">
               {singleOrderError}
             </div>
+          )}
+          {pendingAcceptanceBannerText && (
+            <PendingAcceptanceBanner text={pendingAcceptanceBannerText} />
           )}
           {lifecycleBannerText && tradeLifecycleBanner && (
             <div
@@ -968,11 +1008,17 @@ function FinalBuy({ orderData }: FinalBuyProps) {
             }
             owner={confirmOrder?.owner || ""}
             sellerName={
-              singleOrder?.advertiser_first_name && singleOrder?.advertiser_last_name
+              confirmOrder?.seller_full_name?.trim() ||
+              (singleOrder?.advertiser_first_name && singleOrder?.advertiser_last_name
                 ? `${singleOrder.advertiser_first_name} ${singleOrder.advertiser_last_name}`
-                : singleOrder?.advertiser_name || confirmOrder?.advertiser_name || "Seller"
+                : singleOrder?.advertiser_name || confirmOrder?.advertiser_name || "Seller")
             }
-            buyerName={user?.email === confirmOrder?.buyer ? `${user?.first_name || ""} ${user?.last_name || ""}`.trim() || "You" : "Buyer"}
+            buyerName={
+              confirmOrder?.buyer_full_name?.trim() ||
+              (user?.email === confirmOrder?.buyer
+                ? `${user?.first_name || ""} ${user?.last_name || ""}`.trim() || "You"
+                : "Buyer")
+            }
           />
           {/* Advertiser's Terms */}
           <section className="advertiser-terms rounded-lg p-4 bg-white dark:bg-[var(--card-color)]">

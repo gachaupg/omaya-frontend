@@ -8,20 +8,87 @@ export const getTradeMessageText = (msg: unknown): string => {
   return String(m?.message ?? m?.content ?? "").trim();
 };
 
+const senderPhotoByEmail = new Map<string, string>();
+
+export function rememberSenderPhotoByEmail(
+  email: string | null | undefined,
+  photo: string | null | undefined
+): void {
+  const key = normalize(String(email ?? ""));
+  const url = String(photo ?? "").trim();
+  if (key && url) senderPhotoByEmail.set(key, url);
+}
+
+export function getRememberedSenderPhotoByEmail(
+  email: string | null | undefined
+): string | undefined {
+  const key = normalize(String(email ?? ""));
+  return key ? senderPhotoByEmail.get(key) : undefined;
+}
+
+/** Merge API/WS rows without wiping sender profile fields when refresh omits them. */
+export function mergeChatMessageRow(
+  prev: TradeMessage,
+  incoming: TradeMessage
+): TradeMessage {
+  const senderPhoto =
+    incoming.sender_photo != null && String(incoming.sender_photo).trim() !== ""
+      ? String(incoming.sender_photo)
+      : prev.sender_photo ||
+        getRememberedSenderPhotoByEmail(incoming.sender_name) ||
+        getRememberedSenderPhotoByEmail(prev.sender_name);
+
+  const merged: TradeMessage = {
+    ...prev,
+    ...incoming,
+    message:
+      String(incoming.message ?? "").trim() !== ""
+        ? incoming.message
+        : prev.message,
+    images:
+      Array.isArray(incoming.images) && incoming.images.length > 0
+        ? incoming.images
+        : prev.images || [],
+    audios:
+      Array.isArray(incoming.audios) && incoming.audios.length > 0
+        ? (incoming.audios as TradeMessage["audios"])
+        : prev.audios || [],
+    audio_url: incoming.audio_url || prev.audio_url,
+    audio: incoming.audio || prev.audio,
+    sender_username:
+      String(incoming.sender_username ?? "").trim() !== ""
+        ? incoming.sender_username
+        : prev.sender_username,
+    sender_photo: senderPhoto,
+  };
+
+  rememberSenderPhotoByEmail(merged.sender_name, merged.sender_photo);
+  return merged;
+}
+
 export const normalizeTradeMessageForDedupe = (msg: unknown): TradeMessage => {
   const m = msg as Record<string, unknown> | null | undefined;
   const text = getTradeMessageText(msg);
-  return {
+  const senderName = String(m?.sender_name ?? m?.sender_email ?? "");
+  const senderPhotoRaw =
+    m?.sender_photo != null && String(m.sender_photo).trim() !== ""
+      ? String(m.sender_photo)
+      : getRememberedSenderPhotoByEmail(senderName);
+  const normalized: TradeMessage = {
     ...(msg as TradeMessage),
     id: String(m?.id ?? ""),
     sender: (m?.sender_id ?? m?.sender ?? "") as string | number,
-    sender_name: String(m?.sender_name ?? m?.sender_email ?? ""),
+    sender_name: senderName,
+    sender_username: String(m?.sender_username ?? ""),
+    sender_photo: senderPhotoRaw,
     message: text,
     images: (Array.isArray(m?.images) ? m.images : []) as any[],
     audios: (Array.isArray(m?.audios) ? m.audios : []) as any[],
     timestamp: String(m?.timestamp ?? ""),
     seller_photo: String(m?.seller_photo ?? ""),
   };
+  rememberSenderPhotoByEmail(normalized.sender_name, normalized.sender_photo);
+  return normalized;
 };
 
 const extractImageUrl = (img: unknown): string => {

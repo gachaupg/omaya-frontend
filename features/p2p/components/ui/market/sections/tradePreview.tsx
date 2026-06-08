@@ -18,7 +18,10 @@ import { fetchWallets } from "@/features/p2p/slices/walletSlice";
 import { setConfirmOrderSnapshot } from "@/features/p2p/slices/orderSlice";
 import { getTransactionSummary, matchP2POrder } from "@/features/p2p/api";
 import { PresenceIndicator } from "./UserStatusBadge";
-import { isTradeAcceptedFromConfirmOrder } from "@/features/p2p/utils/tradeWsAcceptanceGate";
+import {
+  isTradeAcceptedFromConfirmOrder,
+  recordPendingAcceptanceStartedAt,
+} from "@/features/p2p/utils/tradeWsAcceptanceGate";
 import {
   extractTradeIdFromMatchResponse,
   fetchP2PTradeConfirmOnce,
@@ -42,16 +45,9 @@ import {
 import PaymentMethodsModal from "@/features/p2p/components/ui/p2pdashboard/sections/PaymentMethodsModal";
 import { logger } from "@/lib/logger";
 
-export type PendingAcceptanceSession = {
-  tradeId: string;
-  advertiserOrderId: string;
-  advertiserName: string;
-  advertiserPhoto?: string;
-  advertiserInitials: string;
-  isOnline: boolean;
-  tradeType: "buy" | "sell";
-  commission: string;
-};
+import type { PendingAcceptanceSession } from "@/features/p2p/utils/pendingAcceptanceSession";
+
+export type { PendingAcceptanceSession };
 
 interface TradePreviewProps {
   advertiserData: MarketRow;
@@ -699,6 +695,7 @@ const TradePreview: React.FC<TradePreviewProps> = ({
         return;
       }
       logTradePreview("showing wait modal (pending acceptance)", { tradeId });
+      recordPendingAcceptanceStartedAt(tradeId);
       onPendingAcceptanceStart?.({
         tradeId,
         advertiserOrderId: advertiserData.id,

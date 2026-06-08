@@ -90,6 +90,7 @@ export interface AuthState {
   profile: UserProfile | null;
   kycStatusCheckedAt: number | null;
   kycStatusLoading: boolean;
+  kycStatus: KYCResponse | null;
   kycModalOpen: boolean;
   twoFAModalOpen: boolean;
   twoFAEmail: string;
@@ -131,6 +132,13 @@ export interface OTPResponse {
 
 export interface KYCResponse {
   is_verified: boolean;
+  status?: string;
+  message?: string;
+  rejection_reason?: string;
+  reason?: string;
+  email_verified?: boolean;
+  phone_verified?: boolean;
+  [key: string]: unknown;
 }
 
 export interface KYCVerifyPayload {

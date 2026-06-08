@@ -4,6 +4,8 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { API_CONFIG } from "@/lib/appConfig";
 import { cookieUtils } from "@/lib/utils/cookieUtils";
 import { logger } from "@/lib/utils/logger";
+import { normalizeTransactionSummary } from "@/lib/utils/normalizeTransactionSummary";
+import type { TransactionSummary } from "@/features/p2p/types";
 
 /**
  * Summary structure from backend socket
@@ -26,6 +28,8 @@ type WalletBalanceState = {
   currency: string;
   connected: boolean;
   summary: SummaryState;
+  /** Full dashboard summary from `balance_update` socket messages */
+  overviewSummary: TransactionSummary | null;
 };
 
 /**
@@ -37,6 +41,7 @@ const INITIAL: WalletBalanceState = {
   escrow: null,
   currency: "USDT",
   connected: false,
+  overviewSummary: null,
 
   summary: {
     total_approved_p2p_deposits: 0,
@@ -82,6 +87,10 @@ function extractWalletPayload(raw: unknown): WalletBalanceState {
       ? (data.summary as Record<string, unknown>)
       : {};
 
+  const overviewSummary = normalizeTransactionSummary(
+    data.summary ?? data
+  );
+
   return {
     balance: parseNumber(data.total_balance),
     available: parseNumber(data.available_amount),
@@ -93,6 +102,7 @@ function extractWalletPayload(raw: unknown): WalletBalanceState {
         : "USDT",
 
     connected: true,
+    overviewSummary,
 
     summary: {
       total_approved_p2p_deposits:
@@ -179,6 +189,7 @@ export function useP2PWalletBalanceWebSocket(enabled = true) {
               currency: next.currency || prev.currency,
 
               summary: next.summary ?? prev.summary,
+              overviewSummary: next.overviewSummary ?? prev.overviewSummary,
 
               connected: true,
             }));

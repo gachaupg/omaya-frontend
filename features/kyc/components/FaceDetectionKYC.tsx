@@ -3,12 +3,22 @@ import React, { useRef, useEffect, useState, useCallback } from 'react';
 import * as faceapi from 'face-api.js';
 
 import { logger } from '@/lib/utils/logger';
+import {
+  KYC_VIDEO_RECORDING_SECONDS,
+  blobToKycVideoFile,
+  extractKycPhotoFromVideoBlob,
+  getKycCameraAccessError,
+  attachStreamToVideoElement,
+  getSupportedKycVideoMimeType,
+  requestKycCameraStream,
+} from '@/features/kyc/utils/kycVideoUtils';
 
-/** Local path first; CDN fallback — weights are not shipped under /public/models in this repo. */
+/** CDN first — /public/models is not shipped; local path was causing long timeouts. */
 const FACE_MODEL_URLS = [
-  "/models",
   "https://cdn.jsdelivr.net/gh/justadudewhohacks/face-api.js@0.22.2/weights",
+  "/models",
 ];
+const MODEL_LOAD_TIMEOUT_MS = 45_000;
 
 interface FaceDetectionKYCProps {
   onVerificationComplete?: (data: {
@@ -17,6 +27,8 @@ interface FaceDetectionKYCProps {
     gender?: string;
     confidence?: number;
     capturedImage?: string;
+    capturedVideo?: File;
+    captureSource?: "camera" | "gallery";
   }) => void;
   onClose?: () => void;
   onRetake?: () => void;
@@ -29,114 +41,175 @@ const FaceDetectionKYC: React.FC<FaceDetectionKYCProps> = ({
 }) => {
   const videoRef = useRef<HTMLVideoElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
-  const manualFileInputRef = useRef<HTMLInputElement>(null);
-  const [isLoading, setIsLoading] = useState(true);
+  const galleryFileInputRef = useRef<HTMLInputElement>(null);
+  const streamRef = useRef<MediaStream | null>(null);
+  const mediaRecorderRef = useRef<MediaRecorder | null>(null);
+  const recordedChunksRef = useRef<Blob[]>([]);
+  const captureInProgressRef = useRef(false);
+  const cameraStartInFlightRef = useRef(false);
+
+  const [isLoadingModels, setIsLoadingModels] = useState(true);
   const [faceCount, setFaceCount] = useState(0);
   const [isModelLoaded, setIsModelLoaded] = useState(false);
   const [detectionData, setDetectionData] = useState<any>(null);
   const [isVerified, setIsVerified] = useState(false);
   const [countdown, setCountdown] = useState<number | null>(null);
+  const [recordingCountdown, setRecordingCountdown] = useState<number | null>(null);
+  const [captureInProgress, setCaptureInProgress] = useState(false);
   const [capturedImage, setCapturedImage] = useState<string | null>(null);
   const [validationStatus, setValidationStatus] = useState<string>('');
   const [isFaceValid, setIsFaceValid] = useState(false);
-  const [isManualUploadInProgress, setIsManualUploadInProgress] = useState(false);
   const [modelLoadError, setModelLoadError] = useState<string | null>(null);
   const [cameraError, setCameraError] = useState<string | null>(null);
+  const [isCameraStarting, setIsCameraStarting] = useState(false);
+  const [isGalleryValidating, setIsGalleryValidating] = useState(false);
 
   const isFaceValidRef = useRef(false);
   const detectionDataRef = useRef<any>(null);
   const faceCountRef = useRef(0);
 
-  useEffect(() => {
-    loadModels();
-    
-    return () => {
-      // Cleanup: stop camera stream on unmount
-      stopVideo();
-    };
+  const stopVideo = useCallback(() => {
+    cameraStartInFlightRef.current = false;
+    if (mediaRecorderRef.current && mediaRecorderRef.current.state !== "inactive") {
+      try {
+        mediaRecorderRef.current.stop();
+      } catch {
+        // ignore
+      }
+      mediaRecorderRef.current = null;
+    }
+
+    if (streamRef.current) {
+      streamRef.current.getTracks().forEach((track) => {
+        track.stop();
+        logger.debug('general', 'Camera track stopped:', track.kind);
+      });
+      streamRef.current = null;
+    }
+
+    if (videoRef.current) {
+      videoRef.current.srcObject = null;
+      videoRef.current.pause();
+    }
+
+    logger.debug('general', 'Camera fully stopped');
   }, []);
 
+  const startVideo = useCallback(async () => {
+    if (isVerified || cameraStartInFlightRef.current) return;
+
+    const preflightError = getKycCameraAccessError();
+    if (preflightError) {
+      setCameraError(preflightError.message);
+      setIsCameraStarting(false);
+      return;
+    }
+
+    const video = videoRef.current;
+    if (!video) return;
+
+    cameraStartInFlightRef.current = true;
+    setIsCameraStarting(true);
+    setCameraError(null);
+
+    try {
+      if (!streamRef.current) {
+        const stream = await requestKycCameraStream();
+        streamRef.current = stream;
+      }
+
+      const attached = await attachStreamToVideoElement(
+        video,
+        streamRef.current
+      );
+      if (!attached) {
+        throw new Error("Camera preview did not start");
+      }
+
+      setCameraError(null);
+    } catch (err) {
+      logger.error("general", "Error accessing camera:", err);
+      if (streamRef.current) {
+        streamRef.current.getTracks().forEach((track) => track.stop());
+        streamRef.current = null;
+      }
+      const accessError = getKycCameraAccessError(err);
+      setCameraError(
+        accessError?.message ??
+          "Could not access the camera. Allow camera permission and try again."
+      );
+    } finally {
+      cameraStartInFlightRef.current = false;
+      setIsCameraStarting(false);
+    }
+  }, [isVerified]);
+
+  const handleVideoRef = useCallback(
+    (node: HTMLVideoElement | null) => {
+      videoRef.current = node;
+      if (node && !isVerified) {
+        void startVideo();
+      }
+    },
+    [isVerified, startVideo]
+  );
+
+  const handleRetryCamera = useCallback(() => {
+    setCameraError(null);
+    if (streamRef.current) {
+      streamRef.current.getTracks().forEach((track) => track.stop());
+      streamRef.current = null;
+    }
+    if (videoRef.current) {
+      videoRef.current.srcObject = null;
+    }
+    void startVideo();
+  }, [startVideo]);
+
   useEffect(() => {
-    startVideo();
-  }, []);
+    loadModels();
+
+    return () => {
+      stopVideo();
+    };
+  }, [stopVideo]);
 
   const loadModels = async () => {
     let lastError: unknown;
+    setIsLoadingModels(true);
+
     for (const modelUrl of FACE_MODEL_URLS) {
       try {
-        await Promise.all([
-          faceapi.nets.tinyFaceDetector.loadFromUri(modelUrl),
-          faceapi.nets.faceLandmark68Net.loadFromUri(modelUrl),
-          faceapi.nets.faceExpressionNet.loadFromUri(modelUrl),
-          faceapi.nets.ageGenderNet.loadFromUri(modelUrl),
+        await Promise.race([
+          Promise.all([
+            faceapi.nets.tinyFaceDetector.loadFromUri(modelUrl),
+            faceapi.nets.faceLandmark68Net.loadFromUri(modelUrl),
+            faceapi.nets.faceExpressionNet.loadFromUri(modelUrl),
+            faceapi.nets.ageGenderNet.loadFromUri(modelUrl),
+          ]),
+          new Promise<never>((_, reject) => {
+            setTimeout(
+              () => reject(new Error(`Model load timed out for ${modelUrl}`)),
+              MODEL_LOAD_TIMEOUT_MS
+            );
+          }),
         ]);
         logger.debug("general", "Face models loaded from", modelUrl);
         setIsModelLoaded(true);
         setModelLoadError(null);
-        setIsLoading(false);
+        setIsLoadingModels(false);
         return;
       } catch (error) {
         lastError = error;
         logger.warn("general", `Face models failed from ${modelUrl}:`, error);
       }
     }
+
     logger.error("general", "Error loading face models:", lastError);
     setModelLoadError(
-      "Automatic face detection is unavailable. Use “Upload Selfie” or “Capture photo” below."
+      "Automatic face detection is unavailable. You can still pick a selfie from gallery."
     );
-    setIsLoading(false);
-  };
-
-  const startVideo = () => {
-    if (typeof navigator === "undefined" || !navigator.mediaDevices?.getUserMedia) {
-      setCameraError("Camera is not available in this browser.");
-      return;
-    }
-    navigator.mediaDevices
-      .getUserMedia({
-        video: {
-          width: { ideal: 1280 },
-          height: { ideal: 720 },
-          facingMode: "user",
-        },
-      })
-      .then(async (stream) => {
-        if (!videoRef.current) return;
-        videoRef.current.srcObject = stream;
-        try {
-          await videoRef.current.play();
-        } catch (playErr) {
-          logger.warn("general", "video.play() failed:", playErr);
-        }
-        setCameraError(null);
-      })
-      .catch((err) => {
-        logger.error("general", "Error accessing camera:", err);
-        setCameraError(
-          "Could not access the camera. Allow camera permission or upload a selfie below."
-        );
-      });
-  };
-
-  const stopVideo = () => {
-    if (videoRef.current && videoRef.current.srcObject) {
-      const stream = videoRef.current.srcObject as MediaStream;
-      const tracks = stream.getTracks();
-      
-      // Stop all tracks (video and audio if any)
-      tracks.forEach(track => {
-        track.stop();
-        logger.debug('general', 'Camera track stopped:', track.kind);
-      });
-      
-      // Clear the video source
-      videoRef.current.srcObject = null;
-      
-      // Pause the video element
-      videoRef.current.pause();
-      
-      logger.debug('general', 'Camera fully stopped');
-    }
+    setIsLoadingModels(false);
   };
 
   // Validate face using video pixel dimensions (detection boxes are in video space, not UI circle size)
@@ -159,18 +232,10 @@ const FaceDetectionKYC: React.FC<FaceDetectionKYCProps> = ({
       return { isValid: false, message: "Move back slightly — too close" };
     }
 
-    // 2. Centering check DISABLED - face can be positioned anywhere
-    // (No centering requirement at all)
-
-    // 3. Edge check DISABLED - face can be anywhere, even partially cut off
-    // (No edge restriction at all - this check is completely disabled)
-
-    // 4. Validate all key facial landmarks are detected
     if (!landmarks || !landmarks.positions || landmarks.positions.length < 68) {
       return { isValid: false, message: 'Full face not detected' };
     }
 
-    // 5. Check face alignment - MINIMAL CHECK (almost disabled)
     const jawLine = landmarks.getJawOutline();
     const nose = landmarks.getNose();
     
@@ -178,10 +243,6 @@ const FaceDetectionKYC: React.FC<FaceDetectionKYCProps> = ({
       return { isValid: false, message: 'Face not detected properly' };
     }
 
-    // 6. Landmark position check DISABLED
-    // (Landmarks can be anywhere - this check is completely disabled)
-
-    // 7. Verify critical landmarks (eyes, nose, mouth) - MINIMAL REQUIREMENTS
     const leftEye = landmarks.getLeftEye();
     const rightEye = landmarks.getRightEye();
     const noseTip = landmarks.getNose();
@@ -191,7 +252,6 @@ const FaceDetectionKYC: React.FC<FaceDetectionKYCProps> = ({
       return { isValid: false, message: 'Face features not detected' };
     }
 
-    // 8. Check detection confidence - EXTREMELY LENIENT
     const confidence = detection.detection.score;
     if (confidence < 0.2) {
       return { isValid: false, message: "Improve lighting" };
@@ -201,7 +261,12 @@ const FaceDetectionKYC: React.FC<FaceDetectionKYCProps> = ({
   };
 
   const completeCapture = useCallback(
-    (imageData: string, meta?: { age?: number; gender?: string; confidence?: number }) => {
+    (
+      imageData: string,
+      videoFile?: File,
+      meta?: { age?: number; gender?: string; confidence?: number },
+      captureSource: "camera" | "gallery" = "camera"
+    ) => {
       setCapturedImage(imageData);
       setIsVerified(true);
       stopVideo();
@@ -213,59 +278,224 @@ const FaceDetectionKYC: React.FC<FaceDetectionKYCProps> = ({
           gender: meta?.gender,
           confidence: meta?.confidence,
           capturedImage: imageData,
+          capturedVideo: videoFile,
+          captureSource,
         });
       }, 300);
     },
-    [onVerificationComplete]
+    [onVerificationComplete, stopVideo]
   );
 
-  const captureFromRefs = useCallback((force = false) => {
-    const detection = detectionDataRef.current;
-    const valid = isFaceValidRef.current;
-    const count = faceCountRef.current;
+  const detectFaceInStillImage = useCallback(
+    async (imageDataUrl: string) => {
+      const img = new Image();
+      img.crossOrigin = "anonymous";
+      await new Promise<void>((resolve, reject) => {
+        img.onload = () => resolve();
+        img.onerror = () => reject(new Error("Could not load image"));
+        img.src = imageDataUrl;
+      });
 
-    if (!videoRef.current) return;
-    if (!force && isModelLoaded && count !== 1) {
-      setValidationStatus("Center one face in the circle, or tap Capture photo");
+      const detections = await faceapi
+        .detectAllFaces(
+          img,
+          new faceapi.TinyFaceDetectorOptions({
+            inputSize: 416,
+            scoreThreshold: 0.2,
+          })
+        )
+        .withFaceLandmarks()
+        .withFaceExpressions()
+        .withAgeAndGender();
+
+      if (detections.length === 0) {
+        return { ok: false as const, message: "No face detected — choose a clear selfie photo" };
+      }
+      if (detections.length > 1) {
+        return {
+          ok: false as const,
+          message: "Multiple faces detected — use a photo with only your face",
+        };
+      }
+
+      const validation = validateFullFace(detections[0], img.width, img.height);
+      if (!validation.isValid) {
+        return { ok: false as const, message: validation.message };
+      }
+
+      return { ok: true as const, detection: detections[0] };
+    },
+    []
+  );
+
+  const handleGalleryFileChange = async (
+    event: React.ChangeEvent<HTMLInputElement>
+  ) => {
+    const file = event.target.files?.[0];
+    event.target.value = "";
+    if (!file || isVerified) return;
+
+    if (!file.type.startsWith("image/")) {
+      setValidationStatus("Please select an image file");
+      return;
+    }
+    if (file.size > 5 * 1024 * 1024) {
+      setValidationStatus("Image must be smaller than 5MB");
+      return;
+    }
+    if (!isModelLoaded) {
+      setValidationStatus("Face detection is still loading — please wait");
       return;
     }
 
-    const circleSize = 350;
-    const captureCanvas = document.createElement("canvas");
-    captureCanvas.width = circleSize;
-    captureCanvas.height = circleSize;
-    const ctx = captureCanvas.getContext("2d");
-    if (!ctx) return;
+    setIsGalleryValidating(true);
+    setValidationStatus("Verifying face in selected photo…");
 
-    ctx.drawImage(videoRef.current, 0, 0, circleSize, circleSize);
-    const imageData = captureCanvas.toDataURL("image/jpeg", 0.92);
-
-    if (valid && detection) {
-      const { age, gender, genderProbability } = detection;
-      completeCapture(imageData, {
-        age: Math.round(age),
-        gender,
-        confidence: Math.round(genderProbability * 100),
+    try {
+      const imageData = await new Promise<string>((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onload = () => {
+          if (typeof reader.result === "string") resolve(reader.result);
+          else reject(new Error("Could not read image"));
+        };
+        reader.onerror = () => reject(reader.error ?? new Error("Could not read image"));
+        reader.readAsDataURL(file);
       });
-    } else {
-      completeCapture(imageData);
-    }
-  }, [completeCapture, isModelLoaded]);
 
-  const handleCapture = () => {
-    captureFromRefs(true);
+      const result = await detectFaceInStillImage(imageData);
+      if (!result.ok) {
+        setValidationStatus(result.message);
+        return;
+      }
+
+      const { age, gender, genderProbability } = result.detection;
+      completeCapture(
+        imageData,
+        undefined,
+        {
+          age: Math.round(age),
+          gender,
+          confidence: Math.round(genderProbability * 100),
+        },
+        "gallery"
+      );
+    } catch (error) {
+      logger.error("general", "Gallery face verification failed:", error);
+      setValidationStatus("Could not verify this photo. Try another clear selfie.");
+    } finally {
+      setIsGalleryValidating(false);
+    }
   };
+
+  const runCaptureSequence = useCallback(async () => {
+    if (captureInProgressRef.current || isVerified) return;
+
+    const count = faceCountRef.current;
+    const valid = isFaceValidRef.current;
+    const detection = detectionDataRef.current;
+
+    if (isModelLoaded && count !== 1) {
+      setValidationStatus("Center one face in the circle");
+      return;
+    }
+
+    const stream = streamRef.current;
+    if (!stream || !stream.active) {
+      setCameraError("Camera is not ready. Please allow camera access and try again.");
+      await startVideo();
+      return;
+    }
+
+    const mimeType = getSupportedKycVideoMimeType();
+    if (!mimeType) {
+      setValidationStatus("Video recording is not supported in this browser.");
+      return;
+    }
+
+    captureInProgressRef.current = true;
+    setCaptureInProgress(true);
+    setCountdown(null);
+    setValidationStatus("Preparing to record...");
+
+    try {
+      recordedChunksRef.current = [];
+      const recorder = new MediaRecorder(stream, { mimeType });
+      mediaRecorderRef.current = recorder;
+
+      recorder.ondataavailable = (event) => {
+        if (event.data.size > 0) {
+          recordedChunksRef.current.push(event.data);
+        }
+      };
+
+      await new Promise<void>((resolve, reject) => {
+        recorder.onerror = () => reject(new Error("Video recording failed"));
+        recorder.onstart = () => resolve();
+        recorder.start(250);
+      });
+
+      for (let remaining = KYC_VIDEO_RECORDING_SECONDS; remaining > 0; remaining--) {
+        setRecordingCountdown(remaining);
+        setValidationStatus(
+          `Stay still on camera until recording finishes (${remaining} s)`
+        );
+        await new Promise((resolve) => setTimeout(resolve, 1000));
+        if (!recorder || recorder.state === "inactive") {
+          throw new Error("Video recording stopped unexpectedly");
+        }
+      }
+
+      await new Promise<void>((resolve) => {
+        recorder.onstop = () => resolve();
+        recorder.stop();
+      });
+      mediaRecorderRef.current = null;
+
+      const videoBlob = new Blob(recordedChunksRef.current, { type: mimeType });
+      if (videoBlob.size < 1024) {
+        throw new Error("Recorded video is too small");
+      }
+
+      const videoFile = blobToKycVideoFile(videoBlob, mimeType);
+      const imageData = await extractKycPhotoFromVideoBlob(videoBlob);
+
+      if (valid && detection) {
+        const { age, gender, genderProbability } = detection;
+        completeCapture(imageData, videoFile, {
+          age: Math.round(age),
+          gender,
+          confidence: Math.round(genderProbability * 100),
+        });
+      } else {
+        completeCapture(imageData, videoFile);
+      }
+    } catch (error) {
+      logger.error("general", "KYC capture sequence failed:", error);
+      setValidationStatus("Capture failed. Center your face and try again.");
+      setCountdown(null);
+    } finally {
+      captureInProgressRef.current = false;
+      setCaptureInProgress(false);
+      setRecordingCountdown(null);
+    }
+  }, [completeCapture, isModelLoaded, isVerified, startVideo]);
+
+  const isRecordingVideo = recordingCountdown !== null && recordingCountdown > 0;
 
   // Auto-capture when VALID face is detected for 3 seconds
   useEffect(() => {
-    if (faceCount === 1 && detectionData && isFaceValid && !isVerified) {
-      if (countdown === null) {
-        setCountdown(3);
-      }
-    } else {
+    if (
+      faceCount === 1 &&
+      detectionData &&
+      isFaceValid &&
+      !isVerified &&
+      !captureInProgress
+    ) {
+      setCountdown((current) => (current === null ? 3 : current));
+    } else if (!captureInProgress) {
       setCountdown(null);
     }
-  }, [faceCount, detectionData, isFaceValid, isVerified]);
+  }, [faceCount, detectionData, isFaceValid, isVerified, captureInProgress]);
 
   useEffect(() => {
     if (countdown !== null && countdown > 0) {
@@ -273,13 +503,22 @@ const FaceDetectionKYC: React.FC<FaceDetectionKYCProps> = ({
         setCountdown(countdown - 1);
       }, 1000);
       return () => clearTimeout(timer);
-    } else if (countdown === 0) {
-      captureFromRefs(false);
     }
-  }, [countdown, captureFromRefs]);
+    if (countdown === 0 && !captureInProgressRef.current) {
+      void runCaptureSequence();
+    }
+  }, [countdown, runCaptureSequence]);
 
   const detectFaces = async () => {
-    if (!videoRef.current || !canvasRef.current || !isModelLoaded || isVerified) return;
+    if (
+      !videoRef.current ||
+      !canvasRef.current ||
+      !isModelLoaded ||
+      isVerified ||
+      captureInProgressRef.current
+    ) {
+      return;
+    }
 
     const video = videoRef.current;
     if (video.readyState < 2) {
@@ -289,7 +528,6 @@ const FaceDetectionKYC: React.FC<FaceDetectionKYCProps> = ({
 
     const canvas = canvasRef.current;
     
-    // Set canvas to match video size (circular container)
     const circleSize = 350;
     canvas.width = circleSize;
     canvas.height = circleSize;
@@ -314,7 +552,9 @@ const FaceDetectionKYC: React.FC<FaceDetectionKYCProps> = ({
         video.videoWidth,
         video.videoHeight
       );
-      setValidationStatus(validation.message);
+      if (!captureInProgressRef.current) {
+        setValidationStatus(validation.message);
+      }
 
       if (validation.isValid) {
         setDetectionData(detections[0]);
@@ -332,71 +572,48 @@ const FaceDetectionKYC: React.FC<FaceDetectionKYCProps> = ({
       detectionDataRef.current = null;
       setIsFaceValid(false);
       isFaceValidRef.current = false;
-      setValidationStatus("No face detected — center your face in the circle");
+      if (!captureInProgressRef.current) {
+        setValidationStatus("No face detected — center your face in the circle");
+      }
     } else {
       setDetectionData(null);
       detectionDataRef.current = null;
       setIsFaceValid(false);
       isFaceValidRef.current = false;
-      setValidationStatus("Multiple faces detected — only one person");
+      if (!captureInProgressRef.current) {
+        setValidationStatus("Multiple faces detected — only one person");
+      }
     }
 
     const resizedDetections = faceapi.resizeResults(detections, displaySize);
     
-    // Clear canvas
     const ctx = canvas.getContext('2d');
     if (!ctx) return;
     
     ctx.clearRect(0, 0, canvas.width, canvas.height);
     
     if (detections.length === 1 && isFaceValidRef.current) {
-      // Draw detections with green border for valid face
-    faceapi.draw.drawDetections(canvas, resizedDetections);
-    faceapi.draw.drawFaceLandmarks(canvas, resizedDetections);
-    
-    // Draw face info
-    resizedDetections.forEach(detection => {
-      const { age, gender, genderProbability } = detection;
-      const text = `${Math.round(age)} years, ${gender} (${Math.round(genderProbability * 100)}%)`;
-      
-      new faceapi.draw.DrawTextField(
-        [text],
-        detection.detection.box.bottomLeft
-      ).draw(canvas);
-    });
+      ctx.save();
+      ctx.translate(canvas.width, 0);
+      ctx.scale(-1, 1);
+      faceapi.draw.drawDetections(canvas, resizedDetections);
+      faceapi.draw.drawFaceLandmarks(canvas, resizedDetections);
+
+      resizedDetections.forEach((detection) => {
+        const { age, gender, genderProbability } = detection;
+        const text = `${Math.round(age)} years, ${gender} (${Math.round(genderProbability * 100)}%)`;
+
+        new faceapi.draw.DrawTextField(
+          [text],
+          detection.detection.box.bottomLeft
+        ).draw(canvas);
+      });
+      ctx.restore();
     }
 
-    if (!isVerified) {
+    if (!isVerified && !captureInProgressRef.current) {
       requestAnimationFrame(detectFaces);
     }
-  };
-
-  const handleManualFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
-    const file = event.target.files?.[0];
-    if (!file) return;
-
-    if (!file.type.startsWith("image/")) {
-      logger.error("general", "Manual face upload: not an image file");
-      return;
-    }
-
-    const reader = new FileReader();
-    setIsManualUploadInProgress(true);
-
-    reader.onload = () => {
-      const result = reader.result;
-      if (typeof result === "string") {
-        completeCapture(result);
-      }
-      setIsManualUploadInProgress(false);
-    };
-
-    reader.onerror = (err) => {
-      logger.error("general", "Error reading manual face image:", err);
-      setIsManualUploadInProgress(false);
-    };
-
-    reader.readAsDataURL(file);
   };
 
   useEffect(() => {
@@ -416,32 +633,21 @@ const FaceDetectionKYC: React.FC<FaceDetectionKYCProps> = ({
     };
   }, [isModelLoaded, isVerified]);
 
-  // Effect to stop camera when verification is complete
   useEffect(() => {
     if (isVerified) {
-      // Ensure camera is stopped when verified
       const timer = setTimeout(() => {
         stopVideo();
       }, 200);
       
       return () => clearTimeout(timer);
     }
-  }, [isVerified]);
+  }, [isVerified, stopVideo]);
 
-  // Debug effect for captured image
   useEffect(() => {
     if (capturedImage) {
       logger.debug('general', 'Captured image state updated, length:', capturedImage.length);
     }
   }, [capturedImage]);
-
-  if (isLoading) {
-    return (
-      <div className="flex items-center justify-center h-[500px]">
-        <div className="text-white text-lg">Loading face detection models...</div>
-      </div>
-    );
-  }
 
   return (
     <div className="relative flex flex-col items-center justify-center p-6 bg-[#0a0a0a] rounded-lg">
@@ -454,6 +660,8 @@ const FaceDetectionKYC: React.FC<FaceDetectionKYCProps> = ({
         <div className={`text-sm font-medium ${
           isVerified 
             ? 'text-[#4CAF50]'
+            : isRecordingVideo
+            ? 'text-[#ff9800]'
             : isFaceValid && countdown !== null
             ? 'text-[#ffeb3b]'
             : isFaceValid 
@@ -462,15 +670,36 @@ const FaceDetectionKYC: React.FC<FaceDetectionKYCProps> = ({
         }`}>
           {isVerified 
             ? '✓ Submitting verification...' 
+            : isRecordingVideo
+            ? `🎥 Recording… ${recordingCountdown}s — stay still`
             : countdown !== null 
             ? `📸 Capturing in ${countdown}...` 
             : validationStatus || 'Please position your face in the camera'}
         </div>
       </div>
 
-      {(modelLoadError || cameraError) && (
+      {isCameraStarting && !cameraError && (
+        <div className="mb-4 w-full max-w-md rounded-lg border border-[#1D8751]/40 bg-[#1D8751]/10 px-4 py-3 text-sm text-[#a5d6b0]">
+          Starting camera…
+        </div>
+      )}
+
+      {cameraError && (
         <div className="mb-4 w-full max-w-md rounded-lg border border-amber-500/50 bg-amber-950/40 px-4 py-3 text-sm text-amber-100">
-          {cameraError || modelLoadError}
+          <p>{cameraError}</p>
+          <button
+            type="button"
+            onClick={handleRetryCamera}
+            className="mt-2 text-xs font-medium text-amber-200 underline hover:text-white"
+          >
+            Retry camera
+          </button>
+        </div>
+      )}
+
+      {modelLoadError && !cameraError && (
+        <div className="mb-4 w-full max-w-md rounded-lg border border-amber-500/50 bg-amber-950/40 px-4 py-3 text-sm text-amber-100">
+          <p>{modelLoadError}</p>
         </div>
       )}
 
@@ -479,23 +708,35 @@ const FaceDetectionKYC: React.FC<FaceDetectionKYCProps> = ({
         <div className={`relative w-[min(280px,90vw)] sm:w-[320px] md:w-[350px] aspect-square rounded-full overflow-hidden border-4 transition-colors ${
           isVerified
             ? 'border-[#4CAF50] shadow-[0_0_30px_rgba(76,175,80,0.9)]'
+            : isRecordingVideo
+            ? 'border-[#ff9800] shadow-[0_0_30px_rgba(255,152,0,0.7)]'
             : isFaceValid && faceCount === 1 
             ? 'border-[#4CAF50] shadow-[0_0_30px_rgba(76,175,80,0.7)]' 
             : 'border-[#f44336] shadow-[0_0_30px_rgba(244,67,54,0.5)]'
         }`}>
           {!isVerified ? (
             <>
-          <video
-            ref={videoRef}
-            autoPlay
-            muted
-            playsInline
-            className="absolute top-1/2 left-1/2 w-full h-full object-cover -translate-x-1/2 -translate-y-1/2"
-          />
-          <canvas
-            ref={canvasRef}
-            className="absolute top-0 left-0 w-full h-full"
-          />
+              <video
+                ref={handleVideoRef}
+                autoPlay
+                muted
+                playsInline
+                className="absolute top-1/2 left-1/2 w-full h-full object-cover -translate-x-1/2 -translate-y-1/2 scale-x-[-1]"
+              />
+              <canvas
+                ref={canvasRef}
+                className="absolute top-0 left-0 w-full h-full pointer-events-none"
+              />
+              {isLoadingModels && (
+                <div className="absolute bottom-3 left-1/2 z-10 -translate-x-1/2 rounded-full bg-black/70 px-3 py-1 text-[11px] text-white">
+                  Loading face detection…
+                </div>
+              )}
+              {isRecordingVideo && (
+                <div className="absolute top-3 left-1/2 -translate-x-1/2 z-10 rounded-full bg-red-600/90 px-3 py-1 text-xs font-semibold text-white">
+                  REC {recordingCountdown}
+                </div>
+              )}
             </>
           ) : (
             <div className="absolute top-0 left-0 w-full h-full bg-black">
@@ -530,8 +771,8 @@ const FaceDetectionKYC: React.FC<FaceDetectionKYCProps> = ({
           <li className={(isVerified || isFaceValid) ? "text-[#4CAF50]" : "text-[#f44336]"}>
             {(isVerified || isFaceValid) ? '✓' : '✗'} All facial features visible
           </li>
-          <li className={(isVerified || isFaceValid) ? "text-[#4CAF50]" : "text-[#f44336]"}>
-            {(isVerified || isFaceValid) ? '✓' : '✗'} Good lighting & quality
+          <li className={(isVerified || isRecordingVideo || isFaceValid) ? "text-[#4CAF50]" : "text-[#f44336]"}>
+            {(isVerified || isRecordingVideo || isFaceValid) ? '✓' : '✗'} Short verification video recorded (camera only)
           </li>
         </ul>
       </div>
@@ -544,15 +785,18 @@ const FaceDetectionKYC: React.FC<FaceDetectionKYCProps> = ({
               onClick={() => {
                 setIsVerified(false);
                 setCountdown(null);
+                setRecordingCountdown(null);
                 setCapturedImage(null);
                 setDetectionData(null);
                 setValidationStatus('');
                 setIsFaceValid(false);
+                captureInProgressRef.current = false;
+                setCaptureInProgress(false);
                 isFaceValidRef.current = false;
                 detectionDataRef.current = null;
                 faceCountRef.current = 0;
                 onRetake?.();
-                startVideo();
+                void startVideo();
               }}
               className="flex-1 px-6 py-3 text-white bg-[#ff9800] hover:bg-[#f57c00] rounded-lg transition-colors"
             >
@@ -563,7 +807,6 @@ const FaceDetectionKYC: React.FC<FaceDetectionKYCProps> = ({
           {!isVerified && onClose && (
             <button
               onClick={() => {
-                // Stop camera before closing
                 stopVideo();
                 onClose();
               }}
@@ -578,44 +821,36 @@ const FaceDetectionKYC: React.FC<FaceDetectionKYCProps> = ({
           <>
             <button
               type="button"
-              onClick={handleCapture}
-              disabled={!!cameraError}
-              className="w-full px-6 py-3 text-sm font-medium text-white bg-[#1D8751] hover:bg-[#167a47] rounded-lg transition-colors disabled:opacity-50"
+              onClick={() => galleryFileInputRef.current?.click()}
+              disabled={!isModelLoaded || isGalleryValidating || captureInProgress}
+              className="w-full px-6 py-3 text-sm font-medium text-white border border-[#35353E] hover:bg-[#1a1a1a] rounded-lg transition-colors disabled:opacity-50"
             >
-              {isFaceValid && faceCount === 1
-                ? "Capture photo now"
-                : "Capture photo (use if auto-detect is slow)"}
+              {isGalleryValidating
+                ? "Verifying selected photo…"
+                : !isModelLoaded
+                ? "Pick selfie from gallery (loading…)"
+                : "Pick selfie from gallery"}
             </button>
+            <p className="text-xs text-center text-[#f44336]">
+              Your photo must show one clear face. Use this if the camera is unavailable.
+            </p>
             <input
-              ref={manualFileInputRef}
+              ref={galleryFileInputRef}
               type="file"
               accept="image/*"
-              capture="user"
               className="hidden"
-              onChange={handleManualFileChange}
+              onChange={handleGalleryFileChange}
             />
-            {/* Gallery upload disabled — camera capture only
-            <button
-              type="button"
-              onClick={() => manualFileInputRef.current?.click()}
-              disabled={isManualUploadInProgress}
-              className="w-full px-6 py-3 text-sm text-white border border-[#35353E] hover:bg-[#1a1a1a] rounded-lg transition-colors disabled:opacity-50"
-            >
-              {isManualUploadInProgress ? "Uploading selfie…" : "Upload selfie from gallery"}
-            </button>
-            */}
           </>
         )}
       </div>
 
       {/* Status */}
       <div className="text-center mt-4 text-sm text-gray-400">
-        Status: {isModelLoaded ? 'Ready' : 'Loading...'}
+        Status: {isModelLoaded ? "Ready" : isLoadingModels ? "Loading models…" : "Models unavailable"}
       </div>
     </div>
   );
 };
 
 export default FaceDetectionKYC;
-
-

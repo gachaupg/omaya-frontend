@@ -111,7 +111,7 @@ const extractPaymentDetailError = (error: any): string => {
   // 3. If data is an object, look for ANY string or array of strings
   if (responseData && typeof responseData === "object") {
     // Priority keys
-    const priorityKeys = ["detail", "message", "error"];
+    const priorityKeys = ["detail", "message", "error", "otp"];
 
     // Check priority keys first
     for (const key of priorityKeys) {
