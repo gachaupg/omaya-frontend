@@ -53,6 +53,13 @@ function mergeHttpPageIntoState(
   };
 }
 
+/** WS `initial_data` / `trades_update` — server snapshot replaces pending list. */
+function replacePendingTradesFromSnapshot(trades: MatchedTrade[]): MatchedTrade[] {
+  return sortTradesNewestFirst(
+    filterPendingMatchedTradeNotifications(trades)
+  );
+}
+
 function mergePendingTrades(
   existing: MatchedTrade[],
   incoming: MatchedTrade[]
@@ -91,11 +98,20 @@ function syncPendingNotificationCount(state: MatchedTradesState) {
   state.data.count = state.data.results.length;
 }
 
+function markMatchedTradesReady(state: MatchedTradesState) {
+  state.hasLoaded = true;
+  state.loading = false;
+  state.refreshing = false;
+}
+
 function applyTradeListToState(
   state: MatchedTradesState,
-  trades: MatchedTrade[]
+  trades: MatchedTrade[],
+  options?: { replace?: boolean }
 ) {
-  const results = mergePendingTrades(state.data?.results || [], trades);
+  const results = options?.replace
+    ? replacePendingTradesFromSnapshot(trades)
+    : mergePendingTrades(state.data?.results || [], trades);
 
   state.data = {
     ...(state.data ?? { next: null, previous: null, count: 0 }),
@@ -105,6 +121,7 @@ function applyTradeListToState(
     next: state.data?.next ?? null,
     previous: state.data?.previous ?? null,
   };
+  markMatchedTradesReady(state);
 }
 
 function upsertMatchedTradeFromWSReducer(
@@ -124,6 +141,7 @@ function upsertMatchedTradeFromWSReducer(
       data.results.splice(index, 1);
     }
     syncPendingNotificationCount(state);
+    markMatchedTradesReady(state);
     return;
   }
 
@@ -133,6 +151,7 @@ function upsertMatchedTradeFromWSReducer(
     data.results = sortTradesNewestFirst([...data.results, trade]);
   }
   syncPendingNotificationCount(state);
+  markMatchedTradesReady(state);
 }
 
 function removeMatchedTradeFromWSReducer(
@@ -147,6 +166,7 @@ function removeMatchedTradeFromWSReducer(
   );
   if (state.data.results.length !== before) {
     syncPendingNotificationCount(state);
+    markMatchedTradesReady(state);
   }
 }
 
@@ -180,7 +200,9 @@ const matchedTradesSlice = createSlice({
     updateMatchedTradesFromWS: (state, action) => {
       const trades: MatchedTrade[] =
         action.payload.trades || action.payload.results || [];
-      applyTradeListToState(state, trades);
+      applyTradeListToState(state, trades, {
+        replace: action.payload.replace !== false,
+      });
     },
     /** Single trade from matched-trades WS `trade_update` (+1 / update / -1 when terminal). */
     upsertMatchedTradeFromWS: upsertMatchedTradeFromWSReducer,

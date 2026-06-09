@@ -196,7 +196,8 @@ const Notifications = () => {
     router.push(`/p2p/${trade.id}/matched?orderData=${orderData}`);
   };
 
-  const showInitialLoader = loading && !hasLoaded;
+  const showInitialLoader =
+    loading && !hasLoaded && pendingNotifications.length === 0;
 
   if (showInitialLoader) {
     return (

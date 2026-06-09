@@ -9,6 +9,7 @@ interface ReferredUser {
   user_id: number;
   user_type: string;
   created_at?: string;
+  date_joined?: string;
   company_name: string | null;
   first_name: string;
   country: string | null;
@@ -55,7 +56,8 @@ const ReferralUsersList: React.FC<Props> = ({ referredUsers, loading }) => {
     return `${firstName} ${lastName}`.trim();
   };
 
-  const formatDate = (dateString?: string) => {
+  const formatDateJoined = (user: ReferredUser) => {
+    const dateString = user.date_joined || user.created_at;
     if (!dateString) return "—";
     try {
       return new Intl.DateTimeFormat("en-GB", {
@@ -63,7 +65,7 @@ const ReferralUsersList: React.FC<Props> = ({ referredUsers, loading }) => {
         month: "short",
         year: "numeric",
       }).format(new Date(dateString));
-    } catch (error) {
+    } catch {
       return "—";
     }
   };
@@ -163,6 +165,9 @@ const ReferralUsersList: React.FC<Props> = ({ referredUsers, loading }) => {
                   <span className="text-sm font-semibold text-[#1D8751]">
                     Profile status: {getStatus(u.otp_verified, u.is_merchant)}
                   </span>
+                  <span className="text-xs text-gray-500 dark:text-[#A3A3A3] mt-0.5">
+                    Joined {formatDateJoined(u)}
+                  </span>
                 </div>
 
                 {/* Details Button */}
@@ -199,7 +204,7 @@ const ReferralUsersList: React.FC<Props> = ({ referredUsers, loading }) => {
                       },
                       {
                         label: "Date Joined",
-                        value: formatDate(u.created_at),
+                        value: formatDateJoined(u),
                       },
                       {
                         label: "Profile Status",
