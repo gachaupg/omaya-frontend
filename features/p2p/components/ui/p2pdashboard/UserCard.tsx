@@ -15,7 +15,7 @@ import {
 import { getUserProfile } from "@/features/auth/slices/authSlice";
 import useSound from "use-sound";
 import HelpSupportForm from "@/features/settings/components/HelpSupportForm";
-import { useMatchedTradesWebSocket } from "../../../hooks/useMatchedTradesWebSocket";
+import { useMatchedTradesWsConnected } from "@/features/p2p/components/MatchedTradesWebSocketProvider";
 import { selectPendingMatchedTradeNotificationCount } from "@/features/p2p/selectors";
 import { cookieUtils } from "@/lib/utils/cookieUtils";
 import VerifiedBadge from "@/components/ui/VerifiedBadge";
@@ -37,8 +37,8 @@ const UserCard = () => {
     return null;
   });
 
-  const { data: matchedTrades } = useSelector(
-    (state: RootState) => state.matchedTrades
+  const matchedTrades = useSelector(
+    (state: RootState) => state.matchedTrades.data
   );
   const pendingNotificationCount = useSelector(
     selectPendingMatchedTradeNotificationCount
@@ -63,13 +63,8 @@ const UserCard = () => {
   >(null);
   const [showUpdateIndicator, setShowUpdateIndicator] = useState(false);
 
-  // Use WebSocket for real-time matched trades updates with HTTP polling fallback
-  const { isConnected: wsConnected, connectionError } =
-    useMatchedTradesWebSocket({
-      enabled: isAuthenticated,
-      fallbackToPolling: true,
-      pollingInterval: 30000, // 30 seconds fallback polling
-    });
+  // Matched-trades WebSocket lives in dashboard layout (MatchedTradesWebSocketProvider).
+  const wsConnected = useMatchedTradesWsConnected();
 
   useEffect(() => {
     if (isAuthenticated) {

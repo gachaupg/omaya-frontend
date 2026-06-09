@@ -19,6 +19,9 @@ import { cookieUtils } from "@/lib/utils/cookieUtils";
 
 import { logger } from '@/lib/utils/logger';
 
+/** Shared singleton WS — only disconnect when the last subscriber unmounts. */
+let matchedTradesWsSubscribers = 0;
+
 interface UseMatchedTradesWebSocketOptions {
   enabled?: boolean;
   fallbackToPolling?: boolean;
@@ -78,6 +81,8 @@ export const useMatchedTradesWebSocket = (
     if (!enabled) {
       return;
     }
+
+    matchedTradesWsSubscribers += 1;
 
     const getAccessToken = (): string | null => {
       // First try to get from cookies (primary storage)
@@ -241,14 +246,17 @@ export const useMatchedTradesWebSocket = (
     // Connect to WebSocket
     ws.connect(token);
 
-    // Cleanup function
+    // Cleanup — unsubscribe only; keep WS alive while other subscribers exist.
     return () => {
+      matchedTradesWsSubscribers = Math.max(0, matchedTradesWsSubscribers - 1);
       unsubscribeMessage();
       unsubscribeError();
       unsubscribeClose();
       unsubscribeOpen();
       stopPolling();
-      ws.disconnect();
+      if (matchedTradesWsSubscribers === 0) {
+        ws.disconnect();
+      }
     };
   }, [enabled, dispatch, fallbackToPolling]);
 
