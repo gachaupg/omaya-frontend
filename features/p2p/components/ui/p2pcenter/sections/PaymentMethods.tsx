@@ -27,6 +27,7 @@ import {
 import { parseAllowAutoSend } from "@/features/p2p/utils/paymentAutoSend";
 
 const USDT_ICON_SIZE = 64;
+const RESEND_OTP_COOLDOWN_SECONDS = 60;
 
 interface PaymentMethod {
   id: number;
@@ -118,6 +119,7 @@ const PaymentMethods = () => {
   const [sendOtpLoading, setSendOtpLoading] = useState(false);
   const [verifyOtpLoading, setVerifyOtpLoading] = useState(false);
   const [otpError, setOtpError] = useState<string | null>(null);
+  const [resendCooldown, setResendCooldown] = useState(0);
 
   // Edit modal states
   const [editingPaymentMethod, setEditingPaymentMethod] = useState<PaymentMethod | null>(null);
@@ -289,6 +291,43 @@ const PaymentMethods = () => {
     }
   };
 
+  // Start resend cooldown when OTP step is shown
+  useEffect(() => {
+    if (addStep === "otp") {
+      setResendCooldown(RESEND_OTP_COOLDOWN_SECONDS);
+    } else {
+      setResendCooldown(0);
+    }
+  }, [addStep]);
+
+  // Countdown timer for resend OTP
+  useEffect(() => {
+    if (resendCooldown <= 0) return;
+    const timer = setInterval(
+      () => setResendCooldown((seconds) => Math.max(0, seconds - 1)),
+      1000
+    );
+    return () => clearInterval(timer);
+  }, [resendCooldown]);
+
+  const handleResendOtp = async () => {
+    if (resendCooldown > 0 || sendOtpLoading) return;
+    setSendOtpLoading(true);
+    setOtpError(null);
+    try {
+      const result = await dispatch(sendPaymentDetailAddOtp() as any);
+      if (sendPaymentDetailAddOtp.fulfilled.match(result)) {
+        setResendCooldown(RESEND_OTP_COOLDOWN_SECONDS);
+        setOtpCode("");
+        showToast.success("OTP resent to your email address");
+      } else if (sendPaymentDetailAddOtp.rejected.match(result)) {
+        setOtpError((result.payload as string) || "Failed to resend OTP");
+      }
+    } finally {
+      setSendOtpLoading(false);
+    }
+  };
+
   // Handle OTP verify - then add payment detail
   const handleVerifyOtp = async () => {
     if (!pendingPayload || !otpCode.trim() || otpCode.length < 6) {
@@ -333,6 +372,7 @@ const PaymentMethods = () => {
     setOtpCode("");
     setOtpError(null);
     setPendingPayload(null);
+    setResendCooldown(0);
   };
 
   // Close dropdown and reset form on success
@@ -344,6 +384,7 @@ const PaymentMethods = () => {
       setAddStep("form");
       setOtpCode("");
       setPendingPayload(null);
+      setResendCooldown(0);
       // Reset all form fields
       setSelectedMethod("");
       setSelectedProvider("");
@@ -964,6 +1005,24 @@ const PaymentMethods = () => {
                     <span>{otpError}</span>
                   </div>
                 )}
+                <div className="flex justify-center">
+                  <button
+                    type="button"
+                    onClick={() => void handleResendOtp()}
+                    disabled={resendCooldown > 0 || sendOtpLoading}
+                    className={`text-sm font-medium disabled:cursor-not-allowed ${
+                      sendOtpLoading && resendCooldown === 0
+                        ? "text-[#1D8751] opacity-70"
+                        : "text-[#1D8751] hover:text-[#156b3f] disabled:opacity-50 disabled:text-gray-400 dark:disabled:text-gray-500"
+                    }`}
+                  >
+                    {resendCooldown > 0
+                      ? `Resend OTP in ${resendCooldown}s`
+                      : sendOtpLoading
+                        ? "Sending..."
+                        : "Resend OTP"}
+                  </button>
+                </div>
                 <div className="flex flex-col sm:flex-row gap-3">
                   <Button
                     variant="outline"
@@ -973,6 +1032,7 @@ const PaymentMethods = () => {
                       setOtpCode("");
                       setOtpError(null);
                       setPendingPayload(null);
+                      setResendCooldown(0);
                     }}
                     disabled={verifyOtpLoading}
                     height={44}
