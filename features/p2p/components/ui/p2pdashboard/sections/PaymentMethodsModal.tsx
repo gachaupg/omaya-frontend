@@ -10,6 +10,7 @@ import {
   sendPaymentDetailAddOtp,
   verifyPaymentDetailAddOtp,
   clearPostStatus,
+  parsePaymentOtpSendRejected,
 } from "../../../../slices/paymentMethodsSlice";
 import { showToast } from "../../../../../../lib/utils/toast";
 import { logger } from '@/lib/utils/logger';
@@ -137,6 +138,15 @@ const PaymentMethodsModal: React.FC<PaymentMethodsModalProps> = ({
   const [resendCooldown, setResendCooldown] = useState(0);
   const [otpFeedback, setOtpFeedback] = useState<{ type: "success" | "error"; text: string } | null>(null);
   const RESEND_COOLDOWN_SECONDS = 60;
+
+  const applyOtpSendFailure = (payload: unknown) => {
+    const { message, cooldownRemaining } = parsePaymentOtpSendRejected(payload);
+    setOtpFeedback({ type: "error", text: message });
+    if (cooldownRemaining != null) {
+      setResendCooldown(cooldownRemaining);
+    }
+  };
+
   const existingAutoSendMethod = React.useMemo(
     () => findAutoSendPaymentDetail(userPaymentDetails),
     [userPaymentDetails]
@@ -378,6 +388,26 @@ const PaymentMethodsModal: React.FC<PaymentMethodsModalProps> = ({
     if (providerName) setProvider(String(providerName));
   }, [open, providerToPrefill]);
 
+  // Auto-select first provider for the active tab when modal opens.
+  useEffect(() => {
+    if (!open || providerToPrefill || publicMethodsLoading || provider) return;
+    const first = providers[0];
+    if (!first) return;
+    const methodType = String(first.payment_method_type || "");
+    if (methodType) {
+      setMethod(methodType);
+      if (methodType.toLowerCase().includes("crypto")) {
+        setMethodTab("crypto");
+      } else if (methodType.toLowerCase().includes("forex")) {
+        setMethodTab("forex");
+      } else {
+        setMethodTab("bank");
+      }
+    }
+    const providerName = first.provider_name || first.provider || "";
+    if (providerName) setProvider(String(providerName));
+  }, [open, providers, providerToPrefill, provider, publicMethodsLoading]);
+
   const normalizedMethod = method.trim().toLowerCase();
   // Use the selected tab as source of truth (method string may lag/omit "crypto").
   const isCryptoMethod = methodTab === "crypto" || normalizedMethod.includes("crypto");
@@ -598,7 +628,7 @@ const PaymentMethodsModal: React.FC<PaymentMethodsModalProps> = ({
         setPendingPayload(payload);
         setStep("otp");
       } else if (sendPaymentDetailAddOtp.rejected.match(result)) {
-        setOtpFeedback({ type: "error", text: (result.payload as string) || "Failed to send OTP" });
+        applyOtpSendFailure(result.payload);
       }
     } finally {
       setSendOtpLoading(false);
@@ -616,7 +646,7 @@ const PaymentMethodsModal: React.FC<PaymentMethodsModalProps> = ({
          setResendCooldown(RESEND_COOLDOWN_SECONDS);
          setOtpCode("");
        } else if (sendPaymentDetailAddOtp.rejected.match(result)) {
-         setOtpFeedback({ type: "error", text: (result.payload as string) || "Failed to resend OTP" });
+         applyOtpSendFailure(result.payload);
        }
      } finally {
        setSendOtpLoading(false);
@@ -735,17 +765,6 @@ const PaymentMethodsModal: React.FC<PaymentMethodsModalProps> = ({
               className="w-full p-2.5 sm:p-3 rounded-[24px] bg-white dark:bg-[#18181D] border border-gray-200 dark:border-[#35353E] text-gray-900 dark:text-white text-center text-lg tracking-[0.4em] focus:outline-none focus:ring-2 focus:ring-[#1D8751] placeholder:text-gray-400 dark:placeholder:text-[#788099]"
               maxLength={6}
             />
-            {otpFeedback && (
-              <div
-                className={`text-sm ${
-                  otpFeedback.type === "success"
-                    ? "text-[#1D8751]"
-                    : "text-red-600 dark:text-red-400"
-                }`}
-              >
-                {otpFeedback.text}
-              </div>
-            )}
             <div className="flex justify-center">
               <button
                 type="button"
@@ -765,6 +784,18 @@ const PaymentMethodsModal: React.FC<PaymentMethodsModalProps> = ({
                     : "Resend OTP"}
               </button>
             </div>
+            {otpFeedback && (
+              <div
+                className={`text-sm text-center ${
+                  otpFeedback.type === "success"
+                    ? "text-[#1D8751]"
+                    : "text-red-600 dark:text-red-400"
+                }`}
+                role="alert"
+              >
+                {otpFeedback.text}
+              </div>
+            )}
             <div className="flex flex-col sm:flex-row gap-3 mt-2">
               <button
                 type="button"
@@ -816,14 +847,18 @@ const PaymentMethodsModal: React.FC<PaymentMethodsModalProps> = ({
                      onClick={() => {
                        const nextTab = tab.key as PaymentTab;
                        setMethodTab(nextTab);
-                       setProvider("");
                        if (nextTab === "forex") {
                          setMethod("Forex");
+                         const firstForTab = processedProvidersFiltered.find((p: any) =>
+                           isMethodInTab(String(p?.payment_method_type || ""), nextTab)
+                         );
+                         setProvider(String(firstForTab?.provider_name || firstForTab?.provider || ""));
                        } else {
                          const firstForTab = processedProvidersFiltered.find((p: any) =>
                            isMethodInTab(String(p?.payment_method_type || ""), nextTab)
                          );
                          setMethod(firstForTab?.payment_method_type || "");
+                         setProvider(String(firstForTab?.provider_name || firstForTab?.provider || ""));
                        }
                      }}
                      disabled={publicMethodsLoading}
@@ -1126,6 +1161,19 @@ const PaymentMethodsModal: React.FC<PaymentMethodsModalProps> = ({
               <p className="text-sm text-yellow-800 dark:text-yellow-200 text-center">
                 Please log in to add a payment account
               </p>
+            </div>
+          )}
+
+          {otpFeedback && (
+            <div
+              className={`text-sm text-center mt-2 ${
+                otpFeedback.type === "success"
+                  ? "text-[#1D8751]"
+                  : "text-red-600 dark:text-red-400"
+              }`}
+              role="alert"
+            >
+              {otpFeedback.text}
             </div>
           )}
 
