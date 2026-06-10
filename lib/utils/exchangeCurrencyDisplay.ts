@@ -31,6 +31,15 @@ const PAYMENT_NAME_PATTERN =
 
 const normalize = (v: unknown) => String(v ?? "").trim();
 
+/** ChangeNOW is the swap backend, not a currency or payment provider. */
+export const isChangeNowLabel = (value: unknown): boolean => {
+  const s = String(value ?? "")
+    .trim()
+    .toLowerCase()
+    .replace(/[\s._-]+/g, "");
+  return s === "changenow" || s === "changenowio";
+};
+
 export const isFiatTicker = (symbol: string): boolean => {
   const s = normalize(symbol).toUpperCase();
   if (!s) return false;
@@ -58,6 +67,9 @@ export function resolveProviderDisplay(value: unknown): string {
 export function isLikelyPaymentProviderName(value: unknown): boolean {
   const raw = normalize(value);
   if (!raw) return false;
+
+  // "changenow" stored in asset/provider fields must never be parsed as a ticker.
+  if (isChangeNowLabel(raw)) return true;
 
   if (PAYMENT_NAME_PATTERN.test(raw)) return true;
 

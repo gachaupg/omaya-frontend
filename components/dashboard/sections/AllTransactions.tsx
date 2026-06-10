@@ -1,9 +1,6 @@
 "use client";
 import React, { useCallback, useEffect, useState } from "react";
-import { useDispatch, useSelector } from "react-redux";
 import { Eye } from "lucide-react";
-import { AppDispatch, RootState } from "@/store";
-import { fetchAllUserTransactions, setCurrentPage } from "@/features/transactions/slices/allTransactionsSlice";
 import { formatDashboardTransactionWhen } from "@/lib/globalFormatter";
 import { NoDataFound } from "../ui/Transactions";
 import { useDashboardI18n } from "@/lib/useDashboardI18n";
@@ -17,7 +14,10 @@ import {
   UsdFlagIcon,
   isUsdOrMoneyXTransaction,
 } from "@/components/dashboard/ui/UsdFlagIcon";
-import type { AllTransactionItem } from "@/features/transactions/api";
+import type {
+  AllTransactionItem,
+  AllTransactionsResponse,
+} from "@/features/transactions/api";
 import { getAllUserTransactions } from "@/features/transactions/api";
 import { getMyTransactions as getMyP2PTransactions } from "@/features/p2p/api";
 import { TransactionFromToCell } from "@/components/dashboard/ui/TransactionFromToCell";
@@ -151,6 +151,14 @@ type AllTransactionsProps = {
   excludeSubTypes?: string[];
 };
 
+// Per-tab caches so switching Recent Transactions tabs shows data instantly
+// (stale-while-revalidate) instead of refetching with a spinner every time.
+const pageResponseCache = new Map<string, AllTransactionsResponse>();
+const allPagesResultsCache = new Map<string, AllTransactionItem[]>();
+
+const pageCacheKey = (apiType: string, page: number, pageSize: number) =>
+  `${apiType}|${page}|${pageSize}`;
+
 const getAssetColumnLabels = (tx: AllTransactionItem): { title: string; subtitle?: string } => {
   if (tx.type === "exchange") {
     return getExchangeAssetColumnLabels(tx);
@@ -169,13 +177,14 @@ const AllTransactions = ({
   includeSubTypes,
   excludeSubTypes,
 }: AllTransactionsProps) => {
-  const dispatch = useDispatch<AppDispatch>();
   const { t } = useDashboardI18n();
-  const { data, loading, error } = useSelector(
-    (state: RootState) => state.allTransactions
-  );
   const [currentPage, setCurrentPageLocal] = useState(1);
   const itemsPerPage = 10;
+  const [pageData, setPageData] = useState<AllTransactionsResponse | null>(
+    () => pageResponseCache.get(pageCacheKey(apiType, 1, itemsPerPage)) ?? null
+  );
+  const [pageLoading, setPageLoading] = useState(false);
+  const [pageError, setPageError] = useState<string | null>(null);
   const containerRef = React.useRef<HTMLDivElement>(null);
   const [p2pAddressById, setP2pAddressById] = useState<Record<string, { from?: string | null; to?: string | null; receiver?: string | null }>>({});
   const [p2pAddressByFingerprint, setP2pAddressByFingerprint] = useState<Record<string, { from?: string | null; to?: string | null; receiver?: string | null }>>({});
@@ -195,28 +204,65 @@ const AllTransactions = ({
 
   useEffect(() => {
     setCurrentPageLocal(1);
-    dispatch(setCurrentPage(1));
     setP2pAddressById({});
     setP2pAddressByFingerprint({});
-  }, [dispatch, subTypeFilterKey]);
+  }, [subTypeFilterKey]);
 
+  // Server-paginated tabs: show cached page instantly, refresh in background.
   useEffect(() => {
-    if (!needsClientPagination) {
-      setAllPagesData(null);
-      dispatch(
-        fetchAllUserTransactions({
+    if (needsClientPagination) return;
+
+    const key = pageCacheKey(apiType, currentPage, itemsPerPage);
+    const cached = pageResponseCache.get(key) ?? null;
+    if (cached) {
+      setPageData(cached);
+    } else {
+      setPageLoading(true);
+    }
+    setPageError(null);
+
+    let cancelled = false;
+    (async () => {
+      try {
+        const resp = await getAllUserTransactions({
           type: apiType,
           page: currentPage,
           page_size: itemsPerPage,
-        })
-      );
+        });
+        pageResponseCache.set(key, resp);
+        if (!cancelled) setPageData(resp);
+      } catch (err) {
+        if (!cancelled && !cached) {
+          setPageError(
+            err instanceof Error ? err.message : "Failed to fetch transactions"
+          );
+        }
+      } finally {
+        if (!cancelled) setPageLoading(false);
+      }
+    })();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [apiType, currentPage, needsClientPagination]);
+
+  // Client-paginated tabs (sub_type filters): same stale-while-revalidate.
+  useEffect(() => {
+    if (!needsClientPagination) {
+      setAllPagesData(null);
       return;
     }
 
-    let cancelled = false;
-    setLoadingAllPages(true);
-    setAllPagesData(null);
+    const cached = allPagesResultsCache.get(subTypeFilterKey) ?? null;
+    if (cached) {
+      setAllPagesData(cached);
+    } else {
+      setLoadingAllPages(true);
+      setAllPagesData(null);
+    }
 
+    let cancelled = false;
     (async () => {
       try {
         const all: AllTransactionItem[] = [];
@@ -234,11 +280,12 @@ const AllTransactions = ({
           hasMore = !!resp?.next;
           page += 1;
         }
+        allPagesResultsCache.set(subTypeFilterKey, all);
         if (!cancelled) {
           setAllPagesData(all);
         }
       } catch {
-        if (!cancelled) {
+        if (!cancelled && !cached) {
           setAllPagesData([]);
         }
       } finally {
@@ -251,24 +298,12 @@ const AllTransactions = ({
     return () => {
       cancelled = true;
     };
-  }, [dispatch, apiType, needsClientPagination, subTypeFilterKey]);
-
-  useEffect(() => {
-    if (needsClientPagination) return;
-    dispatch(
-      fetchAllUserTransactions({
-        type: apiType,
-        page: currentPage,
-        page_size: itemsPerPage,
-      })
-    );
-  }, [dispatch, currentPage, apiType, needsClientPagination]);
+  }, [apiType, needsClientPagination, subTypeFilterKey]);
 
   const handlePageChange = (pageNumber: number, e?: React.MouseEvent) => {
     e?.preventDefault();
     e?.stopPropagation();
     setCurrentPageLocal(pageNumber);
-    dispatch(setCurrentPage(pageNumber));
     if (containerRef.current) {
       const yOffset = -100;
       const element = containerRef.current;
@@ -279,7 +314,7 @@ const AllTransactions = ({
 
   const rawResults = needsClientPagination
     ? (allPagesData ?? [])
-    : (data?.results ?? []);
+    : (pageData?.results ?? []);
   const filteredResults = [...rawResults]
     .filter((tx) => !isPendingAddressDashboardStatus(tx.status))
     .filter((tx) => !shouldOmitExchangeWithoutDepositOrWithdrawal(tx))
@@ -292,10 +327,10 @@ const AllTransactions = ({
 
   const totalCount = needsClientPagination
     ? filteredResults.length
-    : (data?.count ?? 0);
+    : (pageData?.count ?? 0);
   const totalPages = needsClientPagination
     ? Math.max(1, Math.ceil(filteredResults.length / itemsPerPage))
-    : (data?.total_pages ?? 1);
+    : (pageData?.total_pages ?? 1);
 
   const results = needsClientPagination
     ? filteredResults.slice(
@@ -560,7 +595,7 @@ const AllTransactions = ({
   );
 
   const isLoading =
-    (loading && !data && !needsClientPagination) ||
+    (!needsClientPagination && pageLoading && !pageData) ||
     (needsClientPagination && loadingAllPages && allPagesData === null);
 
   if (isLoading) {
@@ -574,11 +609,11 @@ const AllTransactions = ({
     );
   }
 
-  if (error) {
+  if (pageError && !pageData) {
     return (
       <>
         <div className="text-red-500 text-center p-4">
-          {t("common.error", "Error")}: {error}
+          {t("common.error", "Error")}: {pageError}
         </div>
         {transactionDetailsModal}
       </>
