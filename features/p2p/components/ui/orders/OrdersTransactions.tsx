@@ -79,6 +79,7 @@ const OrdersTransactions = ({
         onViewTransaction={handleViewTransaction}
         showExportButton={false}
         hideP2PDateFilter
+        hideP2PSearch
         dateFilter="ALL"
       />
     </div>
