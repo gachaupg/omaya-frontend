@@ -9,6 +9,7 @@ import {
   sendPaymentDetailAddOtp,
   verifyPaymentDetailAddOtp,
   clearPostStatus,
+  parsePaymentOtpSendRejected,
 } from "@/features/p2p/slices/paymentMethodsSlice";
 import EditPaymentMethodModal from "./EditPaymentMethodModal";
 import DeleteErrorModal from "./DeleteErrorModal";
@@ -148,22 +149,6 @@ const PaymentMethods = () => {
     dispatch(fetchAdminPaymentMethods() as any);
   }, [dispatch, isAuthenticated]);
 
-  // Reset add form on dropdown open
-  useEffect(() => {
-    if (showAddDropdown) {
-      setProviderSearch("");
-      setSelectedMethod("");
-      setSelectedProvider("");
-      setAccountName(user ? `${user.first_name || ""} ${user.last_name || ""}`.trim() : "");
-      setAccountNumber("");
-      setAddStep("form");
-      setOtpCode("");
-      setOtpError(null);
-      setPendingPayload(null);
-      dispatch(clearPostStatus());
-    }
-  }, [showAddDropdown, user, dispatch]);
-
   // Close dropdown on outside click
   const dropdownRef = useRef<HTMLDivElement | null>(null);
   const buttonRef = useRef<HTMLDivElement | null>(null);
@@ -199,6 +184,31 @@ const PaymentMethods = () => {
         wallet_address: m.wallet_address,
       }));
   }, [adminMethods]);
+
+  // Reset add form on dropdown open; auto-select first payment method when ready.
+  useEffect(() => {
+    if (!showAddDropdown) return;
+    setProviderSearch("");
+    setAccountName(user ? `${user.first_name || ""} ${user.last_name || ""}`.trim() : "");
+    setAccountNumber("");
+    setAddStep("form");
+    setOtpCode("");
+    setOtpError(null);
+    setInlineError(null);
+    setPendingPayload(null);
+    setResendCooldown(0);
+    dispatch(clearPostStatus());
+
+    if (!adminLoading && allProviders.length > 0) {
+      const first = allProviders[0];
+      setSelectedProvider(first.provider_name);
+      setSelectedMethod(first.payment_method_type || "Bank");
+      setShowAddDropdown(false);
+    } else {
+      setSelectedMethod("");
+      setSelectedProvider("");
+    }
+  }, [showAddDropdown, user, dispatch, adminLoading, allProviders]);
 
   // Filtered providers by search
   const filteredProviders = useMemo(() => {
@@ -257,6 +267,23 @@ const PaymentMethods = () => {
     logger.debug('p2p', "Input change:", methodId, field, value);
   };
 
+  const applyOtpSendFailure = (
+    payload: unknown,
+    target: "form" | "otp" = "form"
+  ) => {
+    const { message, cooldownRemaining } = parsePaymentOtpSendRejected(payload);
+    if (target === "otp") {
+      setOtpError(message);
+      setInlineError(null);
+    } else {
+      setInlineError(message);
+      setOtpError(null);
+    }
+    if (cooldownRemaining != null) {
+      setResendCooldown(cooldownRemaining);
+    }
+  };
+
   // Handle Add - first send OTP, then show OTP step
   const handleAdd = async () => {
     if (!isAuthenticated) {
@@ -284,7 +311,7 @@ const PaymentMethods = () => {
         setPendingPayload(payload);
         setAddStep("otp");
       } else if (sendPaymentDetailAddOtp.rejected.match(result)) {
-        setInlineError((result.payload as string) || "Failed to send OTP");
+        applyOtpSendFailure(result.payload, "form");
       }
     } finally {
       setSendOtpLoading(false);
@@ -321,7 +348,7 @@ const PaymentMethods = () => {
         setOtpCode("");
         showToast.success("OTP resent to your email address");
       } else if (sendPaymentDetailAddOtp.rejected.match(result)) {
-        setOtpError((result.payload as string) || "Failed to resend OTP");
+        applyOtpSendFailure(result.payload, "otp");
       }
     } finally {
       setSendOtpLoading(false);
@@ -993,18 +1020,6 @@ const PaymentMethods = () => {
                   }`}
                   maxLength={6}
                 />
-                {otpError && (
-                  <div className="flex items-start gap-2 text-red-600 dark:text-red-400 text-sm">
-                    <svg className="w-4 h-4 shrink-0 mt-0.5" fill="currentColor" viewBox="0 0 20 20">
-                      <path
-                        fillRule="evenodd"
-                        d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z"
-                        clipRule="evenodd"
-                      />
-                    </svg>
-                    <span>{otpError}</span>
-                  </div>
-                )}
                 <div className="flex justify-center">
                   <button
                     type="button"
@@ -1023,6 +1038,14 @@ const PaymentMethods = () => {
                         : "Resend OTP"}
                   </button>
                 </div>
+                {otpError && (
+                  <div
+                    className="text-sm text-center text-red-600 dark:text-red-400"
+                    role="alert"
+                  >
+                    {otpError}
+                  </div>
+                )}
                 <div className="flex flex-col sm:flex-row gap-3">
                   <Button
                     variant="outline"
@@ -1070,10 +1093,10 @@ const PaymentMethods = () => {
                 </div>
 
                 {inlineError && (
-                  <div className="flex items-center gap-2 text-red-600 dark:text-red-400 text-sm">
-                    <svg className="w-4 h-4 shrink-0" fill="currentColor" viewBox="0 0 20 20">
-                      <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
-                    </svg>
+                  <div
+                    className="text-sm text-center text-red-600 dark:text-red-400"
+                    role="alert"
+                  >
                     {inlineError}
                   </div>
                 )}

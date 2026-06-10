@@ -143,6 +143,50 @@ const extractPaymentDetailError = (error: any): string => {
   return fallbackMessage;
 };
 
+export type PaymentOtpSendError = {
+  message: string;
+  cooldownRemaining?: number;
+};
+
+const parseCooldownSeconds = (value: unknown): number | undefined => {
+  if (typeof value === "number" && Number.isFinite(value) && value > 0) {
+    return Math.ceil(value);
+  }
+  if (typeof value === "string" && value.trim()) {
+    const parsed = Number.parseInt(value, 10);
+    if (Number.isFinite(parsed) && parsed > 0) return parsed;
+  }
+  return undefined;
+};
+
+const extractPaymentOtpSendError = (error: any): PaymentOtpSendError => {
+  const responseData = error?.response?.data ?? error?.data ?? null;
+  const cooldownRemaining = parseCooldownSeconds(
+    responseData?.cooldown_remaining ?? responseData?.cooldown_seconds
+  );
+  return {
+    message: extractPaymentDetailError(error),
+    cooldownRemaining,
+  };
+};
+
+/** Normalize rejected send-OTP thunk payload for UI (message + optional cooldown). */
+export function parsePaymentOtpSendRejected(
+  payload: unknown
+): PaymentOtpSendError {
+  if (payload && typeof payload === "object" && "message" in payload) {
+    const p = payload as PaymentOtpSendError;
+    return {
+      message: String(p.message || "Failed to send OTP"),
+      cooldownRemaining: parseCooldownSeconds(p.cooldownRemaining),
+    };
+  }
+  if (typeof payload === "string" && payload.trim()) {
+    return { message: payload };
+  }
+  return { message: "Failed to send OTP" };
+}
+
 export const postUserPaymentDetail = createAsyncThunk<
   unknown,
   {
@@ -258,14 +302,14 @@ export const patchUserPaymentDetail = createAsyncThunk<
 export const sendPaymentDetailAddOtp = createAsyncThunk<
   { message: string },
   void,
-  { rejectValue: string }
+  { rejectValue: PaymentOtpSendError }
 >(
   "paymentMethods/sendPaymentDetailAddOtp",
   async (_, { rejectWithValue }) => {
     try {
       return await apiSendPaymentDetailAddOtp();
     } catch (err: any) {
-      return rejectWithValue(extractPaymentDetailError(err));
+      return rejectWithValue(extractPaymentOtpSendError(err));
     }
   }
 );
