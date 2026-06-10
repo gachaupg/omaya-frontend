@@ -536,30 +536,35 @@ const PaymentMethods = () => {
     if (!method || typeof method !== "object") return null;
     const statusLabel = getMethodStatusLabel(method);
     const wallet = String(method.wallet_address || "").trim();
+    const providerLabel = String(method.payment_provider_name || "").trim();
+    const methodLabel = String(method.payment_method_name || "").trim();
+    const isUsdtProvider = providerLabel.toLowerCase() === "usdt";
+    const showMethodSubtitle =
+      methodLabel.length > 0 &&
+      methodLabel.toLowerCase() !== providerLabel.toLowerCase() &&
+      methodLabel.toLowerCase() !== "usdt";
     return (
       <tr
         key={method.id}
         className="border-b border-gray-200 dark:border-[#35353E] hover:bg-gray-50 dark:hover:bg-[var(--card-color)] transition-colors"
       >
         <td className="px-4 py-4">
-          <div className="flex flex-col gap-0.5">
-            <div className="flex items-center gap-3">
-              <img
-                src={getHighResAssetIcon({ ticker: "USDT" }, USDT_ICON_SIZE)}
-                alt="USDT"
-                className="w-10 h-10 rounded-full object-contain flex-shrink-0 bg-white dark:bg-[#1F2432]"
-                loading="lazy"
-                onError={(e) => {
-                  e.currentTarget.src = "/images/tether.svg";
-                }}
-              />
-              <span className="text-sm sm:text-base font-semibold text-gray-900 dark:text-white">
-                {method.payment_provider_name}
-              </span>
-            </div>
-            {method.payment_method_name ? (
-              <span className="text-xs text-gray-500 dark:text-gray-400 pl-[52px]">
-                {method.payment_method_name}
+          <div className="flex flex-col items-center justify-center gap-1 text-center">
+            <img
+              src={getHighResAssetIcon({ ticker: "USDT" }, USDT_ICON_SIZE)}
+              alt=""
+              className="w-10 h-10 rounded-full object-contain flex-shrink-0 bg-white dark:bg-[#1F2432]"
+              loading="lazy"
+              onError={(e) => {
+                e.currentTarget.src = "/images/tether.svg";
+              }}
+            />
+            <span className="text-sm sm:text-base font-semibold text-gray-900 dark:text-white">
+              {isUsdtProvider || !providerLabel ? "USDT" : providerLabel}
+            </span>
+            {showMethodSubtitle ? (
+              <span className="text-xs text-gray-500 dark:text-gray-400">
+                {methodLabel}
               </span>
             ) : null}
           </div>

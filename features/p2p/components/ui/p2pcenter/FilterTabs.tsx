@@ -185,18 +185,20 @@ const FilterTabs: React.FC<FilterTabsProps> = ({
     <div className="flex flex-col mb-6 w-full gap-3">
     <div className="flex flex-col sm:flex-row gap-4 items-start sm:items-center justify-between w-full">
       {/* Token */}
-      <div className="flex items-center bg-gray-100 dark:bg-[var(--card-color)] rounded-full px-5 py-2.5 w-full sm:w-auto">
+      <div className="flex items-center justify-center bg-gray-100 dark:bg-[var(--card-color)] rounded-full px-5 py-2.5 w-full sm:w-auto gap-2.5">
         <img
           src="/images/tether.svg"
-          alt="Tether"
-          className="w-7 h-7 mr-2.5"
+          alt=""
+          className="w-7 h-7 shrink-0"
         />
-        <span className="text-gray-900 dark:text-white mr-2 text-base font-semibold">Tether</span>
-        <span className="text-[#788099] text-base font-medium">USDT</span>
+        <span className="text-gray-900 dark:text-white text-base font-semibold">
+          USDT
+        </span>
         <select
-          className="bg-transparent text-gray-900 dark:text-white ml-2 outline-none w-full sm:w-auto text-base font-medium"
+          className="sr-only"
           value={filters.token}
           onChange={(e) => setFilters((p) => ({ ...p, token: e.target.value }))}
+          aria-label="Token filter"
         >
           <option>Tether</option>
         </select>
