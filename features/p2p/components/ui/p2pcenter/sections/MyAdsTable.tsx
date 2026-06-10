@@ -42,6 +42,162 @@ type Props = {
 
 const ITEMS_PER_PAGE = 7;
 
+const PAYMENT_FALLBACK_LOGO = "/assets/image_7_dqkxkj.png";
+
+function getTradeAssetLabel(trade: any): string {
+  const asset = String(trade?.asset ?? "").trim();
+  const currency = String(trade?.currency ?? trade?.assetSymbol ?? "").trim();
+  if (!asset && !currency) return "—";
+  if (!asset) return currency;
+  if (!currency) return asset;
+  if (asset.toLowerCase() === currency.toLowerCase()) return asset;
+  // Avoid showing the same ticker twice when asset already includes it.
+  if (asset.toLowerCase().includes(currency.toLowerCase())) return asset;
+  if (currency.toLowerCase().includes(asset.toLowerCase())) return currency;
+  return asset;
+}
+
+function TradeAssetCell({
+  trade,
+  centered = false,
+}: {
+  trade: any;
+  centered?: boolean;
+}) {
+  const label = getTradeAssetLabel(trade);
+  return (
+    <div
+      className={`flex items-center gap-2 ${centered ? "justify-center" : ""}`}
+    >
+      <img
+        src={trade.asset_image || "/images/tether.svg"}
+        alt=""
+        className="w-7 h-7 shrink-0"
+      />
+      <span className="text-base font-semibold text-gray-900 dark:text-white">
+        {label}
+      </span>
+    </div>
+  );
+}
+
+function getPaymentLabel(p: Record<string, unknown>): string {
+  return String(
+    p.provider ||
+      p.provider_name ||
+      p.payment_method ||
+      p.name ||
+      "Payment method"
+  );
+}
+
+function normalizePaymentDetails(
+  details: unknown,
+  paymentFallback?: unknown
+): Record<string, unknown>[] {
+  const fromDetails: Record<string, unknown>[] = [];
+
+  if (Array.isArray(details) && details.length > 0) {
+    fromDetails.push(
+      ...(details.filter(
+        (p) => p && typeof p === "object" && !Array.isArray(p)
+      ) as Record<string, unknown>[])
+    );
+  } else if (details && typeof details === "object" && !Array.isArray(details)) {
+    const record = details as Record<string, unknown>;
+    const provider =
+      record.provider || record.provider_name || record.payment_method || record.name;
+    if (provider) fromDetails.push(record);
+  }
+
+  const fromPayment: Record<string, unknown>[] = Array.isArray(paymentFallback)
+    ? paymentFallback
+        .filter((p) => p && typeof p === "object")
+        .map((p) => {
+          const item = p as Record<string, unknown>;
+          return {
+            id: item.id,
+            provider: item.bank || item.provider || item.provider_name,
+            provider_logo: item.logo || item.provider_logo,
+            payment_method: item.payment_method,
+          };
+        })
+        .filter((p) => getPaymentLabel(p) !== "Payment method")
+    : [];
+
+  return fromPayment.length > fromDetails.length ? fromPayment : fromDetails;
+}
+
+function getPaymentLogo(p: Record<string, unknown>): string {
+  return String(
+    p.provider_logo || p.logo || p.logo_url || PAYMENT_FALLBACK_LOGO
+  );
+}
+
+type PaymentDetailsListProps = {
+  details: unknown;
+  paymentFallback?: unknown;
+  tradeKey: string;
+  compact?: boolean;
+};
+
+const PaymentDetailsList: React.FC<PaymentDetailsListProps> = ({
+  details,
+  paymentFallback,
+  tradeKey,
+  compact = false,
+}) => {
+  const [expanded, setExpanded] = useState(false);
+
+  useEffect(() => {
+    setExpanded(false);
+  }, [tradeKey]);
+
+  const validDetails = normalizePaymentDetails(details, paymentFallback);
+  if (validDetails.length === 0) {
+    return <span className="text-xs text-gray-500 dark:text-[#8C8CA1] italic">—</span>;
+  }
+
+  const visible = expanded ? validDetails : validDetails.slice(0, 1);
+  const hiddenCount = validDetails.length - 1;
+  const textClass = compact
+    ? "text-[11px] leading-tight font-medium text-gray-900 dark:text-white"
+    : "text-xs leading-tight font-medium text-gray-900 dark:text-white";
+
+  return (
+    <div className="flex flex-col gap-1">
+      {visible.map((p, i) => (
+        <div
+          key={String(p.id ?? `${tradeKey}-payment-${i}`)}
+          className="flex items-center gap-1.5"
+        >
+          <img
+            src={getPaymentLogo(p)}
+            alt=""
+            className="w-4 h-4 rounded shrink-0"
+            onError={(e) => {
+              (e.target as HTMLImageElement).src = PAYMENT_FALLBACK_LOGO;
+            }}
+          />
+          <span className={textClass}>{getPaymentLabel(p)}</span>
+        </div>
+      ))}
+      {hiddenCount > 0 && (
+        <button
+          type="button"
+          onClick={(e) => {
+            e.stopPropagation();
+            setExpanded((prev) => !prev);
+          }}
+          className={`${compact ? "text-[11px]" : "text-xs"} font-medium text-[#1D8751] hover:underline text-left w-fit`}
+        >
+          {expanded ? "View less" : `View all (${validDetails.length})`}
+        </button>
+      )}
+    </div>
+  );
+};
+
 const MyAdsTable: React.FC<Props> = ({ trades, loading }) => {
   /** Hooks */
   const dispatch = useDispatch();
@@ -303,9 +459,15 @@ const MyAdsTable: React.FC<Props> = ({ trades, loading }) => {
               {columns.map((col) => (
                 <th
                   key={col}
-                  className="px-4 py-4 text-base font-bold text-gray-900 dark:text-white whitespace-nowrap"
+                  className={`px-4 py-4 text-base font-bold text-gray-900 dark:text-white whitespace-nowrap ${
+                    col === "Asset" ? "text-center" : "text-left"
+                  }`}
                 >
-                  <span className="inline-flex items-center">
+                  <span
+                    className={`inline-flex items-center ${
+                      col === "Asset" ? "justify-center w-full" : ""
+                    }`}
+                  >
                     {col}
                     <SortArrowsIcon />
                   </span>
@@ -320,16 +482,8 @@ const MyAdsTable: React.FC<Props> = ({ trades, loading }) => {
                 className="border-b border-gray-200 dark:border-[#35353E] hover:bg-gray-100 dark:hover:bg-[var(--card-color)] transition-colors relative"
               >
                 {/* Asset */}
-                <td className="px-4 py-4 flex items-center gap-2">
-                  <img
-                    src={
-                      trade.asset_image ||
-                      "/images/tether.svg"
-                    }
-                    alt={trade.asset || "Asset"}
-                    className="w-7 h-7"
-                  />
-                  <span className="text-base font-semibold text-gray-900 dark:text-white">{trade.asset}</span>
+                <td className="px-4 py-4 text-center align-middle">
+                  <TradeAssetCell trade={trade} centered />
                 </td>
                 {/* Type */}
                 <td className="px-4 py-4">
@@ -358,50 +512,12 @@ const MyAdsTable: React.FC<Props> = ({ trades, loading }) => {
                   <span className="text-base font-semibold text-gray-900 dark:text-white">{trade.commission_rate}%</span>
                 </td>
                 {/* Payment */}
-                <td className="px-4 py-4" style={{ minWidth: '150px' }}>
-                  {(() => {
-                    const details = trade.payment_details;
-                    // Handle array of payment details
-                    if (Array.isArray(details) && details.length > 0) {
-                      const validDetails = details.filter((p: any) => p && typeof p === 'object');
-                      if (validDetails.length > 0) {
-                        return validDetails.map((p: any, i: number) => (
-                          <div key={i} className="flex items-center gap-2">
-                            <img
-                              src={p?.provider_logo || "/assets/image_7_dqkxkj.png"}
-                              alt=""
-                              className="w-5 h-5 rounded"
-                              onError={(e) => {
-                                (e.target as HTMLImageElement).src = "/assets/image_7_dqkxkj.png";
-                              }}
-                            />
-                            <span className="text-base font-medium text-gray-900 dark:text-white">{p?.provider || p?.payment_method || p?.name || 'Payment method'}</span>
-                          </div>
-                        ));
-                      }
-                    }
-                    // Handle object payment_details (non-array)
-                    if (details && typeof details === 'object' && !Array.isArray(details)) {
-                      const provider = (details as any)?.provider || (details as any)?.payment_method || (details as any)?.name;
-                      if (provider) {
-                        return (
-                          <div className="flex items-center gap-2">
-                            <img
-                              src={(details as any)?.provider_logo || "/assets/image_7_dqkxkj.png"}
-                              alt=""
-                              className="w-5 h-5 rounded"
-                              onError={(e) => {
-                                (e.target as HTMLImageElement).src = "/assets/image_7_dqkxkj.png";
-                              }}
-                            />
-                            <span className="text-base font-medium text-gray-900 dark:text-white">{provider}</span>
-                          </div>
-                        );
-                      }
-                    }
-                    // Fallback
-                    return <span className="text-sm text-gray-500 dark:text-[#8C8CA1] italic">—</span>;
-                  })()}
+                <td className="px-4 py-4" style={{ minWidth: "150px" }}>
+                  <PaymentDetailsList
+                    details={trade.payment_details}
+                    paymentFallback={trade.payment}
+                    tradeKey={String(trade.id ?? `trade-${idx}`)}
+                  />
                 </td>
                 {/* Last update */}
                 <td className="px-4 py-4">
@@ -451,16 +567,8 @@ const MyAdsTable: React.FC<Props> = ({ trades, loading }) => {
           >
             {/* Top Row: Asset, Type, and Action Menu */}
             <div className="flex items-center justify-between pb-2 border-b border-gray-200 dark:border-[#35353E]">
-              <div className="flex items-center gap-2">
-                <img
-                  src={
-                    trade.asset_image ||
-                    "/images/tether.svg"
-                  }
-                  alt={trade.asset || "Asset"}
-                  className="w-7 h-7"
-                />
-                <span className="font-bold text-base text-gray-900 dark:text-white">{trade.asset}</span>
+              <div className="flex-1 flex justify-center">
+                <TradeAssetCell trade={trade} centered />
               </div>
               <div className="flex items-center gap-2">
                 <span
@@ -508,57 +616,12 @@ const MyAdsTable: React.FC<Props> = ({ trades, loading }) => {
             {/* Payment Methods */}
             <div className="flex flex-col gap-2 pt-2 border-t border-gray-200 dark:border-[#35353E]">
               <span className="text-sm font-medium text-gray-500 dark:text-[#8C8CA1]">Payment Methods</span>
-              <div className="flex flex-wrap gap-2">
-                {(() => {
-                  const details = trade.payment_details;
-                  if (Array.isArray(details) && details.length > 0) {
-                    const validDetails = details.filter((p: any) => p && typeof p === 'object');
-                    if (validDetails.length > 0) {
-                      return (
-                        <>
-                          {validDetails.slice(0, 2).map((p: any, i: number) => (
-                            <div key={i} className="flex items-center gap-1.5">
-                              <img
-                                src={p?.provider_logo || "/assets/image_7_dqkxkj.png"}
-                                alt=""
-                                className="w-5 h-5 rounded"
-                                onError={(e) => {
-                                  (e.target as HTMLImageElement).src = "/assets/image_7_dqkxkj.png";
-                                }}
-                              />
-                              <span className="text-sm font-medium text-gray-900 dark:text-white">{p?.provider || p?.payment_method || p?.name || 'Payment method'}</span>
-                            </div>
-                          ))}
-                          {validDetails.length > 2 && (
-                            <span className="text-sm font-medium text-gray-500 dark:text-[#8C8CA1]">
-                              +{validDetails.length - 2} more
-                            </span>
-                          )}
-                        </>
-                      );
-                    }
-                  }
-                  if (details && typeof details === 'object' && !Array.isArray(details)) {
-                    const provider = (details as any)?.provider || (details as any)?.payment_method || (details as any)?.name;
-                    if (provider) {
-                      return (
-                        <div className="flex items-center gap-1.5">
-                          <img
-                            src={(details as any)?.provider_logo || "/assets/image_7_dqkxkj.png"}
-                            alt=""
-                            className="w-5 h-5 rounded"
-                            onError={(e) => {
-                              (e.target as HTMLImageElement).src = "/assets/image_7_dqkxkj.png";
-                            }}
-                          />
-                          <span className="text-sm font-medium text-gray-900 dark:text-white">{provider}</span>
-                        </div>
-                      );
-                    }
-                  }
-                  return <span className="text-sm text-gray-500 dark:text-[#8C8CA1] italic">—</span>;
-                })()}
-              </div>
+              <PaymentDetailsList
+                details={trade.payment_details}
+                paymentFallback={trade.payment}
+                tradeKey={String(trade.id ?? `trade-${idx}`)}
+                compact
+              />
             </div>
 
             {/* Status and Last Update Row */}

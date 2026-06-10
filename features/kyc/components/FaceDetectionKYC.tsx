@@ -585,30 +585,10 @@ const FaceDetectionKYC: React.FC<FaceDetectionKYCProps> = ({
       }
     }
 
-    const resizedDetections = faceapi.resizeResults(detections, displaySize);
-    
+    // Keep the preview clean — no detection box, landmarks, or labels drawn.
     const ctx = canvas.getContext('2d');
-    if (!ctx) return;
-    
-    ctx.clearRect(0, 0, canvas.width, canvas.height);
-    
-    if (detections.length === 1 && isFaceValidRef.current) {
-      ctx.save();
-      ctx.translate(canvas.width, 0);
-      ctx.scale(-1, 1);
-      faceapi.draw.drawDetections(canvas, resizedDetections);
-      faceapi.draw.drawFaceLandmarks(canvas, resizedDetections);
-
-      resizedDetections.forEach((detection) => {
-        const { age, gender, genderProbability } = detection;
-        const text = `${Math.round(age)} years, ${gender} (${Math.round(genderProbability * 100)}%)`;
-
-        new faceapi.draw.DrawTextField(
-          [text],
-          detection.detection.box.bottomLeft
-        ).draw(canvas);
-      });
-      ctx.restore();
+    if (ctx) {
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
     }
 
     if (!isVerified && !captureInProgressRef.current) {
