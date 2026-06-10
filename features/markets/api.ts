@@ -511,6 +511,77 @@ export const fetchCoinDetailsPublic = async (id: string) => {
   }
 };
 
+const COINGECKO_ID_BY_SYMBOL: Record<string, string> = {
+  btc: "bitcoin",
+  eth: "ethereum",
+  bnb: "binancecoin",
+  sol: "solana",
+  xrp: "ripple",
+  ada: "cardano",
+  doge: "dogecoin",
+  trx: "tron",
+  dot: "polkadot",
+  ltc: "litecoin",
+  bch: "bitcoin-cash",
+  matic: "matic-network",
+  pol: "polygon-ecosystem-token",
+  avax: "avalanche-2",
+  ton: "the-open-network",
+  shib: "shiba-inu",
+  link: "chainlink",
+  xlm: "stellar",
+  usdt: "tether",
+  usdc: "usd-coin",
+};
+
+const usdPriceCache = new Map<string, { value: number; at: number }>();
+const USD_PRICE_CACHE_TTL_MS = 5 * 60 * 1000;
+
+/**
+ * Resolve the current USD price for a crypto ticker (e.g. "BTC" → 67000).
+ * Returns null when the symbol can't be resolved or the request fails.
+ */
+export const fetchUsdPriceForSymbol = async (
+  symbol: string
+): Promise<number | null> => {
+  const sym = String(symbol ?? "").trim().toLowerCase();
+  if (!sym) return null;
+
+  const cached = usdPriceCache.get(sym);
+  if (cached && Date.now() - cached.at < USD_PRICE_CACHE_TTL_MS) {
+    return cached.value;
+  }
+
+  try {
+    let id = COINGECKO_ID_BY_SYMBOL[sym];
+    if (!id) {
+      const search = await coingeckoClient.get<{
+        coins?: Array<{ id?: string; symbol?: string }>;
+      }>(`/search?query=${encodeURIComponent(sym)}`);
+      const coins = search.data?.coins ?? [];
+      const exact = coins.find((c) => c.symbol?.toLowerCase() === sym);
+      id = exact?.id || coins[0]?.id || "";
+    }
+    if (!id) return null;
+
+    const response = await coingeckoClient.get<
+      Record<string, { usd?: number }>
+    >(`/simple/price?ids=${encodeURIComponent(id)}&vs_currencies=usd`);
+    const price = response.data?.[id]?.usd;
+    if (typeof price === "number" && price > 0) {
+      usdPriceCache.set(sym, { value: price, at: Date.now() });
+      return price;
+    }
+    return null;
+  } catch (error) {
+    logger.error("markets", "Failed to fetch USD price for symbol", {
+      symbol: sym,
+      error,
+    });
+    return null;
+  }
+};
+
 /**
  * Fetch top trading assets from OMAYA backend
  * @returns Promise with top assets data

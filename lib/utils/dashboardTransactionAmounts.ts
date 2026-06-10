@@ -3,6 +3,7 @@ import { normalizeExchangeSubType } from "@/lib/utils/exchangeTransactionDisplay
 import {
   getExchangeCryptoTicker,
   getExchangeFiatTicker,
+  isChangeNowLabel,
   isFiatTicker,
   isStablecoinTicker,
 } from "@/lib/utils/exchangeCurrencyDisplay";
@@ -93,7 +94,10 @@ function pickUsdAmount(
 const isUsdPeggedSymbol = (symbol: string): boolean =>
   isUsdtSymbol(symbol) ||
   isUsdSymbol(symbol) ||
-  isStablecoinTicker(normalizeSymbol(symbol));
+  isStablecoinTicker(normalizeSymbol(symbol)) ||
+  // ChangeNOW legs are settled in USDT; the backend sometimes stores
+  // "changenow" in the asset field of that leg.
+  isChangeNowLabel(symbol);
 
 /** Convert a non-USDT crypto qty to USD using API price or the USD/USDT leg. */
 function resolveCryptoUsdAmount(

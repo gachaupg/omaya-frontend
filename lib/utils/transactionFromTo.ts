@@ -10,6 +10,7 @@ import {
   getExchangeFromAssetTicker,
   getExchangePaymentProviderLabel,
   getExchangeToAssetTicker,
+  isChangeNowLabel,
   isLikelyPaymentProviderName,
 } from "@/lib/utils/exchangeCurrencyDisplay";
 import {
@@ -28,6 +29,9 @@ export type FromToCellModel = {
 };
 
 export const DEFAULT_PROVIDER_LOGO = "/default-provider-logo.svg";
+
+/** US flag for the USD leg (same source as UsdFlagIcon). */
+export const USD_FLAG_ICON_URL = "https://flagcdn.com/w80/us.png";
 
 export function isAssetNetworkLabel(value: unknown): boolean {
   const s = String(value ?? "").trim();
@@ -148,7 +152,11 @@ export function buildP2pWithdrawalDepositFromTo(
               fromAddr,
               paymentLogo
             )
-        : textFromToCell(String(tx?.payment_provider || "Payment"), paymentLogo),
+        : providerDetailFromToCell(
+            String(tx?.payment_provider || "Payment"),
+            null,
+            paymentLogo
+          ),
       to: textFromToCell(cryptoLabel, resolveAssetIconForLabel(cryptoLabel)),
     };
   }
@@ -247,9 +255,23 @@ export function providerDetailFromToCell(
   detail?: string | null,
   iconUrl?: string | null
 ): FromToCellModel {
-  const provider = String(providerLabel || "").trim() || "—";
-  const detailStr = String(detail ?? "").trim();
-  const logo = iconUrl || DEFAULT_PROVIDER_LOGO;
+  let provider = String(providerLabel || "").trim() || "—";
+  let detailStr = String(detail ?? "").trim();
+  let logo = iconUrl || DEFAULT_PROVIDER_LOGO;
+
+  // ChangeNOW is the swap backend, not a payment provider — show the USD leg
+  // with the US flag, no provider/recipient name underneath.
+  if (isChangeNowLabel(provider)) {
+    return {
+      label: "USD",
+      subLabel: null,
+      copyValue: null,
+      iconUrl: USD_FLAG_ICON_URL,
+    };
+  }
+  if (isChangeNowLabel(detailStr)) {
+    detailStr = "";
+  }
 
   if (!detailStr) {
     return textFromToCell(provider, logo);
@@ -442,23 +464,34 @@ export function buildSwapFromTo(tx: Record<string, unknown>): {
     ? formatExchangeNetworkSubLabel(toNetwork)
     : undefined;
 
+  const usdLegCell = (): FromToCellModel => ({
+    label: "USD",
+    subLabel: null,
+    copyValue: null,
+    iconUrl: USD_FLAG_ICON_URL,
+  });
+
   return {
-    from: {
-      label: fromLabel.toUpperCase(),
-      subLabel:
-        fromNetworkLine ||
-        (depositAddr ? formatAddressForDisplay(depositAddr) : undefined),
-      copyValue: depositAddr || null,
-      iconUrl: pickFirstAssetLogo(tx.from_asset_logo, tx.asset_image),
-    },
-    to: {
-      label: toLabel.toUpperCase(),
-      subLabel:
-        toNetworkLine ||
-        (payoutAddr ? formatAddressForDisplay(payoutAddr) : undefined),
-      copyValue: payoutAddr || null,
-      iconUrl: pickFirstAssetLogo(tx.to_asset_logo),
-    },
+    from: isChangeNowLabel(fromLabel)
+      ? usdLegCell()
+      : {
+          label: fromLabel.toUpperCase(),
+          subLabel:
+            fromNetworkLine ||
+            (depositAddr ? formatAddressForDisplay(depositAddr) : undefined),
+          copyValue: depositAddr || null,
+          iconUrl: pickFirstAssetLogo(tx.from_asset_logo, tx.asset_image),
+        },
+    to: isChangeNowLabel(toLabel)
+      ? usdLegCell()
+      : {
+          label: toLabel.toUpperCase(),
+          subLabel:
+            toNetworkLine ||
+            (payoutAddr ? formatAddressForDisplay(payoutAddr) : undefined),
+          copyValue: payoutAddr || null,
+          iconUrl: pickFirstAssetLogo(tx.to_asset_logo),
+        },
   };
 }
 

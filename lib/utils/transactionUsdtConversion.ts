@@ -1,6 +1,7 @@
 import type { AllTransactionItem } from "@/features/transactions/api";
 import { fetchExchangeCommissionLookup } from "@/features/express/api";
 import { getPublicEstimateSwap } from "@/features/swap/api";
+import { fetchUsdPriceForSymbol } from "@/features/markets/api";
 import {
   getExchangeCryptoTicker,
   isStablecoinTicker,
@@ -39,10 +40,15 @@ export function normalizeCommissionNetwork(
     .toLowerCase()
     .replace(/\s+network$/i, "");
 
-  if (network === "bep20" || network === "bsc") return "bsc";
-  if (network === "eth" || network === "erc20" || network === "ethereum") return "eth";
-  if (network === "btc" || network === "bitcoin") return "btc";
-  if (network === "doge" || network === "dogecoin") return "doge";
+  // Compound values like "BTC BEP20" must still resolve to a valid network.
+  if (network.includes("bep20") || network.includes("bsc") || network.includes("binance")) {
+    return "bsc";
+  }
+  if (network === "eth" || network.includes("erc20") || network.includes("ethereum")) {
+    return "eth";
+  }
+  if (network === "btc" || network.includes("bitcoin")) return "btc";
+  if (network === "doge" || network.includes("dogecoin")) return "doge";
   if (network) return network;
 
   const asset = String(assetSlug ?? "").toLowerCase();
@@ -158,19 +164,61 @@ export function resolveUsdtLookupParams(
   return resolveExchangeUsdtLookupParams(tx) ?? resolveSwapUsdtLookupParams(tx);
 }
 
-async function fetchSwapUsdtViaEstimate(
+/** Native chain per ticker — retry estimates there when the stored network (e.g. "BEP20") fails. */
+const NATIVE_NETWORK_BY_TICKER: Record<string, string> = {
+  BTC: "btc",
+  ETH: "eth",
+  DOGE: "doge",
+  LTC: "ltc",
+  BCH: "bch",
+  SOL: "sol",
+  TRX: "trx",
+  XRP: "xrp",
+  ADA: "ada",
+  DOT: "dot",
+  BNB: "bsc",
+  MATIC: "matic",
+  POL: "matic",
+  AVAX: "avaxc",
+  TON: "ton",
+};
+
+async function fetchUsdtViaSwapEstimate(
+  params: ExchangeUsdtLookupParams
+): Promise<number | null> {
+  const nativeNetwork = NATIVE_NETWORK_BY_TICKER[params.from_currency] ?? "";
+  const networks = Array.from(
+    new Set([params.from_network, nativeNetwork].filter(Boolean))
+  );
+
+  for (const network of networks) {
+    try {
+      const estimate = await getPublicEstimateSwap(
+        params.from_currency,
+        network,
+        "USDT",
+        "bsc",
+        params.amount
+      );
+      const usdt = parseAmount(
+        estimate.toAmount ?? estimate.estimated_amount ?? estimate.user_amount
+      );
+      if (usdt != null && usdt > 0) return usdt;
+    } catch {
+      // Try the next candidate network.
+    }
+  }
+  return null;
+}
+
+/** Last resort: market price (USD) × amount; 1 USD ≈ 1 USDT for display. */
+async function fetchUsdtViaMarketPrice(
   params: ExchangeUsdtLookupParams
 ): Promise<number | null> {
   try {
-    const estimate = await getPublicEstimateSwap(
-      params.from_currency,
-      params.from_network,
-      "USDT",
-      "bsc",
-      params.amount
-    );
-    const usdt = parseAmount(estimate.toAmount ?? estimate.estimated_amount ?? estimate.user_amount);
-    return usdt != null && usdt > 0 ? usdt : null;
+    const price = await fetchUsdPriceForSymbol(params.from_currency);
+    if (price == null || price <= 0) return null;
+    return params.amount * price;
   } catch {
     return null;
   }
@@ -223,8 +271,8 @@ export async function fetchTransactionUsdtEquivalent(
   if (pending) return pending;
 
   const request = (async () => {
-    try {
-      for (const toCurrency of ["USDT", "USD"] as const) {
+    for (const toCurrency of ["USDT", "USD"] as const) {
+      try {
         const res = await fetchExchangeCommissionLookup(
           params.amount,
           params.type,
@@ -238,18 +286,23 @@ export async function fetchTransactionUsdtEquivalent(
           lookupCache.set(key, { value: usdt, at: Date.now() });
           return usdt;
         }
+      } catch {
+        // Commission lookup unsupported for this asset/network — use fallbacks.
       }
-
-      if (tx.type === "swap") {
-        const estimateUsdt = await fetchSwapUsdtViaEstimate(params);
-        if (estimateUsdt != null && estimateUsdt > 0) {
-          lookupCache.set(key, { value: estimateUsdt, at: Date.now() });
-          return estimateUsdt;
-        }
-      }
-    } catch {
-      return null;
     }
+
+    const estimateUsdt = await fetchUsdtViaSwapEstimate(params);
+    if (estimateUsdt != null && estimateUsdt > 0) {
+      lookupCache.set(key, { value: estimateUsdt, at: Date.now() });
+      return estimateUsdt;
+    }
+
+    const marketUsdt = await fetchUsdtViaMarketPrice(params);
+    if (marketUsdt != null && marketUsdt > 0) {
+      lookupCache.set(key, { value: marketUsdt, at: Date.now() });
+      return marketUsdt;
+    }
+
     return null;
   })();
 
