@@ -18,9 +18,12 @@ import {
   navigateToMatchedTradeFromSession,
   type PendingAcceptanceSession,
 } from "@/features/p2p/utils/pendingAcceptanceSession";
-import { useOptionalWebPush } from "@/features/notifications/components/WebPushProvider";
+import {
+  isNotificationSoundMuted,
+  NOTIFICATION_PREFERENCES_CHANGED_EVENT,
+  toggleNotificationSoundMuted,
+} from "@/lib/notifications/notificationPreferences";
 
-const SOUND_MUTED_KEY = "notification_sound_muted";
 const DROPDOWN_PREVIEW_LIMIT = 8;
 
 export default function NavbarTradeNotificationsDropdown() {
@@ -47,7 +50,6 @@ export default function NavbarTradeNotificationsDropdown() {
     selectPendingMatchedTradeNotifications
   );
   const pendingCount = useSelector(selectPendingMatchedTradeNotificationCount);
-  const webPush = useOptionalWebPush();
 
   useMatchedTradesWebSocket({ enabled: isAuthenticated });
 
@@ -58,9 +60,22 @@ export default function NavbarTradeNotificationsDropdown() {
 
   useEffect(() => {
     if (typeof window === "undefined") return;
-    setMuted(localStorage.getItem(SOUND_MUTED_KEY) === "1");
+    setMuted(isNotificationSoundMuted());
     audioRef.current = new Audio("/sounds/notification.mp3");
     if (audioRef.current) audioRef.current.volume = 0.35;
+
+    const onPreferencesChanged = () => {
+      setMuted(isNotificationSoundMuted());
+    };
+    window.addEventListener(
+      NOTIFICATION_PREFERENCES_CHANGED_EVENT,
+      onPreferencesChanged
+    );
+    return () =>
+      window.removeEventListener(
+        NOTIFICATION_PREFERENCES_CHANGED_EVENT,
+        onPreferencesChanged
+      );
   }, []);
 
   useEffect(() => {
@@ -114,13 +129,7 @@ export default function NavbarTradeNotificationsDropdown() {
   }, [open]);
 
   const toggleMuted = useCallback(() => {
-    setMuted((prev) => {
-      const next = !prev;
-      if (typeof window !== "undefined") {
-        localStorage.setItem(SOUND_MUTED_KEY, next ? "1" : "0");
-      }
-      return next;
-    });
+    setMuted(toggleNotificationSoundMuted());
   }, []);
 
   const navigateToMatchedTrade = useCallback(
@@ -203,40 +212,6 @@ export default function NavbarTradeNotificationsDropdown() {
                 {muted ? "Unmute sound" : "Mute sound"}
               </button>
             </div>
-
-            {webPush?.isSupported && webPush.permission === "default" && (
-              <div className="px-4 py-3 border-b border-gray-100 dark:border-[#35353E] bg-[#1D8751]/5">
-                <p className="text-xs text-gray-600 dark:text-[#A3A3C2] mb-2">
-                  Get browser alerts when you&apos;re away from the site.
-                </p>
-                <div className="flex items-center gap-2">
-                  <button
-                    type="button"
-                    disabled={webPush.isEnabling}
-                    onClick={() => void webPush.enableWebPush()}
-                    className="flex-1 text-xs font-semibold text-white bg-[#1D8751] hover:bg-[#16663d] disabled:opacity-60 rounded-lg py-2 px-3 transition-colors"
-                  >
-                    {webPush.isEnabling ? "Enabling…" : "Enable browser notifications"}
-                  </button>
-                  <button
-                    type="button"
-                    onClick={webPush.dismissWebPushPrompt}
-                    className="text-xs font-medium text-gray-500 dark:text-[#8C8CA1] hover:text-gray-700 dark:hover:text-white px-2 py-2"
-                  >
-                    Not now
-                  </button>
-                </div>
-              </div>
-            )}
-
-            {webPush?.isSupported && webPush.permission === "denied" && (
-              <div className="px-4 py-2.5 border-b border-gray-100 dark:border-[#35353E] bg-amber-500/5">
-                <p className="text-[11px] text-amber-700 dark:text-amber-300">
-                  Browser notifications are blocked. Allow them in your browser
-                  settings to get alerts when you&apos;re away.
-                </p>
-              </div>
-            )}
 
             <div className="max-h-[min(70vh,480px)] overflow-y-auto">
               {previewNotifications.length === 0 ? (
