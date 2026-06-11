@@ -858,10 +858,12 @@ const PaymentMethods = () => {
                         <div>
                           <div className="flex items-center gap-2 flex-wrap">
                             <p className="text-sm sm:text-base font-semibold text-gray-900 dark:text-white">
-                              {payment?.payment_provider_name ||
-                                (payment as any)?.provider_name ||
-                                payment?.payment_method_name ||
-                                "Payment Method"}
+                              {isCryptoWallet(payment)
+                                ? "USDT Wallet"
+                                : payment?.payment_provider_name ||
+                                  (payment as any)?.provider_name ||
+                                  payment?.payment_method_name ||
+                                  "Payment Method"}
                             </p>
                             {/* account_name intentionally hidden to avoid repetition */}
                             <span
@@ -874,9 +876,11 @@ const PaymentMethods = () => {
                             ) && <AutoSendTag />}
                           </div>
                           <p className="text-xs text-gray-500 dark:text-[#8B90A5] mt-0.5">
-                            {isBankMethod
-                              ? (payment?.payment_method_name || "Bank")
-                              : (payment?.payment_method_name || "Wallet")}
+                            {isCryptoWallet(payment)
+                              ? "BNB Smart Chain (BEP20)"
+                              : isBankMethod
+                                ? (payment?.payment_method_name || "Payment Method")
+                                : (payment?.payment_method_name || "Wallet")}
                           </p>
                           {(payment?.account_name || "").trim() && !isBankMethod ? (
                             <p className="text-xs text-gray-700 dark:text-gray-200 mt-1 font-medium">

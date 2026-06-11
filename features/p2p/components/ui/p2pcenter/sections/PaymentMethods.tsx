@@ -943,7 +943,7 @@ const PaymentMethods = () => {
 
   /** Render */
   return (
-    <div className="w-full min-h-[600px] bg-white dark:bg-[var(--card-color)] rounded-2xl p-4 text-gray-900 dark:text-white border-2 border-gray-200 dark:border-[#35353E] overflow-visible">
+    <div className="w-full min-h-[600px] bg-white dark:bg-[var(--card-color)] rounded-2xl p-4 text-gray-900 dark:text-white border border-gray-200 dark:border-[#35353E] overflow-visible">
       {/* Header: Bank title left, Add Method dropdown right */}
       <div className="flex items-center justify-between mb-4 gap-4">
         <div className="flex items-center gap-3">

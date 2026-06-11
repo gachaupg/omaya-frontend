@@ -2,8 +2,10 @@ import React, { useEffect } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import { fetchFeedback } from "@/features/p2p/slices/feedbackSlice";
 import { RootState, AppDispatch } from "@/store/rootReducer";
-import Card from "@/features/p2p/components/Common/Card";
 import FeedbackTable from "@/features/p2p/components/Common/FeedbackTable";
+
+const P2P_CENTER_PANEL_CLASS =
+  "w-full min-h-[600px] bg-white dark:bg-[var(--card-color)] rounded-2xl p-4 text-gray-900 dark:text-white border border-gray-200 dark:border-[#35353E]";
 
 const Feedback = () => {
   const dispatch = useDispatch<AppDispatch>();
@@ -19,20 +21,14 @@ const Feedback = () => {
   }, [dispatch]);
 
   return (
-    <Card
-      borderColor="border-gray-200 dark:border-[#35353E]"
-      width="w-full"
-      bgColor="bg-white dark:bg-[var(--card-color)]"
-      borderRadius="rounded-[16px]"
-      className="min-h-[600px] text-gray-900 dark:text-white"
-    >
+    <div className={P2P_CENTER_PANEL_CLASS}>
       {error && (
         <div className="text-red-500 mb-2">
           {error.message || "Failed to load feedback."}
         </div>
       )}
       <FeedbackTable data={feedbackData} loading={loading} />
-    </Card>
+    </div>
   );
 };
 

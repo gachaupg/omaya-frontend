@@ -87,7 +87,7 @@ const FilterTabs: React.FC<FilterTabsProps> = ({
     {
       label: "My Ads",
       extra: (
-        <span className="text-[#E23D3A] font-bold">({myOrders.length})</span>
+        <span className="text-[#F79330] font-bold">({myOrders.length})</span>
       ),
     },
     { label: "+ Post New Ad" },
@@ -411,7 +411,7 @@ const FilterTabs: React.FC<FilterTabsProps> = ({
         </div>
       </div>
 
-      <div className="w-full overflow-x-auto">
+      <div className="w-full max-w-full overflow-x-auto">
         {activeTab === 0 && (
           <>
             <MyAdsFilterBar />

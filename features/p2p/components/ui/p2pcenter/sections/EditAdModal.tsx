@@ -1,11 +1,15 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { Dialog } from "@headlessui/react";
 import { editP2POrderThunk } from "@/features/p2p/slices/orderSlice";
 import { useDispatch, useSelector } from "react-redux";
 import type { AppDispatch } from "@/store";
 import type { P2PResponse } from "@/features/p2p/types";
 import type { PayloadAction } from "@reduxjs/toolkit";
-import toast from "react-hot-toast";
+import {
+  selectP2PWalletAmounts,
+  selectTransactionSummary,
+} from "@/features/p2p/selectors";
+import { formatLargeNumber } from "@/utils/formatters";
 
 import { logger } from '@/lib/utils/logger';
 // Edit modal should not modify payment methods (only the ad fields).
@@ -34,6 +38,10 @@ const EditAdModal: React.FC<EditAdModalProps> = ({
   const dispatch = useDispatch<AppDispatch>();
   const [isLoading, setIsLoading] = useState(false);
   const { isAuthenticated } = useSelector((state: RootState) => state.auth);
+  const summary = useSelector(selectTransactionSummary);
+  const { availableAmount } = useSelector(selectP2PWalletAmounts);
+  const availableBalance = summary != null ? availableAmount : 0;
+  const originalAmountRef = useRef(0);
   const [formData, setFormData] = useState({
     amount: "",
     commission_rate: "1",
@@ -47,6 +55,7 @@ const EditAdModal: React.FC<EditAdModalProps> = ({
 
   useEffect(() => {
     if (initialData) {
+      originalAmountRef.current = parseFloat(initialData.amount) || 0;
       const initialPayments = Array.isArray(initialData?.payment_details)
         ? (initialData.payment_details as any[])
         : [];
@@ -68,6 +77,16 @@ const EditAdModal: React.FC<EditAdModalProps> = ({
   const minOrder = parseFloat(formData.min_order_amount) || 0;
   const maxOrder = parseFloat(formData.max_order_amount) || 0;
   const amountValue = parseFloat(formData.amount) || 0;
+  const isSellOrder = formData.order_type === "sell";
+  const maxSellAmount = isSellOrder
+    ? availableBalance + originalAmountRef.current
+    : Number.POSITIVE_INFINITY;
+  const amountError =
+    isSellOrder && formData.amount !== ""
+      ? amountValue > maxSellAmount
+        ? `Amount cannot exceed available balance (${formatLargeNumber(maxSellAmount)} USDT)`
+        : null
+      : null;
   const minOrderError =
     formData.min_order_amount !== ""
       ? minOrder < MIN_ORDER_AMOUNT
@@ -86,7 +105,15 @@ const EditAdModal: React.FC<EditAdModalProps> = ({
         ? "Maximum Order cannot be greater than Amount"
         : null
       : null;
-  const isFormValid = !minOrderError && !maxOrderError;
+  const isFormValid = !amountError && !minOrderError && !maxOrderError;
+
+  const applyMaxSellAmount = () => {
+    if (!isSellOrder || maxSellAmount <= 0) return;
+    setFormData((prev) => ({
+      ...prev,
+      amount: (Math.round(maxSellAmount * 100) / 100).toFixed(2),
+    }));
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -168,19 +195,50 @@ const EditAdModal: React.FC<EditAdModalProps> = ({
                 {/* Left Column */}
                 <div className="space-y-4">
                   <div>
-                    <label className="block text-sm dark:text-[#8C8CA1] text-gray-600 mb-1.5">
-                      Amount
-                    </label>
+                    <div className="flex items-center justify-between gap-2 mb-1.5">
+                      <label className="block text-sm dark:text-[#8C8CA1] text-gray-600">
+                        Amount
+                      </label>
+                      {isSellOrder && (
+                        <button
+                          type="button"
+                          onClick={applyMaxSellAmount}
+                          disabled={maxSellAmount <= 0}
+                          className="text-xs px-2 py-0.5 rounded bg-[#1D8751] text-white hover:bg-[#166b3e] transition-colors font-medium disabled:opacity-50 disabled:cursor-not-allowed"
+                          title={`Set maximum available balance: ${formatLargeNumber(maxSellAmount)} USDT`}
+                        >
+                          Max
+                        </button>
+                      )}
+                    </div>
                     <input
                       type="number"
                       step="0.01"
+                      min={MIN_ORDER_AMOUNT}
+                      max={
+                        isSellOrder && maxSellAmount > 0
+                          ? maxSellAmount
+                          : undefined
+                      }
                       value={formData.amount}
                       onChange={(e) =>
                         setFormData({ ...formData, amount: e.target.value })
                       }
-                      className="w-full px-3 py-2 dark:bg-[#35353E] bg-gray-100 rounded-lg dark:text-white text-gray-900 focus:outline-none focus:ring-2 focus:ring-[#1D8751] text-sm"
+                      className={`w-full px-3 py-2 dark:bg-[#35353E] bg-gray-100 rounded-lg dark:text-white text-gray-900 focus:outline-none focus:ring-2 text-sm ${
+                        amountError
+                          ? "focus:ring-red-500 ring-2 ring-red-500 dark:ring-red-500"
+                          : "focus:ring-[#1D8751]"
+                      }`}
                       required
                     />
+                    {isSellOrder && (
+                      <p className="mt-1 text-xs text-gray-500 dark:text-[#8C8CA1]">
+                        Available: {formatLargeNumber(maxSellAmount)} USDT
+                      </p>
+                    )}
+                    {amountError && (
+                      <p className="mt-1 text-xs text-red-500">{amountError}</p>
+                    )}
                   </div>
 
                   <div>

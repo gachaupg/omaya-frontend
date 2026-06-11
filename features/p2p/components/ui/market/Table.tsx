@@ -534,7 +534,7 @@ const MarketTable: React.FC<MarketTableProps> = ({
             >
               <div 
                 ref={modalScrollRef}
-                className="w-full max-w-5xl max-h-[100vh] overflow-y-auto"
+                className="w-full max-w-5xl max-h-[min(100vh,100dvh)] overflow-y-auto overscroll-contain"
                 onClick={(e) => e.stopPropagation()}
               >
                 <TradePreview

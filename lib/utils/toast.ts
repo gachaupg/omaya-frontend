@@ -2,32 +2,37 @@ import { toast } from "sonner";
 
 type ToastPosition = "top-center" | "top-right" | "top-left" | "bottom-center" | "bottom-right" | "bottom-left";
 
+type ToastOptions = {
+  position?: ToastPosition;
+  duration?: number;
+};
+
 export const showToast = {
-  success: (message: string, description?: string, options?: { position?: ToastPosition }) => {
+  success: (message: string, description?: string, options?: ToastOptions) => {
     toast.success(message, {
       description,
-      duration: 3000,
+      duration: options?.duration ?? 3000,
       position: options?.position || "top-right",
     });
   },
-  error: (message: string, description?: string, options?: { position?: ToastPosition }) => {
+  error: (message: string, description?: string, options?: ToastOptions) => {
     toast.error(message, {
       description,
-      duration: 4000,
+      duration: options?.duration ?? 4000,
       position: options?.position || "top-right",
     });
   },
-  warning: (message: string, description?: string, options?: { position?: ToastPosition }) => {
+  warning: (message: string, description?: string, options?: ToastOptions) => {
     toast.warning(message, {
       description,
-      duration: 3000,
+      duration: options?.duration ?? 3000,
       position: options?.position || "top-right",
     });
   },
-  info: (message: string, description?: string, options?: { position?: ToastPosition }) => {
+  info: (message: string, description?: string, options?: ToastOptions) => {
     toast.info(message, {
       description,
-      duration: 3000,
+      duration: options?.duration ?? 3000,
       position: options?.position || "top-right",
     });
   },

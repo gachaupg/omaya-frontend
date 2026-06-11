@@ -99,6 +99,12 @@ import {
   resolveExpressBankWithdrawalTermsFields,
 } from "@/features/express/components/legal/ExpressBankWithdrawalTermsPanel";
 import { EXPRESS_P2P_WITHDRAWAL_TERMS_OF_SERVICE_MODAL } from "@/features/express/constants/expressP2PWithdrawalTerms";
+import {
+  resolveAllUserPaymentAccounts,
+  getRegisteredAccountDropdownList,
+  findAddedPaymentDetail,
+  type RegisteredAccountDetail,
+} from "@/features/express/utils/registeredAccountHelpers";
 
 const MISSING_USDT_USD_RATE_ERROR =
   "No exchange rate configured for USDT to USD";
@@ -145,23 +151,7 @@ const formatAmountForInput = (n: number): string => {
   return s || "0";
 };
 
-// Add UserPaymentDetail interface
-interface UserPaymentDetail {
-  id: number;
-  user_payment_detail_id: string;
-  payment_provider_name: string;
-  payment_method_name: string;
-  account_name: string;
-  account_number: string;
-  wallet_address?: string;
-  provider_logo?: string | null;
-  status?: string;
-  created_at?: string;
-  updated_at?: string;
-  // Add fallback properties for compatibility
-  provider_name?: string;
-  payment_provider?: string;
-}
+type UserPaymentDetail = RegisteredAccountDetail;
 
 const isUuid = (value: unknown): boolean =>
   /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(
@@ -1148,22 +1138,38 @@ export default function WithdrawalForm({
 
   }, [payBank, activePublicProviders]);
 
+  const allRegisteredAccounts = useMemo(
+    () =>
+      resolveAllUserPaymentAccounts(
+        userPaymentMethodsDisplay.displayData,
+        effectiveUserPaymentMethods
+      ),
+    [userPaymentMethodsDisplay.displayData, effectiveUserPaymentMethods]
+  );
+
   // Auto-select account when accounts are available for selected payment type.
-  // Also recover from stale selections that no longer exist in the filtered list.
+  // Prefer matching accounts; otherwise keep a valid selection from all accounts.
   useEffect(() => {
-    if (!payBank || enhancedFilteredUserPaymentDetails.length === 0) return;
+    if (!payBank || allRegisteredAccounts.length === 0) return;
 
     const selectedId = selectedPaymentDetails[0]?.id;
     const selectedStillValid =
       selectedId != null &&
-      enhancedFilteredUserPaymentDetails.some(
-        (detail: UserPaymentDetail) => detail.id === selectedId
-      );
+      allRegisteredAccounts.some((detail) => detail.id === selectedId);
 
-    if (!selectedStillValid) {
-      setSelectedPaymentDetails([enhancedFilteredUserPaymentDetails[0]]);
+    if (selectedStillValid) return;
+
+    const nextSelection =
+      enhancedFilteredUserPaymentDetails[0] ?? allRegisteredAccounts[0];
+    if (nextSelection) {
+      setSelectedPaymentDetails([nextSelection]);
     }
-  }, [payBank, enhancedFilteredUserPaymentDetails, selectedPaymentDetails]);
+  }, [
+    payBank,
+    allRegisteredAccounts,
+    enhancedFilteredUserPaymentDetails,
+    selectedPaymentDetails,
+  ]);
 
   // Use selected account, or fallback to the first filtered one.
   const effectiveSelectedPaymentDetails =
@@ -4983,46 +4989,75 @@ export default function WithdrawalForm({
                       ) : (
                         <>
                           {(() => {
-                            // Check if user has ANY accounts at all (not just filtered ones)
-                            const allUserAccounts =
-                              (userPaymentMethodsDisplay.displayData &&
-                              userPaymentMethodsDisplay.displayData.length > 0
-                                ? userPaymentMethodsDisplay.displayData
-                                : effectiveUserPaymentMethods) || [];
+                            const allUserAccounts = resolveAllUserPaymentAccounts(
+                              userPaymentMethodsDisplay.displayData,
+                              effectiveUserPaymentMethods
+                            );
                             const hasAnyAccounts = allUserAccounts.length > 0;
                             const hasFilteredAccounts =
                               enhancedFilteredUserPaymentDetails.length > 0;
+                            const dropdownAccounts = getRegisteredAccountDropdownList(
+                              allUserAccounts,
+                              enhancedFilteredUserPaymentDetails
+                            );
 
-                            if (hasFilteredAccounts) {
+                            if (!hasAnyAccounts) {
                               return (
-                                <div className="relative w-full z-10">
-                              <div className="flex items-center gap-2 mb-2">
-                                <span className="text-sm text-gray-600 dark:text-gray-400">
-                                  {enhancedFilteredUserPaymentDetails.length} account(s) found
-                                </span>
-                                <button
-                                  type="button"
-                                  disabled={isRefreshingAccounts}
-                                  onClick={async () => {
-                                    try {
-                                      setIsRefreshingAccounts(true);
-                                      await dispatch(fetchUserPaymentDetails(true)).unwrap();
-                                      showToast.success("Accounts refreshed");
-                                    } catch (error) {
-                                      showToast.error("Failed to refresh payment details");
-                                    } finally {
-                                      setIsRefreshingAccounts(false);
-                                    }
-                                  }}
-                                  className="text-xs text-[#1D8751] hover:text-[#166b3e] underline disabled:opacity-50"
-                                >
-                                  {isRefreshingAccounts ? "Refreshing..." : "Refresh"}
-                                </button>
-                              </div>
-                              <div className="w-full min-w-0 relative z-[100] isolate">
+                                <p className="text-[#F79330] text-sm">
+                                  <button
+                                    type="button"
+                                    onClick={() => setIsPaymentModalOpen(true)}
+                                    className="hover:underline cursor-pointer"
+                                  >
+                                    Don't have an account? Register Now
+                                  </button>
+                                </p>
+                              );
+                            }
+
+                            return (
+                              <div className="relative w-full z-10">
+                                {!hasFilteredAccounts && (
+                                  <p className="text-[#F79330] text-sm mb-2">
+                                    No account found for this payment method.{" "}
+                                    <button
+                                      type="button"
+                                      onClick={() => setIsPaymentModalOpen(true)}
+                                      className="hover:underline cursor-pointer font-medium"
+                                    >
+                                      Add Account
+                                    </button>
+                                  </p>
+                                )}
+                                {hasFilteredAccounts && (
+                                  <div className="flex items-center gap-2 mb-2">
+                                    <span className="text-sm text-gray-600 dark:text-gray-400">
+                                      {enhancedFilteredUserPaymentDetails.length} account(s) found
+                                    </span>
+                                    <button
+                                      type="button"
+                                      disabled={isRefreshingAccounts}
+                                      onClick={async () => {
+                                        try {
+                                          setIsRefreshingAccounts(true);
+                                          await dispatch(fetchUserPaymentDetails(true)).unwrap();
+                                          showToast.success("Accounts refreshed");
+                                        } catch (error) {
+                                          showToast.error("Failed to refresh payment details");
+                                        } finally {
+                                          setIsRefreshingAccounts(false);
+                                        }
+                                      }}
+                                      className="text-xs text-[#1D8751] hover:text-[#166b3e] underline disabled:opacity-50"
+                                    >
+                                      {isRefreshingAccounts ? "Refreshing..." : "Refresh"}
+                                    </button>
+                                  </div>
+                                )}
+                                <div className="w-full min-w-0 relative z-[100] isolate">
                                 <CustomSelect
-                                  options={(enhancedFilteredUserPaymentDetails || []).map(
-                                    (detail: UserPaymentDetail) => {
+                                  options={(dropdownAccounts || []).map(
+                                    (detail) => {
                                       // Try to get provider info from public payment methods first
                                       let providerName = detail.payment_provider_name || detail.provider_name || "Unknown Provider";
                                       let providerLogo = detail.provider_logo;
@@ -5090,14 +5125,11 @@ export default function WithdrawalForm({
                                   }
                                   onChange={(value) => {
                                     const selectedId = Number(value);
-                                    const selectedDetail =
-                                      enhancedFilteredUserPaymentDetails.find(
-                                        (detail: UserPaymentDetail) =>
-                                          detail.id === selectedId
-                                      );
+                                    const selectedDetail = allUserAccounts.find(
+                                      (detail) => detail.id === selectedId
+                                    );
                                     if (selectedDetail) {
                                       setSelectedPaymentDetails([selectedDetail]);
-                                      // Clear payment method error when selecting an account
                                       setPaymentMethodError(null);
                                     }
                                   }}
@@ -5123,36 +5155,8 @@ export default function WithdrawalForm({
                                   dropdownMaxWidth={460}
                                 />
                               </div>
-                                </div>
-                              );
-                            } else if (hasAnyAccounts) {
-                              // User has accounts but not for this payment method
-                              return (
-                                <p className="text-[#F79330] text-sm">
-                                  No account found for this payment method.{" "}
-                                  <button
-                                    type="button"
-                                    onClick={() => setIsPaymentModalOpen(true)}
-                                    className="hover:underline cursor-pointer font-medium"
-                                  >
-                                    Add Account
-                                  </button>
-                                </p>
-                              );
-                            } else {
-                              // User has no accounts at all
-                              return (
-                                <p className="text-[#F79330] text-sm">
-                                  <button
-                                    type="button"
-                                    onClick={() => setIsPaymentModalOpen(true)}
-                                    className="hover:underline cursor-pointer"
-                                  >
-                                    Don't have an account? Register Now
-                                  </button>
-                                </p>
-                              );
-                            }
+                              </div>
+                            );
                           })()}
                         </>
                       )}
@@ -5681,13 +5685,18 @@ export default function WithdrawalForm({
             open={isPaymentModalOpen}
             onClose={() => setIsPaymentModalOpen(false)}
             filterByProviderName={payBank?.trim() || undefined}
-            onAdd={async () => {
+            onAddSuccess={async () => {
               try {
-                // Refresh both user and admin payment details after adding (force refresh)
-                await Promise.all([
+                const [accounts] = await Promise.all([
                   dispatch(fetchUserPaymentDetails(true)).unwrap(),
                   dispatch(fetchAdminWalletList(true)).unwrap(),
                 ]);
+                if (Array.isArray(accounts)) {
+                  const match = findAddedPaymentDetail(accounts);
+                  if (match) {
+                    setSelectedPaymentDetails([match]);
+                  }
+                }
                 showToast.success("Payment method added successfully!");
               } catch (error) {
                 console.error("Failed to refresh payment details:", error);

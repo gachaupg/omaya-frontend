@@ -65,6 +65,9 @@ const nextConfig: NextConfig = {
     NEXT_PUBLIC_SANITY_DATASET: process.env.NEXT_PUBLIC_SANITY_DATASET || 'production',
     NEXT_PUBLIC_SANITY_API_VERSION: process.env.NEXT_PUBLIC_SANITY_API_VERSION || '2023-05-03',
     NEXT_PUBLIC_SANITY_READ_TOKEN: process.env.NEXT_PUBLIC_SANITY_READ_TOKEN,
+
+    // Web Push (browser notifications when user is away)
+    NEXT_PUBLIC_VAPID_PUBLIC_KEY: process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY,
   },
   images: {
     remotePatterns: [

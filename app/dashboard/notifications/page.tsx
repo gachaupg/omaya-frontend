@@ -4,70 +4,55 @@ import { createPortal } from "react-dom";
 import { Breadcrumb } from "@/components/ui/Breadcrumb";
 import { useSelector, useDispatch } from "react-redux";
 import { RootState, AppDispatch } from "@/store/rootReducer";
-import { FaUserCircle, FaChevronRight } from "react-icons/fa";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import {
   fetchMatchedTrades,
   fetchLatestMatchedTradesPage,
 } from "@/features/p2p/slices/matchedTradesSlice";
-import { respondToP2PTrade } from "@/features/p2p/api";
-import { showToast } from "@/lib/utils/toast";
-import { getMessageFromApiError } from "@/lib/utils/errorHandler";
-import { waitForTradeConfirmStatus } from "@/features/p2p/utils/waitTradeConfirmSocketStatus";
-import {
-  isPendingAcceptanceStatus,
-  parseTradeTimestampMs,
-  recordPendingAcceptanceStartedAt,
-} from "@/features/p2p/utils/tradeWsAcceptanceGate";
-import {
-  getMatchedTradeNotificationDisplayName,
-  getMatchedTradeNotificationProfileImage,
-  getMatchedTradeNotificationStatus,
-} from "@/features/p2p/utils/matchedTradeNotifications";
 import { selectPendingMatchedTradeNotifications } from "@/features/p2p/selectors";
+import {
+  filterPendingMatchedTradeNotificationsByCategory,
+  type MatchedTradeNotificationCategory,
+} from "@/features/p2p/utils/matchedTradeNotifications";
 import { PendingAcceptanceWaitModal } from "@/features/p2p/components/ui/market/sections/PendingAcceptanceWaitModal";
 import {
-  buildPendingAcceptanceSessionFromNotificationTrade,
   navigateToMatchedTradeFromSession,
   type PendingAcceptanceSession,
 } from "@/features/p2p/utils/pendingAcceptanceSession";
+import { MatchedTradeNotificationCard } from "@/features/p2p/components/MatchedTradeNotificationCard";
+import { openMatchedTradeNotification } from "@/features/p2p/utils/matchedTradeNotificationActions";
 
-/** When owner === logged user: show order_type as-is (Buy/Sell). When not owner: show counterparty action (buy ad → Sell, sell ad → Buy). */
-const getOrderType = (order_type: string, isOwner: boolean) => {
-  if (isOwner) {
-    return order_type === "buy"
-      ? { label: "Buy", color: "text-[#1D8751]" }
-      : { label: "Sell", color: "text-red-400" };
-  }
-  return order_type === "buy"
-    ? { label: "Sell", color: "text-red-400" }
-    : { label: "Buy", color: "text-[#1D8751]" };
-};
-
-const normalizeEmail = (e: string | null | undefined) =>
-  String(e ?? "").trim().toLowerCase();
-
-/** Only the advertiser (ad owner) may call trade respond; API uses advertiser email / owner. */
-const isLoggedInUserAdvertiserOnTrade = (
-  trade: { owner?: string; advertiser_email?: string },
-  userEmail: string | null | undefined
-): boolean => {
-  const advertiser =
-    trade.advertiser_email != null && String(trade.advertiser_email).trim() !== ""
-      ? trade.advertiser_email
-      : trade.owner;
-  if (!userEmail || !advertiser) return false;
-  return normalizeEmail(userEmail) === normalizeEmail(advertiser);
+const CATEGORY_LABELS: Record<MatchedTradeNotificationCategory, string> = {
+  incoming: "Incoming trades",
+  buy: "Buy trades",
+  sell: "Sell trades",
 };
 
 const Notifications = () => {
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const categoryParam = searchParams?.get("category") ?? null;
+  const activeCategory: MatchedTradeNotificationCategory | null =
+    categoryParam === "incoming" ||
+    categoryParam === "buy" ||
+    categoryParam === "sell"
+      ? categoryParam
+      : null;
   const dispatch = useDispatch<AppDispatch>();
   const { loading, refreshing, hasLoaded, activePage, totalPages } = useSelector(
     (state: RootState) => state.matchedTrades
   );
   const pendingNotifications = useSelector(selectPendingMatchedTradeNotifications);
   const { user, isAuthenticated } = useSelector((state: RootState) => state.auth);
+  const filteredNotifications = React.useMemo(
+    () =>
+      filterPendingMatchedTradeNotificationsByCategory(
+        pendingNotifications,
+        user?.email,
+        activeCategory
+      ),
+    [pendingNotifications, user?.email, activeCategory]
+  );
 
   const [respondingTradeId, setRespondingTradeId] = useState<string | null>(null);
   const [pendingAcceptance, setPendingAcceptance] =
@@ -105,95 +90,16 @@ const Notifications = () => {
   };
   // console.log(user?.email);
   // console.log(matchedTrades?.results);
-  const handleViewOrder = async (trade: any) => {
-    const tradeId = String(trade?.id ?? "");
-    if (!tradeId) return;
-
-    if (isLoggedInUserAdvertiserOnTrade(trade, user?.email)) {
-      setRespondingTradeId(tradeId);
-      try {
-        const liveStatus = await waitForTradeConfirmStatus(tradeId, {
-          timeoutMs: 10_000,
-        });
-        if (liveStatus && isPendingAcceptanceStatus(liveStatus)) {
-          await respondToP2PTrade(tradeId, "accept");
-          dispatch(fetchMatchedTrades(activePage)).catch(() => {});
-        }
-      } catch (error: unknown) {
-        const detail = getMessageFromApiError(error);
-        showToast.error("Trade could not be accepted", detail, {
-          position: "top-center",
-        });
-        return;
-      } finally {
-        setRespondingTradeId(null);
-      }
-    }
-
-    if (isPendingAcceptanceStatus(String(trade?.status ?? ""))) {
-      recordPendingAcceptanceStartedAt(
-        tradeId,
-        parseTradeTimestampMs(trade?.timestamp) ?? Date.now()
-      );
-    }
-
-    try {
-      const fullOrderData = {
-        ...trade,
-        storedAt: new Date().toISOString(),
-        viewedFrom: "notifications",
-      };
-      localStorage.setItem("new_order", JSON.stringify(fullOrderData));
-      const existingOrders = JSON.parse(
-        localStorage.getItem("p2p_orders") || "[]"
-      );
-      const orderExists = existingOrders.find(
-        (order: any) => order.id === trade.id
-      );
-      if (!orderExists) {
-        existingOrders.push(fullOrderData);
-        localStorage.setItem("p2p_orders", JSON.stringify(existingOrders));
-      } else {
-        const orderIndex = existingOrders.findIndex(
-          (order: any) => order.id === trade.id
-        );
-        existingOrders[orderIndex] = fullOrderData;
-        localStorage.setItem("p2p_orders", JSON.stringify(existingOrders));
-      }
-    } catch (error) {
-      console.error("Error storing order in localStorage:", error);
-    }
-
-    const isOwner = trade.owner === user?.email;
-
-    if (isOwner) {
-      router.push(
-        `/p2p/${trade.id}/matched?order_type=${trade.order_type}&trade=${trade.order_type === "buy" ? "buyer" : "seller"}`
-      );
-      return;
-    }
-
-    if (isPendingAcceptanceStatus(String(trade?.status ?? ""))) {
-      const session = buildPendingAcceptanceSessionFromNotificationTrade(
-        trade,
-        user?.email
-      );
-      if (session) {
-        try {
-          localStorage.setItem("p2p_trade_id", tradeId);
-        } catch {
-          /* no-op */
-        }
-        setPendingAcceptance(session);
-        return;
-      }
-    }
-
-    // Not owner: order_type "buy" → navigate to sellform (I am seller); order_type "sell" → navigate to buyform (I am buyer)
-    const orderData = encodeURIComponent(
-      JSON.stringify({ order_type: trade.order_type === "buy" ? "buy" : "sell" })
-    );
-    router.push(`/p2p/${trade.id}/matched?orderData=${orderData}`);
+  const handleViewOrder = async (trade: Record<string, unknown>) => {
+    await openMatchedTradeNotification({
+      trade,
+      userEmail: user?.email,
+      dispatch,
+      router,
+      activePage,
+      onRespondingChange: setRespondingTradeId,
+      onPendingAcceptance: setPendingAcceptance,
+    });
   };
 
   const showInitialLoader =
@@ -207,7 +113,7 @@ const Notifications = () => {
     );
   }
 
-  const hasNotifications = pendingNotifications.length > 0;
+  const hasNotifications = filteredNotifications.length > 0;
   const showEmptyState = hasLoaded && !hasNotifications && !refreshing;
 
   if (showEmptyState)
@@ -289,102 +195,38 @@ const Notifications = () => {
               aria-hidden
             />
           )}
-          {pendingNotifications.length}{" "}
-          {pendingNotifications.length === 1
+          {filteredNotifications.length}{" "}
+          {filteredNotifications.length === 1
             ? "notification"
             : "notifications"}
+          {activeCategory ? ` · ${CATEGORY_LABELS[activeCategory]}` : ""}
         </span>
       </div>
 
-      {pendingNotifications.map((trade: any) => {
-        const isOwner = trade.owner === user?.email;
-        const orderType = getOrderType(trade.order_type, isOwner);
-        const status = getMatchedTradeNotificationStatus(
-          trade,
-          user?.email || ""
-        );
-        const name = getMatchedTradeNotificationDisplayName(trade, user?.email);
-        const profileImage = getMatchedTradeNotificationProfileImage(
-          trade,
-          user?.email
-        );
-
-        return (
-          <div
-            key={trade.id}
-            className="group flex flex-col sm:flex-row sm:items-center justify-between bg-white dark:bg-[#1f1f27] border border-gray-100 dark:border-[#35353E] rounded-xl p-3 sm:p-4 mb-3 shadow-sm hover:shadow-md transition-all duration-200"
+      {activeCategory && (
+        <div className="mb-4">
+          <button
+            type="button"
+            onClick={() => router.push("/dashboard/notifications")}
+            className="text-sm font-medium text-[#1D8751] hover:underline"
           >
-            {/* Left Section: Avatar + Details */}
-            <div className="flex items-start gap-3 flex-1 min-w-0">
-              {/* Avatar with Status Dot */}
-              <div className="relative shrink-0">
-                {profileImage ? (
-                  <img
-                    src={profileImage}
-                    alt=""
-                    className="w-10 h-10 sm:w-12 sm:h-12 rounded-full object-cover ring-2 ring-gray-100 dark:ring-[#35353E]"
-                  />
-                ) : (
-                  <FaUserCircle
-                    size={40}
-                    className="sm:w-12 sm:h-12 text-gray-300 dark:text-[#555566]"
-                  />
-                )}
-                <span
-                  className={`absolute bottom-0.5 right-0.5 w-3 h-3 sm:w-3.5 sm:h-3.5 rounded-full border-2 sm:border-[2.5px] border-white dark:border-[#1f1f27] ${orderType.color === "text-[#1D8751]" ? "bg-[#1D8751]" : "bg-red-500"
-                    }`}
-                ></span>
-              </div>
+            Show all notifications
+          </button>
+        </div>
+      )}
 
-              {/* Name + Amount + Date */}
-              <div className="flex flex-col grow min-w-0">
-                <div className="flex items-center gap-2 mb-0.5 flex-wrap">
-                  <span className="font-bold text-sm sm:text-base text-gray-900 dark:text-gray-100 break-words">
-                    {name}
-                  </span>
-                  <span className={`text-[10px] uppercase font-bold px-1.5 py-0.5 rounded border whitespace-nowrap ${orderType.color === "text-[#1D8751]" ? "border-[#1D8751]/20 text-[#1D8751] bg-[#1D8751]/5" : "border-red-400/20 text-red-400 bg-red-400/5"
-                    }`}>
-                    {orderType.label}
-                  </span>
-                </div>
-
-                <div className="flex items-center gap-2 text-xs sm:text-sm flex-wrap">
-                  <span className="font-semibold text-gray-900 dark:text-white whitespace-nowrap">
-                    {trade.amount} <span className="text-xs text-gray-500 font-normal">USDT</span>
-                  </span>
-                  <span className="hidden sm:inline text-gray-300 dark:text-gray-600">|</span>
-                  <span className="text-xs text-gray-500 dark:text-gray-400">
-                    {new Date(trade.timestamp).toLocaleString(undefined, {
-                      month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit'
-                    })}
-                  </span>
-                </div>
-              </div>
-            </div>
-
-            {/* Right Section: Status Badge + View Button */}
-            <div className="flex items-center justify-between sm:justify-end w-full sm:w-auto mt-3 sm:mt-0 gap-3 shrink-0">
-              {/* Status Badge */}
-              <span
-                className="inline-flex items-center px-2 sm:px-2.5 py-1 rounded-full text-[10px] sm:text-xs font-semibold bg-opacity-10 whitespace-nowrap bg-green-100 text-[#1D8751] dark:bg-green-900/30 dark:text-[#1D8751]"
-              >
-                <span className="hidden sm:inline">{status.text}</span>
-                <span className="sm:hidden">Pending</span>
-              </span>
-
-              {/* View Button */}
-              <button
-                type="button"
-                onClick={() => void handleViewOrder(trade)}
-                disabled={respondingTradeId === trade.id}
-                className="bg-[#1D8751] hover:bg-[#16663d] disabled:opacity-60 disabled:cursor-not-allowed text-white py-1.5 px-4 sm:py-2 sm:px-5 rounded-lg font-medium text-xs sm:text-sm transition-colors shadow-sm whitespace-nowrap active:scale-95"
-              >
-                {respondingTradeId === trade.id ? "Opening…" : "View"}
-              </button>
-            </div>
-          </div>
-        );
-      })}
+      {filteredNotifications.map((trade) => (
+        <MatchedTradeNotificationCard
+          key={String(trade.id)}
+          trade={trade as unknown as Record<string, unknown>}
+          userEmail={user?.email}
+          variant="page"
+          isOpening={respondingTradeId === String(trade.id)}
+          onView={() =>
+            void handleViewOrder(trade as unknown as Record<string, unknown>)
+          }
+        />
+      ))}
 
 
       {/* Pagination */}
