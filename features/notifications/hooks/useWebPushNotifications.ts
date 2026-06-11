@@ -20,8 +20,11 @@ import {
   unsubscribeFromWebPush,
 } from "@/lib/notifications/webPushClient";
 import { logger } from "@/lib/utils/logger";
-
-const WEB_PUSH_PROMPT_DISMISSED_KEY = "omaya_web_push_prompt_dismissed";
+import {
+  isBrowserNotificationsPreferenceEnabled,
+  isBrowserNotificationsPreferenceExplicitlyDisabled,
+  setBrowserNotificationsPreference,
+} from "@/lib/notifications/notificationPreferences";
 
 export function useWebPushNotifications() {
   const { isAuthenticated, user } = useSelector(
@@ -36,41 +39,66 @@ export function useWebPushNotifications() {
   >(() => getNotificationPermission());
   const [isEnabling, setIsEnabling] = useState(false);
   const [isSubscribed, setIsSubscribed] = useState(false);
+  const [preferenceEnabled, setPreferenceEnabled] = useState(
+    () => isBrowserNotificationsPreferenceEnabled()
+  );
 
   const prevTradeIdsRef = useRef<Set<string>>(new Set());
   const hasInitializedTradeIdsRef = useRef(false);
+  const autoEnableAttemptedRef = useRef(false);
 
-  const syncPushSubscription = useCallback(async () => {
-    if (!isAuthenticated || permission !== "granted") return false;
+  const refreshPermissionState = useCallback(() => {
+    setPermission(getNotificationPermission());
+    setPreferenceEnabled(isBrowserNotificationsPreferenceEnabled());
+  }, []);
 
-    const vapidKey = await getVapidPublicKey();
-    if (!vapidKey) {
-      logger.debug("notifications", "No VAPID public key — push subscribe skipped");
-      return false;
-    }
+  const syncPushSubscription = useCallback(
+    async (
+      permissionOverride?: NotificationPermission | "unsupported"
+    ): Promise<boolean> => {
+      const effectivePermission = permissionOverride ?? getNotificationPermission();
+      if (!isAuthenticated || effectivePermission !== "granted") return false;
 
-    const subscription = await subscribeToWebPush(vapidKey);
-    if (!subscription) return false;
+      await registerServiceWorker();
 
-    const payload = serializePushSubscription(subscription);
-    const remembered = getRememberedPushSubscriptionEndpoint();
-    if (remembered === payload.endpoint) {
-      setIsSubscribed(true);
-      return true;
-    }
+      const vapidKey = await getVapidPublicKey();
+      if (!vapidKey) {
+        logger.debug(
+          "notifications",
+          "No VAPID public key — server push skipped; local alerts still work"
+        );
+        setIsSubscribed(true);
+        return true;
+      }
 
-    try {
-      await pushNotificationsApi.subscribe(payload, {
-        user_agent: navigator.userAgent,
-      });
-      rememberPushSubscriptionEndpoint(payload.endpoint);
-      setIsSubscribed(true);
-      return true;
-    } catch (error) {
-      logger.debug("notifications", "Push subscribe API failed", error);
-      return false;
-    }
-  }, [isAuthenticated, permission]);
+      const subscription = await subscribeToWebPush(vapidKey);
+      if (!subscription) {
+        setIsSubscribed(true);
+        return true;
+      }
+
+      const payload = serializePushSubscription(subscription);
+      const remembered = getRememberedPushSubscriptionEndpoint();
+      if (remembered === payload.endpoint) {
+        setIsSubscribed(true);
+        return true;
+      }
+
+      try {
+        await pushNotificationsApi.subscribe(payload, {
+          user_agent: navigator.userAgent,
+        });
+        rememberPushSubscriptionEndpoint(payload.endpoint);
+        setIsSubscribed(true);
+        return true;
+      } catch (error) {
+        logger.debug("notifications", "Push subscribe API failed", error);
+        setIsSubscribed(true);
+        return true;
+      }
+    },
+    [isAuthenticated]
+  );
 
   const enableWebPush = useCallback(async () => {
     if (!isWebPushSupported()) return false;
@@ -80,34 +108,99 @@ export function useWebPushNotifications() {
       const nextPermission = await requestNotificationPermission();
       setPermission(nextPermission);
       if (nextPermission !== "granted") return false;
-      return await syncPushSubscription();
+      setBrowserNotificationsPreference(true);
+      setPreferenceEnabled(true);
+      await syncPushSubscription(nextPermission);
+      return true;
     } finally {
       setIsEnabling(false);
     }
   }, [syncPushSubscription]);
 
-  const dismissWebPushPrompt = useCallback(() => {
-    if (typeof window !== "undefined") {
-      localStorage.setItem(WEB_PUSH_PROMPT_DISMISSED_KEY, "1");
+  const disableWebPush = useCallback(async () => {
+    const endpoint = getRememberedPushSubscriptionEndpoint();
+    if (endpoint) {
+      await pushNotificationsApi.unsubscribe(endpoint).catch(() => {
+        /* backend may already have removed it */
+      });
     }
+    await unsubscribeFromWebPush();
+    setBrowserNotificationsPreference(false);
+    setPreferenceEnabled(false);
+    setIsSubscribed(false);
+    setPermission(getNotificationPermission());
   }, []);
 
-  const shouldShowEnablePrompt =
-    isAuthenticated &&
-    isWebPushSupported() &&
-    permission === "default" &&
-    typeof window !== "undefined" &&
-    localStorage.getItem(WEB_PUSH_PROMPT_DISMISSED_KEY) !== "1";
-
   useEffect(() => {
-    if (!isAuthenticated) return;
+    if (!isAuthenticated) {
+      autoEnableAttemptedRef.current = false;
+      return;
+    }
     void registerServiceWorker();
   }, [isAuthenticated]);
 
   useEffect(() => {
-    if (!isAuthenticated || permission !== "granted") return;
-    void syncPushSubscription();
-  }, [isAuthenticated, permission, syncPushSubscription]);
+    if (!isAuthenticated || autoEnableAttemptedRef.current) return;
+    if (!isWebPushSupported()) return;
+
+    const currentPermission = getNotificationPermission();
+    setPermission(currentPermission);
+
+    if (currentPermission === "granted" && isBrowserNotificationsPreferenceEnabled()) {
+      setPreferenceEnabled(true);
+      setIsSubscribed(true);
+      void syncPushSubscription("granted");
+      return;
+    }
+
+    if (
+      currentPermission === "default" &&
+      !isBrowserNotificationsPreferenceExplicitlyDisabled()
+    ) {
+      autoEnableAttemptedRef.current = true;
+      void enableWebPush();
+    }
+  }, [isAuthenticated, enableWebPush, syncPushSubscription]);
+
+  useEffect(() => {
+    if (!isAuthenticated || !isWebPushSupported()) return;
+    if (getNotificationPermission() !== "default") return;
+
+    const enableOnGesture = () => {
+      void enableWebPush();
+    };
+
+    window.addEventListener("pointerdown", enableOnGesture, { once: true });
+    return () => window.removeEventListener("pointerdown", enableOnGesture);
+  }, [isAuthenticated, enableWebPush]);
+
+  useEffect(() => {
+    if (!isAuthenticated) return;
+    refreshPermissionState();
+    setPreferenceEnabled(isBrowserNotificationsPreferenceEnabled());
+    if (
+      getNotificationPermission() === "granted" &&
+      isBrowserNotificationsPreferenceEnabled()
+    ) {
+      setIsSubscribed(true);
+      void syncPushSubscription("granted");
+    }
+  }, [isAuthenticated, refreshPermissionState, syncPushSubscription]);
+
+  useEffect(() => {
+    if (!isAuthenticated) return;
+
+    const onVisible = () => {
+      refreshPermissionState();
+    };
+
+    window.addEventListener("focus", onVisible);
+    document.addEventListener("visibilitychange", onVisible);
+    return () => {
+      window.removeEventListener("focus", onVisible);
+      document.removeEventListener("visibilitychange", onVisible);
+    };
+  }, [isAuthenticated, refreshPermissionState]);
 
   useEffect(() => {
     if (!isAuthenticated) {
@@ -127,7 +220,7 @@ export function useWebPushNotifications() {
       return;
     }
 
-    if (permission !== "granted") {
+    if (permission !== "granted" || !preferenceEnabled) {
       prevTradeIdsRef.current = currentIds;
       return;
     }
@@ -144,7 +237,7 @@ export function useWebPushNotifications() {
     }
 
     prevTradeIdsRef.current = currentIds;
-  }, [isAuthenticated, pendingNotifications, permission, user?.email]);
+  }, [isAuthenticated, pendingNotifications, permission, preferenceEnabled, user?.email]);
 
   useEffect(() => {
     if (isAuthenticated) return;
@@ -158,13 +251,17 @@ export function useWebPushNotifications() {
     void unsubscribeFromWebPush();
   }, [isAuthenticated]);
 
+  const browserNotificationsEnabled =
+    permission === "granted" && preferenceEnabled;
+
   return {
     isSupported: isWebPushSupported(),
     permission,
     isEnabling,
     isSubscribed,
-    shouldShowEnablePrompt,
+    browserNotificationsEnabled,
     enableWebPush,
-    dismissWebPushPrompt,
+    disableWebPush,
+    refreshPermissionState,
   };
 }
