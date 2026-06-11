@@ -18,6 +18,11 @@ import { fetchUserPaymentDetails, fetchPublicPaymentMethods } from "../../p2p/sl
 import { fetchAdminWalletList, fetchAdminPaymentDetails } from "../../exchange/slices/paymentSlice";
 import PaymentMethodsModal from "../../p2p/components/ui/p2pdashboard/sections/PaymentMethodsModal";
 import {
+  resolveAllUserPaymentAccounts,
+  getRegisteredAccountDropdownList,
+  type RegisteredAccountDetail,
+} from "@/features/express/utils/registeredAccountHelpers";
+import {
   createExpressWithdrawal,
   fetchCommissionDetails,
   fetchExchangeCommissionLookup,
@@ -111,18 +116,7 @@ const EXPRESS_FIXED_MIN_AMOUNT = 5;
 const buildNegativeReceiveError = (value: number) =>
   `${NEGATIVE_RECEIVE_ERROR} Calculated value: ${value.toFixed(2)}.`;
 
-interface UserPaymentDetail {
-  id: number;
-  user_payment_detail_id?: string;
-  payment_method_name: string;
-  payment_provider_name: string;
-  account_name: string;
-  account_number: string;
-  provider_name?: string;
-  provider_logo?: string;
-  wallet_address?: string;
-  status?: string;
-}
+type UserPaymentDetail = RegisteredAccountDetail;
 
 const isAxiosGenericStatusMessage = (msg: string): boolean =>
   /^request failed with status code \d{3}$/i.test(String(msg || "").trim());
@@ -4149,11 +4143,16 @@ const getPaymentRestrictionMessage = (status?: string) =>
                         })()}
                       </div>
                       {(() => {
-                        const allUserAccounts = (userPaymentMethodsDisplay.displayData && userPaymentMethodsDisplay.displayData.length > 0
-                          ? userPaymentMethodsDisplay.displayData
-                          : effectiveUserPaymentMethods) || [];
+                        const allUserAccounts = resolveAllUserPaymentAccounts(
+                          userPaymentMethodsDisplay.displayData,
+                          effectiveUserPaymentMethods
+                        );
                         const hasAnyAccounts = allUserAccounts.length > 0;
                         const hasFilteredAccounts = enhancedFilteredUserPaymentDetails.length > 0;
+                        const dropdownAccounts = getRegisteredAccountDropdownList(
+                          allUserAccounts,
+                          enhancedFilteredUserPaymentDetails
+                        );
 
                         if (hasFilteredAccounts) {
                           return (
@@ -4177,7 +4176,7 @@ const getPaymentRestrictionMessage = (status?: string) =>
                                 </button>
                               </div>
                               <CustomSelect
-                                options={(enhancedFilteredUserPaymentDetails || []).map((detail: UserPaymentDetail) => {
+                                options={(dropdownAccounts || []).map((detail) => {
                                   const status = detail?.status;
                                   const isPending = !!(status && !isApprovedPaymentStatus(status));
                                   const isFrozen = isFrozenPaymentStatus(status);
@@ -4214,7 +4213,7 @@ const getPaymentRestrictionMessage = (status?: string) =>
                                 })}
                                 value={selectedPaymentDetails.length > 0 ? selectedPaymentDetails[0].id.toString() : ""}
                                 onChange={(value) => {
-                                  const selectedDetail = enhancedFilteredUserPaymentDetails.find((d: UserPaymentDetail) => d.id === Number(value));
+                                  const selectedDetail = enhancedFilteredUserPaymentDetails.find((d) => d.id === Number(value));
                                   if (selectedDetail) {
                                     setSelectedPaymentDetails([selectedDetail]);
                                     setPaymentMethodError(null);
@@ -4629,16 +4628,22 @@ const getPaymentRestrictionMessage = (status?: string) =>
                         })()}
                       </div>
                       {(() => {
-                        const allUserAccounts = (userPaymentMethodsDisplay.displayData && userPaymentMethodsDisplay.displayData.length > 0
-                          ? userPaymentMethodsDisplay.displayData
-                          : effectiveUserPaymentMethods) || [];
+                        const allUserAccounts = resolveAllUserPaymentAccounts(
+                          userPaymentMethodsDisplay.displayData,
+                          effectiveUserPaymentMethods
+                        );
                         const hasAnyAccounts = allUserAccounts.length > 0;
                         const hasFilteredAccounts = enhancedFilteredUserPaymentDetails.length > 0;
+                        const dropdownAccounts = getRegisteredAccountDropdownList(
+                          allUserAccounts,
+                          enhancedFilteredUserPaymentDetails
+                        );
 
                         if (hasFilteredAccounts) {
                           return (
+                            <>
                             <CustomSelect
-                              options={enhancedFilteredUserPaymentDetails.map((detail: UserPaymentDetail) => {
+                              options={dropdownAccounts.map((detail) => {
                                 const normalizeProviderName = (name: string | null | undefined): string => {
                                   if (!name) return "";
                                   const base = name.includes(" - ") ? name.split(" - ")[0].trim() : name.trim();
@@ -4665,7 +4670,7 @@ const getPaymentRestrictionMessage = (status?: string) =>
                               })}
                               value={selectedPaymentDetails.length > 0 ? selectedPaymentDetails[0].id.toString() : ""}
                               onChange={(value) => {
-                                const d = enhancedFilteredUserPaymentDetails.find((x: UserPaymentDetail) => x.id === Number(value));
+                                const d = enhancedFilteredUserPaymentDetails.find((x) => x.id === Number(value));
                                 if (d) setSelectedPaymentDetails([d]);
                               }}
                               placeholder={userPaymentMethodsDisplay.isLoading ? "Loading accounts..." : "Select Registered Account"}
@@ -4677,6 +4682,7 @@ const getPaymentRestrictionMessage = (status?: string) =>
                               sizeMode="card"
                               className="w-full"
                             />
+                            </>
                           );
                         }
 

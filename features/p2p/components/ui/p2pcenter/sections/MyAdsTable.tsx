@@ -22,6 +22,10 @@ import { formatDate, formatNumber } from "@/utils/formatters";
 import { NoDataFound } from "@/components/dashboard/ui/Transactions";
 import { SortArrowsIcon } from "@/components/ui/SortArrowsIcon";
 import { ArrowUpCircle, MoreVertical, Pencil, Upload, XCircle } from "lucide-react";
+import Loader from "../../../Common/Loader";
+
+const P2P_CENTER_PANEL_CLASS =
+  "w-full min-h-[600px] bg-white dark:bg-[var(--card-color)] rounded-2xl p-4 text-gray-900 dark:text-white border border-gray-200 dark:border-[#35353E]";
 
 const columns = [
   "Asset",
@@ -400,10 +404,25 @@ const MyAdsTable: React.FC<Props> = ({ trades, loading }) => {
 
   // Removed debug logging to reduce console noise
 
-  // Add check for empty trades
+  if (loading) {
+    return (
+      <div className={P2P_CENTER_PANEL_CLASS}>
+        <div className="flex flex-col items-center justify-center min-h-[520px] gap-3">
+          <Loader
+            size="md"
+            color="#1D8751"
+            showText
+            text="Loading ads..."
+            textColor="text-gray-500 dark:text-[#8C8CA1]"
+          />
+        </div>
+      </div>
+    );
+  }
+
   if (!trades || trades.length === 0) {
     return (
-      <div className="w-full min-h-[600px] bg-white dark:bg-[var(--card-color)] rounded-2xl p-4 text-gray-900 dark:text-white border dark:border-[#35353E] border-gray-200">
+      <div className={P2P_CENTER_PANEL_CLASS}>
         <NoDataFound
           title="No Ads Found"
           message="You haven't created any ads yet. Create your first ad to start trading."
@@ -412,7 +431,7 @@ const MyAdsTable: React.FC<Props> = ({ trades, loading }) => {
     );
   }
   return (
-    <div className="w-full min-h-[600px] bg-white dark:bg-[var(--card-color)] rounded-2xl p-4 text-gray-900 dark:text-white">
+    <div className={P2P_CENTER_PANEL_CLASS}>
       {/* Popout menu (fixed position, renders outside table) */}
       {openMenuIdx !== null &&
         menuPosition !== null &&

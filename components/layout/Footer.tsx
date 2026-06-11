@@ -66,8 +66,21 @@ export default function Footer() {
   const pathname = usePathname();
   const { primary } = tokens.colors.brand;
   const { textTitle, textBody, background, card } = tokens.colors.dark;
-  const [isVisible, setIsVisible] = useState(false);
+  const [hasScrolled, setHasScrolled] = useState(false);
   const footerRef = useRef<HTMLElement>(null);
+
+  useEffect(() => {
+    const handleScroll = () => {
+      setHasScrolled(window.scrollY > 0);
+    };
+
+    handleScroll();
+    window.addEventListener("scroll", handleScroll, { passive: true });
+
+    return () => {
+      window.removeEventListener("scroll", handleScroll);
+    };
+  }, []);
 
   // Helper function to check if a link is active
   const isActive = (href: string) => {
@@ -81,53 +94,14 @@ export default function Footer() {
     return pathname === href || pathname?.startsWith(href + "/");
   };
 
-  // Scroll detection to change background when footer reaches sidebar area
-  useEffect(() => {
-    const handleScroll = () => {
-      if (!footerRef.current) return;
-
-      // Check if sidebar exists on the page (dashboard pages have sidebar)
-      const sidebar = document.querySelector('aside, [class*="sidebar"], [class*="Sidebar"]');
-      if (!sidebar) {
-        // No sidebar, keep default background
-        setIsVisible(false);
-        return;
-      }
-
-      const footerRect = footerRef.current.getBoundingClientRect();
-      const viewportHeight = window.innerHeight;
-
-      // Sidebar is fixed at top-28 (112px from top)
-      // Change background when footer's top reaches the sidebar's vertical position
-      // This happens when scrolling down and footer reaches ~112px from top of viewport
-      const sidebarTopPosition = 112; // top-28 = 7rem = 112px
-
-      // When footer top reaches or passes the sidebar's top position (scrolling up into sidebar area)
-      if (footerRect.top <= sidebarTopPosition + 50) {
-        setIsVisible(true);
-      } else {
-        setIsVisible(false);
-      }
-    };
-
-    // Start with default background (isVisible = false)
-    // Only check when scrolling
-    window.addEventListener("scroll", handleScroll, { passive: true });
-    window.addEventListener("resize", handleScroll, { passive: true });
-
-    return () => {
-      window.removeEventListener("scroll", handleScroll);
-      window.removeEventListener("resize", handleScroll);
-    };
-  }, []);
-
   return (
     <footer
       ref={footerRef}
-      className={`relative z-40 pt-6 sm:pt-8 md:pt-10 pb-4 text-gray-700 dark:text-[#788099] transition-colors duration-300 w-full max-w-full overflow-x-hidden ${isVisible
-        ? "bg-white dark:bg-[#1D1D23]"
-        : "bg-(--bg-color)"
-        }`}
+      className={`relative isolate w-screen max-w-[100vw] left-1/2 -translate-x-1/2 overflow-x-hidden pt-6 sm:pt-8 md:pt-10 pb-4 text-gray-700 dark:text-[#788099] transition-[background-color,box-shadow,z-index] duration-300 border-t border-gray-200 dark:border-[#35353E] ${
+        hasScrolled
+          ? "z-[55] bg-gray-200 dark:bg-[#020203] shadow-[0_-8px_24px_rgba(0,0,0,0.12)] dark:shadow-[0_-8px_24px_rgba(0,0,0,0.45)]"
+          : "z-10 bg-gray-100 dark:bg-[#050508]"
+      }`}
     >
       <div className="w-full max-w-full px-4 sm:px-6 lg:px-8 xl:px-12 2xl:px-20 pt-8 sm:pt-12 pb-6 overflow-x-hidden">
         <div className="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-6 gap-x-3 gap-y-5 sm:gap-x-4 sm:gap-y-6 lg:gap-8 pb-8 border-b border-border dark:border-accent">

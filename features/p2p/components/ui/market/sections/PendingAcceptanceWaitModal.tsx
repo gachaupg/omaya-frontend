@@ -25,7 +25,7 @@ import {
   findTradeForP2POrder,
 } from "@/features/p2p/utils/resolveP2PTradeId";
 import { RootState } from "@/store/rootReducer";
-import { showToast } from "@/lib/utils/toast";
+import { resolveExpressTransactionFailureMessage } from "@/lib/utils/websocketUtils";
 import {
   logTradePreview,
   logTradePreviewSockets,
@@ -45,9 +45,17 @@ interface PendingAcceptanceWaitModalProps {
   onClose: () => void;
 }
 
-const USER_NOT_FOUND_MESSAGE = "We couldn't find the user.";
+const USER_NOT_FOUND_MESSAGE = "We couldn't find the user for this trade. Please back to the market and try again.";
 
-const USER_NOT_FOUND_DISPLAY_MS = 2000;
+const TERMINAL_MESSAGE_DISPLAY_MS = 60_000;
+
+const DEFAULT_TRADE_REJECTION_MESSAGE =
+  "The trade owner declined this trade.";
+
+const DEFAULT_TRADE_CANCELLED_MESSAGE =
+  "User is not able to process your trade. Please try another trade in the p2p market.";
+
+type ClosingVariant = "rejected" | "cancelled";
 
 export const PendingAcceptanceWaitModal: React.FC<PendingAcceptanceWaitModalProps> = ({
   open,
@@ -63,6 +71,9 @@ export const PendingAcceptanceWaitModal: React.FC<PendingAcceptanceWaitModalProp
   const [startedAt, setStartedAt] = useState<number | null>(null);
   const [tick, setTick] = useState(0);
   const [closingMessage, setClosingMessage] = useState<string | null>(null);
+  const [closingVariant, setClosingVariant] = useState<ClosingVariant | null>(
+    null
+  );
   const [imageError, setImageError] = useState(false);
 
   const exitingRef = useRef(false);
@@ -139,14 +150,18 @@ export const PendingAcceptanceWaitModal: React.FC<PendingAcceptanceWaitModalProp
   );
 
   const performDismiss = useCallback(
-    (opts?: { message?: string; cancelTrade?: boolean }) => {
+    (opts?: {
+      message?: string;
+      cancelTrade?: boolean;
+      messageDisplayMs?: number;
+    }) => {
       if (exitingRef.current) {
         finishAndReturnToTable(true);
         return;
       }
       exitingRef.current = true;
       if (opts?.message) setClosingMessage(opts.message);
-      const delay = opts?.message ? 1400 : 0;
+      const delay = opts?.message ? (opts.messageDisplayMs ?? 1400) : 0;
       window.setTimeout(() => {
         if (opts?.cancelTrade === false) {
           try {
@@ -186,16 +201,26 @@ export const PendingAcceptanceWaitModal: React.FC<PendingAcceptanceWaitModalProp
 
       if (lowered === "cancelled" || lowered === "canceled") {
         logTradePreview("WS trade canceled", { trade_id: wsTradeId, status: snap.rawStatus });
-        showToast.warning("Trade cancelled", "This trade was cancelled.");
-        void performDismiss({ message: "This trade was cancelled.", cancelTrade: false });
+        clearAutoCancelTimers();
+        setClosingVariant("cancelled");
+        void performDismiss({
+          message: DEFAULT_TRADE_CANCELLED_MESSAGE,
+          cancelTrade: false,
+          messageDisplayMs: TERMINAL_MESSAGE_DISPLAY_MS,
+        });
         return;
       }
 
       if (isDeclinedLikeStatus(payload)) {
-        showToast.error("Trade declined", "The trade owner declined this trade.");
+        const rejectionMessage =
+          resolveExpressTransactionFailureMessage(payload) ??
+          DEFAULT_TRADE_REJECTION_MESSAGE;
+        clearAutoCancelTimers();
+        setClosingVariant("rejected");
         void performDismiss({
-          message: "The trade owner declined this trade.",
+          message: rejectionMessage,
           cancelTrade: false,
+          messageDisplayMs: TERMINAL_MESSAGE_DISPLAY_MS,
         });
         return;
       }
@@ -212,7 +237,7 @@ export const PendingAcceptanceWaitModal: React.FC<PendingAcceptanceWaitModalProp
         goToMatchedPage(wsTradeId || activeTradeIdRef.current || tradeId);
       }
     },
-    [advertiserOrderId, goToMatchedPage, performDismiss, tradeId]
+    [advertiserOrderId, clearAutoCancelTimers, goToMatchedPage, performDismiss, tradeId]
   );
 
   useEffect(() => {
@@ -224,6 +249,7 @@ export const PendingAcceptanceWaitModal: React.FC<PendingAcceptanceWaitModalProp
     exitingRef.current = false;
     acceptedRef.current = false;
     setClosingMessage(null);
+    setClosingVariant(null);
     setImageError(false);
     activeTradeIdRef.current = tradeId;
     recordPendingAcceptanceStartedAt(tradeId);
@@ -298,13 +324,11 @@ export const PendingAcceptanceWaitModal: React.FC<PendingAcceptanceWaitModalProp
 
     const runAutoCancel = () => {
       if (exitingRef.current || acceptedRef.current) return;
-      exitingRef.current = true;
-      setClosingMessage(USER_NOT_FOUND_MESSAGE);
-      showToast.warning("User unavailable", USER_NOT_FOUND_MESSAGE);
-
-      closeAfterMessageRef.current = window.setTimeout(() => {
-        finishAndReturnToTable(true);
-      }, USER_NOT_FOUND_DISPLAY_MS);
+      setClosingVariant("cancelled");
+      void performDismiss({
+        message: USER_NOT_FOUND_MESSAGE,
+        messageDisplayMs: TERMINAL_MESSAGE_DISPLAY_MS,
+      });
     };
 
     const elapsed = Date.now() - startedAt;
@@ -326,7 +350,7 @@ export const PendingAcceptanceWaitModal: React.FC<PendingAcceptanceWaitModalProp
         closeAfterMessageRef.current = null;
       }
     };
-  }, [open, startedAt, finishAndReturnToTable]);
+  }, [open, startedAt, performDismiss]);
 
   if (!open) return null;
 
@@ -379,14 +403,22 @@ export const PendingAcceptanceWaitModal: React.FC<PendingAcceptanceWaitModalProp
               {advertiserName}
             </h2>
             <p className="text-xs text-gray-500 dark:text-[#788099]">
-              Awaiting trade owner
+              {closingVariant === "rejected"
+                ? "Trade rejected"
+                : closingVariant === "cancelled"
+                  ? "Trade cancelled"
+                  : "Awaiting for trade confirmation"}
             </p>
           </div>
         </div>
 
         <div
           role="status"
-          className="rounded-xl px-4 py-3 text-sm font-medium border border-[#1D8751]/40 bg-[#1D8751]/10 text-gray-900 dark:text-white dark:bg-[#1D8751]/20 mb-4"
+          className={`rounded-xl px-4 py-3 text-sm font-medium mb-4 ${
+            closingVariant
+              ? "border border-red-500/40 bg-red-500/10 text-red-700 dark:text-red-300 dark:bg-red-500/20"
+              : "border border-[#1D8751]/40 bg-[#1D8751]/10 text-gray-900 dark:text-white dark:bg-[#1D8751]/20"
+          }`}
         >
           {closingMessage ? (
             <span>{closingMessage}</span>

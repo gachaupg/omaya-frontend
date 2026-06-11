@@ -16,6 +16,8 @@ import {
   checkKYCStatus,
 } from "@/features/auth/slices/authSlice";
 import { getP2PProfileThunk } from "@/features/p2p/slices/orderSlice";
+import { fetchLatestMatchedTradesPage } from "@/features/p2p/slices/matchedTradesSlice";
+import NavbarTradeNotificationsDropdown from "@/components/layout/NavbarTradeNotificationsDropdown";
 import { useLanguageOptional } from "@/context/language";
 import { useMarketingI18n } from "@/lib/useMarketingI18n";
 import { useTheme } from "@/context/theme";
@@ -601,6 +603,7 @@ export default function Navbar() {
     if (isAuthenticated) {
       // Ensure KYC status is up to date
       dispatch(checkKYCStatus());
+      dispatch(fetchLatestMatchedTradesPage());
     }
   }, [dispatch, isAuthenticated]);
 
@@ -1384,6 +1387,7 @@ export default function Navbar() {
           <div className="flex items-center space-x-1 sm:space-x-1.5 md:space-x-1.5 lg:space-x-2 xl:space-x-3 2xl:space-x-4">
             <LanguageSelector />
             <ThemeSelector isTransparentNavbar={isTransparentNavbar} />
+            <NavbarTradeNotificationsDropdown />
           </div>
         </div>
 
@@ -1766,6 +1770,7 @@ export default function Navbar() {
         <div className="flex items-center justify-center gap-6 pt-4 border-t dark:border-gray-700 border-gray-200">
           <LanguageSelector isMobile={true} />
           <ThemeSelector isTransparentNavbar={isTransparentNavbar} isMobile={true} />
+          <NavbarTradeNotificationsDropdown />
         </div>
       </div>
 

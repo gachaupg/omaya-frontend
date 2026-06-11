@@ -1302,36 +1302,38 @@ const TradePreview: React.FC<TradePreviewProps> = ({
               </div>
             )}
 
-            <div className="flex flex-col sm:flex-row gap-3 sm:gap-4 mt-1">
-              <button
-                className="w-full sm:flex-1 py-2.5 sm:py-2 rounded-lg border font-semibold text-sm sm:text-base transition border-gray-400 dark:border-[#788099] text-gray-700 dark:text-[#788099] hover:bg-gray-200 dark:hover:bg-[var(--card-color)]"
-                onClick={onClose}
-                disabled={isSubmitting}
-              >
-                Close
-              </button>
-              <button
-                className={`w-full sm:flex-1 py-2.5 sm:py-2 rounded-lg font-semibold text-sm sm:text-base transition text-white ${tradeType === "sell"
-                    ? "bg-[#E23D3A] hover:bg-[#b71c1c]"
-                    : "bg-[#1D8751] hover:bg-[#17643a]"
-                  } ${!isFormValid() || isSubmitting
-                    ? "opacity-50 cursor-not-allowed"
-                    : ""
-                  }`}
-                onClick={handleSubmit}
-                disabled={!isFormValid() || isSubmitting}
-              >
-                {isSubmitting ? (
-                  <div className="flex items-center justify-center gap-2">
-                    <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
-                    <span>Processing...</span>
-                  </div>
-                ) : tradeType === "sell" ? (
-                  "SELL USDT"
-                ) : (
-                  "BUY USDT"
-                )}
-              </button>
+            <div className="sticky bottom-0 z-20 -mx-3 px-3 sm:-mx-4 sm:px-4 lg:-mx-6 lg:px-6 pt-3 pb-1 mt-2 bg-white dark:bg-[var(--card-color)] border-t border-gray-200 dark:border-[#35353E] shadow-[0_-6px_16px_rgba(0,0,0,0.08)] dark:shadow-[0_-6px_16px_rgba(0,0,0,0.35)]">
+              <div className="flex flex-col sm:flex-row gap-3 sm:gap-4">
+                <button
+                  className="w-full sm:flex-1 py-2.5 sm:py-2 rounded-lg border font-semibold text-sm sm:text-base transition border-gray-400 dark:border-[#788099] text-gray-700 dark:text-[#788099] hover:bg-gray-200 dark:hover:bg-[var(--card-color)]"
+                  onClick={onClose}
+                  disabled={isSubmitting}
+                >
+                  Close
+                </button>
+                <button
+                  className={`w-full sm:flex-1 py-2.5 sm:py-2 rounded-lg font-semibold text-sm sm:text-base transition text-white ${tradeType === "sell"
+                      ? "bg-[#E23D3A] hover:bg-[#b71c1c]"
+                      : "bg-[#1D8751] hover:bg-[#17643a]"
+                    } ${!isFormValid() || isSubmitting
+                      ? "opacity-50 cursor-not-allowed"
+                      : ""
+                    }`}
+                  onClick={handleSubmit}
+                  disabled={!isFormValid() || isSubmitting}
+                >
+                  {isSubmitting ? (
+                    <div className="flex items-center justify-center gap-2">
+                      <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
+                      <span>Processing...</span>
+                    </div>
+                  ) : tradeType === "sell" ? (
+                    "SELL USDT"
+                  ) : (
+                    "BUY USDT"
+                  )}
+                </button>
+              </div>
             </div>
           </div>
         </div>

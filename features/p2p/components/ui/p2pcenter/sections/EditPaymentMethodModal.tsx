@@ -275,13 +275,15 @@ const EditPaymentMethodModal: React.FC<EditPaymentMethodModalProps> = ({
                   Cannot edit: payment detail UUID is missing for OTP. Please refresh the page.
                 </div>
               )}
-              {/* Payment Provider Name (Read-only) */}
+              {/* Payment Provider / Network (Read-only) */}
               <div>
                 <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                  Payment Provider
+                  {isCryptoMethod ? "Network" : "Payment Provider"}
                 </label>
                 <div className="px-4 py-2 bg-gray-50 dark:bg-[#2A2A2A] border border-gray-200 dark:border-accent rounded-xl text-sm text-gray-900 dark:text-white">
-                  {paymentMethod.payment_provider_name || paymentMethod.provider_name || "—"}
+                  {isCryptoMethod
+                    ? "BNB Smart Chain (BEP20)"
+                    : paymentMethod.payment_provider_name || paymentMethod.provider_name || "—"}
                 </div>
               </div>
 

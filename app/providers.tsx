@@ -17,6 +17,7 @@ import { storage } from "@/features/auth/utils/storage";
 import { initializeTokenRefresh } from "@/lib/utils/tokenRefresh";
 import { clearSupportedTokensCachesOnReload } from "@/lib/utils/supportedTokensCache";
 import GlobalSessionManager from "@/components/GlobalSessionManager";
+import { WebPushProvider } from "@/features/notifications/components/WebPushProvider";
 
 declare global {
   interface Window {
@@ -279,7 +280,7 @@ export default function Providers({
                   "419397388040-pho892dc9oj407o844h8af1leh9cnvpq.apps.googleusercontent.com"
                 }
               >
-                {children}
+                <WebPushProvider>{children}</WebPushProvider>
             </GoogleOAuthProvider>
             </LanguageProvider>
           </ThemeProvider>

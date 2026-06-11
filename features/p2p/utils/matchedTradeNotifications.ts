@@ -34,6 +34,62 @@ export function filterPendingMatchedTradeNotifications<
   return trades.filter(isPendingMatchedTradeNotification);
 }
 
+export type MatchedTradeNotificationCategory = "incoming" | "buy" | "sell";
+
+/** Navbar dropdown / notification center filter bucket for a pending trade. */
+export function getMatchedTradeNotificationCategory(
+  trade: {
+    owner?: string | null;
+    order_type?: string | null;
+    status?: string | null;
+  },
+  userEmail: string | null | undefined
+): MatchedTradeNotificationCategory {
+  const isOwner =
+    Boolean(userEmail && trade.owner) &&
+    normalizeEmail(userEmail) === normalizeEmail(trade.owner);
+
+  if (isOwner) return "incoming";
+  if (trade.order_type?.trim().toLowerCase() === "sell") return "buy";
+  return "sell";
+}
+
+export function groupPendingMatchedTradeNotificationsByCategory<
+  T extends {
+    owner?: string | null;
+    order_type?: string | null;
+    status?: string | null;
+  },
+>(trades: T[], userEmail: string | null | undefined) {
+  const groups: Record<MatchedTradeNotificationCategory, T[]> = {
+    incoming: [],
+    buy: [],
+    sell: [],
+  };
+  for (const trade of trades) {
+    groups[getMatchedTradeNotificationCategory(trade, userEmail)].push(trade);
+  }
+  return groups;
+}
+
+export function filterPendingMatchedTradeNotificationsByCategory<
+  T extends {
+    owner?: string | null;
+    order_type?: string | null;
+    status?: string | null;
+  },
+>(
+  trades: T[],
+  userEmail: string | null | undefined,
+  category: MatchedTradeNotificationCategory | null | undefined
+): T[] {
+  if (!category) return trades;
+  return trades.filter(
+    (trade) =>
+      getMatchedTradeNotificationCategory(trade, userEmail) === category
+  );
+}
+
 /** Newest first; tie-break by id so list order stays stable across WS/HTTP updates. */
 export function sortMatchedTradeNotificationsNewestFirst<
   T extends { id?: string | number | null; timestamp?: string | null },

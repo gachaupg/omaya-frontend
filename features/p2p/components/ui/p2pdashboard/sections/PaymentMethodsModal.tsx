@@ -87,7 +87,7 @@ interface PaymentMethodsModalProps {
   open: boolean;
   onClose: () => void;
   onAdd?: () => void;
-  /** When set (e.g. from trade preview "Add new X payment method"), only show payment methods/providers matching this name */
+  /** When set (e.g. from express withdrawal "Add Account"), pre-select this provider but still show all options */
   filterByProviderName?: string;
   /** Prefill account / mobile / wallet field when opened from MoneyX whitelist flow */
   initialAccountNumber?: string;
@@ -293,21 +293,9 @@ const PaymentMethodsModal: React.FC<PaymentMethodsModalProps> = ({
     );
   }, [publicPaymentMethods]);
 
-  // When opened from trade preview with a selected payment method (e.g. "Salaam Bank"),
-  // only show payment method types and providers that match that name.
-  const processedProvidersFiltered = React.useMemo(() => {
-    if (!filterByProviderName?.trim()) return processedProviders;
-    const term = filterByProviderName.trim().toLowerCase();
-    return processedProviders.filter((p: any) => {
-      const name = (p.provider_name || "").toLowerCase();
-      const prov = (p.provider || "").toLowerCase();
-      return name.includes(term) || prov.includes(term) || term.includes(name) || term.includes(prov);
-    });
-  }, [processedProviders, filterByProviderName]);
-
   const methodTypes = Array.from(
     new Set(
-      processedProvidersFiltered
+      processedProviders
         .map((p: any) => p.payment_method_type)
         .filter(Boolean)
     )
@@ -333,11 +321,11 @@ const PaymentMethodsModal: React.FC<PaymentMethodsModalProps> = ({
     );
   };
 
-  const providersForTab = processedProvidersFiltered.filter((p: any) =>
+  const providersForTab = processedProviders.filter((p: any) =>
     isMethodInTab(String(p?.payment_method_type || ""), methodTab)
   );
   const forexBrokerOptions = React.useMemo(() => {
-    const forex = processedProvidersFiltered.filter((p: any) => {
+    const forex = processedProviders.filter((p: any) => {
       const methodName = String(
         p?.payment_method_type || p?.payment_method_name || ""
       ).toLowerCase();
@@ -354,24 +342,42 @@ const PaymentMethodsModal: React.FC<PaymentMethodsModalProps> = ({
         wallet_address: null,
       },
     ];
-  }, [processedProvidersFiltered]);
+  }, [processedProviders]);
 
   const providers = methodTab === "forex" ? forexBrokerOptions : providersForTab;
+
+  const providerToPrefill = React.useMemo(() => {
+    if (!filterByProviderName?.trim()) return null;
+    return pickProviderForFilter(processedProviders, filterByProviderName);
+  }, [filterByProviderName, processedProviders]);
+
+  /** Matched provider first in dropdown, then the rest */
+  const providersForDropdown = React.useMemo(() => {
+    if (!providerToPrefill || providers.length <= 1) return providers;
+    const prefillName = String(
+      providerToPrefill.provider_name || providerToPrefill.provider || ""
+    ).trim();
+    if (!prefillName) return providers;
+    const matchIndex = providers.findIndex(
+      (p: any) =>
+        String(p.provider_name || "").trim() === prefillName ||
+        String(p.provider || "").trim() === prefillName
+    );
+    if (matchIndex <= 0) return providers;
+    const matched = providers[matchIndex];
+    return [
+      matched,
+      ...providers.slice(0, matchIndex),
+      ...providers.slice(matchIndex + 1),
+    ];
+  }, [providers, providerToPrefill]);
   const maskedUserEmail = React.useMemo(
     () => maskEmailForOtp(String(user?.email || "")),
     [user?.email]
   );
 
-  const providerToPrefill = React.useMemo(() => {
-    if (!filterByProviderName?.trim()) return null;
-    return (
-      pickProviderForFilter(processedProvidersFiltered, filterByProviderName) ||
-      pickProviderForFilter(processedProviders, filterByProviderName)
-    );
-  }, [filterByProviderName, processedProvidersFiltered, processedProviders]);
-
   useEffect(() => {
-    if (!open || !providerToPrefill) return;
+    if (!open || !providerToPrefill || publicMethodsLoading) return;
     const methodType = String(providerToPrefill.payment_method_type || "");
     if (methodType) {
       setMethod(methodType);
@@ -386,7 +392,7 @@ const PaymentMethodsModal: React.FC<PaymentMethodsModalProps> = ({
     const providerName =
       providerToPrefill.provider_name || providerToPrefill.provider || "";
     if (providerName) setProvider(String(providerName));
-  }, [open, providerToPrefill]);
+  }, [open, providerToPrefill, publicMethodsLoading]);
 
   // Auto-select first provider for the active tab when modal opens.
   useEffect(() => {
@@ -730,7 +736,7 @@ const PaymentMethodsModal: React.FC<PaymentMethodsModalProps> = ({
             </div>
             {filterByProviderName?.trim() && (
               <p className="mt-1 text-sm text-[#1D8751] font-medium">
-                For: {filterByProviderName.trim()}
+                Pre-selected: {filterByProviderName.trim()} — you can choose another below
               </p>
             )}
           </div>
@@ -835,8 +841,8 @@ const PaymentMethodsModal: React.FC<PaymentMethodsModalProps> = ({
              </label>
              <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
                {[
-                 { key: "bank", label: "Bank Wallet" },
-                 { key: "crypto", label: "Crypto Wallet" },
+                 { key: "bank", label: "Payment Method" },
+                 { key: "crypto", label: "USDT Wallet" },
                  { key: "forex", label: "Forex Wallet" },
                ].map((tab) => {
                  const active = methodTab === (tab.key as PaymentTab);
@@ -849,12 +855,12 @@ const PaymentMethodsModal: React.FC<PaymentMethodsModalProps> = ({
                        setMethodTab(nextTab);
                        if (nextTab === "forex") {
                          setMethod("Forex");
-                         const firstForTab = processedProvidersFiltered.find((p: any) =>
+                         const firstForTab = processedProviders.find((p: any) =>
                            isMethodInTab(String(p?.payment_method_type || ""), nextTab)
                          );
                          setProvider(String(firstForTab?.provider_name || firstForTab?.provider || ""));
                        } else {
-                         const firstForTab = processedProvidersFiltered.find((p: any) =>
+                         const firstForTab = processedProviders.find((p: any) =>
                            isMethodInTab(String(p?.payment_method_type || ""), nextTab)
                          );
                          setMethod(firstForTab?.payment_method_type || "");
@@ -884,15 +890,18 @@ const PaymentMethodsModal: React.FC<PaymentMethodsModalProps> = ({
            {methodTab !== "forex" && (methodTab || method) && (
              <div>
                <label className="block text-gray-900 dark:text-white text-sm mb-2">
-                Provider
+                {methodTab === "crypto" ? "Network" : "Provider"}
                </label>
                <div className="relative">
                  <CustomSelect
                    options={[
-                     { value: "", label: "Select Provider" },
-                     ...providers.map((p: any, index: number) => ({
+                     { value: "", label: methodTab === "crypto" ? "Select Network" : "Select Provider" },
+                     ...providersForDropdown.map((p: any, index: number) => ({
                        value: String(p.provider_name || ""),
-                       label: String(p.provider_name || "Unknown"),
+                       label:
+                         methodTab === "crypto"
+                           ? "BNB Smart Chain (BEP20)"
+                           : String(p.provider_name || "Unknown"),
                        subtitle: String(p.payment_method_type || p.method_display || p.method || "").trim() || undefined,
                        logo: getHighResPaymentLogo(
                          p.logo || p.provider_logo || undefined,
@@ -906,10 +915,10 @@ const PaymentMethodsModal: React.FC<PaymentMethodsModalProps> = ({
                    onChange={(value) => setProvider(String(value || ""))}
                    disabled={publicMethodsLoading || providers.length === 0}
                    searchable={true}
-                   emptyText="No providers found"
+                   emptyText={methodTab === "crypto" ? "No networks found" : "No providers found"}
                    loading={publicMethodsLoading}
-                   loadingText="Loading providers..."
-                   dropdownTitle="Select Provider"
+                   loadingText={methodTab === "crypto" ? "Loading networks..." : "Loading providers..."}
+                   dropdownTitle={methodTab === "crypto" ? "Select Network" : "Select Provider"}
                    sizeMode="card"
                    logoSize={PAYMENT_LOGO_SIZE}
                    logoClassName="rounded-full object-cover"
@@ -944,10 +953,10 @@ const PaymentMethodsModal: React.FC<PaymentMethodsModalProps> = ({
                           />
                            <div className="min-w-0">
                              <p className="text-sm font-semibold text-gray-900 dark:text-white truncate">
-                               {provider}
+                               {methodTab === "crypto" ? "BNB Smart Chain (BEP20)" : provider}
                              </p>
                              <p className="text-xs text-[#788099] mt-0.5">
-                               Selected Provider
+                               {methodTab === "crypto" ? "Selected Network" : "Selected Provider"}
                              </p>
                            </div>
                          </>
@@ -958,7 +967,9 @@ const PaymentMethodsModal: React.FC<PaymentMethodsModalProps> = ({
                )}
               {!publicMethodsLoading && providers.length === 0 && (
                 <p className="mt-2 text-sm text-gray-500 dark:text-[#788099]">
-                  No providers found for the selected method.
+                  {methodTab === "crypto"
+                    ? "No networks found for the selected method."
+                    : "No providers found for the selected method."}
                 </p>
               )}
              </div>
