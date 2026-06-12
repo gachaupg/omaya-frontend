@@ -24,8 +24,15 @@ export interface TransactionStatusMessage {
       | "confirming"
       | "admin_approval_required"
       | "agent_approve"
-      | "error";
-    message: string;
+      | "error"
+      | "rejected"
+      | "failed"
+      | "stopped";
+    message?: string;
+    reason?: string | null;
+    stages?: string | null;
+    error_message?: string | null;
+    comment_text?: string | null;
     timestamp: string;
     transaction_id: string;
     moneyx_transaction_id?: string;

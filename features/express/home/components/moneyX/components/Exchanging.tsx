@@ -167,11 +167,15 @@ export default function Exchanging({ transactionData, onBackToTransfer, isHomePa
     return Number.isNaN(parsed) ? null : parsed;
   };
   const getFailureMessage = (wsData: any): string => {
-    const fromResolver = resolveExpressTransactionFailureMessage({ data: wsData });
+    const fromResolver =
+      resolveExpressTransactionFailureMessage({ data: wsData }) ||
+      resolveExpressTransactionFailureMessage(wsData);
     if (fromResolver) return fromResolver;
     const reason =
       wsData?.notification?.reason ||
       wsData?.reason ||
+      wsData?.rejection_reason ||
+      wsData?.failure_reason ||
       wsData?.error_message ||
       wsData?.comment_text ||
       wsData?.message;
@@ -554,7 +558,8 @@ export default function Exchanging({ transactionData, onBackToTransfer, isHomePa
         );
       }
 
-      if (wsData.status) {
+      const rawStatus = wsData.status || wsData.stages;
+      if (rawStatus) {
         const isWithdrawalFlow = effectiveTransactionData?.type === "withdrawal";
         const wsOperationalStatus = String(wsData.operational_status || "")
           .trim()
@@ -562,7 +567,7 @@ export default function Exchanging({ transactionData, onBackToTransfer, isHomePa
         // IMPORTANT: Do NOT replace the UI-driving status with `operational_status`.
         // Backend may keep operational_status pinned at an approval gate while `status`
         // continues through confirming/exchanging/sending. Follow `status` for progress.
-        const effectiveStatus = wsData.status;
+        const effectiveStatus = String(rawStatus).trim().toLowerCase();
         if (
           isWithdrawalFlow &&
           ["admin_approval_required", "approval_required", "agent_approve"].includes(
@@ -1009,7 +1014,14 @@ export default function Exchanging({ transactionData, onBackToTransfer, isHomePa
     setFailureModal({ isOpen: false, status: "", message: undefined });
     localStorage.removeItem("moneyx_transaction_data");
     localStorage.removeItem("express_transaction_data");
-    window.location.reload();
+    localStorage.removeItem("moneyx_transaction_expiry");
+    if (onBackToTransfer) {
+      onBackToTransfer();
+    } else if (isHomePage) {
+      router.push("/");
+    } else {
+      router.push("/dashboard/exchange/");
+    }
   };
 
   // If showing success page, render it
