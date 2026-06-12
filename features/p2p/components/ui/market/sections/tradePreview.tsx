@@ -18,6 +18,7 @@ import { fetchWallets } from "@/features/p2p/slices/walletSlice";
 import { setConfirmOrderSnapshot } from "@/features/p2p/slices/orderSlice";
 import { getTransactionSummary, matchP2POrder } from "@/features/p2p/api";
 import { PresenceIndicator } from "./UserStatusBadge";
+import VerifiedBadge from "@/components/ui/VerifiedBadge";
 import {
   isTradeAcceptedFromConfirmOrder,
   recordPendingAcceptanceStartedAt,
@@ -754,7 +755,7 @@ const TradePreview: React.FC<TradePreviewProps> = ({
                   <span className="truncate" title={advertiserData.advertiser}>
                     {shortenLongName(advertiserData.advertiser)}
                   </span>
-                  <div className="bg-[#E59906] text-base w-3 h-3 sm:w-3.5 sm:h-3.5 rounded-full flex-shrink-0"></div>
+                  <VerifiedBadge size={14} className="shrink-0" />
                 </div>
                 <div className="text-xs sm:text-sm font-medium flex items-center gap-1.5 sm:gap-2 text-[#1D8751] flex-wrap">
                   <span>{advertiserData.orders} Orders</span>

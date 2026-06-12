@@ -164,11 +164,15 @@ export default function Exchanging({ transactionData, onBackToTransfer }: Exchan
   };
 
   const getFailureMessage = (wsData: any): string => {
-    const fromResolver = resolveExpressTransactionFailureMessage({ data: wsData });
+    const fromResolver =
+      resolveExpressTransactionFailureMessage({ data: wsData }) ||
+      resolveExpressTransactionFailureMessage(wsData);
     if (fromResolver) return fromResolver;
     const reason =
       wsData?.notification?.reason ||
       wsData?.reason ||
+      wsData?.rejection_reason ||
+      wsData?.failure_reason ||
       wsData?.error_message ||
       wsData?.comment_text ||
       wsData?.message;
@@ -547,7 +551,8 @@ export default function Exchanging({ transactionData, onBackToTransfer }: Exchan
         );
       }
 
-      if (wsData.status) {
+      const rawStatus = wsData.status || wsData.stages;
+      if (rawStatus) {
         const isWithdrawalFlow = effectiveTransactionData?.type === "withdrawal";
         const wsOperationalStatus = String(wsData.operational_status || "")
           .trim()
@@ -558,7 +563,7 @@ export default function Exchanging({ transactionData, onBackToTransfer }: Exchan
             wsOperationalStatus
           )
             ? wsOperationalStatus
-            : wsData.status;
+            : String(rawStatus).trim().toLowerCase();
         const validStatuses = [
           "pending",
           "pending_review",

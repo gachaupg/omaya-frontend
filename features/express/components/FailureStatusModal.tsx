@@ -60,9 +60,9 @@ const FailureStatusModal: React.FC<FailureStatusModalProps> = ({
 
   const statusLabel = title?.trim() || getStatusLabel(status);
 
-  const handleClose = () => {
+  const handleDismiss = () => {
     onClose();
-    if (typeof window !== 'undefined') window.location.reload();
+    onBackToForm();
   };
 
   const trimmedMessage = message?.trim();
@@ -76,7 +76,7 @@ const FailureStatusModal: React.FC<FailureStatusModalProps> = ({
   return (
     <div
       className="fixed inset-0 z-[100] flex items-center justify-center bg-black/50 backdrop-blur-sm"
-      onClick={(e) => e.target === e.currentTarget && handleClose()}
+      onClick={(e) => e.target === e.currentTarget && handleDismiss()}
     >
       <div className="relative w-full max-w-md mx-4">
         <div
@@ -110,7 +110,7 @@ const FailureStatusModal: React.FC<FailureStatusModalProps> = ({
                   >
                     Reason:
                   </span>{' '}
-                  <span className="font-medium">Amount you have sent is too small to complete the transaction.</span>
+                  <span className="font-medium">{reason || trimmedMessage}</span>
                 </p>
                 {detail ? (
                   <p className="whitespace-pre-line break-words border-t border-gray-200 pt-3 dark:border-[#35353E]">
@@ -141,7 +141,7 @@ const FailureStatusModal: React.FC<FailureStatusModalProps> = ({
               Try Again
             </button>
             <button
-              onClick={handleClose}
+              onClick={handleDismiss}
               className={`w-full border font-medium py-3 px-4 rounded-xl transition-colors duration-200 ${
                 isDark
                   ? 'border-[#35353E] text-[#7B7B7B] hover:bg-[#35353E]'
