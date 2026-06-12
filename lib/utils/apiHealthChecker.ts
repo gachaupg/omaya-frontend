@@ -62,12 +62,7 @@ export class ApiHealthChecker {
 
     this.endpoints.set(endpoint, health);
 
-    logger.warn("api", `API endpoint failure recorded`, {
-      endpoint,
-      failureCount: health.failureCount,
-      status: health.status,
-      error: error.message,
-    });
+   
   }
 
   static recordSuccess(endpoint: string) {

@@ -109,6 +109,8 @@ const TradePreview: React.FC<TradePreviewProps> = ({
   const [sendAmount, setSendAmount] = useState("");
   const [receiveAmount, setReceiveAmount] = useState("");
   const [paymentMethod, setPaymentMethod] = useState<string>("");
+  const [selectedAdvertiserPaymentDetailId, setSelectedAdvertiserPaymentDetailId] =
+    useState<number | null>(null);
   const [isPaymentDropdownOpen, setIsPaymentDropdownOpen] = useState(false);
   const [isAmountValid, setIsAmountValid] = useState(true);
   const [errorMessage, setErrorMessage] = useState("");
@@ -274,11 +276,18 @@ const TradePreview: React.FC<TradePreviewProps> = ({
     setSelectedUserPaymentDetail(null);
   }, [paymentMethod]);
 
+  const selectAdvertiserPaymentOption = useCallback(
+    (opt: { paymentDetailId: number | null; value: string }) => {
+      setPaymentMethod(opt.value);
+      setSelectedAdvertiserPaymentDetailId(opt.paymentDetailId);
+    },
+    []
+  );
+
   // Create payment options from row payment details
   const paymentOptions = React.useMemo(() => {
     if (!paymentDetails || !Array.isArray(paymentDetails)) return [];
 
-    // Create options for each payment method from the row
     return paymentDetails.map((detail: any, index: number) => {
       const provider = detail.provider || detail.provider_name || "Payment Method";
       const accountNumber =
@@ -287,8 +296,10 @@ const TradePreview: React.FC<TradePreviewProps> = ({
         detail.account ||
         detail.number ||
         "";
+      const paymentDetailId = getPaymentDetailId(detail);
       return {
-        id: detail.id || index,
+        key: paymentDetailId ?? `payment-option-${index}`,
+        paymentDetailId,
         value: provider,
         label: accountNumber ? `${provider} (${accountNumber})` : provider,
       };
@@ -604,6 +615,9 @@ const TradePreview: React.FC<TradePreviewProps> = ({
     if (!isAmountValid) {
       return false;
     }
+    if (tradeType === "buy" && selectedAdvertiserPaymentDetailId == null) {
+      return false;
+    }
     if (tradeType === "sell" && paymentMethod && !userDetailsLoading) {
       if (matchingUserPaymentMethods.length > 0 && !selectedUserPaymentDetail) return false;
       if (
@@ -636,6 +650,8 @@ const TradePreview: React.FC<TradePreviewProps> = ({
         marketOrderId: advertiserData.id,
         tradeType,
         amount: tradeType === "sell" ? sendAmount : receiveAmount,
+        selectedAdvertiserPaymentDetailId,
+        selectedUserPaymentDetailId: getPaymentDetailId(selectedUserPaymentDetail),
       });
       // Create order data: API expects USDT amount (asset being traded)
       // For buy: receiveAmount is USDT. For sell: sendAmount is USDT.
@@ -643,7 +659,11 @@ const TradePreview: React.FC<TradePreviewProps> = ({
         amount: tradeType === "sell" ? sendAmount : receiveAmount,
       };
 
-      if (tradeType === "sell") {
+      if (tradeType === "buy") {
+        if (selectedAdvertiserPaymentDetailId != null) {
+          orderData.payment_details_ids = [selectedAdvertiserPaymentDetailId];
+        }
+      } else if (tradeType === "sell") {
         const selectedPaymentDetailId = getPaymentDetailId(selectedUserPaymentDetail);
         if (selectedPaymentDetailId != null) {
           orderData.payment_details_ids = [selectedPaymentDetailId];
@@ -1069,13 +1089,18 @@ const TradePreview: React.FC<TradePreviewProps> = ({
                             </div>
                           ) : (
                             filteredPaymentOptions.map((opt) => {
-                              const isSelected = paymentMethod === opt.value;
+                              const isSelected =
+                                selectedAdvertiserPaymentDetailId != null &&
+                                opt.paymentDetailId != null
+                                  ? selectedAdvertiserPaymentDetailId ===
+                                    opt.paymentDetailId
+                                  : paymentMethod === opt.value;
                               return (
                                 <button
-                                  key={opt.id}
+                                  key={opt.key}
                                   type="button"
                                   onClick={() => {
-                                    setPaymentMethod(opt.value);
+                                    selectAdvertiserPaymentOption(opt);
                                     setIsPaymentDropdownOpen(false);
                                     setPaymentSearchTerm("");
                                   }}
@@ -1167,13 +1192,18 @@ const TradePreview: React.FC<TradePreviewProps> = ({
                             </div>
                           ) : (
                             filteredPaymentOptions.map((opt) => {
-                              const isSelected = paymentMethod === opt.value;
+                              const isSelected =
+                                selectedAdvertiserPaymentDetailId != null &&
+                                opt.paymentDetailId != null
+                                  ? selectedAdvertiserPaymentDetailId ===
+                                    opt.paymentDetailId
+                                  : paymentMethod === opt.value;
                               return (
                                 <button
-                                  key={opt.id}
+                                  key={opt.key}
                                   type="button"
                                   onClick={() => {
-                                    setPaymentMethod(opt.value);
+                                    selectAdvertiserPaymentOption(opt);
                                     setIsPaymentDropdownOpen(false);
                                     setPaymentSearchTerm("");
                                   }}

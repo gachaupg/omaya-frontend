@@ -61,7 +61,7 @@ export function useWebPushNotifications() {
 
       await registerServiceWorker();
 
-      const vapidKey = await getVapidPublicKey();
+      const vapidKey = getVapidPublicKey();
       if (!vapidKey) {
         logger.debug(
           "notifications",
