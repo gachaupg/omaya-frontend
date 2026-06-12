@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useRef } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import { AppDispatch, RootState } from "@/store/rootReducer";
 import { API_CONFIG } from "@/lib/appConfig";
@@ -28,9 +28,63 @@ import { ensureDeviceSessionForBrowser } from "@/features/settings/utils/ensureD
 
 const RECONNECT_MS = 10_000;
 const MAX_RECONNECTS = 12;
+const MAX_MESSAGE_LOG_LEN = 4000;
+const TAG = "[device-sessions-ws]";
+const IS_DEV = process.env.NODE_ENV === "development";
 
 /** WebSocket may close with auth/session invalidation after remote sign-out */
 const SESSION_INVALID_WS_CLOSE_CODES = new Set([4001, 4003, 4401, 4403, 1008]);
+
+function clearDevSocketExpose() {
+  if (!IS_DEV || typeof window === "undefined") return;
+  try {
+    delete (window as unknown as { __OMAYA_DEVICE_SESSIONS_WS__?: WebSocket })
+      .__OMAYA_DEVICE_SESSIONS_WS__;
+  } catch {
+    // ignore
+  }
+}
+
+function redactSessionUrl(full: string): string {
+  try {
+    const u = new URL(full);
+    if (u.searchParams.has("token")) {
+      u.searchParams.set("token", "[REDACTED]");
+    }
+    return u.toString();
+  } catch {
+    return full.replace(/([?&])token=[^&]*/gi, "$1token=[REDACTED]");
+  }
+}
+
+function formatWsMessageData(
+  raw: string
+): { kind: "json"; value: unknown } | { kind: "text"; value: string } {
+  if (raw.length > MAX_MESSAGE_LOG_LEN) {
+    return {
+      kind: "text",
+      value: `${raw.slice(0, MAX_MESSAGE_LOG_LEN)}…[truncated ${raw.length} chars]`,
+    };
+  }
+  try {
+    return { kind: "json", value: JSON.parse(raw) as unknown };
+  } catch {
+    return { kind: "text", value: raw };
+  }
+}
+
+function getAccessToken(accessFromStore?: string | null): string | null {
+  if (accessFromStore && String(accessFromStore).trim()) {
+    return String(accessFromStore).trim();
+  }
+  const cookieToken = cookieUtils.getCookie("access_token");
+  if (cookieToken) return cookieToken.trim();
+  if (typeof window !== "undefined") {
+    const local = localStorage.getItem("access_token");
+    if (local) return local.trim();
+  }
+  return null;
+}
 
 type DevicesUpdateMessage = {
   type?: string;
@@ -128,6 +182,10 @@ export function useDeviceSessionsWebSocket(options?: { enabled?: boolean }) {
   const exitingRef = useRef(false);
   const ensuringSessionRef = useRef(false);
   const wasAuthenticatedRef = useRef(false);
+  const deviceSessionsRef = useRef(deviceSessions);
+  const [sessionBootstrapReady, setSessionBootstrapReady] = useState(false);
+
+  deviceSessionsRef.current = deviceSessions;
 
   const runRevocationCheck = useCallback(
     (sessions: DeviceSession[]) => {
@@ -181,6 +239,7 @@ export function useDeviceSessionsWebSocket(options?: { enabled?: boolean }) {
       hadKnownCurrentSessionRef.current = false;
       ensuringSessionRef.current = false;
       wasAuthenticatedRef.current = false;
+      setSessionBootstrapReady(false);
       return;
     }
 
@@ -220,7 +279,15 @@ export function useDeviceSessionsWebSocket(options?: { enabled?: boolean }) {
           dispatch(fetchDeviceSessions());
         }
       }
-    })();
+    })()
+      .catch(() => {
+        /* bootstrap may fail briefly right after login */
+      })
+      .finally(() => {
+        if (!cancelled) {
+          setSessionBootstrapReady(true);
+        }
+      });
 
     return () => {
       cancelled = true;
@@ -255,19 +322,30 @@ export function useDeviceSessionsWebSocket(options?: { enabled?: boolean }) {
   ]);
 
   useEffect(() => {
-    if (!enabled || !isAuthenticated) {
+    const tokenPreview = getAccessToken(accessToken);
+    console.log(TAG, {
+      event: "effect",
+      enabled,
+      isAuthenticated,
+      sessionBootstrapReady,
+      visibility:
+        typeof document !== "undefined" ? document.visibilityState : "ssr",
+      hasToken: !!tokenPreview,
+      jwtShapeOk: !!tokenPreview && tokenPreview.includes("."),
+      api: redactSessionUrl(
+        API_CONFIG.AUTH.DEVICE_SESSIONS_WS(tokenPreview || "missing-token")
+      ),
+    });
+
+    if (!enabled || !isAuthenticated || !sessionBootstrapReady) {
       reconnectsRef.current = 0;
-      return;
-    }
-
-    const token =
-      accessToken ||
-      cookieUtils.getCookie("access_token") ||
-      (typeof window !== "undefined"
-        ? localStorage.getItem("access_token")
-        : null);
-
-    if (!token || !String(token).includes(".")) {
+      if (!enabled) {
+        console.log(TAG, { event: "skip", reason: "hook_disabled" });
+      } else if (!isAuthenticated) {
+        console.log(TAG, { event: "skip", reason: "not_authenticated" });
+      } else if (!sessionBootstrapReady) {
+        console.log(TAG, { event: "skip", reason: "session_bootstrap_pending" });
+      }
       return;
     }
 
@@ -284,14 +362,104 @@ export function useDeviceSessionsWebSocket(options?: { enabled?: boolean }) {
       }
     };
 
-    const connect = () => {
-      if (cancelled) return;
+    const safeClose = (reason: string) => {
       clearReconnect();
+      if (ws) {
+        const urlLogged = ws.url ? redactSessionUrl(ws.url) : undefined;
+        console.log(TAG, {
+          event: "disconnect",
+          reason,
+          readyStateBeforeClose: ws.readyState,
+          url: urlLogged,
+        });
+        clearDevSocketExpose();
+        try {
+          ws.close(1000, "client");
+        } catch {
+          // ignore
+        }
+        ws = null;
+      }
+    };
+
+    const scheduleReconnect = () => {
+      if (cancelled || exitingRef.current) return;
+      if (document.visibilityState !== "visible") return;
+      if (reconnectsRef.current >= MAX_RECONNECTS) {
+        console.log(TAG, {
+          event: "reconnect_aborted",
+          reason: "max_attempts",
+          attempts: reconnectsRef.current,
+        });
+        logger.warn("device-sessions-ws", "max reconnect attempts");
+        return;
+      }
+      reconnectsRef.current += 1;
+      console.log(TAG, {
+        event: "reconnect_scheduled",
+        attempt: reconnectsRef.current,
+        delayMs: RECONNECT_MS,
+      });
+      reconnectTimer = setTimeout(() => {
+        reconnectTimer = null;
+        connectIfNeeded();
+      }, RECONNECT_MS);
+    };
+
+    const connectIfNeeded = () => {
+      if (cancelled || exitingRef.current) return;
+      if (document.visibilityState !== "visible") {
+        console.log(TAG, {
+          event: "connect_skipped",
+          reason: "tab_not_visible",
+        });
+        return;
+      }
+
+      const token = getAccessToken(accessToken);
+      if (!token || !token.includes(".")) {
+        console.log(TAG, {
+          event: "connect_skipped",
+          reason: "no_valid_jwt",
+        });
+        return;
+      }
+
+      if (
+        ws &&
+        (ws.readyState === WebSocket.OPEN ||
+          ws.readyState === WebSocket.CONNECTING)
+      ) {
+        console.log(TAG, {
+          event: "connect_skipped",
+          reason: "already_open_or_connecting",
+          readyState: ws.readyState,
+        });
+        return;
+      }
+
+      safeClose("reconnect_replace_socket");
 
       const url = API_CONFIG.AUTH.DEVICE_SESSIONS_WS(token);
+      const urlLogged = redactSessionUrl(url);
+
+      console.log(TAG, {
+        event: "connecting",
+        url: urlLogged,
+        api: "/ws/session/",
+        note: "Real JWT is used for new WebSocket() — token redacted here only",
+        visibility: document.visibilityState,
+        userActive: document.visibilityState === "visible",
+      });
+
       try {
         ws = new WebSocket(url);
       } catch (e) {
+        console.log(TAG, {
+          event: "construct_failed",
+          url: urlLogged,
+          error: String(e),
+        });
         logger.error("device-sessions-ws", "WebSocket construct failed", e);
         scheduleReconnect();
         return;
@@ -299,10 +467,42 @@ export function useDeviceSessionsWebSocket(options?: { enabled?: boolean }) {
 
       ws.onopen = () => {
         reconnectsRef.current = 0;
+        if (IS_DEV && typeof window !== "undefined" && ws) {
+          (
+            window as unknown as { __OMAYA_DEVICE_SESSIONS_WS__: WebSocket }
+          ).__OMAYA_DEVICE_SESSIONS_WS__ = ws;
+        }
+        console.log(TAG, {
+          event: "open",
+          url: urlLogged,
+          readyState: ws?.readyState,
+          protocol: ws?.protocol || "",
+        });
+        console.log(
+          TAG,
+          "Inspect: F12 → Network → filter “session” → Messages tab. Dev: window.__OMAYA_DEVICE_SESSIONS_WS__"
+        );
         logger.debug("device-sessions-ws", "open");
       };
 
-      ws.onmessage = (event) => {
+      ws.onmessage = (event: MessageEvent<string | ArrayBuffer>) => {
+        if (typeof event.data === "string") {
+          const formatted = formatWsMessageData(event.data);
+          console.log(TAG, {
+            event: "message",
+            url: urlLogged,
+            response: formatted,
+          });
+        } else {
+          console.log(TAG, {
+            event: "message",
+            url: urlLogged,
+            kind: "binary",
+            byteLength:
+              event.data instanceof ArrayBuffer ? event.data.byteLength : 0,
+          });
+        }
+
         try {
           const parsed = JSON.parse(String(event.data)) as DevicesUpdateMessage &
             Record<string, unknown>;
@@ -312,7 +512,7 @@ export function useDeviceSessionsWebSocket(options?: { enabled?: boolean }) {
               parsed,
               parsed.devices
                 ? normalizeDevicesPayload(parsed.devices)
-                : deviceSessions
+                : deviceSessionsRef.current
             )
           ) {
             return;
@@ -331,12 +531,32 @@ export function useDeviceSessionsWebSocket(options?: { enabled?: boolean }) {
         }
       };
 
-      ws.onerror = () => {
+      ws.onerror = (ev) => {
+        console.log(TAG, {
+          event: "ws_error_event",
+          url: urlLogged,
+          type: ev.type,
+          readyState: ws?.readyState,
+        });
         logger.warn("device-sessions-ws", "error event");
       };
 
       ws.onclose = (event) => {
+        clearDevSocketExpose();
         ws = null;
+        console.log(TAG, {
+          event: "close",
+          url: urlLogged,
+          code: event.code,
+          reason: event.reason || "(empty)",
+          wasClean: event.wasClean,
+        });
+        logger.warn("device-sessions-ws", "close", {
+          code: event.code,
+          reason: event.reason || undefined,
+          wasClean: event.wasClean,
+        });
+
         if (cancelled) return;
 
         if (
@@ -351,39 +571,64 @@ export function useDeviceSessionsWebSocket(options?: { enabled?: boolean }) {
           return;
         }
 
+        if (document.visibilityState !== "visible") return;
         scheduleReconnect();
       };
     };
 
-    const scheduleReconnect = () => {
-      if (cancelled || exitingRef.current) return;
-      if (reconnectsRef.current >= MAX_RECONNECTS) {
-        logger.warn("device-sessions-ws", "max reconnect attempts");
-        return;
+    const onVisibility = () => {
+      if (document.visibilityState === "hidden") {
+        reconnectsRef.current = 0;
+        safeClose("visibility_hidden");
+        console.log(TAG, { event: "lifecycle", action: "tab_hidden" });
+      } else {
+        reconnectsRef.current = 0;
+        console.log(TAG, { event: "lifecycle", action: "tab_visible" });
+        connectIfNeeded();
       }
-      reconnectsRef.current += 1;
-      reconnectTimer = setTimeout(() => {
-        reconnectTimer = null;
-        connect();
-      }, RECONNECT_MS);
     };
 
-    connect();
+    const onPageHide = () => {
+      reconnectsRef.current = 0;
+      safeClose("pagehide");
+      console.log(TAG, { event: "lifecycle", action: "pagehide" });
+    };
+
+    const onWindowOffline = () => {
+      reconnectsRef.current = 0;
+      safeClose("browser_offline");
+      console.log(TAG, { event: "lifecycle", action: "browser_offline" });
+    };
+
+    const onWindowOnline = () => {
+      reconnectsRef.current = 0;
+      console.log(TAG, { event: "lifecycle", action: "browser_online" });
+      connectIfNeeded();
+    };
+
+    document.addEventListener("visibilitychange", onVisibility);
+    window.addEventListener("pagehide", onPageHide);
+    window.addEventListener("offline", onWindowOffline);
+    window.addEventListener("online", onWindowOnline);
+
+    connectIfNeeded();
 
     return () => {
       cancelled = true;
-      clearReconnect();
-      if (ws) {
-        ws.close();
-      }
-      ws = null;
+      document.removeEventListener("visibilitychange", onVisibility);
+      window.removeEventListener("pagehide", onPageHide);
+      window.removeEventListener("offline", onWindowOffline);
+      window.removeEventListener("online", onWindowOnline);
+      safeClose("effect_cleanup_logout_or_unmount");
+      clearDevSocketExpose();
+      console.log(TAG, { event: "lifecycle", action: "hook_cleanup" });
     };
   }, [
     enabled,
     isAuthenticated,
+    sessionBootstrapReady,
     accessToken,
     dispatch,
-    deviceSessions,
     handleExplicitRemoteLogout,
     runRevocationCheck,
   ]);

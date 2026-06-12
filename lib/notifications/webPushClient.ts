@@ -76,18 +76,9 @@ export async function requestNotificationPermission(): Promise<NotificationPermi
   return Notification.requestPermission();
 }
 
-export async function getVapidPublicKey(): Promise<string | null> {
+export function getVapidPublicKey(): string | null {
   const fromEnv = process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY?.trim();
-  if (fromEnv) return fromEnv;
-
-  try {
-    const { pushNotificationsApi } = await import(
-      "@/features/notifications/api"
-    );
-    return await pushNotificationsApi.getVapidPublicKey();
-  } catch {
-    return null;
-  }
+  return fromEnv || null;
 }
 
 export type PushSubscriptionPayload = {

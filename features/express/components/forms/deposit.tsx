@@ -713,27 +713,7 @@ export default function DepositForm({
 
   const finalPaymentMethods = effectivePaymentMethods;
 
-  console.log("🔍 Effective Payment Methods:", {
-    isHomePage,
-    effectivePaymentMethods,
-    effectivePaymentMethodsLength: effectivePaymentMethods.length,
-    finalPaymentMethods,
-    finalPaymentMethodsLength: finalPaymentMethods.length,
-    stablePaymentMethodsLength: stablePaymentMethods.length,
-    // Log first method details if available
-    firstMethod:
-      finalPaymentMethods.length > 0
-        ? {
-          provider_name: finalPaymentMethods[0].provider_name,
-          provider_logo: finalPaymentMethods[0].provider_logo,
-          logo: finalPaymentMethods[0].logo,
-          hasLogo: !!(
-            finalPaymentMethods[0].provider_logo ||
-            finalPaymentMethods[0].logo
-          ),
-        }
-        : null,
-  });
+  
 
   const [payAmount, setPayAmount] = useState(
     initialState?.amountValue ?? 100
@@ -4096,21 +4076,7 @@ export default function DepositForm({
                       }
                     );
 
-                    console.log("🔍 Final CustomSelect Options:", {
-                      optionsCount: mappedOptions.length,
-                      optionsWithLogos: mappedOptions.filter((opt) => opt.logo)
-                        .length,
-                      optionsWithoutLogos: mappedOptions.filter(
-                        (opt) => !opt.logo
-                      ).length,
-                      firstOption: mappedOptions[0] || null,
-                      allOptions: mappedOptions.map((opt) => ({
-                        value: opt.value,
-                        label: opt.label,
-                        hasLogo: !!opt.logo,
-                        logo: opt.logo,
-                      })),
-                    });
+                  
 
                     return mappedOptions;
                   })()}
