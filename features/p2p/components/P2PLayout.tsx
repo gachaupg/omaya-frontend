@@ -21,6 +21,10 @@ import { RootState } from "@/store/rootReducer";
 
 import { useSelector } from "react-redux";
 import UnreadMessages from "./ui/orders/UnreadMessages";
+import {
+  consumeP2PMarketScrollOnLoad,
+  scrollAppToTop,
+} from "@/lib/utils/scrollAppToTop";
 
 const P2PLayout = () => {
   const { t } = useP2PI18n();
@@ -43,6 +47,12 @@ const P2PLayout = () => {
       setActiveTab(tabFromQuery);
     }
   }, [tabFromQuery]);
+
+  useEffect(() => {
+    if (activeTab !== "market") return;
+    if (!consumeP2PMarketScrollOnLoad()) return;
+    scrollAppToTop();
+  }, [activeTab]);
 const handleTabChange = (tab: string) => {
     setActiveTab(tab);
     setShowUnreadMessages(false); // Close messages when switching tabs
