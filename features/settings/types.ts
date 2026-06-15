@@ -237,3 +237,5 @@ export interface ReferralFeeCalculationResponse {
   total_fees: string;
   net_amount?: string;
 }
+
+export const MIN_REFERRAL_WITHDRAWAL_AMOUNT = 10;
