@@ -49,3 +49,25 @@ export const P2P_STATUS_SCROLL_FRACTION = 0.38;
 export function scrollAppToHalfway(behavior: ScrollBehavior = "smooth") {
   scrollAppToFraction(P2P_STATUS_SCROLL_FRACTION, behavior);
 }
+
+const P2P_MARKET_SCROLL_ON_LOAD_KEY = "p2p_scroll_market_on_load";
+
+export function markP2PMarketScrollOnLoad() {
+  if (typeof window === "undefined") return;
+  try {
+    sessionStorage.setItem(P2P_MARKET_SCROLL_ON_LOAD_KEY, "1");
+  } catch {
+    // Ignore storage errors
+  }
+}
+
+export function consumeP2PMarketScrollOnLoad(): boolean {
+  if (typeof window === "undefined") return false;
+  try {
+    if (sessionStorage.getItem(P2P_MARKET_SCROLL_ON_LOAD_KEY) !== "1") return false;
+    sessionStorage.removeItem(P2P_MARKET_SCROLL_ON_LOAD_KEY);
+    return true;
+  } catch {
+    return false;
+  }
+}

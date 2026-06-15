@@ -32,6 +32,7 @@ import { useUserPaymentDetailsWebSocket } from "@/features/p2p/hooks/useUserPaym
 import { logger } from '@/lib/utils/logger';
 import { MdCheckCircle } from "react-icons/md";
 import { API_CONFIG } from "@/lib/appConfig";
+import { markP2PMarketScrollOnLoad } from "@/lib/utils/scrollAppToTop";
 
 type LiveExchangeRatesResponse = {
   rate?: string;
@@ -718,6 +719,7 @@ const Adds: React.FC<AddsProps> = ({ filterType }) => {
 
   const handleClose = () => {
     setOpenSuccess(false);
+    markP2PMarketScrollOnLoad();
     router.push("/dashboard/p2p/?tab=market");
     dispatch({ type: "p2pAds/clearPostOrderStatus" });
   };
