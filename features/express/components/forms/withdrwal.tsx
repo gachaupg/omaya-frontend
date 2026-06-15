@@ -5348,7 +5348,7 @@ export default function WithdrawalForm({
               </div>
               {legalModal && (
                 <div className="fixed inset-0 z-[9990] bg-black/60 flex items-center justify-center p-3 sm:p-4 sm:pl-16">
-                  <div className="w-full max-w-3xl h-[70vh] bg-white dark:bg-[#18181D] rounded-2xl border border-border dark:border-accent overflow-hidden flex flex-col">
+                  <div className="w-full max-w-5xl h-[70vh] bg-white dark:bg-[#18181D] rounded-2xl border border-border dark:border-accent overflow-hidden flex flex-col">
                     <div className="flex items-center justify-between px-4 py-3 border-b border-border dark:border-accent">
                       <h3 className="text-sm sm:text-base font-semibold text-[#35353e] dark:text-white">
                         {legalModal.title}

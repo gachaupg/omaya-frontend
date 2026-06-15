@@ -82,6 +82,8 @@ export default function Footer() {
     };
   }, []);
 
+  const isRegisterPage = pathname === "/auth/register";
+
   // Helper function to check if a link is active
   const isActive = (href: string) => {
     if (href === "/") {
@@ -275,11 +277,19 @@ export default function Footer() {
           </div>
 
           {/* Legal Policies Column */}
-          <div className="w-full sm:w-1/2 lg:w-1/3 xl:w-auto xl:flex-1 min-w-0">
+          <div
+            className={
+              isRegisterPage
+                ? "col-span-2 sm:col-span-2 md:col-span-2 lg:col-span-2 xl:col-span-2 w-full min-w-[min(100%,20rem)] sm:min-w-[22rem] lg:min-w-[24rem]"
+                : "w-full sm:w-1/2 lg:w-1/3 xl:w-auto xl:flex-1 min-w-0"
+            }
+          >
             <h3 className="text-base font-semibold text-gray-900 dark:text-white mb-4">
               Legal Policies
             </h3>
-            <ul className="space-y-2">
+            <ul
+              className={`space-y-2 ${isRegisterPage ? "sm:columns-2 sm:gap-x-8 [&>li]:break-inside-avoid" : ""}`}
+            >
               <li>
                 <Link
                   href="/legal/terms-of-service"

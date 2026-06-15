@@ -25,7 +25,7 @@ const TermsAndConditionsModal: React.FC<TermsAndConditionsModalProps> = ({
             />
 
             {/* Modal content */}
-            <div className="relative z-10 w-full max-w-2xl max-h-[90vh] mx-4 bg-(--card-color) dark:bg-linear-to-b dark:from-[#0A0A0F] dark:via-[#18181D] dark:to-[#0A0A0F] rounded-md shadow-md border border-border dark:border-accent overflow-hidden flex flex-col">
+            <div className="relative z-10 w-full max-w-4xl max-h-[90vh] mx-4 bg-(--card-color) dark:bg-linear-to-b dark:from-[#0A0A0F] dark:via-[#18181D] dark:to-[#0A0A0F] rounded-md shadow-md border border-border dark:border-accent overflow-hidden flex flex-col">
                 {/* Header with close button */}
                 <div className="sticky top-0 z-20 bg-(--card-color) dark:bg-[#0A0A0F] px-2 py-4 flex items-start justify-between">
                     <div className="flex items-center gap-4">
