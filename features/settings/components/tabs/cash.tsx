@@ -10,6 +10,7 @@ import UserPaymentSelector, { UserPaymentDetail } from '@/features/p2p/component
 import PaymentMethodsModal from '@/features/p2p/components/ui/p2pdashboard/sections/PaymentMethodsModal'
 import { showToast } from '@/lib/utils/toast'
 import { useDebounce } from '@/hooks/useDebounce'
+import { MIN_REFERRAL_WITHDRAWAL_AMOUNT } from '@/features/settings/types'
 
 import { logger } from '@/lib/utils/logger';
 
@@ -54,6 +55,10 @@ function Cash({ sharedFeesError }: CashProps) {
     Number.isFinite(enteredAmount) &&
     enteredAmount > 0 &&
     enteredAmount > referralWalletBalance
+  const belowMinReferralAmount =
+    Number.isFinite(enteredAmount) &&
+    enteredAmount > 0 &&
+    enteredAmount < MIN_REFERRAL_WITHDRAWAL_AMOUNT
 
   // Load user payment details and admin methods on component mount
   useEffect(() => {
@@ -80,6 +85,14 @@ function Cash({ sharedFeesError }: CashProps) {
       setErrors((prev) => ({
         ...prev,
         amount: "Please enter a valid amount",
+      }))
+      return
+    }
+
+    if (numericAmount < MIN_REFERRAL_WITHDRAWAL_AMOUNT) {
+      setErrors((prev) => ({
+        ...prev,
+        amount: `Minimum withdrawal amount is $${MIN_REFERRAL_WITHDRAWAL_AMOUNT}`,
       }))
       return
     }
@@ -133,6 +146,9 @@ function Cash({ sharedFeesError }: CashProps) {
 
     if (!amount || Number(amount) <= 0) {
       newErrors.amount = "Please enter a valid amount"
+      isValid = false
+    } else if (Number(amount) < MIN_REFERRAL_WITHDRAWAL_AMOUNT) {
+      newErrors.amount = `Minimum withdrawal amount is $${MIN_REFERRAL_WITHDRAWAL_AMOUNT}`
       isValid = false
     }
     if (Number(amount) > referralWalletBalance) {
@@ -557,7 +573,7 @@ function Cash({ sharedFeesError }: CashProps) {
                 size="lg"
                 className="w-full bg-error hover:bg-[#d32f2f] text-white font-semibold text-[14px] rounded-[18px] py-3 mt-4 flex items-center justify-center transition-all duration-200 transform hover:scale-[1.02] disabled:bg-[#4B5563] disabled:hover:bg-[#4B5563] disabled:text-white/70 disabled:cursor-not-allowed disabled:transform-none"
                 type="submit"
-                disabled={loading || Boolean(effectiveFeesError) || !isTermsAccepted || exceedsReferralBalance}
+                disabled={loading || Boolean(effectiveFeesError) || !isTermsAccepted || exceedsReferralBalance || belowMinReferralAmount}
               >
                 {loading && (
                   <svg

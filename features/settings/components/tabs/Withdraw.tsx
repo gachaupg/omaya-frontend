@@ -16,7 +16,10 @@ import { validateWithdrawalForm } from "@/features/p2p/components/ui/p2pdashboar
 import { useRouter } from "next/navigation";
 import Cash from "./cash";
 import { useDebounce } from "@/hooks/useDebounce";
-import { ReferralFeeCalculation } from "@/features/settings/types";
+import {
+  MIN_REFERRAL_WITHDRAWAL_AMOUNT,
+  ReferralFeeCalculation,
+} from "@/features/settings/types";
 import { useValidateAddress } from "@/hooks/useValidateAddress";
 import { useBookmarkedAddresses } from "@/features/express/hooks/useBookmarkedAddresses";
 import { BookmarkDropdown } from "@/features/express/components/forms/BookmarkDropdown";
@@ -125,6 +128,15 @@ const Withdraw = () => {
       }
     });
 
+    const numericAmount = Number(amount);
+    if (
+      Number.isFinite(numericAmount) &&
+      numericAmount > 0 &&
+      numericAmount < MIN_REFERRAL_WITHDRAWAL_AMOUNT
+    ) {
+      errorObj.amount = `Minimum withdrawal amount is $${MIN_REFERRAL_WITHDRAWAL_AMOUNT}`;
+    }
+
     // Validate wallet address confirmation
     if (!confirmAddress) {
       errorObj.confirmAddress =
@@ -150,7 +162,7 @@ const Withdraw = () => {
       }, 100);
     }
 
-    return validationErrors.length === 0 && confirmAddress;
+    return Object.keys(errorObj).length === 0;
   };
 
   const handleWithdraw = (e: React.FormEvent) => {
@@ -393,12 +405,19 @@ const Withdraw = () => {
     Number.isFinite(enteredAmount) &&
     enteredAmount > 0 &&
     enteredAmount > referralWalletBalance;
+  const belowMinReferralAmount =
+    Number.isFinite(enteredAmount) &&
+    enteredAmount > 0 &&
+    enteredAmount < MIN_REFERRAL_WITHDRAWAL_AMOUNT;
   const normalizedFeesError =
     typeof feesError === "object" && feesError !== null
       ? feesError.error || feesError.message || Object.values(feesError)[0]
       : feesError;
   const disableSubmit =
-    loading || Boolean(normalizedFeesError) || exceedsReferralBalance;
+    loading ||
+    Boolean(normalizedFeesError) ||
+    exceedsReferralBalance ||
+    belowMinReferralAmount;
 
   useEffect(() => {
     const trimmedAmount = String(amount || "").trim();
@@ -412,6 +431,14 @@ const Withdraw = () => {
       setErrors((prev) => ({
         ...prev,
         amount: "Please enter a valid amount",
+      }));
+      return;
+    }
+
+    if (numericAmount < MIN_REFERRAL_WITHDRAWAL_AMOUNT) {
+      setErrors((prev) => ({
+        ...prev,
+        amount: `Minimum withdrawal amount is $${MIN_REFERRAL_WITHDRAWAL_AMOUNT}`,
       }));
       return;
     }
