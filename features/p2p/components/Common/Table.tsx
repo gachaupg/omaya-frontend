@@ -2,13 +2,18 @@ import React, { useState, useRef, useEffect, useImperativeHandle, forwardRef } f
 import { tokens } from "@/styles/tokens";
 import { TransactionType } from "@/features/p2p/types";
 import Button from "./Button";
-import { Download, Search, X, ArrowLeft, Pointer, Eye } from "lucide-react";
+import { Search, X, ArrowLeft, Pointer, Eye } from "lucide-react";
 import { formatDate, formatNumber } from "@/utils/formatters";
+import { formatDateTimeEastAfrica } from "@/lib/globalFormatter";
 import { TiArrowUnsorted } from "react-icons/ti";
-import html2canvas from "html2canvas";
 import * as XLSX from "xlsx";
 import { jsPDF } from "jspdf";
 import autoTable from "jspdf-autotable";
+import {
+  DashboardTransactionDetailsModal,
+  type DashboardTransactionDetailView,
+} from "@/components/dashboard/ui/DashboardTransactionDetailsModal";
+import { buildP2pTradeDetailView } from "@/lib/utils/p2pTradeDetailView";
 
 import { logger } from '@/lib/utils/logger';
 
@@ -68,13 +73,12 @@ export const Table = forwardRef<TableExportRef, TableProps>(({
 }, ref) => {
   const [searchQuery, setSearchQuery] = useState("");
   const [showExportOptions, setShowExportOptions] = useState(false);
-  const [selectedTransaction, setSelectedTransaction] =
-    useState<TransactionType | null>(null);
+  const [transactionDetail, setTransactionDetail] =
+    useState<DashboardTransactionDetailView | null>(null);
   const [tooltipId, setTooltipId] = useState<string | null>(null);
   const [copiedId, setCopiedId] = useState<string | null>(null);
   const [internalDateFilter, setInternalDateFilter] = useState("ALL");
   const [isDateDropdownOpen, setIsDateDropdownOpen] = useState(false);
-  const modalContentRef = useRef<HTMLDivElement>(null);
   const dateDropdownRef = useRef<HTMLDivElement>(null);
   const tableContainerRef = useRef<HTMLDivElement>(null);
   const [isSmallScreen, setIsSmallScreen] = useState(false);
@@ -191,10 +195,7 @@ export const Table = forwardRef<TableExportRef, TableProps>(({
     if (!value) return "--";
     const parsedDate = new Date(value);
     if (isNaN(parsedDate.getTime())) return "--";
-    const day = parsedDate.getDate().toString().padStart(2, "0");
-    const month = parsedDate.toLocaleString("en-US", { month: "short" });
-    const year = parsedDate.getFullYear();
-    return `${day}-${month}-${year}`;
+    return formatDateTimeEastAfrica(parsedDate);
   };
 
   const handleExport = async (format: "csv" | "pdf") => {
@@ -352,7 +353,7 @@ export const Table = forwardRef<TableExportRef, TableProps>(({
         currentY += 8;
 
         // Export date and info (centered)
-        const exportDate = new Date().toLocaleString();
+        const exportDate = formatDateTimeEastAfrica(new Date());
         doc.setFontSize(10);
         doc.setTextColor(100, 100, 100);
         doc.text(`Exported on: ${exportDate}`, centerX, currentY, { align: "center" });
@@ -467,57 +468,15 @@ export const Table = forwardRef<TableExportRef, TableProps>(({
   };
 
   const handleViewTransaction = (row: TransactionType) => {
-    logger.debug('p2p', "Setting selected transaction:", row);
-    setSelectedTransaction(row);
+    logger.debug('p2p', "Opening transaction details:", row);
+    setTransactionDetail(buildP2pTradeDetailView(row));
     onViewTransaction && onViewTransaction(row);
-  };
-
-  // Function to download modal as image
-  const handleDownloadCard = async () => {
-    if (!modalContentRef.current) {
-      console.error('Modal content ref is null');
-      return;
-    }
-
-    try {
-      const canvas = await html2canvas(modalContentRef.current, {
-        useCORS: true,
-        onclone: (clonedDoc: Document, clonedElement: HTMLElement) => {
-          clonedElement.style.borderRadius = "0px";
-          clonedElement.style.maxHeight = "none";
-          clonedElement.style.overflow = "visible";
-          // Add a tiny bit of padding to avoid clipping top text if font rendering shifts
-          clonedElement.style.paddingTop = "10px";
-        },
-      } as Parameters<typeof html2canvas>[1]);
-
-      const image = canvas.toDataURL("image/png");
-      const link = document.createElement('a');
-      link.href = image;
-      link.download = `OMAYA_Receipt_${selectedTransaction?.id?.substring(0, 8) || 'transaction'}.png`;
-      document.body.appendChild(link);
-      link.click();
-      document.body.removeChild(link);
-    } catch (error) {
-      console.error('Failed to download card:', error);
-      // Fallback: try to print the content
-      try {
-        window.print();
-      } catch (printError) {
-        console.error('Print fallback also failed:', printError);
-      }
-    }
   };
 
   useImperativeHandle(ref, () => ({
     exportCsv: () => handleExport("csv"),
     exportPdf: () => handleExport("pdf"),
   }));
-
-  // Add effect to monitor selectedTransaction changes
-  React.useEffect(() => {
-    logger.debug('p2p', "Selected transaction updated:", selectedTransaction);
-  }, [selectedTransaction]);
 
   React.useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
@@ -1223,237 +1182,12 @@ export const Table = forwardRef<TableExportRef, TableProps>(({
         </div>
       </div>
 
-      {/* Modal Portal */}
-      {selectedTransaction && (
-        <div
-          className="fixed inset-0 flex items-center justify-center z-[9999] bg-black/30 dark:bg-black/60 p-3 sm:p-4"
-          onClick={() => setSelectedTransaction(null)}
-        >
-          <div
-            ref={modalContentRef}
-            className="bg-white dark:bg-[var(--card-color)] rounded-[24px] p-4 sm:p-6 w-full max-w-[500px] max-h-[90vh] overflow-y-auto relative"
-            onClick={(e) => e.stopPropagation()}
-          >
-            {/* Close button at top-left */}
-            <button
-              onClick={() => setSelectedTransaction(null)}
-              className="absolute top-3 right-3 text-[#6b7280] hover:text-[#111827] dark:hover:text-white transition-colors p-1 rounded-full hover:bg-[#f3f4f6] dark:hover:bg-[#1f2937]"
-              aria-label="Close modal"
-            >
-              <X size={18} />
-            </button>
-
-            {/* OMAYA.io Logo at the top */}
-            <div className="flex items-center justify-center mb-3 sm:mb-4">
-              <img
-                src="/assets/bad9edd9da5201cb8f8f9cea35bf46f4fb541bd6_lplbyc.png"
-                alt="OMAYA"
-                className="h-6 sm:h-8 w-auto object-contain"
-              />
-              <span className="text-[#6b7280] dark:text-[#9ca3af] text-xl sm:text-2xl font-medium ml-0.5"></span>
-            </div>
-            {/* Header: Coin, Type, Date, Share/Note */}
-            <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 mb-4">
-              <div className="flex items-center gap-2 sm:gap-3">
-                <img
-                  src={
-                    selectedTransaction.asset === "Tron"
-                      ? "/images/tether.svg"
-                      : "/images/tether.svg"
-                  }
-                  alt={selectedTransaction.asset}
-                  className="w-8 h-8 sm:w-10 sm:h-10 rounded-full flex-shrink-0"
-                />
-                <div className="min-w-0">
-                  <div className="text-[#111827] dark:text-white font-semibold text-sm sm:text-base">
-                    <span className="truncate">{selectedTransaction.asset}</span>{" "}
-                    <span
-                      className={
-                        selectedTransaction.type === "buy"
-                          ? "text-[#1D8751]"
-                          : selectedTransaction.type === "sell"
-                            ? "text-[#FF4D4D]"
-                            : "text-[#6b7280] dark:text-[#788099]"
-                      }
-                    >
-                      {selectedTransaction.type}
-                    </span>
-                  </div>
-                  <div className="text-xs text-[#6b7280] dark:text-[#788099]">
-                    {formatDate(selectedTransaction.date)}
-                  </div>
-                </div>
-              </div>
-              <div className="flex gap-2 justify-end sm:justify-start">
-                {/* Share button */}
-                <button
-                  onClick={async () => {
-                    const shareText = `Transaction ID: ${selectedTransaction.id}\nAmount: ${selectedTransaction.amount} ${selectedTransaction.assetSymbol}\nStatus: ${selectedTransaction.status}`;
-
-                    try {
-                      if (navigator.share && window.isSecureContext) {
-                        await navigator.share({
-                          title: `${selectedTransaction.asset} ${selectedTransaction.type} Transaction`,
-                          text: shareText,
-                        });
-                      } else {
-                        await navigator.clipboard.writeText(shareText);
-                        // Show a brief tooltip feedback
-                        const btn = document.activeElement as HTMLButtonElement;
-                        const originalTitle = btn?.title;
-                        if (btn) { btn.title = 'Copied!'; setTimeout(() => { btn.title = originalTitle || 'Share Transaction'; }, 2000); }
-                      }
-                    } catch (err: any) {
-                      if (err?.name !== 'AbortError') {
-                        try {
-                          await navigator.clipboard.writeText(shareText);
-                        } catch {
-                          logger.debug('p2p', 'Share and clipboard both failed:', err);
-                        }
-                      }
-                    }
-                  }}
-                  className="text-[#1D8751] hover:text-[#166b3e] transition-colors"
-                  title="Share Transaction"
-                >
-                  <svg
-                    width="18"
-                    height="18"
-                    fill="none"
-                    stroke="currentColor"
-                    strokeWidth="2"
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    viewBox="0 0 24 24"
-                  >
-                    <circle cx="18" cy="5" r="3" />
-                    <circle cx="6" cy="12" r="3" />
-                    <circle cx="18" cy="19" r="3" />
-                    <path d="M8.59 13.51l6.83 3.98" />
-                    <path d="M15.41 6.51l-6.82 3.98" />
-                  </svg>
-                </button>
-                {/* Download Card as Image button */}
-                <button
-                  onClick={handleDownloadCard}
-                  className="text-[#1D8751] hover:text-[#166b3e] transition-colors"
-                  title="Download Receipt as Image"
-                >
-                  <Download size={18} />
-                </button>
-              </div>
-            </div>
-            {/* Amount and Fees */}
-            <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-3 sm:gap-0 border-b border-[#e5e7eb] dark:border-[#35353E] pb-3 sm:pb-4 mb-3 sm:mb-4">
-              <div>
-                <div className="text-[#9ca3af] dark:text-[#8C8CA1] text-xs">
-                  Total Amount
-                </div>
-                <div className="text-[#1D8751] text-xl sm:text-2xl font-bold">
-                  {formatNumber(Number(selectedTransaction?.amount ?? 0))} USDT
-                </div>
-              </div>
-              <div className="text-left sm:text-right text-xs text-[#9ca3af] dark:text-[#8C8CA1]">
-                <div>
-                  Total Fee{" "}
-                  <span className="text-[#111827] dark:text-white">$3</span>
-                </div>
-                <div>
-                  Network Fee{" "}
-                  <span className="text-[#111827] dark:text-white">$2</span>
-                </div>
-              </div>
-            </div>
-            {/* Payment Info */}
-            <div className="border-b border-[#e5e7eb] dark:border-[#35353E] pb-3 sm:pb-4 mb-3 sm:mb-4">
-              <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-1 sm:gap-0 mb-2">
-                <span className="text-xs sm:text-sm text-[#9ca3af] dark:text-[#8C8CA1]">
-                  Payment:
-                </span>
-                <span className="text-[#6b7280] dark:text-[#788099] flex items-center gap-1 text-xs sm:text-sm">
-                  <span className="truncate">Salaam Bank</span>{" "}
-                  <img
-                    src="/assets/image_7_jijlik.png"
-                    alt=""
-                    className="w-4 h-4 sm:w-5 sm:h-5 flex-shrink-0"
-                  />
-                </span>
-              </div>
-              <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-1 sm:gap-0 mb-2">
-                <span className="text-xs sm:text-sm text-[#9ca3af] dark:text-[#8C8CA1]">
-                  Account Number:
-                </span>
-                <span className="text-[#6b7280] dark:text-[#788099] text-xs sm:text-sm break-all sm:break-normal">
-                  485634612949050
-                </span>
-              </div>
-              <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-1 sm:gap-0">
-                <span className="text-xs sm:text-sm text-[#9ca3af] dark:text-[#8C8CA1]">
-                  Account Name:
-                </span>
-                <span className="text-[#6b7280] dark:text-[#788099] text-xs sm:text-sm break-words">
-                  Omar Ali Omar
-                </span>
-              </div>
-            </div>
-            {/* Deposit Sent To */}
-            <div className="border-b border-[#e5e7eb] dark:border-[#35353E] pb-3 sm:pb-4 mb-3 sm:mb-4">
-              <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-1 sm:gap-0 mb-2">
-                <span className="text-xs sm:text-sm text-[#9ca3af] dark:text-[#8C8CA1]">
-                  Deposit Sent to
-                </span>
-                <span className="text-[#6b7280] dark:text-[#788099] text-xs sm:text-sm break-all">
-                  3434343233
-                </span>
-              </div>
-              <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-1 sm:gap-0">
-                <span className="text-xs sm:text-sm text-[#9ca3af] dark:text-[#8C8CA1]">
-                  Transaction Hash:
-                </span>
-                <span className="text-[#1D8751] underline cursor-pointer text-xs sm:text-sm break-all text-left sm:text-right">
-                  4673u98948294r89589374933rq
-                </span>
-              </div>
-            </div>
-            {/* Status, Receipt, Rating */}
-            <div>
-              <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-1 sm:gap-0 mb-2">
-                <span className="text-xs sm:text-sm text-[#9ca3af] dark:text-[#8C8CA1]">
-                  Status:
-                </span>
-                <span className="text-[#1D8751] font-semibold text-xs sm:text-sm">
-                  {selectedTransaction.status || "Completed"}
-                </span>
-              </div>
-              <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-1 sm:gap-0 mb-2">
-                <span className="text-xs sm:text-sm text-[#9ca3af] dark:text-[#8C8CA1]">
-                  Receipt:
-                </span>
-                <span className="text-[#1D8751] text-xs sm:text-sm">
-                  Available above ↑
-                </span>
-              </div>
-              <div className="flex flex-col sm:flex-row sm:justify-between sm:items-center gap-2 sm:gap-0">
-                <span className="text-xs sm:text-sm text-[#9ca3af] dark:text-[#8C8CA1]">
-                  Service Rating:
-                </span>
-                <span className="flex flex-row">
-                  {[...Array(5)].map((_, i) => (
-                    <svg
-                      key={i}
-                      className="text-[#9ca3af] dark:text-[#8C8CA1] w-4 h-4 sm:w-5 sm:h-5"
-                      fill="currentColor"
-                      viewBox="0 0 20 20"
-                    >
-                      <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.286 3.967a1 1 0 00.95.69h4.175c.969 0 1.371 1.24.588 1.81l-3.38 2.455a1 1 0 00-.364 1.118l1.287 3.966c.3.922-.755 1.688-1.54 1.118l-3.38-2.454a1 1 0 00-1.175 0l-3.38 2.454c-.784.57-1.838-.196-1.54-1.118l1.287-3.966a1 1 0 00-.364-1.118L2.05 9.394c-.783-.57-.38-1.81.588-1.81h4.175a1 1 0 00.95-.69l1.286-3.967z" />
-                    </svg>
-                  ))}
-                </span>
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
+      {/* Transaction details modal (shared with P2P withdrawal/deposit) */}
+      <DashboardTransactionDetailsModal
+        open={!!transactionDetail}
+        onClose={() => setTransactionDetail(null)}
+        detail={transactionDetail}
+      />
     </>
   );
 });

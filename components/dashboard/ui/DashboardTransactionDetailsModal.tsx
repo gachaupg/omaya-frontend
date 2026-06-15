@@ -22,6 +22,8 @@ import {
   shareDashboardTransaction,
 } from "@/lib/utils/dashboardTransactionReceipt";
 import { showToast } from "@/lib/utils/toast";
+import { formatDashboardDetailAmount } from "@/lib/utils/dashboardDetailAmount";
+import { getNetworkDisplayName } from "@/lib/utils/networkDisplay";
 
 export type DashboardTransactionDetailView = {
   tx: AllTransactionItem;
@@ -37,13 +39,6 @@ type DashboardTransactionDetailsModalProps = {
   open: boolean;
   onClose: () => void;
   detail: DashboardTransactionDetailView | null;
-};
-
-const formatAmount = (amount: string | number | undefined | null): string => {
-  if (amount === undefined || amount === null || amount === "") return "—";
-  const numAmount = typeof amount === "string" ? parseFloat(amount) : amount;
-  if (Number.isNaN(numAmount)) return String(amount);
-  return numAmount.toFixed(4);
 };
 
 function DetailRow({
@@ -123,6 +118,9 @@ export function DashboardTransactionDetailsModal({
   const amountDisplay = getDashboardTransactionAmounts(tx, {
     transactionUsdValues,
   });
+  const hasComputedAmounts = !!(
+    amountDisplay.assetAmount || amountDisplay.usdValue
+  );
   const transactionId = String(
     tx.referral_withdrawal_id || tx.withdrawal_id || tx.id || ""
   ).trim();
@@ -277,30 +275,32 @@ export function DashboardTransactionDetailsModal({
                 value={amountDisplay.usdValue}
               />
             ) : null}
-            {!amountDisplay.assetAmount && !amountDisplay.usdValue ? (
+            {!hasComputedAmounts ? (
               <DetailRow
                 label={t("transactions.amount", "Amount")}
-                value={formatAmount(tx.amount)}
+                value={formatDashboardDetailAmount(tx.amount)}
+              />
+            ) : null}
+            {!hasComputedAmounts ? (
+              <DetailRow
+                label={t("transactions.netAmount", "Net amount")}
+                value={formatDashboardDetailAmount(tx.net_amount)}
               />
             ) : null}
             <DetailRow
-              label={t("transactions.netAmount", "Net amount")}
-              value={formatAmount(tx.net_amount)}
-            />
-            <DetailRow
               label={t("transactions.commission", "Commission / fees")}
-              value={formatAmount(tx.commission)}
+              value={formatDashboardDetailAmount(tx.commission)}
             />
             {tx.to_amount ? (
               <DetailRow
                 label={t("transactions.receivedAmount", "Received amount")}
-                value={formatAmount(tx.to_amount)}
+                value={formatDashboardDetailAmount(tx.to_amount)}
               />
             ) : null}
             {tx.network ? (
               <DetailRow
                 label={t("transactions.network", "Network")}
-                value={String(tx.network).toUpperCase()}
+                value={getNetworkDisplayName(tx.network)}
               />
             ) : null}
           </div>
