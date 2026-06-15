@@ -1860,7 +1860,7 @@ const MoneyXRates = ({
           onClick={() => setLegalModalType(null)}
         >
           <div
-            className={`w-full max-w-4xl h-[80vh] rounded-2xl border ${isDark ? "bg-[#1D1D23] border-[#35353E]" : "bg-white border-[#E2E8F0]"} p-6 sm:p-7`}
+            className={`w-full max-w-5xl h-[80vh] rounded-2xl border ${isDark ? "bg-[#1D1D23] border-[#35353E]" : "bg-white border-[#E2E8F0]"} p-6 sm:p-7`}
             onClick={(e) => e.stopPropagation()}
           >
             <div className="flex items-center justify-between mb-3">

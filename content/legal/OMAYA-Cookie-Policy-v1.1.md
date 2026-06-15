@@ -51,46 +51,46 @@ The specific cookies, SDKs, and similar technologies we use may change over time
 
 ## 3. First-Party and Third-Party Cookies
 
-Some cookies are set by us ("first-party cookies"). Others are set by third parties that provide services on the Platform ("third-party cookies"), such as analytics providers, third-party sign-in providers (where you choose to register or log in using them), and security and fraud-prevention providers. These third parties may process information in accordance with their own privacy and cookie policies, which we encourage you to review.
+Some cookies are set by us ("first-party cookies"). Others are set by third parties that provide services on the Platform ("third-party cookies"), such as analytics providers, third-party sign-in providers (where you choose to register or log in using them), and security and fraud-prevention providers. These third parties may process information in accordance with their own privacy and cookie policies, which we encourage you to review. Third-party cookies may also be set by embedded financial tools, market-data or charting providers, and our cloud-infrastructure providers, where these are used to deliver real-time trading functionality and keep the Platform available. Accepting certain third-party cookies may involve the international transfer of information such as your IP address and device identifiers; we apply the safeguards described in Section 6 of our **Privacy Policy**.
 
 ## 4. Cookies in Our Mobile App
 
-Our mobile application uses SDKs, local storage, and device identifiers to support core functionality, security and fraud prevention, analytics, and, where you consent, marketing measurement.
+Our mobile application uses SDKs, local storage, and device identifiers to support core functionality, security and fraud prevention, analytics, and, where you consent, marketing measurement. You can manage many of these technologies through your device settings — for example, by resetting or limiting your device's advertising identifier or adjusting app permissions. The SDKs in our app may include analytics and crash-reporting tools, third-party sign-in (such as Google and Apple Sign-In), our identity-verification provider's SDK (Sumsub), push-notification and device-intelligence or fraud-prevention tools, and, where used, marketing-attribution tools. The current list of SDKs and the data they collect is reflected in our app-store privacy disclosures and our cookie settings tool.
 
 ## 5. How Long Cookies Last
 
 - **Session cookies** are temporary and are deleted when you close your browser or app.
-- **Persistent cookies** remain on your device for a set period or until you delete them.
+- **Persistent cookies** remain on your device for a set period or until you delete them, so that we can recognise you on a return visit.
 
 ## 6. Your Choices and How to Manage Cookies
 
 You can control cookies in several ways:
 
 - **Cookie settings.** Our cookie banner and settings tool let you **accept all** non-essential cookies, **reject all** non-essential cookies, or **manage your choices by category**, and change or withdraw your consent at any time. You can manage your cookie choices at https://omaya.io/cookie-settings.
-- **Browser settings.** Most browsers let you block or delete cookies and notify you when a cookie is set.
+- **Browser settings.** Most browsers let you block or delete cookies and notify you when a cookie is set. Refer to your browser's help pages for instructions.
 - **Device settings.** On mobile devices, you can reset or limit your advertising identifier and manage app permissions.
 - **Analytics and marketing opt-outs.** You can decline analytics and marketing cookies through our cookie settings, where available.
 
 Please note that if you block strictly necessary cookies, parts of the Platform may not function properly, and we may be unable to keep your account secure.
 
-**Do Not Track and Global Privacy Control.** Some browsers and devices send opt-out preference signals such as Global Privacy Control (GPC) or "Do Not Track" (DNT). Where required by applicable law, we treat a GPC signal as a valid request to disable non-essential (analytics and marketing) cookies.
+**Do Not Track and Global Privacy Control.** Some browsers and devices send opt-out preference signals such as Global Privacy Control (GPC) or "Do Not Track" (DNT). Where required by applicable law, we treat a GPC signal as a valid request to disable non-essential (analytics and marketing) cookies. We do not sell your personal information or share it for cross-context behavioural advertising, and if our practices change we will honour applicable opt-out preference signals as required by law. You can also manage non-essential cookies using the controls above.
 
 ## 7. Consent
 
-Where required by applicable law, we set non-essential cookies only with your consent, which we request through our cookie banner or settings tool. You can withdraw or change your consent at any time using those settings.
+Where required by applicable law (including in the European Economic Area and the United Kingdom), we set non-essential cookies only with your consent, which we request through our cookie banner or settings tool. You can withdraw or change your consent at any time using those settings. Strictly necessary cookies do not require consent because they are essential to provide the Services and to protect security. We may keep records of your cookie choices, consent, refusal, and withdrawal to demonstrate compliance and respect your preferences, and you can request a copy of your cookie-consent record by contacting us at **privacy@omaya.io**.
 
 ## 8. Changes to This Cookie Policy
 
-We may update this Cookie Policy from time to time. We will post the updated version on the Platform and update the "Last Updated" date.
+We may update this Cookie Policy from time to time. We will post the updated version on the Platform and update the "Last Updated" date. Where the changes are material, we will take reasonable steps to notify you.
 
 ## 9. Contact Us
 
 **OMAYA EXPRESS EXCHANGE** (trading as OMAYA.io)  
 Aaran Plaza, Taleh, Hodan District, Mogadishu, Somalia
 
-- Privacy and data-protection enquiries: **privacy@omaya.io**  
+- Privacy and data-protection enquiries: **privacy@omaya.io**
 - General and support: **support@omaya.io**
 
 ---
 
-*This Cookie Policy should be reviewed by qualified legal counsel.*
+*This Cookie Policy should be reviewed by qualified legal counsel, and the categories above should be confirmed against the cookies and similar technologies actually used on the OMAYA.io website and app. The specific cookies in use should be listed and kept up to date in the cookie banner or settings tool on the Platform.*

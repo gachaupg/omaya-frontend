@@ -32,7 +32,7 @@ const P2PTermsPage = () => {
 
   return (
     <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-      <div className="bg-white dark:bg-[#1D1D23] rounded-2xl border border-[#E8EFF5] dark:border-[#35353E] w-full max-w-2xl max-h-[90vh] flex flex-col">
+      <div className="bg-white dark:bg-[#1D1D23] rounded-2xl border border-[#E8EFF5] dark:border-[#35353E] w-full max-w-4xl max-h-[90vh] flex flex-col">
         {/* Header */}
         <div className="px-6 py-4 border-b border-[#E8EFF5] dark:border-[#35353E]">
           <h1 className="text-xl sm:text-2xl font-bold text-[#051015] dark:text-white">

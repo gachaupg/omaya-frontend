@@ -40,8 +40,8 @@ export default async function LegalPolicyPage({ params }: PolicyPageProps) {
   }
 
   return (
-    <div className="min-h-screen bg-(--bg-color) pt-32 pb-16 px-4">
-      <div className="max-w-4xl mx-auto bg-(--card-color) rounded-3xl shadow-xl border border-gray-200 dark:border-accent p-8 md:p-12">
+    <div className="min-h-screen bg-(--bg-color) pt-32 pb-16 px-4 sm:px-6 lg:px-10 xl:px-12 2xl:px-16">
+      <div className="w-full max-w-7xl 2xl:max-w-screen-2xl mx-auto bg-(--card-color) rounded-3xl shadow-xl border border-gray-200 dark:border-accent p-8 md:p-12 lg:p-14 xl:p-16">
         <BackButton />
 
         <header className="mb-8">
