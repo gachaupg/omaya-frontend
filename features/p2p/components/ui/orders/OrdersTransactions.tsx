@@ -1,10 +1,7 @@
-import React, { useState } from "react";
+import React from "react";
 import { Table } from "../../Common/Table";
 import { TransactionType } from "@/features/p2p/types";
-import TransactionModal from "@/components/ui/TransactionModal";
 import { NoDataFound } from "@/components/dashboard/ui/Transactions";
-
-import { logger } from '@/lib/utils/logger';
 
 const OrdersTransactions = ({
   transformedData,
@@ -23,20 +20,6 @@ const OrdersTransactions = ({
   trades: { count: number };
   hasActiveLocalFilters: boolean;
 }) => {
-  const [selectedTransaction, setSelectedTransaction] =
-    useState<TransactionType | null>(null);
-
-  const handleViewTransaction = (tx: TransactionType) => {
-    setSelectedTransaction(tx);
-  };
-
-  const handleCloseModal = () => {
-    setSelectedTransaction(null);
-  };
-
-  // Debug log for selectedTransaction
-  logger.debug('p2p', "selectedTransaction:", selectedTransaction);
-
   if (loading) {
     return (
       <div className="w-full flex items-center justify-center py-8">
@@ -76,7 +59,6 @@ const OrdersTransactions = ({
         currentPage={currentPage}
         totalPages={totalPages}
         onPageChange={handlePageChange}
-        onViewTransaction={handleViewTransaction}
         showExportButton={false}
         hideP2PDateFilter
         hideP2PSearch

@@ -496,6 +496,8 @@ export interface UserTrade {
   seller_photo: string | null;
   commission_amount: number;
   net_amount: number;
+  network?: string;
+  network_name?: string;
 }
 
 export interface UserTradesState {

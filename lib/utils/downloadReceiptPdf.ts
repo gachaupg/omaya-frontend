@@ -1,5 +1,6 @@
 import { jsPDF } from "jspdf";
 import autoTable from "jspdf-autotable";
+import { formatDateTimeEastAfrica } from "@/lib/globalFormatter";
 
 const OMAYA_LOGO_URL =
   "/assets/bad9edd9da5201cb8f8f9cea35bf46f4fb541bd6_lplbyc.png";
@@ -8,6 +9,27 @@ type DownloadReceiptPdfOptions = {
   fileName: string;
   isDark?: boolean;
 };
+
+const DATE_FIELD_LABEL =
+  /date|time|when|created|exported|generated|timestamp/i;
+
+function formatPdfFieldValue(label: string, value: string): string {
+  const trimmed = value.trim();
+  if (!trimmed || !DATE_FIELD_LABEL.test(label.trim())) return value;
+
+  const parsed = new Date(trimmed);
+  if (Number.isNaN(parsed.getTime())) return value;
+
+  if (
+    /^\d{4}-\d{2}-\d{2}/.test(trimmed) ||
+    trimmed.includes("T") ||
+    /GMT|UTC|Z$/.test(trimmed)
+  ) {
+    return formatDateTimeEastAfrica(parsed);
+  }
+
+  return value;
+}
 
 const cleanText = (value: string | null | undefined): string =>
   String(value ?? "").replace(/\s+/g, " ").trim();
@@ -158,11 +180,7 @@ async function drawOmayaPdfHeader(
   doc.setFontSize(9);
   doc.setTextColor(100, 100, 100);
   doc.text(
-    `Generated: ${new Intl.DateTimeFormat("en-KE", {
-      timeZone: "Africa/Nairobi",
-      dateStyle: "medium",
-      timeStyle: "short",
-    }).format(new Date())}`,
+    `Generated: ${formatDateTimeEastAfrica(new Date())}`,
     centerX,
     currentY,
     { align: "center" }
@@ -182,11 +200,15 @@ export async function downloadReceiptPdfFromRows(
 
   const doc = new jsPDF();
   const startY = await drawOmayaPdfHeader(doc, title);
+  const formattedRows = rows.map(([label, value]) => [
+    label,
+    formatPdfFieldValue(label, value),
+  ]) as Array<[string, string]>;
 
   autoTable(doc, {
     startY,
     head: [["Field", "Value"]],
-    body: rows,
+    body: formattedRows,
     theme: "grid",
     styles: { fontSize: 9, cellPadding: 3, overflow: "linebreak" },
     headStyles: { fillColor: [29, 135, 81], textColor: 255 },

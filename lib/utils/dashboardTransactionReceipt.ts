@@ -2,6 +2,9 @@ import { jsPDF } from "jspdf";
 import autoTable from "jspdf-autotable";
 import type { DashboardTransactionDetailView } from "@/components/dashboard/ui/DashboardTransactionDetailsModal";
 import { getDashboardTransactionAmounts } from "@/lib/utils/dashboardTransactionAmounts";
+import { formatDashboardDetailAmount } from "@/lib/utils/dashboardDetailAmount";
+import { getNetworkDisplayName } from "@/lib/utils/networkDisplay";
+import { formatDateTimeEastAfrica } from "@/lib/globalFormatter";
 
 const OMAYA_LOGO_URL =
   "/assets/bad9edd9da5201cb8f8f9cea35bf46f4fb541bd6_lplbyc.png";
@@ -18,6 +21,7 @@ export function buildDashboardTransactionShareText(
   const { tx, from, to, assetTitle, typeLabel } = detail;
   const amounts = getDashboardTransactionAmounts(tx);
   const id = String(tx.referral_withdrawal_id || tx.withdrawal_id || tx.id || "").trim();
+  const hasComputedAmounts = !!(amounts.assetAmount || amounts.usdValue);
   const lines = [
     "OMAYA Exchange — Transaction",
     "",
@@ -27,11 +31,17 @@ export function buildDashboardTransactionShareText(
     id ? `Transaction ID: ${id}` : null,
     amounts.assetAmount ? `Asset amount: ${amounts.assetAmount}` : null,
     amounts.usdValue ? `USD value: ${amounts.usdValue}` : null,
-    tx.net_amount ? `Net amount: ${tx.net_amount}` : null,
-    tx.commission ? `Fees: ${tx.commission}` : null,
+    !hasComputedAmounts && tx.amount
+      ? `Amount: ${formatDashboardDetailAmount(tx.amount)}`
+      : null,
+    !hasComputedAmounts && tx.net_amount
+      ? `Net amount: ${formatDashboardDetailAmount(tx.net_amount)}`
+      : null,
+    tx.commission ? `Fees: ${formatDashboardDetailAmount(tx.commission)}` : null,
+    tx.network ? `Network: ${getNetworkDisplayName(tx.network)}` : null,
     `From: ${from.label}${from.subLabel ? ` (${from.subLabel})` : ""}`,
     `To: ${to.label}${to.subLabel ? ` (${to.subLabel})` : ""}`,
-    tx.created_at ? `Date: ${tx.created_at}` : null,
+    tx.created_at ? `Date: ${formatDateTimeEastAfrica(tx.created_at)}` : null,
   ].filter(Boolean) as string[];
 
   return lines.join("\n");
@@ -95,26 +105,34 @@ export async function downloadDashboardTransactionPdf(
 
   doc.setFontSize(9);
   doc.setTextColor(100, 100, 100);
-  doc.text(`Generated: ${new Date().toLocaleString()}`, centerX, currentY, {
+  doc.text(
+    `Generated: ${formatDateTimeEastAfrica(new Date())}`,
+    centerX,
+    currentY,
+    {
     align: "center",
-  });
+  }
+  );
   currentY += 10;
 
   const payment = tx.payment_method;
+  const networkLabel = tx.network
+    ? getNetworkDisplayName(tx.network)
+    : assetSubtitle;
+  const hasComputedAmounts = !!(amounts.assetAmount || amounts.usdValue);
   const tableBody: [string, string][] = [
     row("Type", typeLabel),
     row("Status", String(tx.status)),
     row("Asset", assetTitle),
-    row("Network", assetSubtitle),
+    row("Network", networkLabel),
     row("Transaction ID", transactionId),
-    row("Date", tx.created_at),
+    row("Date", tx.created_at ? formatDateTimeEastAfrica(tx.created_at) : null),
     amounts.assetAmount ? row("Asset amount", amounts.assetAmount) : null,
     amounts.usdValue ? row("USD value", amounts.usdValue) : null,
-    row("Amount", tx.amount),
-    row("Net amount", tx.net_amount),
-    row("Commission / fees", tx.commission),
-    row("Received amount", tx.to_amount),
-    row("Blockchain network", tx.network ? String(tx.network).toUpperCase() : null),
+    !hasComputedAmounts ? row("Amount", formatDashboardDetailAmount(tx.amount)) : null,
+    !hasComputedAmounts ? row("Net amount", formatDashboardDetailAmount(tx.net_amount)) : null,
+    row("Commission / fees", formatDashboardDetailAmount(tx.commission)),
+    row("Received amount", formatDashboardDetailAmount(tx.to_amount)),
     row("From", from.label),
     row("From detail", from.subLabel || from.copyValue),
     row("To", to.label),

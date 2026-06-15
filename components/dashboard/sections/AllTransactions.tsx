@@ -39,6 +39,7 @@ import {
   textFromToCell,
   withFromToLogos,
 } from "@/lib/utils/transactionFromTo";
+import { getNetworkDisplayName } from "@/lib/utils/networkDisplay";
 
 const normalizeStatusForBadge = (status: unknown): string => {
   const s = String(status ?? "").trim();
@@ -166,6 +167,12 @@ const getAssetColumnLabels = (tx: AllTransactionItem): { title: string; subtitle
   const title = String(
     tx.currency || tx.asset || (tx.type === "moneyx" ? "USD" : "USDT")
   ).trim();
+  if (tx.type === "p2p" && tx.network) {
+    return {
+      title,
+      subtitle: getNetworkDisplayName(tx.network),
+    };
+  }
   const subtitle = getAssetName(title);
   return { title, subtitle: subtitle || undefined };
 };
