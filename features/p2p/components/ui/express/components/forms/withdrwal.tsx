@@ -1,5 +1,5 @@
 "use client";
-import React, { useEffect, useState, useRef } from "react";
+import React, { useCallback, useEffect, useState, useRef } from "react";
 import { FaExchangeAlt, FaExclamationCircle, FaWallet, FaInfoCircle, FaPaste } from "react-icons/fa";
 import { useDispatch, useSelector } from "react-redux";
 import { useRouter } from "next/navigation";
@@ -37,6 +37,12 @@ import { useTheme } from "@/context/theme";
 import { ExpressP2PWithdrawalTermsPanel } from "@/features/express/components/legal/ExpressP2PWithdrawalTermsPanel";
 import { selectP2PWalletAmounts, selectTransactionSummary } from "@/features/p2p/selectors";
 import { reportAssetLoadIssue } from "@/lib/utils/assetLoadNotice";
+import {
+  setP2PLegalReturnState,
+  consumeP2PLegalReturnState,
+} from "@/lib/utils/authRedirect";
+import { useBookmarkedAddresses } from "@/features/express/hooks/useBookmarkedAddresses";
+import { BookmarkDropdown } from "@/features/express/components/forms/BookmarkDropdown";
 
 const formatUnknownError = (error: unknown): string => {
   if (!error) return "Unknown error";
@@ -361,6 +367,8 @@ export default function WithdrawalForm({
   const [walletAddress, setWalletAddress] = useState("");
   const [walletError, setWalletError] = useState<string | null>(null);
   const [walletCopied, setWalletCopied] = useState(false);
+  const [bookmarkOpen, setBookmarkOpen] = useState(false);
+  const bookmarkAnchorRef = useRef<HTMLSpanElement>(null);
   const [expandedTerms, setExpandedTerms] = useState(false);
   const [isTermsAccepted, setIsTermsAccepted] = useState(false);
   const [isNetworkDropdownOpen, setIsNetworkDropdownOpen] = useState(false);
@@ -376,6 +384,25 @@ export default function WithdrawalForm({
       isDefault: true,
     },
   ];
+
+  const currentCurrency =
+    selectedAsset?.ticker || selectedAsset?.symbol || "USDT";
+  const currentNetwork =
+    selectedNetwork?.network ||
+    selectedNetwork?.network_id ||
+    selectedNetwork?.network_type ||
+    "BSC";
+
+  const {
+    bookmarks,
+    loading: bookmarksLoading,
+    saving: bookmarkSaving,
+    fetchBookmarks,
+    saveBookmark,
+    deleteBookmark,
+    saveBookmarkError,
+    clearSaveBookmarkError,
+  } = useBookmarkedAddresses(currentCurrency, currentNetwork);
 
   const networkDropdownRef = useRef<HTMLDivElement>(null);
   const [forceUpdate, setForceUpdate] = useState(0);
@@ -459,6 +486,99 @@ export default function WithdrawalForm({
   const [p2pReceiveAmount, setP2pReceiveAmount] = useState("");
   const [isCalculatingFromReceive, setIsCalculatingFromReceive] = useState(false);
   const p2pCommissionTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const hasRestoredLegalState = useRef(false);
+
+  const handleBeforeLegalNavigate = useCallback(() => {
+    setP2PLegalReturnState({
+      mode: "withdrawal",
+      payAmount,
+      payAmountInput,
+      getAmount,
+      getAmountInput,
+      walletAddress,
+      isTermsAccepted,
+      expandedTerms,
+      p2pReceiveAmount,
+      isCalculatingFromPay,
+      isCalculatingFromReceive,
+      selectedAsset,
+      selectedNetwork,
+      scrollY: typeof window !== "undefined" ? window.scrollY : 0,
+    });
+    onBeforeLegalNavigate?.();
+  }, [
+    payAmount,
+    payAmountInput,
+    getAmount,
+    getAmountInput,
+    walletAddress,
+    isTermsAccepted,
+    expandedTerms,
+    p2pReceiveAmount,
+    isCalculatingFromPay,
+    isCalculatingFromReceive,
+    selectedAsset,
+    selectedNetwork,
+    onBeforeLegalNavigate,
+  ]);
+
+  useEffect(() => {
+    if (hasRestoredLegalState.current) return;
+    if (typeof window === "undefined") return;
+
+    const state = consumeP2PLegalReturnState();
+    if (!state || state.mode !== "withdrawal") return;
+
+    hasRestoredLegalState.current = true;
+
+    if (state.payAmountInput !== undefined) {
+      setPayAmountInput(state.payAmountInput);
+      setPayAmount(
+        typeof state.payAmount === "number"
+          ? state.payAmount
+          : parseFloat(state.payAmountInput) || 0
+      );
+    }
+    if (state.getAmountInput !== undefined) {
+      setGetAmountInput(state.getAmountInput);
+      setGetAmount(
+        typeof state.getAmount === "number"
+          ? state.getAmount
+          : parseFloat(state.getAmountInput) || 0
+      );
+    }
+    if (state.walletAddress !== undefined) {
+      setWalletAddress(state.walletAddress);
+    }
+    if (state.isTermsAccepted !== undefined) {
+      setIsTermsAccepted(state.isTermsAccepted);
+    }
+    if (state.expandedTerms !== undefined) {
+      setExpandedTerms(state.expandedTerms);
+    }
+    if (state.p2pReceiveAmount !== undefined) {
+      setP2pReceiveAmount(state.p2pReceiveAmount);
+    }
+    if (state.isCalculatingFromPay !== undefined) {
+      setIsCalculatingFromPay(state.isCalculatingFromPay);
+    }
+    if (state.isCalculatingFromReceive !== undefined) {
+      setIsCalculatingFromReceive(state.isCalculatingFromReceive);
+    }
+    if (state.selectedAsset) {
+      setSelectedAsset(state.selectedAsset);
+    }
+    if (state.selectedNetwork) {
+      setSelectedNetwork(state.selectedNetwork);
+    }
+
+    const savedScrollY = state.scrollY;
+    if (typeof savedScrollY === "number" && !Number.isNaN(savedScrollY)) {
+      window.setTimeout(() => {
+        window.scrollTo({ top: Math.max(0, savedScrollY), behavior: "auto" });
+      }, 0);
+    }
+  }, []);
 
   // Fetch withdrawal commission from no-auth endpoint (uses p2p feature for commission rates)
   useEffect(() => {
@@ -2972,52 +3092,130 @@ export default function WithdrawalForm({
               <input
                 type="text"
                 value={walletAddress}
-                onChange={(e) => setWalletAddress(e.target.value)}
+                onChange={(e) => {
+                  clearSaveBookmarkError();
+                  setWalletAddress(e.target.value);
+                }}
                 onPaste={(e) => {
                   e.preventDefault();
+                  clearSaveBookmarkError();
                   const pastedText = e.clipboardData.getData("text");
                   setWalletAddress(pastedText);
                 }}
                 placeholder="Enter BEP20 wallet address (0x...)"
-                className={`w-full text-[#35353e] dark:bg-[var(--card-color)] dark:text-[#ffffff] rounded-xl sm:rounded-2xl pl-11 sm:pl-12 pr-10 sm:pr-11 py-2.5 sm:py-2 text-sm sm:text-lg focus:outline-none border min-h-[44px] sm:min-h-0 ${walletError
+                className={`w-full text-[#35353e] dark:bg-[var(--card-color)] dark:text-[#ffffff] rounded-xl sm:rounded-2xl pl-11 sm:pl-12 pr-[4.75rem] sm:pr-24 py-2.5 sm:py-2 text-sm sm:text-lg focus:outline-none border min-h-[44px] sm:min-h-0 ${walletError
                   ? "border-red-500 focus:border-red-500"
                   : walletAddress.trim() && !walletError
                     ? "border-green-500"
                     : "border-[#A2A4A9FF] dark:border-[#35353E]"
                   }`}
               />
-              <button
-                type="button"
-                onClick={async () => {
-                  try {
-                    if (!navigator?.clipboard?.readText) {
-                      showToast.error("Clipboard paste is not supported");
+              <div className="absolute right-2 sm:right-3 top-1/2 -translate-y-1/2 flex items-center gap-1 sm:gap-2">
+                <span
+                  ref={bookmarkAnchorRef}
+                  className="text-[#1D8751] cursor-pointer flex-shrink-0 hover:opacity-80 transition-opacity"
+                  onClick={async () => {
+                    if (bookmarkOpen) {
+                      setBookmarkOpen(false);
                       return;
                     }
-                    const pastedText = await navigator.clipboard.readText();
-                    if (!pastedText.trim()) return;
-                    setWalletAddress(pastedText.trim());
-                    setWalletCopied(true);
-                    setTimeout(() => setWalletCopied(false), 1800);
+                    setBookmarkOpen(true);
+                    await fetchBookmarks();
+                  }}
+                  title="Load from whitelist"
+                >
+                  <svg
+                    width="20"
+                    height="20"
+                    fill="none"
+                    viewBox="0 0 24 24"
+                    stroke="currentColor"
+                    strokeWidth="2"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                  >
+                    <path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z" />
+                  </svg>
+                </span>
+                <button
+                  type="button"
+                  onClick={async () => {
+                    try {
+                      if (!navigator?.clipboard?.readText) {
+                        showToast.error("Clipboard paste is not supported");
+                        return;
+                      }
+                      const pastedText = await navigator.clipboard.readText();
+                      if (!pastedText.trim()) return;
+                      clearSaveBookmarkError();
+                      setWalletAddress(pastedText.trim());
+                      setWalletCopied(true);
+                      setTimeout(() => setWalletCopied(false), 1800);
+                    } catch {
+                      showToast.error("Failed to paste wallet address");
+                    }
+                  }}
+                  className={`transition-colors ${
+                    walletCopied
+                      ? "text-green-500 dark:text-green-400"
+                      : "text-[#7e7e8f] dark:text-[#788099] hover:text-[#1D8751]"
+                  }`}
+                  aria-label="Paste wallet address"
+                >
+                  {walletCopied ? (
+                    <span className="text-xs sm:text-sm font-medium">Pasted</span>
+                  ) : (
+                    <FaPaste className="w-4 h-4 sm:w-5 sm:h-5" />
+                  )}
+                </button>
+              </div>
+              <BookmarkDropdown
+                isOpen={bookmarkOpen}
+                onClose={() => setBookmarkOpen(false)}
+                bookmarks={bookmarks}
+                loading={bookmarksLoading}
+                saving={bookmarkSaving}
+                currentAddress={walletAddress}
+                asset={currentCurrency}
+                network={currentNetwork}
+                onSelect={(addr) => {
+                  clearSaveBookmarkError();
+                  setWalletAddress(addr);
+                  const validation = validateBEP20Address(addr);
+                  setWalletError(validation.isValid ? null : validation.message);
+                }}
+                onSaveCurrent={async (label) => {
+                  try {
+                    if (!walletAddress.trim() || !currentCurrency || !currentNetwork) {
+                      showToast.error("Enter address and select asset/network first");
+                      return;
+                    }
+                    const validation = validateBEP20Address(walletAddress);
+                    if (!validation.isValid) {
+                      showToast.error("Validation Error", validation.message || "Invalid address");
+                      return;
+                    }
+                    await saveBookmark({
+                      address: walletAddress.trim(),
+                      label,
+                      network: currentNetwork,
+                      asset: currentCurrency,
+                    });
                   } catch {
-                    showToast.error("Failed to paste wallet address");
+                    /* handled by hook */
                   }
                 }}
-                className={`absolute right-3 top-1/2 -translate-y-1/2 transition-colors ${
-                  walletCopied
-                    ? "text-green-500 dark:text-green-400"
-                    : "text-[#7e7e8f] dark:text-[#788099] hover:text-[#1D8751]"
-                }`}
-                aria-label="Paste wallet address"
-              >
-                {walletCopied ? (
-                  <span className="text-xs sm:text-sm font-medium">Pasted</span>
-                ) : (
-                  <FaPaste className="w-4 h-4 sm:w-5 sm:h-5" />
-                )}
-              </button>
-              
+                defaultLabel="My USDT wallet"
+                saveError={saveBookmarkError}
+                onDelete={(b) => deleteBookmark(b.id)}
+                anchorRef={bookmarkAnchorRef}
+                isDark={isDark}
+                saveDisabled={!validateBEP20Address(walletAddress).isValid}
+              />
             </div>
+            {saveBookmarkError && (
+              <p className="text-red-500 text-sm mt-1">{saveBookmarkError}</p>
+            )}
             {walletError && (
               <p className="text-red-500 text-sm mt-1">{walletError}</p>
             )}
@@ -3069,7 +3267,7 @@ export default function WithdrawalForm({
                     className="text-[#1D8751] cursor-pointer hover:underline"
                     onClick={(e) => {
                       e.stopPropagation();
-                      onBeforeLegalNavigate?.();
+                      handleBeforeLegalNavigate();
                     }}
                   >
                     Terms of Service
@@ -3301,7 +3499,7 @@ export default function WithdrawalForm({
                     className="text-[#1D8751] cursor-pointer hover:underline"
                     onClick={(e) => {
                       e.stopPropagation();
-                      onBeforeLegalNavigate?.();
+                      handleBeforeLegalNavigate();
                     }}
                   >
                     Terms of Service

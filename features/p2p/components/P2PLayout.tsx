@@ -3,8 +3,8 @@
 /**
  * P2PLayout.tsx
  */
-import React, { useState, useEffect } from "react";
-import { useSearchParams } from "next/navigation";
+import React, { useState, useEffect, useCallback } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
 import { p2pTabs } from "../data";
 import { useP2PI18n } from "@/lib/useP2PI18n";
 import { tokens } from "@/styles/tokens";
@@ -25,9 +25,11 @@ import {
   consumeP2PMarketScrollOnLoad,
   scrollAppToTop,
 } from "@/lib/utils/scrollAppToTop";
+import { useSidebarSectionReset } from "@/lib/utils/sidebarNavigationReset";
 
 const P2PLayout = () => {
   const { t } = useP2PI18n();
+  const router = useRouter();
   const searchParams = useSearchParams();
   const tabFromQuery = searchParams?.get("tab");
   const [activeTab, setActiveTab] = useState(tabFromQuery || "dashboard");
@@ -57,6 +59,17 @@ const handleTabChange = (tab: string) => {
     setActiveTab(tab);
     setShowUnreadMessages(false); // Close messages when switching tabs
   };
+
+  const handleSidebarReset = useCallback(() => {
+    setActiveTab("dashboard");
+    setShowUnreadMessages(false);
+    if (searchParams?.get("tab")) {
+      router.replace("/dashboard/p2p", { scroll: false });
+    }
+    scrollAppToTop();
+  }, [router, searchParams]);
+
+  useSidebarSectionReset("p2p", handleSidebarReset);
 
   const handleUnreadMessagesClick = () => {
     setShowUnreadMessages(!showUnreadMessages);

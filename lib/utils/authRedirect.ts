@@ -258,3 +258,63 @@ export const consumePaymentModalPrefill = (): { method?: string; provider?: stri
   }
 };
 
+const P2P_LEGAL_RETURN_STATE_KEY = "omaya_p2p_legal_return_state";
+
+/** Save P2P express form state before navigating to legal pages (Terms, Privacy, etc.) */
+export const setP2PLegalReturnState = (state: Record<string, any>) => {
+  if (typeof window === "undefined") return;
+  try {
+    sessionStorage.setItem(P2P_LEGAL_RETURN_STATE_KEY, JSON.stringify(state));
+  } catch {
+    // Ignore storage errors
+  }
+};
+
+/** Consume P2P legal return state when user returns from Terms/Privacy/etc. */
+export const consumeP2PLegalReturnState = (): Record<string, any> | null => {
+  if (typeof window === "undefined") return null;
+  try {
+    const raw = sessionStorage.getItem(P2P_LEGAL_RETURN_STATE_KEY);
+    if (!raw) return null;
+    sessionStorage.removeItem(P2P_LEGAL_RETURN_STATE_KEY);
+    return JSON.parse(raw) as Record<string, any>;
+  } catch {
+    sessionStorage.removeItem(P2P_LEGAL_RETURN_STATE_KEY);
+    return null;
+  }
+};
+
+const SWAP_LEGAL_RETURN_STATE_KEY = "omaya_swap_legal_return_state";
+
+/** Save swap form state before navigating to legal pages (Terms, Privacy, etc.) */
+export const setSwapLegalReturnState = (state: Record<string, any>) => {
+  if (typeof window === "undefined") return;
+  try {
+    sessionStorage.setItem(SWAP_LEGAL_RETURN_STATE_KEY, JSON.stringify(state));
+    sessionStorage.setItem(RETURNING_FROM_LEGAL_KEY, "1");
+  } catch {
+    // Ignore storage errors
+  }
+};
+
+/** Consume swap legal return state when user returns from Terms/Privacy/etc. */
+export const consumeSwapLegalReturnState = (): Record<string, any> | null => {
+  if (typeof window === "undefined") return null;
+  try {
+    const returning = sessionStorage.getItem(RETURNING_FROM_LEGAL_KEY);
+    if (!returning) return null;
+    const raw = sessionStorage.getItem(SWAP_LEGAL_RETURN_STATE_KEY);
+    if (!raw) {
+      sessionStorage.removeItem(RETURNING_FROM_LEGAL_KEY);
+      return null;
+    }
+    sessionStorage.removeItem(RETURNING_FROM_LEGAL_KEY);
+    sessionStorage.removeItem(SWAP_LEGAL_RETURN_STATE_KEY);
+    return JSON.parse(raw) as Record<string, any>;
+  } catch {
+    sessionStorage.removeItem(RETURNING_FROM_LEGAL_KEY);
+    sessionStorage.removeItem(SWAP_LEGAL_RETURN_STATE_KEY);
+    return null;
+  }
+};
+
