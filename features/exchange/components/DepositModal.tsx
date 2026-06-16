@@ -13,6 +13,7 @@ import toast from 'react-hot-toast';
 import { validateWalletAddress } from './utils/validation/walletValidation';
 import { calculateCommission } from './utils/calculations/commissionCalculator';
 import { calculateNetworkFee, calculateTotalFees } from './utils/calculations/feeCalculator';
+import { ExchangeTermsAcceptanceLabel } from './ExchangeTermsAcceptanceLabel';
 
 import { logger } from '@/lib/utils/logger';
 
@@ -806,7 +807,7 @@ const DepositModal: React.FC<DepositModalProps> = ({ asset, assetType, onClose }
               </span>
               <span className="text-white text-sm">I confirm that I sent the payment</span>
             </label>
-            <label className="flex items-center gap-2 cursor-pointer select-none">
+            <label className="flex items-start gap-2 cursor-pointer select-none">
               <input
                 type="checkbox"
                 checked={acceptTerms}
@@ -820,7 +821,7 @@ const DepositModal: React.FC<DepositModalProps> = ({ asset, assetType, onClose }
                   </svg>
                 )}
               </span>
-              <span className="text-white text-sm">I accept Terms and condition</span>
+              <ExchangeTermsAcceptanceLabel />
             </label>
           </div>
           {/* Show submit error if exists */}

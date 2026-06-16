@@ -1,5 +1,6 @@
 import React from "react";
 import { AlertCircle, Upload, Copy } from "lucide-react";
+import { ExchangeTermsAcceptanceLabel } from "../ExchangeTermsAcceptanceLabel";
 import {
   PaymentMethod,
   PaymentProvider,
@@ -459,7 +460,7 @@ const DepositForm: React.FC<DepositFormProps> = ({
                 I confirm that I sent the payment
               </span>
             </label>
-            <label className="flex items-center gap-2 cursor-pointer select-none">
+            <label className="flex items-start gap-2 cursor-pointer select-none">
               <input
                 type="checkbox"
                 checked={acceptTerms}
@@ -487,9 +488,7 @@ const DepositForm: React.FC<DepositFormProps> = ({
                   </svg>
                 )}
               </span>
-              <span className="text-white text-sm">
-                I accept Terms and condition
-              </span>
+              <ExchangeTermsAcceptanceLabel />
             </label>
           </div>
           {submitError && (

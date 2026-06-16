@@ -1,6 +1,7 @@
 import React from 'react';
 import AssetsSelector from './AssetsSelector';
 import { AlertCircle, Upload, Copy, QrCodeIcon, ChevronDown } from 'lucide-react';
+import { ExchangeTermsAcceptanceLabel } from '../ExchangeTermsAcceptanceLabel';
 import { Asset, Network, PaymentMethod, PaymentProvider, UserPaymentDetail } from '../../types';
 
 interface WithdrawFormProps {
@@ -330,7 +331,7 @@ const WithdrawForm: React.FC<WithdrawFormProps> = (props) => {
               </span>
               <span className="text-white text-sm">I confirm the wallet address</span>
             </label>
-            <label className="flex items-center gap-2 cursor-pointer select-none">
+            <label className="flex items-start gap-2 cursor-pointer select-none">
               <input
                 type="checkbox"
                 checked={acceptTerms}
@@ -344,7 +345,7 @@ const WithdrawForm: React.FC<WithdrawFormProps> = (props) => {
                   </svg>
                 )}
               </span>
-              <span className="text-white text-sm">I accept the terms and conditions</span>
+              <ExchangeTermsAcceptanceLabel />
             </label>
           </div>
           {submitError && (

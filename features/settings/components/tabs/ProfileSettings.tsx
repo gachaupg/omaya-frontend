@@ -7,6 +7,7 @@ import PasswordSection from "./sections/PasswordSection";
 import BasicInfoSection from "./sections/BasicInfoSection";
 import SystemThemeSection from "./sections/SystemThemeSection";
 import NotificationPreferencesSection from "./sections/NotificationPreferencesSection";
+import AccountDeletionSection from "./sections/AccountDeletionSection";
 
 const ProfileSettings = () => {
   const dispatch = useDispatch<AppDispatch>();
@@ -49,6 +50,7 @@ const ProfileSettings = () => {
         <PasswordSection />
         <SystemThemeSection />
         <NotificationPreferencesSection />
+        <AccountDeletionSection />
       </div>
     </div>
   );
