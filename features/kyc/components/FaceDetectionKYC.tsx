@@ -47,6 +47,7 @@ const FaceDetectionKYC: React.FC<FaceDetectionKYCProps> = ({
   const recordedChunksRef = useRef<Blob[]>([]);
   const captureInProgressRef = useRef(false);
   const cameraStartInFlightRef = useRef(false);
+  const isVerifiedRef = useRef(false);
 
   const [isLoadingModels, setIsLoadingModels] = useState(true);
   const [faceCount, setFaceCount] = useState(0);
@@ -267,6 +268,10 @@ const FaceDetectionKYC: React.FC<FaceDetectionKYCProps> = ({
       meta?: { age?: number; gender?: string; confidence?: number },
       captureSource: "camera" | "gallery" = "camera"
     ) => {
+      isVerifiedRef.current = true;
+      captureInProgressRef.current = true;
+      setCountdown(null);
+      setRecordingCountdown(null);
       setCapturedImage(imageData);
       setIsVerified(true);
       stopVideo();
@@ -388,7 +393,7 @@ const FaceDetectionKYC: React.FC<FaceDetectionKYCProps> = ({
   };
 
   const runCaptureSequence = useCallback(async () => {
-    if (captureInProgressRef.current || isVerified) return;
+    if (captureInProgressRef.current || isVerified || isVerifiedRef.current) return;
 
     const count = faceCountRef.current;
     const valid = isFaceValidRef.current;
@@ -474,9 +479,11 @@ const FaceDetectionKYC: React.FC<FaceDetectionKYCProps> = ({
       setValidationStatus("Capture failed. Center your face and try again.");
       setCountdown(null);
     } finally {
-      captureInProgressRef.current = false;
-      setCaptureInProgress(false);
-      setRecordingCountdown(null);
+      if (!isVerifiedRef.current) {
+        captureInProgressRef.current = false;
+        setCaptureInProgress(false);
+        setRecordingCountdown(null);
+      }
     }
   }, [completeCapture, isModelLoaded, isVerified, startVideo]);
 
@@ -489,10 +496,11 @@ const FaceDetectionKYC: React.FC<FaceDetectionKYCProps> = ({
       detectionData &&
       isFaceValid &&
       !isVerified &&
+      !isVerifiedRef.current &&
       !captureInProgress
     ) {
       setCountdown((current) => (current === null ? 3 : current));
-    } else if (!captureInProgress) {
+    } else if (!captureInProgress && !isVerifiedRef.current) {
       setCountdown(null);
     }
   }, [faceCount, detectionData, isFaceValid, isVerified, captureInProgress]);
@@ -504,7 +512,11 @@ const FaceDetectionKYC: React.FC<FaceDetectionKYCProps> = ({
       }, 1000);
       return () => clearTimeout(timer);
     }
-    if (countdown === 0 && !captureInProgressRef.current) {
+    if (
+      countdown === 0 &&
+      !captureInProgressRef.current &&
+      !isVerifiedRef.current
+    ) {
       void runCaptureSequence();
     }
   }, [countdown, runCaptureSequence]);
@@ -515,6 +527,7 @@ const FaceDetectionKYC: React.FC<FaceDetectionKYCProps> = ({
       !canvasRef.current ||
       !isModelLoaded ||
       isVerified ||
+      isVerifiedRef.current ||
       captureInProgressRef.current
     ) {
       return;
@@ -591,7 +604,7 @@ const FaceDetectionKYC: React.FC<FaceDetectionKYCProps> = ({
       ctx.clearRect(0, 0, canvas.width, canvas.height);
     }
 
-    if (!isVerified && !captureInProgressRef.current) {
+    if (!isVerified && !isVerifiedRef.current && !captureInProgressRef.current) {
       requestAnimationFrame(detectFaces);
     }
   };
@@ -763,6 +776,7 @@ const FaceDetectionKYC: React.FC<FaceDetectionKYCProps> = ({
           {isVerified && (
             <button
               onClick={() => {
+                isVerifiedRef.current = false;
                 setIsVerified(false);
                 setCountdown(null);
                 setRecordingCountdown(null);
