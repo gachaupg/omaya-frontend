@@ -283,20 +283,36 @@ export async function extractKycPhotoFromVideoBlob(
   video.src = url;
   video.muted = true;
   video.playsInline = true;
+  video.preload = "auto";
 
   try {
     await new Promise<void>((resolve, reject) => {
-      video.onloadedmetadata = () => resolve();
+      video.onloadeddata = () => resolve();
       video.onerror = () => reject(new Error("Could not load recorded video"));
     });
 
-    const seekTime = Math.max(0, (video.duration || 0) * 0.5);
-    video.currentTime = seekTime;
+    const duration = Number.isFinite(video.duration) ? video.duration : 0;
+    const seekTime =
+      duration > 0 ? Math.min(duration * 0.5, Math.max(0, duration - 0.1)) : 0;
 
-    await new Promise<void>((resolve, reject) => {
-      video.onseeked = () => resolve();
-      video.onerror = () => reject(new Error("Could not seek recorded video"));
-    });
+    if (seekTime > 0) {
+      await Promise.race([
+        new Promise<void>((resolve, reject) => {
+          video.onseeked = () => resolve();
+          video.onerror = () => reject(new Error("Could not seek recorded video"));
+          video.currentTime = seekTime;
+        }),
+        new Promise<void>((_, reject) => {
+          setTimeout(() => reject(new Error("Could not seek recorded video")), 3000);
+        }),
+      ]).catch(async () => {
+        video.currentTime = 0;
+        await new Promise<void>((resolve) => {
+          video.onseeked = () => resolve();
+          video.onerror = () => resolve();
+        });
+      });
+    }
 
     const vw = video.videoWidth || 640;
     const vh = video.videoHeight || 480;
