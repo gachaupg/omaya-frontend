@@ -44,9 +44,50 @@ import {
   resolveSwapCreateErrorMessage,
   SWAP_SAME_COIN_MESSAGE,
 } from "@/lib/utils/swapAssetValidation";
+import {
+  setSwapLegalReturnState,
+  consumeSwapLegalReturnState,
+} from "@/lib/utils/authRedirect";
 
 // Minimum swap value in USD/USDT - smaller amounts can disappear due to fees
 const MIN_SWAP_USD = 1;
+
+const findMatchingSwapAsset = (
+  supportedAssets: SupportedAsset[],
+  snapshot: Partial<SupportedAsset> | null | undefined
+): SupportedAsset | undefined => {
+  if (!snapshot || supportedAssets.length === 0) return undefined;
+
+  return supportedAssets.find((asset: SupportedAsset) => {
+    const snapshotTicker = (snapshot.ticker || "").toLowerCase().trim();
+    const snapshotSymbol = (snapshot.symbol || "").toLowerCase().trim();
+    const snapshotNetwork = (snapshot.network || "").toLowerCase().trim();
+
+    const assetTicker = (asset.ticker || "").toLowerCase().trim();
+    const assetSymbol = (asset.symbol || "").toLowerCase().trim();
+    const assetNetwork = (asset.network || "").toLowerCase().trim();
+
+    if (snapshotTicker && assetTicker && snapshotNetwork && assetNetwork) {
+      if (snapshotTicker === assetTicker && snapshotNetwork === assetNetwork) {
+        return true;
+      }
+    }
+
+    if (snapshotSymbol && assetSymbol && snapshotNetwork && assetNetwork) {
+      if (snapshotSymbol === assetSymbol && snapshotNetwork === assetNetwork) {
+        return true;
+      }
+    }
+
+    if (snapshotTicker && assetTicker && !snapshotNetwork) {
+      if (snapshotTicker === assetTicker) {
+        return true;
+      }
+    }
+
+    return false;
+  });
+};
 
 const meetsMinimumSwap = (
   fromAsset: SupportedAsset | null,
@@ -108,6 +149,11 @@ const SwapWidget = () => {
   const [currentStep, setCurrentStep] =
     React.useState<SwapStep>("transaction-info");
   const [showWalletAddress, setShowWalletAddress] = React.useState(false);
+  const [hasAcceptedTerms, setHasAcceptedTerms] = React.useState(false);
+  const [legalReturnState] = React.useState<Record<string, any> | null>(() =>
+    consumeSwapLegalReturnState()
+  );
+  const hasAppliedLegalReturn = React.useRef(false);
   useScrollAppToTopWhen(currentStep !== "transaction-info");
   useScrollAppToTopWhen(showWalletAddress);
   const [hasRestoredState, setHasRestoredState] = React.useState(false);
@@ -169,6 +215,85 @@ const SwapWidget = () => {
     //   handleApiError(error);
     // });
   }, [dispatch]);
+
+  const handleBeforeLegalNavigate = useCallback(() => {
+    setSwapLegalReturnState({
+      showWalletAddress,
+      walletAddress,
+      hasAcceptedTerms,
+      fromAmount,
+      toAmount,
+      fromAsset,
+      toAsset,
+      activeInputField,
+      scrollY: typeof window !== "undefined" ? window.scrollY : 0,
+    });
+  }, [
+    showWalletAddress,
+    walletAddress,
+    hasAcceptedTerms,
+    fromAmount,
+    toAmount,
+    fromAsset,
+    toAsset,
+    activeInputField,
+  ]);
+
+  // Restore swap form when returning from legal pages (Terms, Privacy, etc.)
+  useEffect(() => {
+    if (!legalReturnState || hasAppliedLegalReturn.current) return;
+
+    if (legalReturnState.walletAddress) {
+      setWalletAddress(legalReturnState.walletAddress);
+    }
+    if (legalReturnState.hasAcceptedTerms) {
+      setHasAcceptedTerms(Boolean(legalReturnState.hasAcceptedTerms));
+    }
+    if (legalReturnState.showWalletAddress) {
+      setShowWalletAddress(true);
+    }
+    if (
+      legalReturnState.activeInputField === "from" ||
+      legalReturnState.activeInputField === "to"
+    ) {
+      setActiveInputField(legalReturnState.activeInputField);
+    }
+    if (legalReturnState.fromAmount) {
+      dispatch(setFromAmount(legalReturnState.fromAmount));
+    }
+    if (legalReturnState.toAmount) {
+      dispatch(setToAmount(legalReturnState.toAmount));
+    }
+
+    if (!supportedAssets || supportedAssets.length === 0 || loading) {
+      return;
+    }
+
+    const matchingFromAsset = findMatchingSwapAsset(
+      supportedAssets,
+      legalReturnState.fromAsset
+    );
+    if (matchingFromAsset) {
+      dispatch(setFromAsset(matchingFromAsset));
+    }
+
+    const matchingToAsset = findMatchingSwapAsset(
+      supportedAssets,
+      legalReturnState.toAsset
+    );
+    if (matchingToAsset) {
+      dispatch(setToAsset(matchingToAsset));
+    }
+
+    hasAppliedLegalReturn.current = true;
+
+    const savedScrollY = legalReturnState.scrollY;
+    if (typeof savedScrollY === "number" && !Number.isNaN(savedScrollY)) {
+      window.setTimeout(() => {
+        window.scrollTo({ top: Math.max(0, savedScrollY), behavior: "auto" });
+      }, 0);
+    }
+  }, [legalReturnState, supportedAssets, loading, dispatch]);
 
   // Restore state from URL prefill parameter (after login redirect)
   useEffect(() => {
@@ -902,8 +1027,10 @@ const SwapWidget = () => {
               onNext={handleWalletAddressNext}
               fromAsset={fromAsset}
               toAsset={toAsset}
-              // Pass loading state to disable button
               isLoading={swapLoading}
+              hasAcceptedTerms={hasAcceptedTerms}
+              onHasAcceptedTermsChange={setHasAcceptedTerms}
+              onBeforeLegalNavigate={handleBeforeLegalNavigate}
             />
           )}
         </>

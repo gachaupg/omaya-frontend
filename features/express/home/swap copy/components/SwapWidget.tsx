@@ -55,9 +55,6 @@ interface SwapWidgetProps {
   usePublicApi?: boolean;
 }
 
-const RETURNING_FROM_LEGAL_KEY = "omaya_returning_from_legal";
-const SWAP_LEGAL_RETURN_STATE_KEY = "omaya_swap_legal_return_state";
-
 const SwapWidget: React.FC<SwapWidgetProps> = ({ usePublicApi = false }) => {
   const dispatch = useDispatch<AppDispatch>();
   const router = useRouter();
@@ -102,20 +99,6 @@ const SwapWidget: React.FC<SwapWidgetProps> = ({ usePublicApi = false }) => {
   useScrollAppToTopWhen(showWalletAddress);
   const [isInfoModalOpen, setIsInfoModalOpen] = React.useState(false);
   const otcThresholdExceededRef = React.useRef(false);
-
-  // When coming back from Terms in swap flow, reopen wallet step instead of initial page.
-  useEffect(() => {
-    if (typeof window === "undefined") return;
-    try {
-      const returning = sessionStorage.getItem(RETURNING_FROM_LEGAL_KEY);
-      const hasSwapLegalState = sessionStorage.getItem(SWAP_LEGAL_RETURN_STATE_KEY);
-      if (returning && hasSwapLegalState) {
-        setShowWalletAddress(true);
-      }
-    } catch {
-      // Ignore storage read errors
-    }
-  }, []);
 
   // Simple debounce implementation
   const [debouncedFromAmount, setDebouncedFromAmount] =
@@ -929,7 +912,6 @@ const SwapWidget: React.FC<SwapWidgetProps> = ({ usePublicApi = false }) => {
               onNext={handleWalletAddressNext}
               fromAsset={fromAsset}
               toAsset={toAsset}
-              // Pass loading state to disable button
               isLoading={swapLoading}
             />
           )}

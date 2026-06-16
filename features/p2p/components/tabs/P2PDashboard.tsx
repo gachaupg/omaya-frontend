@@ -12,6 +12,7 @@ import {
   P2PWalletBalanceProvider,
   useP2PWalletBalanceContext,
 } from "@/features/p2p/context/P2PWalletBalanceProvider";
+import { useSidebarSectionReset } from "@/lib/utils/sidebarNavigationReset";
 
 const P2P_EXPRESS_STATE_KEY = "omaya_p2p_express_state";
 const RETURNING_FROM_LEGAL_KEY = "omaya_returning_from_legal";
@@ -31,6 +32,12 @@ function P2PDashboardContent() {
       // Ignore storage errors
     }
   }, [isOpenForm]);
+
+  const handleSidebarReset = useCallback(() => {
+    setIsOpenForm("");
+  }, []);
+
+  useSidebarSectionReset("p2p", handleSidebarReset);
 
   useEffect(() => {
     if (typeof window === "undefined") return;

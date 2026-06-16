@@ -11,6 +11,10 @@ import clsx from "clsx";
 import { navItems } from "@/utils/data";
 import { useTheme } from "@/context/theme";
 import { markExpressCancelled } from "@/features/express/utils/cancelExpressWork";
+import {
+  dispatchSidebarSectionReset,
+  hrefToSidebarSection,
+} from "@/lib/utils/sidebarNavigationReset";
 
 const NAV_LABEL_FALLBACKS: Record<string, string> = {
   "navigation.dashboard": "DASHBOARD",
@@ -98,9 +102,12 @@ export default function Sidebar() {
         router.push(href);
         return false;
       }
-      // If already on the base route, do nothing.
-      // Avoid refresh here because no pathname change can leave the transition overlay visible.
+      // Already on the base route — reset in-page state to the section default.
       e.preventDefault();
+      const section = hrefToSidebarSection(normalizedHref);
+      if (section) {
+        dispatchSidebarSectionReset(section);
+      }
       return false;
     }
 

@@ -506,7 +506,7 @@ const WalletAddressStep: React.FC<WalletAddressStepProps> = ({
                         </p>
                         <ul className="text-xs sm:text-sm text-gray-900 dark:text-white space-y-1.5 ml-3 mt-2">
                           <li>• all the terms and conditions listed above, and</li>
-                          <li>• our full <Link href="/legal/terms-of-service" rel="noopener noreferrer" className="text-[#1D8751] underline font-medium hover:text-[#166b3e]" onClick={onBeforeLegalNavigate}>Terms of Service</Link></li>
+                          <li>• our full <Link href="/legal/terms-of-service" rel="noopener noreferrer" className="text-[#1D8751] underline font-medium hover:text-[#166b3e]" onClick={(e) => { e.stopPropagation(); onBeforeLegalNavigate?.(); }}>Terms of Service</Link></li>
                         </ul>
                       </div>
                     </div>
