@@ -166,7 +166,7 @@ To exercise any of these rights, contact us at **privacy@omaya.io**. We may need
 You may close your Account as described in our Terms of Service. You may also request deletion of your Account and personal data:
 
 - through the **in-app account-deletion option** in the OMAYA.io mobile application; or
-- through our **account-deletion page** at https://omaya.io/delete-account, which is also linked in the App and on our website.
+- through our [account-deletion page](/delete-account).
 
 Account closure and account deletion are different. Closure ends your access to the Services; deletion involves removing or deactivating personal data from our active systems. Following a deletion request, we will delete or anonymise your personal data, **except** for data we are required or permitted to retain for the periods set out in Section 10 (including KYC, transaction, compliance, tax, and legal records). Deletion may be delayed or refused where your Account has pending Transactions, remaining balances, unresolved disputes, investigations, or legal holds. Copies of deleted data may remain in our backups and disaster-recovery systems for a limited period until they are overwritten in the ordinary course. If those systems are ever restored, we apply controls designed to ensure that data you asked us to delete is not reinstated into our active systems and is re-deleted.
 

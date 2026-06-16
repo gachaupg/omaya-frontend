@@ -9,7 +9,7 @@ import PrivacySecurity from "../tabs/PrivacySecurity";
 import PaymentMethods from "../tabs/PaymentMethods";
 import Referral from "../tabs/Referral";
 import Stats from "../tabs/Stats";
-import { Settings, ShieldCheck, Key } from "lucide-react";
+import { Settings } from "lucide-react";
 import HelpSupportForm from "../HelpSupportForm";
 import { useSettingsI18n } from "@/lib/useSettingsI18n";
 import FrozenAccountModal from "@/components/ui/FrozenAccountModal";
@@ -142,7 +142,7 @@ const tabs = [
   },
 ];
 
-const REFERRAL_TAB_INDEX = 4; // Manual index since we're using dynamic logic below
+const REFERRAL_TAB_INDEX = 4;
 
 const Filters = () => {
   const router = useRouter();
@@ -154,7 +154,7 @@ const Filters = () => {
 
   // Get active tab from URL or default to 0 (profile)
   const tabParam = searchParams?.get("tab") || null;
-  const initialActiveIdx = Math.max(0, tabs.findIndex(t => t.id === tabParam));
+  const initialActiveIdx = Math.max(0, tabs.findIndex((t) => t.id === tabParam));
   
   const [activeIdx, setActiveIdx] = useState(initialActiveIdx !== -1 ? initialActiveIdx : 0);
   const [showHelpSupport, setShowHelpSupport] = useState(false);
@@ -172,7 +172,7 @@ const Filters = () => {
       setActiveIdx(0);
       return;
     }
-    const idx = tabs.findIndex(t => t.id === tabParam);
+    const idx = tabs.findIndex((t) => t.id === tabParam);
     if (idx !== -1 && idx !== activeIdx) {
       setActiveIdx(idx);
     }

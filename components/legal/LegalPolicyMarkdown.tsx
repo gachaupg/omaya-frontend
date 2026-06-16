@@ -1,8 +1,39 @@
 "use client";
 
 import type { ReactNode } from "react";
+import Link from "next/link";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
+
+const OMAYA_HOSTS = new Set(["omaya.io", "www.omaya.io", "dev.omaya.io"]);
+
+function resolvePolicyHref(href?: string): { href: string; external: boolean } {
+  if (!href) {
+    return { href: "#", external: false };
+  }
+
+  if (href.startsWith("/")) {
+    return { href, external: false };
+  }
+
+  if (href.startsWith("mailto:") || href.startsWith("tel:")) {
+    return { href, external: false };
+  }
+
+  try {
+    const url = new URL(href);
+    if (OMAYA_HOSTS.has(url.hostname)) {
+      return {
+        href: `${url.pathname}${url.search}${url.hash}`,
+        external: false,
+      };
+    }
+  } catch {
+    // Keep original href below.
+  }
+
+  return { href, external: href.startsWith("http") };
+}
 
 const markdownComponents = {
   h1: ({ children }: { children?: ReactNode }) => (
@@ -36,16 +67,29 @@ const markdownComponents = {
   }: {
     children?: ReactNode;
     href?: string;
-  }) => (
-    <a
-      href={href}
-      className="text-[#1D8751] hover:underline break-words"
-      rel="noopener noreferrer"
-      target={href?.startsWith("http") ? "_blank" : undefined}
-    >
-      {children}
-    </a>
-  ),
+  }) => {
+    const { href: resolvedHref, external } = resolvePolicyHref(href);
+    const className = "text-[#1D8751] hover:underline break-words";
+
+    if (!external) {
+      return (
+        <Link href={resolvedHref} className={className}>
+          {children}
+        </Link>
+      );
+    }
+
+    return (
+      <a
+        href={resolvedHref}
+        className={className}
+        rel="noopener noreferrer"
+        target="_blank"
+      >
+        {children}
+      </a>
+    );
+  },
   table: ({ children }: { children?: ReactNode }) => (
     <div className="overflow-x-auto mt-4">
       <table className="min-w-full border border-gray-200 dark:border-[#2A2A30] text-sm">

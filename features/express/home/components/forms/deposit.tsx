@@ -52,8 +52,10 @@ import Select from "@/features/p2p/components/Common/Select";
 import {
   buildExpressRedirectPath,
   setAuthRedirectPath,
+  setExpressHomeFormState,
   setExpressPrefillState,
 } from "@/lib/utils/authRedirect";
+import { ExpressLegalTermsLinks } from "@/features/express/components/legal/ExpressLegalTermsLinks";
 import { useValidateAddress } from "@/hooks/useValidateAddress";
 import { openKYCModal, checkKYCStatus } from "@/features/auth/slices/authSlice";
 import { useBookmarkedAddresses } from "@/features/express/hooks/useBookmarkedAddresses";
@@ -1033,15 +1035,38 @@ export default function DepositForm({
   // Terms & Conditions expansion
   const [expandedTerms, setExpandedTerms] = useState(false);
   const [isTermsAccepted, setIsTermsAccepted] = useState(false);
-  const [legalModal, setLegalModal] = useState<{
-    title: string;
-    content: string[];
-  } | null>(null);
 
-  const openLegalModal = useCallback((title: string, content: string[]) => {
-    setLegalModal({ title, content });
-  }, []);
-
+  const handleBeforeLegalNavigate = useCallback(() => {
+    if (!isHomePage) return;
+    setExpressHomeFormState({
+      mode: "deposit",
+      amountValue: payAmount,
+      amountInput: payAmountInput,
+      receiveAmountValue: getAmount,
+      receiveAmountInput: getAmountInput,
+      payBank,
+      payment: selectedPaymentDetail,
+      asset: selectedAsset,
+      selectedAsset,
+      selectedNetwork,
+      walletAddress,
+      termsAccepted: isTermsAccepted,
+      isFirstCardSubmitted,
+    });
+  }, [
+    isHomePage,
+    payAmount,
+    payAmountInput,
+    getAmount,
+    getAmountInput,
+    payBank,
+    selectedPaymentDetail,
+    selectedAsset,
+    selectedNetwork,
+    walletAddress,
+    isTermsAccepted,
+    isFirstCardSubmitted,
+  ]);
 
   // Add validation state for minimum receive amount
   const [receiveAmountError, setReceiveAmountError] = useState<string | null>(null);
@@ -5317,123 +5342,12 @@ export default function DepositForm({
                   checked={isTermsAccepted}
                   onChange={(e) => setIsTermsAccepted(e.target.checked)}
                 />
-                <span className="text-[#35353e] dark:text-[#788099] text-sm">
-                  I've read and agree to the{" "}
-                  <button
-                    type="button"
-                    className="text-[#1D8751] cursor-pointer hover:underline"
-                    onClick={() =>
-                      openLegalModal("Terms of Use", [
-                        "By using this withdrawal service, you confirm that all payment details and receiving account information submitted by you are true, accurate, and belong to you. You are solely responsible for ensuring the account number, account name, provider details, and network/asset selections are correct before submitting any request.",
-                        "You agree to provide complete transaction information, including required references such as transaction identifiers or descriptions where requested. If mandatory information is missing or incorrect, your transaction may be delayed, placed under review, rejected, or returned according to operational and compliance procedures.",
-                        "Processing times, fees, commissions, exchange rates, and applicable limits may vary depending on network conditions, liquidity, provider availability, security checks, and market volatility. Any estimate shown before completion is indicative only and does not constitute a final guaranteed settlement amount.",
-                        "You acknowledge that OMAYA may perform verification, compliance, and fraud-prevention checks at any stage of the transaction lifecycle. Transactions that appear suspicious, violate policy, or conflict with AML/KYC requirements may be paused, restricted, cancelled, or escalated for manual review without prior notice.",
-                        "By proceeding, you confirm that you have read and accepted these Terms of Use and related legal documents, including the Privacy Policy, Payment Policies, AML Policy, and Risk Disclosure Statements. Continued use of this service indicates your consent to be bound by current terms and any lawful updates published by OMAYA."
-                      ])
-                    }
-                  >
-                    Terms of Use
-                  </button>
-                  ,{" "}
-                  <button
-                    type="button"
-                    className="text-[#1D8751] cursor-pointer hover:underline"
-                    onClick={() =>
-                      openLegalModal("Privacy Policy", [
-                        "OMAYA collects only the information necessary to provide secure withdrawal services, including identity, wallet/account, transaction, and technical session data.",
-                        "Your data is used for transaction processing, fraud prevention, account security, customer support, service improvement, and legal/compliance obligations.",
-                        "We implement technical and organizational safeguards to protect your data, but you are also responsible for safeguarding account credentials and devices.",
-                        "Data may be shared with payment partners, compliance providers, and regulators where required to complete transactions or satisfy legal obligations.",
-                        "By using the service, you consent to data handling described in this policy and acknowledge that retention periods may apply for audit, legal, and security purposes."
-                      ])
-                    }
-                  >
-                    Privacy Policy
-                  </button>
-                  ,{" "}
-                  <button
-                    type="button"
-                    className="text-[#1D8751] cursor-pointer hover:underline"
-                    onClick={() =>
-                      openLegalModal("Payment Policies", [
-                        "Withdrawals are processed based on available liquidity, provider uptime, and internal risk controls. Processing time estimates are not guaranteed settlement deadlines.",
-                        "You must ensure that submitted payment details are valid and compatible with the selected provider. Incorrect details can lead to delays or failed payouts.",
-                        "Applicable charges may include network fees, provider fees, and platform commissions. Final settlement values may differ slightly from initial estimates.",
-                        "Transactions may be placed on hold for verification if unusual patterns, mismatched identity data, or suspicious activity is detected.",
-                        "Payments may be rejected, reversed, or returned where required by provider rules, legal obligations, or operational risk controls."
-                      ])
-                    }
-                  >
-                    Payment Policies
-                  </button>
-                  ,{" "}
-                  <button
-                    type="button"
-                    className="text-[#1D8751] cursor-pointer hover:underline"
-                    onClick={() =>
-                      openLegalModal("AML", [
-                        "OMAYA enforces Anti-Money Laundering (AML) controls to detect and prevent illicit financial activity across all withdrawal and exchange operations.",
-                        "You may be required to complete identity verification (KYC), provide source-of-funds information, or submit additional supporting documentation.",
-                        "Transactions linked to sanctioned entities, high-risk patterns, structuring behavior, or suspicious blockchain activity may be delayed or blocked.",
-                        "OMAYA may file reports to relevant authorities and cooperate with lawful investigations where required by applicable regulations.",
-                        "Use of this service confirms your commitment to lawful financial activity and compliance with AML/CFT obligations."
-                      ])
-                    }
-                  >
-                    AML
-                  </button>
-                  ,{" "}
-                  <button
-                    type="button"
-                    className="text-[#1D8751] cursor-pointer hover:underline"
-                    onClick={() =>
-                      openLegalModal(
-                        "Risk Disclosure Statements",
-                        [
-                          "Digital asset and fiat settlement services involve operational, market, network, and counterparty risks that may affect execution and timing.",
-                          "Blockchain transactions can be delayed, congested, or irreversible depending on network conditions and confirmation requirements.",
-                          "Quoted prices and estimated outputs can change before completion due to volatility, liquidity shifts, and provider-side updates.",
-                          "Service interruptions, maintenance, third-party outages, and regulatory actions may temporarily limit or suspend certain transaction paths.",
-                          "By proceeding, you acknowledge these risks and accept responsibility for transaction decisions made on the platform."
-                        ]
-                      )
-                    }
-                  >
-                    Risk Disclosure Statements
-                  </button>
-                </span>
+                <ExpressLegalTermsLinks onBeforeNavigate={handleBeforeLegalNavigate} />
               </label>
             </div>
 
 
           </div>
-
-          {legalModal && (
-            <div className="fixed inset-0 z-[9990] bg-black/60 flex items-center justify-center p-3 sm:p-4 sm:pl-16">
-              <div className="w-full max-w-5xl h-[70vh] bg-white dark:bg-[#18181D] rounded-2xl border border-border dark:border-accent overflow-hidden flex flex-col">
-                <div className="flex items-center justify-between px-4 py-3 border-b border-border dark:border-accent">
-                  <h3 className="text-sm sm:text-base font-semibold text-[#35353e] dark:text-white">
-                    {legalModal.title}
-                  </h3>
-                  <button
-                    type="button"
-                    className="text-[#1D8751] hover:text-[#166b3e] text-sm font-semibold"
-                    onClick={() => setLegalModal(null)}
-                  >
-                    Close
-                  </button>
-                </div>
-                <div className="w-full h-full overflow-y-auto p-4 sm:p-6 text-sm leading-6 text-[#35353e] dark:text-[#D6D6E0] space-y-3">
-                  {legalModal.content.map((line, idx) => (
-                    <div key={idx} className="flex items-start gap-2">
-                      <span className="text-[#1D8751] font-semibold">{idx + 1}.</span>
-                      <p>{line}</p>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            </div>
-          )}
 
           {/* Validation Errors Display */}
           {validationErrors.length > 0 && (

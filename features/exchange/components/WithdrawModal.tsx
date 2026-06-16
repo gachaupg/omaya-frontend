@@ -13,6 +13,7 @@ import { deleteUserPaymentDetail, fetchPaymentMethods, fetchPaymentProviders, fe
 import { fetchAssets, createWithdrawal } from '../slices/exchangeSlice';
 import toast from 'react-hot-toast';
 import { AxiosRequestConfig } from '../../../lib/apiClient';
+import { ExchangeTermsAcceptanceLabel } from './ExchangeTermsAcceptanceLabel';
 
 import { logger } from '@/lib/utils/logger';
 
@@ -904,7 +905,7 @@ useEffect(() => {
                   </span>
                   <span className="text-white text-sm">I confirm the wallet address</span>
                 </label>
-                <label className="flex items-center gap-2 cursor-pointer select-none">
+                <label className="flex items-start gap-2 cursor-pointer select-none">
                   <input
                     type="checkbox"
                     checked={acceptTerms}
@@ -918,7 +919,7 @@ useEffect(() => {
                       </svg>
                     )}
                   </span>
-                  <span className="text-white text-sm">I accept the terms and conditions</span>
+                  <ExchangeTermsAcceptanceLabel />
                 </label>
               </div>
               {/* Show submit error if exists */}
