@@ -36,6 +36,10 @@ import { useMarketTradeStatusWsHandler } from "@/features/p2p/hooks/useMarketTra
 import { useBackgroundAwareCountdown } from "@/features/p2p/hooks/useBackgroundAwareCountdown";
 import { getSellAdOwnerCounterpartyBuyerName } from "@/features/p2p/utils/matchedTradeNotifications";
 import {
+  roundP2PFiat,
+  sellFiatFromUsdtSent,
+} from "@/features/p2p/utils/p2pTradeRateAmounts";
+import {
   canSellerConfirmReceipt,
   getEffectiveConfirmFlags,
   getEffectiveTradeStatus,
@@ -323,17 +327,16 @@ const FinalSell: React.FC<FinalSellProps> = ({ orderData }) => {
   const rangeSuffix = rangeCurrency === "KES" ? "KES" : "USD";
   const rangeSymbol = rangeCurrency === "KES" ? "KES" : "$";
 
-  // --- Calculation logic ---
-  const sendAmount = Number(confirmOrder?.amount) || 0;
-  const commissionRate = Number(confirmOrder?.commission_rate) || 0;
+  // Sell-ad owner: send USDT, receive fiat = USDT × rate.
+  const tradeUsdtAmount =
+    Number(confirmOrder?.amount) || Number((saveOrder as { amount?: number | string })?.amount) || 0;
+  const commissionRate =
+    Number(confirmOrder?.commission_rate) ||
+    Number(singleOrder?.commission_rate) ||
+    Number((saveOrder as { commission_rate?: number | string })?.commission_rate) ||
+    0;
+  const fiatReceived = roundP2PFiat(sellFiatFromUsdtSent(tradeUsdtAmount, commissionRate));
   const orderType = singleOrder?.order_type || "buy";
-  let receiveAmount = sendAmount;
-
-  if (orderType === "buy") {
-    receiveAmount = sendAmount * commissionRate;
-  } else {
-    receiveAmount = sendAmount / commissionRate;
-  }
 
   // Format numbers
   const formatAmount = (amt: number) =>
@@ -558,37 +561,7 @@ const FinalSell: React.FC<FinalSellProps> = ({ orderData }) => {
               </div>
             </div>
             <div className="grid grid-cols-1 md:grid-cols-3 gap-3 md:gap-4 border border-gray-200 dark:border-accent p-3 sm:p-4 rounded-xl mt-4 bg-white dark:bg-[var(--card-color)]">
-              {/* Buy: fiat receive, rate, USDT send — same colors as buyform / TradeSellerOwner */}
-              <div className="flex flex-col gap-2 w-full">
-                <p className="text-[#788099] text-xs sm:text-sm font-medium">I will receive</p>
-                <div className="flex flex-row items-center justify-between w-full bg-[#EEF1F4] dark:bg-accent rounded-xl px-3 sm:px-4 py-2.5 min-h-[52px]">
-                  <div className="flex items-center gap-1.5 min-w-0">
-                    <span className="text-[#1D8751] text-lg sm:text-xl font-bold shrink-0">{rangeSymbol}</span>
-                    <span className="text-[#1D8751] text-lg sm:text-xl font-bold">
-                      {formatAmount(Math.round(Number(sendAmount) * Number(commissionRate) * 100) / 100)}
-                    </span>
-                  </div>
-                  <span className="text-xs sm:text-sm text-gray-900 dark:text-white font-medium ml-2 shrink-0">
-                    {rangeSuffix}
-                  </span>
-                </div>
-              </div>
-
-              <div className="flex flex-col gap-2 w-full">
-                <p className="text-[#788099] text-xs sm:text-sm font-medium">Rate</p>
-                <div className="flex w-full flex-row justify-between items-center bg-[#EEF1F4] dark:bg-accent rounded-xl px-3 sm:px-4 py-2.5 min-h-[52px]">
-                  <div className="flex items-center gap-1.5 min-w-0">
-                    <span className="text-[#1D8751] text-lg sm:text-xl font-bold shrink-0">{rangeSymbol}</span>
-                    <span className="text-[#1D8751] text-lg sm:text-xl font-bold">
-                      {commissionRate}
-                    </span>
-                  </div>
-                  <span className="text-xs sm:text-sm text-gray-900 dark:text-white font-medium ml-2 shrink-0">
-                    {rangeSuffix}
-                  </span>
-                </div>
-              </div>
-
+              {/* Sell-ad owner: send USDT, receive fiat */}
               <div className="flex flex-col gap-2 w-full">
                 <p className="text-[#788099] text-xs sm:text-sm font-medium">I will send</p>
                 <div className="flex flex-row justify-between w-full items-center bg-[#EEF1F4] dark:bg-accent rounded-xl px-3 sm:px-4 py-2.5 min-h-[52px]">
@@ -601,11 +574,41 @@ const FinalSell: React.FC<FinalSellProps> = ({ orderData }) => {
                       className="w-4 h-4 sm:w-5 sm:h-5 shrink-0"
                     />
                     <span className="text-[#1D8751] text-lg sm:text-xl font-bold">
-                      {formatAmount(Math.ceil(Number(saveOrder?.amount ?? 0)))}
+                      {formatAmount(tradeUsdtAmount)}
                     </span>
                   </div>
                   <span className="text-xs sm:text-sm text-gray-900 dark:text-white font-medium ml-2 shrink-0">
                     USDT
+                  </span>
+                </div>
+              </div>
+
+              <div className="flex flex-col gap-2 w-full">
+                <p className="text-[#788099] text-xs sm:text-sm font-medium">Rate</p>
+                <div className="flex w-full flex-row justify-between items-center bg-[#EEF1F4] dark:bg-accent rounded-xl px-3 sm:px-4 py-2.5 min-h-[52px]">
+                  <div className="flex items-center gap-1.5 min-w-0">
+                    <span className="text-[#1D8751] text-lg sm:text-xl font-bold shrink-0">{rangeSymbol}</span>
+                    <span className="text-[#1D8751] text-lg sm:text-xl font-bold">
+                      {formatCommissionRate(commissionRate)}
+                    </span>
+                  </div>
+                  <span className="text-xs sm:text-sm text-gray-900 dark:text-white font-medium ml-2 shrink-0">
+                    {rangeSuffix}
+                  </span>
+                </div>
+              </div>
+
+              <div className="flex flex-col gap-2 w-full">
+                <p className="text-[#788099] text-xs sm:text-sm font-medium">I will receive</p>
+                <div className="flex flex-row items-center justify-between w-full bg-[#EEF1F4] dark:bg-accent rounded-xl px-3 sm:px-4 py-2.5 min-h-[52px]">
+                  <div className="flex items-center gap-1.5 min-w-0">
+                    <span className="text-[#1D8751] text-lg sm:text-xl font-bold shrink-0">{rangeSymbol}</span>
+                    <span className="text-[#1D8751] text-lg sm:text-xl font-bold">
+                      {formatAmount(fiatReceived)}
+                    </span>
+                  </div>
+                  <span className="text-xs sm:text-sm text-gray-900 dark:text-white font-medium ml-2 shrink-0">
+                    {rangeSuffix}
                   </span>
                 </div>
               </div>
@@ -909,7 +912,7 @@ const FinalSell: React.FC<FinalSellProps> = ({ orderData }) => {
                       Amount Sent:
                     </span>
                     <span className="text-[#1D8751] font-semibold break-words ml-2">
-                      ${formatAmount(sendAmount)} USD
+                      {formatAmount(tradeUsdtAmount)} USDT
                     </span>
                   </div>
                   <div className="flex justify-between items-center mb-2 text-sm sm:text-base">
@@ -917,7 +920,7 @@ const FinalSell: React.FC<FinalSellProps> = ({ orderData }) => {
                       Rate:
                     </span>
                     <span className="text-[#1D8751] font-semibold">
-                      {formatCommissionRate(commissionRate)}%
+                      {formatCommissionRate(commissionRate)} {rangeSuffix}
                     </span>
                   </div>
                   <div className="flex justify-between items-center text-sm sm:text-base">
@@ -925,7 +928,7 @@ const FinalSell: React.FC<FinalSellProps> = ({ orderData }) => {
                       Amount Received:
                     </span>
                     <span className="text-[#1D8751] font-semibold break-words ml-2">
-                      {formatAmount(receiveAmount)} USDT
+                      {rangeSymbol}{formatAmount(fiatReceived)} {rangeSuffix}
                     </span>
                   </div>
                 </div>

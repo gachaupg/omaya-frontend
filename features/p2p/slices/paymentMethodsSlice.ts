@@ -301,13 +301,17 @@ export const patchUserPaymentDetail = createAsyncThunk<
 /** Send OTP for adding payment detail (required before postUserPaymentDetail). */
 export const sendPaymentDetailAddOtp = createAsyncThunk<
   { message: string },
-  void,
+  {
+    provider_name: string;
+    account_name: string;
+    account_number: string;
+  },
   { rejectValue: PaymentOtpSendError }
 >(
   "paymentMethods/sendPaymentDetailAddOtp",
-  async (_, { rejectWithValue }) => {
+  async (payload, { rejectWithValue }) => {
     try {
-      return await apiSendPaymentDetailAddOtp();
+      return await apiSendPaymentDetailAddOtp(payload);
     } catch (err: any) {
       return rejectWithValue(extractPaymentOtpSendError(err));
     }

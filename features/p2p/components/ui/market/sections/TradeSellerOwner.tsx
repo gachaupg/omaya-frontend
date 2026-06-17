@@ -32,6 +32,10 @@ import { useP2pTradeCanceledRedirect } from "@/features/p2p/hooks/useP2pTradeCan
 import { useMarketTradeStatusWsHandler } from "@/features/p2p/hooks/useMarketTradeStatusWsHandler";
 import { useBackgroundAwareCountdown } from "@/features/p2p/hooks/useBackgroundAwareCountdown";
 import {
+  buyFiatFromUsdtReceived,
+  roundP2PFiat,
+} from "@/features/p2p/utils/p2pTradeRateAmounts";
+import {
   getEffectiveConfirmFlags,
   getEffectiveTradeStatus,
   isPendingAcceptanceStatus,
@@ -298,19 +302,15 @@ const FinalSell: React.FC<FinalSellProps> = ({ orderData }) => {
       ? "USD"
       : singleOrder?.currency || "USDT";
 
-  // --- Calculation logic ---
-  const sendAmount = Number(confirmOrder?.amount) || 0;
-  const commissionRate = Number(singleOrder?.commission_rate) || Number(tradeDataJson?.commission_rate) || 0;
-  const orderType = singleOrder?.order_type || "buy";
-  let receiveAmount = sendAmount;
-
-  if (orderType === "buy") {
-    // For buy orders, multiply by commission rate
-    receiveAmount = commissionRate > 0 ? sendAmount * commissionRate : sendAmount;
-  } else {
-    // For sell orders, divide by commission rate
-    receiveAmount = commissionRate > 0 ? sendAmount / commissionRate : sendAmount;
-  }
+  // Buy-ad owner: send fiat = USDT × rate, receive USDT.
+  const tradeUsdtAmount = Number(confirmOrder?.amount) || 0;
+  const commissionRate =
+    Number(confirmOrder?.commission_rate) ||
+    Number(singleOrder?.commission_rate) ||
+    Number(tradeDataJson?.commission_rate) ||
+    0;
+  const fiatPaid = roundP2PFiat(buyFiatFromUsdtReceived(tradeUsdtAmount, commissionRate));
+  const orderType = singleOrder?.order_type || "sell";
 
   // Format numbers
   const formatAmount = (amt: number) =>
@@ -523,7 +523,21 @@ const FinalSell: React.FC<FinalSellProps> = ({ orderData }) => {
           </div>
           <section className="order-info rounded-[18px] p-2   border-2 border-gray-200 dark:border-[#35353E] bg-gray-50 dark:bg-[var(--card-color)] ">
             <div className="flex flex-col md:flex-row gap-4">
-              {/* Sell: I want to Send = USDT, I want to Receive = fiat (KES/USD) */}
+              {/* Buy-ad owner: send fiat, receive USDT */}
+              <div className="flex-1 flex flex-col mb-2 md:mb-0">
+                <div className="mb-1 text-gray-600 dark:text-[#788099] text-[0.95rem] font-medium">
+                  I want to Send
+                </div>
+                <div className="flex items-center h-[46px] rounded-2xl border border-gray-200 dark:border-[#35353E] bg-white dark:bg-[var(--card-color)] px-2">
+                  <span className="text-[#1D8751] text-2xl mr-2">{rangeSymbol}</span>
+                  <span className="text-[#1D8751] text-xl font-semibold">
+                    {formatAmount(fiatPaid)}
+                  </span>
+                  <span className="ml-2 text-gray-900 dark:text-white text-base font-medium">
+                    {rangeSuffix}
+                  </span>
+                </div>
+              </div>
               <div className="flex-1 flex flex-col mb-2 md:mb-0">
                 <div className="mb-1 text-gray-600 dark:text-[#788099] text-[0.95rem] font-medium">
                   I want to Receive
@@ -533,29 +547,14 @@ const FinalSell: React.FC<FinalSellProps> = ({ orderData }) => {
                     <img src="/images/tether.svg" alt="USDT" className="w-6 h-6" />
                   </span>
                   <span className="text-[#1D8751] text-xl font-semibold">
-                    {formatAmount(sendAmount)}
+                    {formatAmount(tradeUsdtAmount)}
                   </span>
                   <span className="ml-auto text-gray-900 dark:text-white text-base font-medium">
                     USDT
                   </span>
                 </div>
               </div>
-              {/* I want to Receive */}
-              <div className="flex-1 flex flex-col mb-2 md:mb-0">
-                <div className="mb-1 text-gray-600 dark:text-[#788099] text-[0.95rem] font-medium">
-                  I want to Send
-                </div>
-                <div className="flex items-center h-[46px] rounded-2xl border border-gray-200 dark:border-[#35353E] bg-white dark:bg-[var(--card-color)] px-2">
-                  <span className="text-[#1D8751] text-2xl mr-2">{rangeSymbol}</span>
-                  <span className="text-[#1D8751] text-xl font-semibold">
-                    {formatAmount(Math.round(Number(sendAmount) * Number(commissionRate) * 100) / 100)}
-                  </span>
-                  <span className="ml-2 text-gray-900 dark:text-white text-base font-medium">
-                    {rangeSuffix}
-                  </span>
-                </div>
-              </div>
-              {/* Commission */}
+              {/* Rate */}
               <div className="flex-1 flex flex-col">
                 <div className="mb-1 text-gray-600 dark:text-[#788099] text-[0.95rem] font-medium">
                   Rate
@@ -563,7 +562,7 @@ const FinalSell: React.FC<FinalSellProps> = ({ orderData }) => {
                 <div className="flex items-center h-[46px] rounded-2xl border border-gray-200 dark:border-[#35353E] bg-gray-100 dark:bg-[#35353E] px-2">
                   <span className="text-[#1D8751] text-2xl mr-2">{rangeSymbol}</span>
                   <span className="text-[#1D8751] text-xl font-semibold">
-                    {commissionRate}
+                    {formatCommissionRate(commissionRate)}
                   </span>
                   <span className="ml-auto text-gray-900 dark:text-white text-base font-medium">
                     {rangeSuffix}
@@ -952,15 +951,15 @@ const FinalSell: React.FC<FinalSellProps> = ({ orderData }) => {
                         Amount Sent:
                       </span>
                       <span className="text-[#F79330] font-semibold">
-                        ${formatAmount(sendAmount)} USD
+                        {rangeSymbol}{formatAmount(fiatPaid)} {rangeSuffix}
                       </span>
                     </div>
                     <div className="flex justify-between items-center mb-2">
                       <span className="text-gray-600 dark:text-[#A3A3C2]">
-                        Commission:
+                        Rate:
                       </span>
                       <span className="text-[#1D8751] font-semibold">
-                        {formatCommissionRate(commissionRate)}%
+                        {formatCommissionRate(commissionRate)} {rangeSuffix}
                       </span>
                     </div>
                     <div className="flex justify-between items-center">
@@ -968,7 +967,7 @@ const FinalSell: React.FC<FinalSellProps> = ({ orderData }) => {
                         Amount Received:
                       </span>
                       <span className="text-[#1D8751] font-semibold">
-                        {formatAmount(receiveAmount)} USDT
+                        {formatAmount(tradeUsdtAmount)} USDT
                       </span>
                     </div>
                   </div>

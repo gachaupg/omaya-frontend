@@ -63,6 +63,12 @@ type PaymentDetailPayload = {
   wallet_address?: string | null;
   allow_auto_send?: boolean;
 };
+
+const toSendAddOtpPayload = (payload: PaymentDetailPayload) => ({
+  provider_name: payload.provider_name,
+  account_name: payload.account_name,
+  account_number: payload.account_number || payload.wallet_address || "",
+});
 type PaymentTab = "crypto" | "bank" | "forex";
 
 const maskEmailForOtp = (email: string): string => {
@@ -628,7 +634,9 @@ const PaymentMethodsModal: React.FC<PaymentMethodsModalProps> = ({
 
     setSendOtpLoading(true);
     try {
-      const result = await dispatch(sendPaymentDetailAddOtp() as any);
+      const result = await dispatch(
+        sendPaymentDetailAddOtp(toSendAddOtpPayload(payload)) as any
+      );
       if (sendPaymentDetailAddOtp.fulfilled.match(result)) {
         setOtpFeedback({ type: "success", text: "OTP sent to your email address" });
         setPendingPayload(payload);
@@ -643,10 +651,12 @@ const PaymentMethodsModal: React.FC<PaymentMethodsModalProps> = ({
 
    // Handle resend OTP
    const handleResendOtp = async () => {
-     if (resendCooldown > 0 || sendOtpLoading) return;
+     if (resendCooldown > 0 || sendOtpLoading || !pendingPayload) return;
      setSendOtpLoading(true);
      try {
-       const result = await dispatch(sendPaymentDetailAddOtp() as any);
+       const result = await dispatch(
+         sendPaymentDetailAddOtp(toSendAddOtpPayload(pendingPayload)) as any
+       );
        if (sendPaymentDetailAddOtp.fulfilled.match(result)) {
          setOtpFeedback({ type: "success", text: "OTP resent to your email address" });
          setResendCooldown(RESEND_COOLDOWN_SECONDS);

@@ -452,7 +452,11 @@ const AddWalletAddressModal = ({
     setOtpFeedback(null);
     setSendOtpLoading(true);
     try {
-      await sendPaymentDetailAddOtp();
+      await sendPaymentDetailAddOtp({
+        provider_name: `${selectedAssetTicker} (${selectedNetwork})`,
+        account_name: selectedAssetTicker || "Wallet",
+        account_number: address.trim(),
+      });
       setOtpSent(true);
       setOtpVerified(false);
       setOtp("");

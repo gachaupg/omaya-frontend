@@ -1,3 +1,9 @@
+import {
+  buyUsdtFromFiatPaid,
+  effectiveP2PRate,
+  sellUsdtFromFiatReceived,
+} from "@/features/p2p/utils/p2pTradeRateAmounts";
+
 export type AmountValidationResult = {
   valid: boolean;
   message: string;
@@ -36,7 +42,7 @@ export type BuyOrderBounds = {
  * allow buying the remainder — effective min drops to a small floor, max = available.
  */
 export function isBuyAvailableBelowAdMin(bounds: BuyOrderBounds): boolean {
-  const rate = bounds.commissionRate > 0 ? bounds.commissionRate : 1;
+  const rate = effectiveP2PRate(bounds.commissionRate);
   const orderMinUsdt = bounds.rangeMin / rate;
   return (
     bounds.availableUsdt > 0 && bounds.availableUsdt + 1e-9 < orderMinUsdt
@@ -44,7 +50,7 @@ export function isBuyAvailableBelowAdMin(bounds: BuyOrderBounds): boolean {
 }
 
 export function getBuyOrderLimits(bounds: BuyOrderBounds) {
-  const rate = bounds.commissionRate > 0 ? bounds.commissionRate : 1;
+  const rate = effectiveP2PRate(bounds.commissionRate);
   const orderMinUsdt = bounds.rangeMin / rate;
   const belowAdMin = isBuyAvailableBelowAdMin(bounds);
 
@@ -99,7 +105,7 @@ export function validateBuySendAmount(
     };
   }
 
-  const receiveUsdt = sendAmount / rate;
+  const receiveUsdt = buyUsdtFromFiatPaid(sendAmount, rate);
   if (receiveUsdt > availableUsdt + 1e-9) {
     return {
       valid: false,
@@ -189,7 +195,7 @@ export function validateSellReceiveFiat(
   receiveFiat: number,
   bounds: SellOrderBounds
 ): AmountValidationResult {
-  const rate = bounds.commissionRate > 0 ? bounds.commissionRate : 1;
-  const sendUsdt = receiveFiat / rate;
+  const rate = effectiveP2PRate(bounds.commissionRate);
+  const sendUsdt = sellUsdtFromFiatReceived(receiveFiat, rate);
   return validateSellSendUsdt(sendUsdt, bounds);
 }
