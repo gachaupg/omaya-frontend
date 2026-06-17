@@ -304,7 +304,13 @@ const PaymentMethods = () => {
     };
     setSendOtpLoading(true);
     try {
-      const result = await dispatch(sendPaymentDetailAddOtp() as any);
+      const result = await dispatch(
+        sendPaymentDetailAddOtp({
+          provider_name: payload.provider_name,
+          account_name: payload.account_name,
+          account_number: payload.account_number,
+        }) as any
+      );
       if (sendPaymentDetailAddOtp.fulfilled.match(result)) {
         setInlineError(null);
         setOtpError(null);
@@ -338,11 +344,17 @@ const PaymentMethods = () => {
   }, [resendCooldown]);
 
   const handleResendOtp = async () => {
-    if (resendCooldown > 0 || sendOtpLoading) return;
+    if (resendCooldown > 0 || sendOtpLoading || !pendingPayload) return;
     setSendOtpLoading(true);
     setOtpError(null);
     try {
-      const result = await dispatch(sendPaymentDetailAddOtp() as any);
+      const result = await dispatch(
+        sendPaymentDetailAddOtp({
+          provider_name: pendingPayload.provider_name,
+          account_name: pendingPayload.account_name,
+          account_number: pendingPayload.account_number,
+        }) as any
+      );
       if (sendPaymentDetailAddOtp.fulfilled.match(result)) {
         setResendCooldown(RESEND_OTP_COOLDOWN_SECONDS);
         setOtpCode("");

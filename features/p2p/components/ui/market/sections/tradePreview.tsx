@@ -3,6 +3,13 @@ import { createPortal } from "react-dom";
 import { MarketRow } from "../types";
 import { useDispatch, useSelector } from "react-redux";
 import {
+  buyUsdtFromFiatPaid,
+  buyFiatFromUsdtReceived,
+  effectiveP2PRate,
+  sellFiatFromUsdtSent,
+  sellUsdtFromFiatReceived,
+} from "@/features/p2p/utils/p2pTradeRateAmounts";
+import {
   getBuyOrderLimits,
   isBuyAvailableBelowAdMin,
   isIncompleteTradeAmountInput,
@@ -558,15 +565,15 @@ const TradePreview: React.FC<TradePreviewProps> = ({
     }
 
     setNumericAmount(parsed);
-    const rate = commissionRate > 0 ? commissionRate : 1;
+    const rate = effectiveP2PRate(commissionRate);
 
     if (tradeType === "sell") {
-      setReceiveAmount((parsed * rate).toFixed(2));
+      setReceiveAmount(sellFiatFromUsdtSent(parsed, rate).toFixed(2));
       applyAmountValidation(validateSellSendUsdt(parsed, sellOrderBounds));
       return;
     }
 
-    setReceiveAmount((parsed / rate).toFixed(2));
+    setReceiveAmount(buyUsdtFromFiatPaid(parsed, rate).toFixed(2));
     applyAmountValidation(validateBuySendAmount(parsed, buyOrderBounds));
   };
 
@@ -596,15 +603,15 @@ const TradePreview: React.FC<TradePreviewProps> = ({
     }
 
     setNumericAmount(parsed);
-    const rate = commissionRate > 0 ? commissionRate : 1;
+    const rate = effectiveP2PRate(commissionRate);
 
     if (tradeType === "sell") {
-      setSendAmount((parsed / rate).toFixed(2));
+      setSendAmount(sellUsdtFromFiatReceived(parsed, rate).toFixed(2));
       applyAmountValidation(validateSellReceiveFiat(parsed, sellOrderBounds));
       return;
     }
 
-    setSendAmount((parsed * rate).toFixed(2));
+    setSendAmount(buyFiatFromUsdtReceived(parsed, rate).toFixed(2));
     applyAmountValidation(validateBuyReceiveUsdt(parsed, buyOrderBounds));
   };
 

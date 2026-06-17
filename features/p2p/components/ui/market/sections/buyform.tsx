@@ -32,6 +32,10 @@ import {
   formatDurationForDisplay,
 } from "@/features/p2p/components/Common/utils";
 import {
+  buyFiatFromUsdtReceived,
+  roundP2PFiat,
+} from "@/features/p2p/utils/p2pTradeRateAmounts";
+import {
   PENDING_ACCEPTANCE_AUTO_CANCEL_MS,
   type TradeLifecycleBanner,
   clearPendingAcceptanceStartedAt,
@@ -390,18 +394,11 @@ function FinalBuy({ orderData }: FinalBuyProps) {
   const rangeSuffix = rangeCurrency === "KES" ? "KES" : "USD";
   const rangeSymbol = rangeCurrency === "KES" ? "KES" : "$";
   // --- Calculation logic ---
-  const sendAmount = Number(confirmOrder?.amount) || 0;
+  // API amount is always USDT. Buy: fiat paid = USDT × rate; USDT received = API amount.
+  const tradeUsdtAmount = Number(confirmOrder?.amount) || 0;
   const commissionRate = Number(singleOrder?.commission_rate) || Number(commissionFromUrl) || 0;
+  const fiatPaid = roundP2PFiat(buyFiatFromUsdtReceived(tradeUsdtAmount, commissionRate));
   const orderType = singleOrder?.order_type || "buy";
-  let receiveAmount = sendAmount;
-
-  if (orderType === "buy") {
-    // For buy orders, multiply by commission rate (assuming rate is in decimal form, e.g., 0.98 for 98%)
-    receiveAmount = commissionRate > 0 ? sendAmount / commissionRate : sendAmount;
-  } else {
-    // For sell orders, divide by commission rate
-    receiveAmount = commissionRate > 0 ? sendAmount * commissionRate : sendAmount;
-  }
 
   // Format numbers
   const formatAmount = (amt: number) =>
@@ -722,7 +719,7 @@ function FinalBuy({ orderData }: FinalBuyProps) {
                 <div className="flex items-center h-[46px] rounded-2xl border border-[#E8EFF5] dark:border-[#35353E] bg-white dark:bg-[var(--bg-color)] px-2">
                   <span className="text-[#1D8751] text-2xl mr-2">{rangeSymbol}</span>
                   <span className="text-[#1D8751] text-xl font-semibold">
-                    {formatAmount(receiveAmount)}
+                    {formatAmount(fiatPaid)}
                   </span>
                   <span className="ml-auto text-gray-900 dark:text-white text-base font-medium">
                     {rangeSuffix}
@@ -743,7 +740,7 @@ function FinalBuy({ orderData }: FinalBuyProps) {
                     />
                   </span>
                   <span className="text-[#1D8751] text-xl font-semibold">
-                    {formatAmount(sendAmount)}
+                    {formatAmount(tradeUsdtAmount)}
                   </span>
                   <span className="ml-2 text-gray-900 dark:text-white text-base font-medium">
                     USDT
@@ -1089,7 +1086,7 @@ function FinalBuy({ orderData }: FinalBuyProps) {
                         Amount Sent:
                       </span>
                       <span className="text-[#F79330] font-semibold">
-                        ${formatAmount(sendAmount)} USD
+                        {rangeSymbol}{formatAmount(fiatPaid)} {rangeSuffix}
                       </span>
                     </div>
                     <div className="flex justify-between items-center mb-2">
@@ -1105,7 +1102,7 @@ function FinalBuy({ orderData }: FinalBuyProps) {
                         Amount Received:
                       </span>
                       <span className="text-[#1D8751] font-semibold">
-                        {formatAmount(receiveAmount)} USDT
+                        {formatAmount(tradeUsdtAmount)} USDT
                       </span>
                     </div>
                   </div>

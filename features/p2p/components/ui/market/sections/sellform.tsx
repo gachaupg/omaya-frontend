@@ -29,6 +29,10 @@ import { handleCopyToClipboard, parseDurationToSeconds, formatDurationForDisplay
 
 import { logger } from '@/lib/utils/logger';
 import {
+  roundP2PFiat,
+  sellFiatFromUsdtSent,
+} from "@/features/p2p/utils/p2pTradeRateAmounts";
+import {
   PENDING_ACCEPTANCE_AUTO_CANCEL_MS,
   type TradeLifecycleBanner,
   canSellerConfirmReceipt,
@@ -416,16 +420,11 @@ const FinalSell: React.FC<FinalSellProps> = ({ orderData }) => {
   const rangeCurrency = ((singleOrder as any)?.range_currency || (confirmOrder as any)?.buy_order?.range_currency || (confirmOrder as any)?.sell_order?.range_currency || parsedOrderData?.range_currency || "USD")?.toString().toUpperCase();
   const rangeSuffix = rangeCurrency === "KES" ? "KES" : "USD";
   const rangeSymbol = rangeCurrency === "KES" ? "KES" : "$";
-  const sendAmount = Number(confirmOrder?.amount) || 0;
+  // API amount is always USDT. Sell: fiat received = USDT × rate.
+  const tradeUsdtAmount = Number(confirmOrder?.amount) || 0;
   const commissionRate = Number(singleOrder?.commission_rate) || 0;
-  const orderType = singleOrder?.order_type || "buy";
-  let receiveAmount = sendAmount;
-
-  if (orderType === "buy") {
-    receiveAmount = sendAmount * commissionRate;
-  } else {
-    receiveAmount = sendAmount / commissionRate;
-  }
+  const fiatReceived = roundP2PFiat(sellFiatFromUsdtSent(tradeUsdtAmount, commissionRate));
+  const orderType = singleOrder?.order_type || "sell";
 
   const formatAmount = (amt: number) =>
     amt.toLocaleString(undefined, { maximumFractionDigits: 6 });
@@ -746,7 +745,7 @@ const FinalSell: React.FC<FinalSellProps> = ({ orderData }) => {
                     <img src="/images/tether.svg" alt="USDT" className="w-6 h-6" />
                   </span>
                   <span className="text-[#1D8751] text-xl font-semibold">
-                    {formatAmount(sendAmount)}
+                    {formatAmount(tradeUsdtAmount)}
                   </span>
                   <span className="ml-auto text-gray-900 dark:text-white text-base font-medium">
                     USDT
@@ -761,7 +760,7 @@ const FinalSell: React.FC<FinalSellProps> = ({ orderData }) => {
                 <div className="flex items-center h-[46px] rounded-2xl border border-gray-200 dark:border-[#35353E] bg-white dark:bg-[var(--card-color)] px-2">
                   <span className="text-[#1D8751] text-2xl mr-2">{rangeSymbol}</span>
                   <span className="text-[#1D8751] text-xl font-semibold">
-                    {formatAmount(Math.round(Number(sendAmount) * Number(commissionRate) * 100) / 100)}
+                    {formatAmount(fiatReceived)}
                   </span>
                   <span className="ml-2 text-gray-900 dark:text-white text-base font-medium">
                     {rangeSuffix}
@@ -1104,7 +1103,7 @@ const FinalSell: React.FC<FinalSellProps> = ({ orderData }) => {
                       Amount Sent:
                     </span>
                     <span className="text-[#F79330] font-semibold">
-                      ${formatAmount(sendAmount)} USD
+                      {formatAmount(tradeUsdtAmount)} USDT
                     </span>
                   </div>
                   <div className="flex justify-between items-center mb-2">
@@ -1118,7 +1117,7 @@ const FinalSell: React.FC<FinalSellProps> = ({ orderData }) => {
                       Amount Received:
                     </span>
                     <span className="text-[#1D8751] font-semibold">
-                      {formatAmount(receiveAmount)} USDT
+                      {formatAmount(fiatReceived)} {rangeSuffix}
                     </span>
                   </div>
                 </div>

@@ -1113,12 +1113,21 @@ export const updateUserPaymentDetail = async (
   });
 };
 
-/** Send OTP for adding payment detail. OTP is sent to user's email. No body required. */
-export const sendPaymentDetailAddOtp = async (): Promise<{ message: string }> => {
+/** Payload for POST /payments/user-payment-details/send-add-otp/ */
+export interface SendPaymentAddOtpPayload {
+  provider_name: string;
+  account_name: string;
+  account_number: string;
+}
+
+/** Send OTP for adding payment detail. OTP is sent to user's email. */
+export const sendPaymentDetailAddOtp = async (
+  payload: SendPaymentAddOtpPayload
+): Promise<{ message: string }> => {
   return withRetry(async () => {
     const response = await post<{ message: string }>(
       API_CONFIG.PAYMENTS.SEND_ADD_OTP,
-      {}
+      payload
     );
     return response.data;
   });

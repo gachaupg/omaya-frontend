@@ -38,3 +38,13 @@ export function getWalletAmountsFromSummary(
     escrow: parseWalletAmount(summary.escrow),
   };
 }
+
+/**
+ * Spendable USDT for sell ads (P2P Center / dashboard).
+ * Uses `available_amount` from transaction summary — not total_balance (P2P Balance).
+ */
+export function getP2PSellAvailableBalance(
+  summary: TransactionSummary | null | undefined
+): number {
+  return getWalletAmountsFromSummary(summary ?? null).availableAmount;
+}

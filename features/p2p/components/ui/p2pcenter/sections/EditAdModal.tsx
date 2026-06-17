@@ -5,10 +5,9 @@ import { useDispatch, useSelector } from "react-redux";
 import type { AppDispatch } from "@/store";
 import type { P2PResponse } from "@/features/p2p/types";
 import type { PayloadAction } from "@reduxjs/toolkit";
-import {
-  selectP2PWalletAmounts,
-  selectTransactionSummary,
-} from "@/features/p2p/selectors";
+import { selectTransactionSummary } from "@/features/p2p/selectors";
+import { fetchTransactionSummary } from "@/features/p2p/slices/transactionSummarySlice";
+import { getP2PSellAvailableBalance } from "@/features/p2p/walletAmounts";
 import { formatLargeNumber } from "@/utils/formatters";
 
 import { logger } from '@/lib/utils/logger';
@@ -39,8 +38,8 @@ const EditAdModal: React.FC<EditAdModalProps> = ({
   const [isLoading, setIsLoading] = useState(false);
   const { isAuthenticated } = useSelector((state: RootState) => state.auth);
   const summary = useSelector(selectTransactionSummary);
-  const { availableAmount } = useSelector(selectP2PWalletAmounts);
-  const availableBalance = summary != null ? availableAmount : 0;
+  /** Spendable USDT (summary.available_amount), not P2P Balance (total_balance). */
+  const centerAvailable = getP2PSellAvailableBalance(summary);
   const originalAmountRef = useRef(0);
   const [formData, setFormData] = useState({
     amount: "",
@@ -52,6 +51,12 @@ const EditAdModal: React.FC<EditAdModalProps> = ({
     limit_duration: "10",
     payment_details_ids: [] as Array<string | number>,
   });
+
+  useEffect(() => {
+    if (isOpen && isAuthenticated) {
+      dispatch(fetchTransactionSummary());
+    }
+  }, [dispatch, isOpen, isAuthenticated]);
 
   useEffect(() => {
     if (initialData) {
@@ -79,7 +84,7 @@ const EditAdModal: React.FC<EditAdModalProps> = ({
   const amountValue = parseFloat(formData.amount) || 0;
   const isSellOrder = formData.order_type === "sell";
   const maxSellAmount = isSellOrder
-    ? availableBalance + originalAmountRef.current
+    ? centerAvailable + originalAmountRef.current
     : Number.POSITIVE_INFINITY;
   const amountError =
     isSellOrder && formData.amount !== ""
@@ -233,7 +238,12 @@ const EditAdModal: React.FC<EditAdModalProps> = ({
                     />
                     {isSellOrder && (
                       <p className="mt-1 text-xs text-gray-500 dark:text-[#8C8CA1]">
-                        Available: {formatLargeNumber(maxSellAmount)} USDT
+                        Available: {formatLargeNumber(centerAvailable)} USDT
+                        {maxSellAmount > centerAvailable && (
+                          <span className="ml-1">
+                            (max for this ad: {formatLargeNumber(maxSellAmount)} USDT)
+                          </span>
+                        )}
                       </p>
                     )}
                     {amountError && (

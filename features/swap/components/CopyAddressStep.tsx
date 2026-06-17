@@ -11,6 +11,10 @@ import FailureStatusModal from "@/features/express/components/FailureStatusModal
 
 import { logger } from '@/lib/utils/logger';
 import { formatSwapDisplayTicker } from "../utils/swapDisplayFormat";
+import {
+  handleSwapAssetIconError,
+  resolveSwapAssetIconSrc,
+} from "../utils/swapAssetIcon";
 
 interface CopyAddressStepProps {
   swapResponse: CreateSwapResponse | null;
@@ -103,6 +107,7 @@ const CopyAddressStep: React.FC<CopyAddressStepProps> = ({
   onNext,
 }) => {
   const { tokens } = useSelector((state: any) => state.auth);
+  const { fromAsset, toAsset } = useSelector((state: any) => state.swap);
   const token = tokens?.access ?? cookieUtils.getCookie("access_token") ?? (typeof window !== "undefined" ? localStorage.getItem("access_token") : null);
   const [status, setStatus] = useState<string>("pending");
   const [statusObj, setStatusObj] = useState<any>(null);
@@ -286,6 +291,31 @@ const CopyAddressStep: React.FC<CopyAddressStepProps> = ({
   // Always map the status before using it in the stepper
   const mappedStatus = mapBackendStatusToStepperStatus(status);
   const currentStepIndex = statusSteps.findIndex((s) => s.key === mappedStatus);
+
+  const fromCurrency = formatSwapDisplayTicker(
+    statusObj?.from_currency ||
+      swapResponse?.fromCurrency ||
+      statusObj?.fromCurrency
+  );
+  const toCurrency = formatSwapDisplayTicker(
+    statusObj?.to_currency ||
+      swapResponse?.toCurrency ||
+      statusObj?.toCurrency
+  );
+  const fromNetwork =
+    statusObj?.fromNetwork || swapResponse?.fromNetwork || fromAsset?.network || "";
+  const toNetwork =
+    statusObj?.toNetwork || swapResponse?.toNetwork || toAsset?.network || "";
+  const fromAmount =
+    statusObj?.amount_from || swapResponse?.fromAmount || statusObj?.expectedAmountFrom || "";
+  const toAmount =
+    statusObj?.amount_to || swapResponse?.toAmount || statusObj?.expectedAmountTo || "";
+  const payoutAddress =
+    swapResponse?.payoutAddress ||
+    statusObj?.payoutAddress ||
+    statusObj?.payout_address ||
+    "";
+
   logger.debug('swap', 
     "status:",
     status,
@@ -330,26 +360,53 @@ const CopyAddressStep: React.FC<CopyAddressStepProps> = ({
     <div className="min-h-screen flex flex-col items-center py-2 sm:py-4 md:py-6 lg:py-8 w-full px-2 sm:px-4 md:px-6 lg:px-8">
       {/* Top Card */}
       <div className="flex flex-col sm:flex-row justify-between items-stretch bg-white dark:bg-[var(--card-color)] border-2 border-gray-200 dark:border-[#35353E] rounded-2xl p-3 sm:p-4 md:p-5 lg:p-6 shadow-lg w-full max-w-4xl mb-3 sm:mb-4 md:mb-6 min-h-[160px] sm:min-h-[180px] md:min-h-[200px]">
-        <div className="flex-1 flex flex-col justify-between py-2 pr-2">
-                      <div>
+        <div className="flex-1 flex flex-col justify-between py-2 pr-2 min-w-0">
+          <div className="flex flex-row flex-wrap gap-x-6 gap-y-2 items-baseline mb-3">
+            <div>
               <div className="text-gray-600 dark:text-[#7e7e8f] text-xs font-semibold mb-0.5">
-                Amount:
+                Amount you&apos;re sending:
               </div>
-              <div className="text-gray-900 dark:text-white text-sm sm:text-base font-semibold mb-1 flex flex-col sm:flex-row sm:items-center gap-1 sm:gap-0">
-                <span>{statusObj?.amount_from || swapResponse.fromAmount}</span>
-                <span className="sm:ml-4">
-                  {formatSwapDisplayTicker(
-                    statusObj?.from_currency || swapResponse.fromCurrency
-                  )}
+              <div className="text-gray-900 dark:text-white text-sm sm:text-base font-semibold uppercase">
+                {fromAmount} {fromCurrency}
+              </div>
+            </div>
+            <div>
+              <div className="text-gray-600 dark:text-[#7e7e8f] text-xs font-semibold mb-0.5">
+                Net amount you&apos;ll receive:
+              </div>
+              <div className="text-[#1D8751] dark:text-[#1D8751] text-sm sm:text-base font-semibold uppercase">
+                {toAmount} {toCurrency}
+              </div>
+            </div>
+          </div>
+
+          {/* From — column */}
+          <div className="mb-3 sm:mb-4">
+            <div className="text-gray-600 dark:text-[#7e7e8f] text-xs font-semibold mb-1.5">
+              From
+            </div>
+            <div className="flex flex-col gap-1.5">
+              <div className="flex items-center gap-2">
+                <img
+                  src={resolveSwapAssetIconSrc(fromAsset)}
+                  alt={fromCurrency}
+                  className="w-7 h-7 sm:w-8 sm:h-8 rounded-full flex-shrink-0"
+                  onError={(e) => handleSwapAssetIconError(e, fromAsset)}
+                />
+                <span className="text-gray-900 dark:text-white text-sm font-semibold uppercase">
+                  {fromCurrency}
                 </span>
+                {fromNetwork && (
+                  <span className="bg-[#1D8751] text-white text-[10px] sm:text-xs px-1.5 sm:px-2 py-0.5 rounded-full font-medium">
+                    {fromNetwork}
+                  </span>
+                )}
               </div>
-             
-              <div className="mt-3 sm:mt-4">
-                <div className="text-gray-600 dark:text-[#7e7e8f] text-xs font-semibold mb-1">
-                  To this address:
-                </div>
+              <div className="text-gray-600 dark:text-[#7e7e8f] text-xs font-semibold">
+                To this address:
+              </div>
               <div className="flex items-center gap-2 flex-wrap">
-                <span className="text-[#1D8751] dark:text-[#1D8751] font-mono text-xs sm:text-base break-all flex-1 min-w-0">
+                <span className="text-[#1D8751] dark:text-[#1D8751] font-mono text-xs sm:text-sm break-all flex-1 min-w-0">
                   {payinAddress}
                 </span>
                 <button
@@ -372,7 +429,37 @@ const CopyAddressStep: React.FC<CopyAddressStepProps> = ({
                     </svg>
                   )}
                 </button>
+              </div>
+            </div>
+          </div>
 
+          {/* To — column */}
+          <div>
+            <div className="text-gray-600 dark:text-[#7e7e8f] text-xs font-semibold mb-1.5">
+              To
+            </div>
+            <div className="flex flex-col gap-1.5">
+              <div className="flex items-center gap-2">
+                <img
+                  src={resolveSwapAssetIconSrc(toAsset)}
+                  alt={toCurrency}
+                  className="w-7 h-7 sm:w-8 sm:h-8 rounded-full flex-shrink-0"
+                  onError={(e) => handleSwapAssetIconError(e, toAsset)}
+                />
+                <span className="text-gray-900 dark:text-white text-sm font-semibold uppercase">
+                  {toCurrency}
+                </span>
+                {toNetwork && (
+                  <span className="bg-[#1D8751] text-white text-[10px] sm:text-xs px-1.5 sm:px-2 py-0.5 rounded-full font-medium">
+                    {toNetwork}
+                  </span>
+                )}
+              </div>
+              <div
+                className="text-gray-600 dark:text-[#7e7e8f] text-xs sm:text-sm font-mono break-all leading-tight"
+                style={{ wordBreak: "break-all", lineHeight: "1.3" }}
+              >
+                {payoutAddress}
               </div>
             </div>
           </div>
@@ -498,26 +585,70 @@ const CopyAddressStep: React.FC<CopyAddressStepProps> = ({
         </div>
         {/* Dashed Divider */}
         <div className="border-t border-dashed border-gray-400 dark:border-[#7e7e8f] mb-4"></div>
-        {/* You Get and Recipient Wallet */}
-        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 sm:gap-0 mb-2">
-          <div className="text-gray-600 dark:text-[#7e7e8f] text-sm sm:text-base font-medium">
+
+        {/* From (left) | To (right) — row layout */}
+        <div className="flex mb-2">
+          <div className="flex-shrink-0 w-1/2 text-gray-600 dark:text-[#7e7e8f] text-sm sm:text-base font-medium">
+            From
+          </div>
+          <div className="flex-1 min-w-0 text-left pl-2 sm:pl-4 text-gray-600 dark:text-[#7e7e8f] text-sm sm:text-base font-medium">
             To
           </div>
-          <div className="text-gray-600 dark:text-[#7e7e8f] text-sm sm:text-base font-medium">
-            Recipient Wallet
-          </div>
         </div>
-        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 sm:gap-0 mt-2">
-          <div className="text-gray-900 dark:text-white text-sm sm:text-base font-mono font-semibold">
-            {statusObj?.amount_to || swapResponse.toAmount}{" "}
-            {formatSwapDisplayTicker(
-              statusObj?.to_currency || swapResponse.toCurrency
-            )}
+        <div className="flex mt-2 items-start gap-0">
+          {/* Left: From */}
+          <div className="flex items-start gap-3 min-w-0 w-1/2 flex-shrink-0 pr-2 sm:pr-4">
+            <img
+              src={resolveSwapAssetIconSrc(fromAsset)}
+              alt={fromCurrency}
+              className="w-8 h-8 rounded-full flex-shrink-0 mt-0.5"
+              onError={(e) => handleSwapAssetIconError(e, fromAsset)}
+            />
+            <div className="min-w-0 flex-1 space-y-0.5">
+              <div className="flex items-center gap-2 flex-wrap">
+                <div className="text-gray-900 dark:text-white text-sm sm:text-base font-semibold uppercase truncate">
+                  {fromAmount} {fromCurrency}
+                </div>
+                {fromNetwork && (
+                  <span className="bg-[#1D8751] text-white text-xs px-2 py-0.5 rounded-full font-medium">
+                    {fromNetwork}
+                  </span>
+                )}
+              </div>
+              <div
+                className="text-gray-600 dark:text-[#7e7e8f] text-xs sm:text-sm font-mono break-all max-w-[200px] sm:max-w-[250px] leading-tight"
+                style={{ wordBreak: "break-all", lineHeight: "1.3" }}
+              >
+                {payinAddress}
+              </div>
+            </div>
           </div>
-          <div className="flex items-center gap-2">
-            <span className="text-gray-600 dark:text-[#7e7e8f] text-xs sm:text-sm font-mono break-all">
-              {swapResponse.payoutAddress}
-            </span>
+          {/* Right: To */}
+          <div className="flex items-start gap-3 min-w-0 flex-1 pl-2 sm:pl-4 border-l border-dashed border-gray-300 dark:border-[#35353E]">
+            <img
+              src={resolveSwapAssetIconSrc(toAsset)}
+              alt={toCurrency}
+              className="w-8 h-8 rounded-full flex-shrink-0 mt-0.5"
+              onError={(e) => handleSwapAssetIconError(e, toAsset)}
+            />
+            <div className="min-w-0 flex-1 space-y-0.5">
+              <div className="flex items-center gap-2 flex-wrap">
+                <div className="text-gray-900 dark:text-white text-sm sm:text-base font-semibold uppercase truncate">
+                  {toAmount} {toCurrency}
+                </div>
+                {toNetwork && (
+                  <span className="bg-[#1D8751] text-white text-xs px-2 py-0.5 rounded-full font-medium">
+                    {toNetwork}
+                  </span>
+                )}
+              </div>
+              <div
+                className="text-gray-600 dark:text-[#7e7e8f] text-xs sm:text-sm font-mono break-all max-w-[200px] sm:max-w-[300px] leading-tight"
+                style={{ wordBreak: "break-all", lineHeight: "1.3" }}
+              >
+                {payoutAddress}
+              </div>
+            </div>
           </div>
         </div>
       </div>
@@ -540,15 +671,15 @@ const CopyAddressStep: React.FC<CopyAddressStepProps> = ({
 
       {/* Terms and Conditions Summary - always at the very bottom */}
       <div className="w-full sm:max-w-4xl mb-2 mt-4">
-        <div className="bg-yellow-50 dark:bg-yellow-900/20 border-2 border-yellow-400 dark:border-yellow-500 rounded-xl p-4 sm:p-5 shadow-lg">
-          <h3 className="text-yellow-900 dark:text-white font-semibold text-base sm:text-lg mb-3 sm:mb-4">
+        <div className="bg-[#1D8751]/5 dark:bg-[#1D8751]/10 border-2 border-[#1D8751] rounded-xl p-4 sm:p-5 shadow-lg">
+          <h3 className="text-[#1D8751] dark:text-[#1D8751] font-semibold text-base sm:text-lg mb-3 sm:mb-4">
             Terms and Conditions Summary
           </h3>
           <div className="space-y-0.5">
             {/* Term 1 - Dynamic asset and network */}
             <div className="flex items-start gap-2 sm:gap-3">
-              <span className="text-yellow-900 dark:text-white text-lg sm:text-xl font-bold mt-0.5">•</span>
-              <p className="text-yellow-900 dark:text-white text-xs sm:text-sm flex-1">
+              <span className="text-[#1D8751] text-lg sm:text-xl font-bold mt-0.5">•</span>
+              <p className="text-gray-800 dark:text-white text-xs sm:text-sm flex-1">
                 Only send{" "}
                 {formatSwapDisplayTicker(
                   statusObj?.from_currency || swapResponse?.fromCurrency
@@ -560,24 +691,24 @@ const CopyAddressStep: React.FC<CopyAddressStepProps> = ({
             
             {/* Term 2 - Send exact amount */}
             <div className="flex items-start gap-2 sm:gap-3">
-              <span className="text-yellow-900 dark:text-white text-lg sm:text-xl font-bold mt-0.5">•</span>
-              <p className="text-yellow-900 dark:text-white text-xs sm:text-sm flex-1">
+              <span className="text-[#1D8751] text-lg sm:text-xl font-bold mt-0.5">•</span>
+              <p className="text-gray-800 dark:text-white text-xs sm:text-sm flex-1">
                 Send exactly the amount specified below
               </p>
             </div>
             
             {/* Term 3 - No exchange accounts */}
             <div className="flex items-start gap-2 sm:gap-3">
-              <span className="text-yellow-900 dark:text-white text-lg sm:text-xl font-bold mt-0.5">•</span>
-              <p className="text-yellow-900 dark:text-white text-xs sm:text-sm flex-1">
+              <span className="text-[#1D8751] text-lg sm:text-xl font-bold mt-0.5">•</span>
+              <p className="text-gray-800 dark:text-white text-xs sm:text-sm flex-1">
                 Do not send from exchange accounts
               </p>
             </div>
             
             {/* Term 4 - Minimum confirmations */}
             <div className="flex items-start gap-2 sm:gap-3">
-              <span className="text-yellow-900 dark:text-white text-lg sm:text-xl font-bold mt-0.5">•</span>
-              <p className="text-yellow-900 dark:text-white text-xs sm:text-sm flex-1">
+              <span className="text-[#1D8751] text-lg sm:text-xl font-bold mt-0.5">•</span>
+              <p className="text-gray-800 dark:text-white text-xs sm:text-sm flex-1">
                 Minimum confirmations required: 1
               </p>
             </div>
