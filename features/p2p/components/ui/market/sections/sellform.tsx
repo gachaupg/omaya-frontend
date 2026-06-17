@@ -31,19 +31,15 @@ import { logger } from '@/lib/utils/logger';
 import {
   PENDING_ACCEPTANCE_AUTO_CANCEL_MS,
   type TradeLifecycleBanner,
-  buildPendingAcceptanceBannerText,
   canSellerConfirmReceipt,
   clearPendingAcceptanceStartedAt,
   getEffectiveConfirmFlags,
   getEffectiveTradeStatus,
-  getPendingAcceptanceSecondsLeft,
   isPendingAcceptanceStatus,
-  formatCountdownSeconds,
   isTransactionCountdownActive,
   resolvePendingAcceptanceStartedAt,
   type WsTradeSnapshot,
 } from "@/features/p2p/utils/tradeWsAcceptanceGate";
-import { PendingAcceptanceBanner } from "./PendingAcceptanceBanner";
 
 interface FinalSellProps {
   orderData?: P2POrder;
@@ -554,29 +550,7 @@ const FinalSell: React.FC<FinalSellProps> = ({ orderData }) => {
     inPendingAcceptanceSeller
   );
 
-  const pendingAcceptanceSecondsLeft =
-    pendingAcceptanceStartedAt != null
-      ? Math.max(
-          0,
-          Math.ceil(
-            (PENDING_ACCEPTANCE_AUTO_CANCEL_MS - (Date.now() - pendingAcceptanceStartedAt)) / 1000
-          )
-        )
-      : null;
-
-  const lifecycleBannerText =
-    tradeLifecycleBanner && !inPendingAcceptanceSeller
-      ? tradeLifecycleBanner.tone === "info" && pendingAcceptanceSecondsLeft != null
-        ? `${tradeLifecycleBanner.message} Auto-cancel in ${formatCountdownSeconds(pendingAcceptanceSecondsLeft)} if not accepted.`
-        : tradeLifecycleBanner.message
-      : null;
-
-  const pendingAcceptanceBannerText = inPendingAcceptanceSeller
-    ? buildPendingAcceptanceBannerText(
-        "counterparty",
-        getPendingAcceptanceSecondsLeft(pendingAcceptanceStartedAt)
-      )
-    : null;
+  const lifecycleBannerText = tradeLifecycleBanner?.message ?? null;
 
   return (
     <div className="md:mt-20">
@@ -590,9 +564,6 @@ const FinalSell: React.FC<FinalSellProps> = ({ orderData }) => {
       />
       <div className="final-buy-container grid grid-cols-1 lg:grid-cols-3 gap-2 sm:gap-3 lg:gap-6 p-1 sm:p-2 lg:p-6 min-h-screen bg-[#EEF1F4] dark:bg-(--bg-color)">
         <div className="lg:col-span-2 flex flex-col gap-4 lg:gap-6">
-          {pendingAcceptanceBannerText && (
-            <PendingAcceptanceBanner text={pendingAcceptanceBannerText} />
-          )}
           {lifecycleBannerText && tradeLifecycleBanner && (
             <div
               role="status"

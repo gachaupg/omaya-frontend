@@ -1,15 +1,10 @@
-import React, { useEffect, useState, useRef } from "react";
-import { useDispatch, useSelector } from "react-redux";
+import React, { useEffect, useState, useRef, useCallback } from "react";
+import { useSelector } from "react-redux";
 import Charts from "../../Common/charts";
 import { Table } from "../../Common/Table";
-import { AppDispatch } from "@/store";
 import { RootState } from "@/store/rootReducer";
-import {
-  fetchUserTrades,
-  setCurrentPage as setUserTradesCurrentPage,
-} from "@/features/p2p/slices/userTradesSlice";
 import { TransactionType, UserTrade } from "@/features/p2p/types";
-import { getUserTrades } from "@/features/p2p/api";
+import { fetchAllUserTradesPages } from "@/features/p2p/utils/fetchAllUserTradesPages";
 import { NoDataFound } from "@/components/dashboard/ui/Transactions";
 import P2PWithdrawalDepositTransactions from "@/components/dashboard/sections/P2PWithdrawalDepositTransactions";
 import type { TableExportRef } from "../../Common/Table";
@@ -60,11 +55,12 @@ const transformUserTradeToTransaction = (
 };
 
 const P2PCharts = () => {
-  const dispatch = useDispatch<AppDispatch>();
-  const { trades, loading, error, currentPage } = useSelector(
-    (state: RootState) => state.userTrades
-  );
   const { isAuthenticated, user } = useSelector((state: RootState) => state.auth);
+  const [allTrades, setAllTrades] = useState<UserTrade[]>([]);
+  const [tradesLoading, setTradesLoading] = useState(false);
+  const [tradesError, setTradesError] = useState<string | null>(null);
+  const [tablePage, setTablePage] = useState(1);
+  const tradesFetchStartedRef = useRef(false);
   const [searchQuery, setSearchQuery] = useState("");
   const [timeFilter, setTimeFilter] = useState<TimeFilter>("Last Month");
   const [dataKey, setDataKey] = useState(0);
@@ -89,18 +85,21 @@ const P2PCharts = () => {
     return () => document.removeEventListener("mousedown", onDown);
   }, [isHistoryDateOpen]);
 
+  // Single paginated fetch for chart + table (shared module cache dedupes Strict Mode remounts)
   useEffect(() => {
-    if (isAuthenticated) {
-      dispatch(fetchUserTrades({ page: currentPage }));
-    }
-  }, [dispatch, currentPage, isAuthenticated]);
-
-  // Reset to first page when component mounts or authentication changes
-  useEffect(() => {
-    if (isAuthenticated && currentPage !== 1) {
-      dispatch(setUserTradesCurrentPage(1));
-    }
-  }, [isAuthenticated, dispatch]);
+    if (!isAuthenticated || tradesFetchStartedRef.current) return;
+    tradesFetchStartedRef.current = true;
+    setTradesLoading(true);
+    setTradesError(null);
+    fetchAllUserTradesPages()
+      .then((rows) => setAllTrades(rows as UserTrade[]))
+      .catch((err) => {
+        setTradesError(
+          err instanceof Error ? err.message : "Failed to load P2P history"
+        );
+      })
+      .finally(() => setTradesLoading(false));
+  }, [isAuthenticated]);
 
   // Filter data based on time filter
   const filterDataByTime = (
@@ -156,8 +155,8 @@ const P2PCharts = () => {
   };
 
   // Transform user trades to table format (swap order_type for non-owner)
-  const transformedData: TransactionType[] = (trades?.results || []).map(
-    (trade) => transformUserTradeToTransaction(trade, user?.email)
+  const transformedData: TransactionType[] = allTrades.map((trade) =>
+    transformUserTradeToTransaction(trade, user?.email)
   );
 
   // Apply time filter to transformed data
@@ -197,63 +196,65 @@ const P2PCharts = () => {
       )
     : timeFilteredData;
 
-  // Use filtered data for display
-  const displayData = searchQuery.trim() ? filteredData : timeFilteredData;
-  const totalPages = Math.ceil((trades?.count || 0) / PAGE_SIZE);
+  // Use filtered data for display (client-side pagination)
+  const paginatedSource = searchQuery.trim() ? filteredData : timeFilteredData;
+  const totalPages = Math.max(1, Math.ceil(paginatedSource.length / PAGE_SIZE));
+  const safeTablePage = Math.min(tablePage, totalPages);
+  const displayData = paginatedSource.slice(
+    (safeTablePage - 1) * PAGE_SIZE,
+    safeTablePage * PAGE_SIZE
+  );
 
-  // Force re-render when trades data changes
   useEffect(() => {
-    if (trades?.results?.length) {
+    if (allTrades.length) {
       setDataKey((prev) => prev + 1);
     }
-  }, [trades?.results]);
+  }, [allTrades.length]);
+
+  useEffect(() => {
+    if (tablePage > totalPages) {
+      setTablePage(totalPages);
+    }
+  }, [tablePage, totalPages]);
 
   const handlePageChange = (page: number) => {
     if (searchQuery.trim()) setSearchQuery("");
-    if (page !== currentPage) {
-      dispatch(setUserTradesCurrentPage(page));
-      dispatch(fetchUserTrades({ page }));
-      window.scrollTo({ top: 0, behavior: "smooth" });
-    }
+    if (page === safeTablePage) return;
+    setTablePage(page);
+    window.scrollTo({ top: 0, behavior: "smooth" });
   };
 
   const handleSearch = (query: string) => {
     setSearchQuery(query);
-    if (query.trim() !== searchQuery.trim() && currentPage !== 1) {
-      dispatch(setUserTradesCurrentPage(1));
-      dispatch(fetchUserTrades({ page: 1 }));
+    if (query.trim() !== searchQuery.trim()) {
+      setTablePage(1);
     }
   };
 
   const handleTimeFilterChange = (filter: TimeFilter) => {
     setTimeFilter(filter);
+    setTablePage(1);
   };
 
-  const fetchAllDataForExport = async (): Promise<TransactionType[]> => {
-    const allPagesData: TransactionType[] = [];
+  const fetchAllDataForExport = useCallback(async (): Promise<TransactionType[]> => {
     try {
-      let page = 1;
-      let hasMore = true;
-      while (hasMore && page <= 100) {
-        const response = await getUserTrades(`?page=${page}`);
-        const results = response?.results || [];
-        if (results.length === 0) break;
-        allPagesData.push(...results.map((t) => transformUserTradeToTransaction(t, user?.email)));
-        hasMore = !!response?.next;
-        page++;
-      }
-      return allPagesData;
+      const rows =
+        allTrades.length > 0
+          ? allTrades
+          : ((await fetchAllUserTradesPages({ fetchAll: true })) as UserTrade[]);
+      return rows.map((t) => transformUserTradeToTransaction(t, user?.email));
     } catch (err) {
       console.error("Error fetching user trades for export:", err);
       return transformedData;
     }
-  };
+  }, [allTrades, user?.email, transformedData]);
 
   return (
     <div className="w-full pt-6 sm:pt-4">
       <Charts
         title="P2P Overview (USD)"
         timeFrame="Month"
+        chartTrades={allTrades}
         onTimeFilterChange={handleTimeFilterChange}
         selectedTimeFilter={timeFilter}
         showTimeFilter={true}
@@ -381,7 +382,26 @@ const P2PCharts = () => {
 
         {mainTab === "p2p-buy-sell" ? (
           /* P2P Buy and Sell - orders table */
-          !displayData || displayData.length === 0 ? (
+          tradesLoading || displayData.length > 0 ? (
+            <Table
+              ref={tableExportRef}
+              key={`p2p-table-${safeTablePage}-${dataKey}`}
+              type="p2p"
+              title="P2P History"
+              data={displayData}
+              loading={tradesLoading}
+              error={tradesError}
+              currentPage={safeTablePage}
+              totalPages={totalPages}
+              onPageChange={handlePageChange}
+              onFetchAllDataForExport={fetchAllDataForExport}
+              onSearch={handleSearch}
+              dateFilter={tableDateFilter}
+              onDateFilterChange={(f) => setTableDateFilter(f)}
+              hideToolbar={true}
+              externalSearchQuery={searchQuery}
+            />
+          ) : (
             <div className="text-center py-12 px-4">
               <NoDataFound
                 title="No Orders Found"
@@ -415,25 +435,6 @@ const P2PCharts = () => {
                 </div>
               )}
             </div>
-          ) : (
-            <Table
-              ref={tableExportRef}
-              key={`p2p-table-${currentPage}-${dataKey}`}
-              type="p2p"
-              title="P2P History"
-              data={displayData}
-              loading={loading}
-              error={error}
-              currentPage={currentPage}
-              totalPages={totalPages}
-              onPageChange={handlePageChange}
-              onFetchAllDataForExport={fetchAllDataForExport}
-              onSearch={handleSearch}
-              dateFilter={tableDateFilter}
-              onDateFilterChange={(f) => setTableDateFilter(f)}
-              hideToolbar={true}
-              externalSearchQuery={searchQuery}
-            />
           )
         ) : (
           /* P2P Withdrawal/Deposit - tabs above card, table inside card */

@@ -4,7 +4,6 @@ import { tokens } from "@/styles/tokens";
 import Button from "./Button";
 import { useSelector } from "react-redux";
 import { RootState } from "@/store/rootReducer";
-import { getUserTrades } from "@/features/p2p/api";
 import { normalizeP2PTradeStatus } from "@/features/p2p/utils/normalizeP2PTradeStatus";
 import {
   AreaChart,
@@ -30,6 +29,8 @@ interface ChartProps {
   title?: string;
   timeFrame?: string;
   data?: any[];
+  /** Preloaded trades for the chart (parent fetches once). */
+  chartTrades?: unknown[];
   onTimeFilterChange?: (filter: TimeFilter) => void;
   selectedTimeFilter?: TimeFilter;
   showTimeFilter?: boolean;
@@ -148,6 +149,7 @@ const Charts: React.FC<ChartProps> = ({
   title = "P2P Overview (USD)",
   timeFrame = "Month",
   data,
+  chartTrades = [],
   onTimeFilterChange,
   selectedTimeFilter = "All Time",
   showTimeFilter = true,
@@ -164,31 +166,6 @@ const Charts: React.FC<ChartProps> = ({
   const [chartDataRaw, setChartDataRaw] = useState<
     { name: string; buyValue: number; sellValue: number }[]
   >([]);
-  /** All pages for the graph (no currency filter on API). */
-  const [chartTrades, setChartTrades] = useState<any[]>([]);
-
-  /* ------------------- Load all user-trades pages for chart ------------------- */
-  useEffect(() => {
-    let cancelled = false;
-    (async () => {
-      const all: any[] = [];
-      try {
-        for (let page = 1; page <= 100; page++) {
-          const response = await getUserTrades(`?page=${page}`);
-          const results = response?.results || [];
-          if (results.length === 0) break;
-          all.push(...results);
-          if (!response?.next) break;
-        }
-      } catch {
-        /* keep partial/all empty */
-      }
-      if (!cancelled) setChartTrades(all);
-    })();
-    return () => {
-      cancelled = true;
-    };
-  }, []);
 
   /* ------------------- Click-outside for dropdown ----------- */
   useEffect(() => {

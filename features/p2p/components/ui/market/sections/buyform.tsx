@@ -34,17 +34,13 @@ import {
 import {
   PENDING_ACCEPTANCE_AUTO_CANCEL_MS,
   type TradeLifecycleBanner,
-  buildPendingAcceptanceBannerText,
   clearPendingAcceptanceStartedAt,
   getEffectiveConfirmFlags,
   getEffectiveTradeStatus,
-  getPendingAcceptanceSecondsLeft,
   isPendingAcceptanceStatus,
-  formatCountdownSeconds,
   isTransactionCountdownActive,
   resolvePendingAcceptanceStartedAt,
 } from "@/features/p2p/utils/tradeWsAcceptanceGate";
-import { PendingAcceptanceBanner } from "./PendingAcceptanceBanner";
 
 interface FinalBuyProps {
   orderData?: P2POrder;
@@ -521,29 +517,7 @@ function FinalBuy({ orderData }: FinalBuyProps) {
     }
   };
 
-  const pendingAcceptanceSecondsLeft =
-    pendingAcceptanceStartedAt != null
-      ? Math.max(
-          0,
-          Math.ceil(
-            (PENDING_ACCEPTANCE_AUTO_CANCEL_MS - (Date.now() - pendingAcceptanceStartedAt)) / 1000
-          )
-        )
-      : null;
-
-  const lifecycleBannerText =
-    tradeLifecycleBanner && !inPendingAcceptanceBuyer
-      ? tradeLifecycleBanner.tone === "info" && pendingAcceptanceSecondsLeft != null
-        ? `${tradeLifecycleBanner.message} Auto-cancel in ${formatCountdownSeconds(pendingAcceptanceSecondsLeft)} if not accepted.`
-        : tradeLifecycleBanner.message
-      : null;
-
-  const pendingAcceptanceBannerText = inPendingAcceptanceBuyer
-    ? buildPendingAcceptanceBannerText(
-        "counterparty",
-        getPendingAcceptanceSecondsLeft(pendingAcceptanceStartedAt)
-      )
-    : null;
+  const lifecycleBannerText = tradeLifecycleBanner?.message ?? null;
 
   // Custom copy handler that shows "Copied" in button
   const handleCopyToClipboard = (value: string | undefined, buttonId: string) => {
@@ -575,9 +549,6 @@ function FinalBuy({ orderData }: FinalBuyProps) {
             <div className="text-red-500 text-[13px] mb-2">
               {singleOrderError}
             </div>
-          )}
-          {pendingAcceptanceBannerText && (
-            <PendingAcceptanceBanner text={pendingAcceptanceBannerText} />
           )}
           {lifecycleBannerText && tradeLifecycleBanner && (
             <div
