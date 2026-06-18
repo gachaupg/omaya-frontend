@@ -152,6 +152,33 @@ const resolveBankAccountFromTx = (tx: {
   return "";
 };
 
+const resolveWithdrawalPayoutDetail = (tx: any) =>
+  tx?.paymentDetails?.[0] || tx?.paymentDetail || null;
+
+const resolveWithdrawalSendAddress = (tx: any): string => {
+  const pick = (v: unknown) =>
+    v != null && String(v).trim() !== "" ? String(v).trim() : "";
+  return (
+    pick(tx?.walletAddress) ||
+    pick(tx?.withdrawalAddress) ||
+    pick(tx?.details?.withdrawal_address) ||
+    pick(tx?.details?.payin_address) ||
+    ""
+  );
+};
+
+const resolveWithdrawalProviderName = (pd: any): string => {
+  if (!pd) return "Bank Transfer";
+  return (
+    String(
+      pd.provider_name ||
+        pd.payment_provider_name ||
+        pd.payment_provider ||
+        "Bank Transfer"
+    ).trim() || "Bank Transfer"
+  );
+};
+
 export default function Exchanging({ transactionData }: ExchangingProps) {
   const searchParams = useSearchParams();
   const router = useRouter();
@@ -1151,6 +1178,22 @@ export default function Exchanging({ transactionData }: ExchangingProps) {
             ""
         ).trim()
       : "";
+  const withdrawalPayoutDetail =
+    effectiveTransactionData?.type === "withdrawal"
+      ? resolveWithdrawalPayoutDetail(effectiveTransactionData)
+      : null;
+  const withdrawalSendAddress =
+    effectiveTransactionData?.type === "withdrawal"
+      ? resolveWithdrawalSendAddress(effectiveTransactionData)
+      : "";
+  const withdrawalPayoutAccountNumber = withdrawalPayoutDetail
+    ? resolvePaymentAccountNumber(withdrawalPayoutDetail)
+    : resolveBankAccountFromTx(effectiveTransactionData || {});
+  const withdrawalPayoutAccountName = withdrawalPayoutDetail
+    ? resolvePaymentAccountName(withdrawalPayoutDetail)
+    : "";
+  const withdrawalPayoutProviderName =
+    resolveWithdrawalProviderName(withdrawalPayoutDetail);
 
   return (
     <div className={`w-full min-h-screen flex flex-col items-center pt-2 `}>
@@ -1430,13 +1473,26 @@ export default function Exchanging({ transactionData }: ExchangingProps) {
                   >
                     Account Number:
                   </div>
-                  <div
-                    className={`${isDark ? "text-white" : "text-gray-900"
-                      } text-sm font-mono`}
-                  >
+                  <div className="flex items-center mb-2 p-2 rounded-lg border border-[#1D8751]/30 bg-[#1D8751]/5 gap-2">
+                    <span
+                      className={`${isDark ? "text-white" : "text-gray-900"
+                        } text-sm font-mono break-all flex-1 leading-relaxed`}
+                      style={{ wordBreak: "break-all", lineHeight: "1.5" }}
+                    >
+                      {resolvePaymentAccountNumber(
+                        effectiveTransactionData.paymentDetail
+                      ) || "N/A"}
+                    </span>
                     {resolvePaymentAccountNumber(
                       effectiveTransactionData.paymentDetail
-                    ) || "N/A"}
+                    ) ? (
+                      <CopyButton
+                        value={resolvePaymentAccountNumber(
+                          effectiveTransactionData.paymentDetail
+                        )}
+                        className="ml-2 shrink-0"
+                      />
+                    ) : null}
                   </div>
                 </>
               )}
@@ -1444,23 +1500,134 @@ export default function Exchanging({ transactionData }: ExchangingProps) {
               <>
                 <div
                   className={`${isDark ? "text-[#7B7B7B]" : "text-gray-600"
-                    } text-xs font-semibold mb-0.5`}
+                    } text-xs font-semibold mb-0.5 mt-3`}
                 >
-                  Wallet Address:
+                  From:
                 </div>
-                <div className="flex items-center mb-2 p-2 rounded-lg border border-[#1D8751]/30 bg-[#1D8751]/5">
+                <div className="flex items-center mb-2">
+                  <img
+                    src={
+                      effectiveTransactionData?.asset?.icon ||
+                      effectiveTransactionData?.asset?.icon_url ||
+                      effectiveTransactionData?.asset?.image_url ||
+                      effectiveTransactionData?.asset?.image ||
+                      "/assets/2b5c7d80-7bcd-4cfb-8bd9-d1760a752afc.png_mhuppr.png"
+                    }
+                    alt={
+                      effectiveTransactionData?.asset?.ticker ||
+                      effectiveTransactionData?.asset?.symbol ||
+                      "Asset"
+                    }
+                    className="w-6 h-6 rounded-full mr-2"
+                    onError={(e) => {
+                      e.currentTarget.src =
+                        "/assets/2b5c7d80-7bcd-4cfb-8bd9-d1760a752afc.png_mhuppr.png";
+                    }}
+                  />
                   <span
                     className={`${isDark ? "text-white" : "text-gray-900"
-                      } text-sm font-mono break-all flex-1 leading-relaxed`}
-                    style={{ wordBreak: 'break-all', lineHeight: '1.5' }}
+                      } text-sm font-semibold uppercase`}
                   >
-                    {effectiveTransactionData.walletAddress}
+                    {effectiveTransactionData?.asset?.ticker ||
+                      effectiveTransactionData?.asset?.symbol ||
+                      effectiveTransactionData?.asset?.name ||
+                      getStableSendCurrency()}
                   </span>
-                  <CopyButton
-                    value={effectiveTransactionData.walletAddress}
-                    className="ml-2 shrink-0"
-                  />
+                  <span className="ml-2 bg-[#1D8751] text-white text-xs font-semibold px-2 py-0.5 rounded-full">
+                    {effectiveTransactionData?.asset?.network ||
+                      effectiveTransactionData?.network?.network_type ||
+                      "BSC"}
+                  </span>
                 </div>
+                {withdrawalSendAddress ? (
+                  <>
+                    <div
+                      className={`${isDark ? "text-[#7B7B7B]" : "text-gray-600"
+                        } text-xs font-semibold mb-0.5`}
+                    >
+                      Wallet Address:
+                    </div>
+                    <div className="flex items-center mb-2 p-2 rounded-lg border border-[#1D8751]/30 bg-[#1D8751]/5 gap-2">
+                      <span
+                        className={`${isDark ? "text-white" : "text-gray-900"
+                          } text-sm font-mono break-all flex-1 leading-relaxed`}
+                        style={{ wordBreak: "break-all", lineHeight: "1.5" }}
+                      >
+                        {withdrawalSendAddress}
+                      </span>
+                      <CopyButton
+                        value={withdrawalSendAddress}
+                        className="ml-2 shrink-0"
+                      />
+                    </div>
+                  </>
+                ) : null}
+                <div
+                  className={`${isDark ? "text-[#7B7B7B]" : "text-gray-600"
+                    } text-xs font-semibold mb-0.5 mt-2`}
+                >
+                  To:
+                </div>
+                <div className="flex items-center mb-1">
+                  <img
+                    src={
+                      withdrawalPayoutDetail?.logo_url ||
+                      withdrawalPayoutDetail?.logo ||
+                      withdrawalPayoutDetail?.provider_logo ||
+                      "/assets/image_7_jijlik.png"
+                    }
+                    alt={withdrawalPayoutProviderName}
+                    className="w-6 h-6 rounded-full mr-2"
+                    onError={(e) => {
+                      e.currentTarget.src = "/assets/image_7_jijlik.png";
+                    }}
+                  />
+                  <span
+                    className={`${isDark ? "text-white" : "text-gray-900"
+                      } text-sm font-semibold`}
+                  >
+                    {withdrawalPayoutProviderName}
+                  </span>
+                </div>
+                {withdrawalPayoutAccountName ? (
+                  <>
+                    <div
+                      className={`${isDark ? "text-[#7B7B7B]" : "text-gray-600"
+                        } text-xs font-semibold mb-0.5`}
+                    >
+                      Account Name:
+                    </div>
+                    <div
+                      className={`${isDark ? "text-white" : "text-gray-900"
+                        } text-sm mb-1`}
+                    >
+                      {withdrawalPayoutAccountName}
+                    </div>
+                  </>
+                ) : null}
+                {withdrawalPayoutAccountNumber ? (
+                  <>
+                    <div
+                      className={`${isDark ? "text-[#7B7B7B]" : "text-gray-600"
+                        } text-xs font-semibold mb-0.5`}
+                    >
+                      Account Number:
+                    </div>
+                    <div className="flex items-center mb-2 p-2 rounded-lg border border-[#1D8751]/30 bg-[#1D8751]/5 gap-2">
+                      <span
+                        className={`${isDark ? "text-white" : "text-gray-900"
+                          } text-sm font-mono break-all flex-1 leading-relaxed`}
+                        style={{ wordBreak: "break-all", lineHeight: "1.5" }}
+                      >
+                        {withdrawalPayoutAccountNumber}
+                      </span>
+                      <CopyButton
+                        value={withdrawalPayoutAccountNumber}
+                        className="ml-2 shrink-0"
+                      />
+                    </div>
+                  </>
+                ) : null}
               </>
             )}
           </div>
@@ -1485,8 +1652,11 @@ export default function Exchanging({ transactionData }: ExchangingProps) {
                 formatHowToSend(howToSend, amountForHowToSend) ||
                 payin ||
                 String(effectiveTransactionData?.walletAddress || "").trim();
-            } else if (effectiveTransactionData?.type === "withdrawal" && effectiveTransactionData?.walletAddress) {
-              qrData = effectiveTransactionData.walletAddress;
+            } else if (
+              effectiveTransactionData?.type === "withdrawal" &&
+              withdrawalSendAddress
+            ) {
+              qrData = withdrawalSendAddress;
             }
 
             if (!qrData) {
@@ -2052,14 +2222,26 @@ export default function Exchanging({ transactionData }: ExchangingProps) {
                   >
                     {effectiveTransactionData.paymentDetail.provider_name}
                   </div>
-                  <div
-                    className={`${isDark ? "text-[#7B7B7B]" : "text-gray-600"
-                      } text-xs sm:text-sm font-mono break-all max-w-[200px] sm:max-w-[250px] leading-tight`}
-                    style={{ wordBreak: 'break-all', lineHeight: '1.3' }}
-                  >
+                  <div className="flex items-center gap-2 min-w-0">
+                    <div
+                      className={`${isDark ? "text-[#7B7B7B]" : "text-gray-600"
+                        } text-xs sm:text-sm font-mono break-all max-w-[200px] sm:max-w-[250px] leading-tight flex-1 min-w-0`}
+                      style={{ wordBreak: "break-all", lineHeight: "1.3" }}
+                    >
+                      {resolvePaymentAccountNumber(
+                        effectiveTransactionData.paymentDetail
+                      ) || "N/A"}
+                    </div>
                     {resolvePaymentAccountNumber(
                       effectiveTransactionData.paymentDetail
-                    ) || "N/A"}
+                    ) ? (
+                      <CopyButton
+                        value={resolvePaymentAccountNumber(
+                          effectiveTransactionData.paymentDetail
+                        )}
+                        className="shrink-0"
+                      />
+                    ) : null}
                   </div>
                 </div>
               </>
@@ -2208,13 +2390,21 @@ export default function Exchanging({ transactionData }: ExchangingProps) {
                       effectiveTransactionData?.paymentDetail?.provider_name ||
                       "Bank Transfer"}
                   </div>
-                  <div
-                    className={`${isDark ? "text-[#7B7B7B]" : "text-gray-600"
-                      } text-xs sm:text-sm font-mono break-all max-w-[200px] sm:max-w-[250px] leading-tight`}
-                    style={{ wordBreak: 'break-all', lineHeight: '1.3' }}
-                  >
-                    {resolveBankAccountFromTx(effectiveTransactionData) ||
-                      "N/A"}
+                  <div className="flex items-center gap-2 min-w-0">
+                    <div
+                      className={`${isDark ? "text-[#7B7B7B]" : "text-gray-600"
+                        } text-xs sm:text-sm font-mono break-all max-w-[200px] sm:max-w-[250px] leading-tight flex-1 min-w-0`}
+                      style={{ wordBreak: "break-all", lineHeight: "1.3" }}
+                    >
+                      {resolveBankAccountFromTx(effectiveTransactionData) ||
+                        "N/A"}
+                    </div>
+                    {resolveBankAccountFromTx(effectiveTransactionData) ? (
+                      <CopyButton
+                        value={resolveBankAccountFromTx(effectiveTransactionData)}
+                        className="shrink-0"
+                      />
+                    ) : null}
                   </div>
                 </div>
               </>

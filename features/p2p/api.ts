@@ -31,6 +31,7 @@ import {
   WithdrawalAddressesResponse,
   DepositAddressResponse,
   MerchantApplicationStatus,
+  CompleteP2PTradeOtpResponse,
 } from "./types";
 import { AdminPaymentMethod } from "./types/paymentMethods";
 import { UnreadMessagesResponse } from "./slices/unreadMessagesSlice";
@@ -870,13 +871,24 @@ export const respondToP2PTrade = async (
   });
 };
 
-export const confirmTrade = async (id: string): Promise<P2PResponse> => {
+export const completeP2PTrade = async (
+  id: string,
+  payload: { otp?: string } = {}
+): Promise<CompleteP2PTradeOtpResponse> => {
   return withRetry(async () => {
-    const response = await post<P2PResponse>(
-      `${API_CONFIG.P2P.CONFIRM_TRADES}${id}/complete/`
+    const body = payload.otp ? { otp: payload.otp } : {};
+    const response = await post<CompleteP2PTradeOtpResponse>(
+      `${API_CONFIG.P2P.CONFIRM_TRADES}${id}/complete/`,
+      body
     );
     return response.data;
   });
+};
+
+/** @deprecated Use completeP2PTrade with optional otp */
+export const confirmTrade = async (id: string): Promise<P2PResponse> => {
+  const result = await completeP2PTrade(id);
+  return result as unknown as P2PResponse;
 };
 
 /** Never send currency= on user-trades — backend may return empty; callers may still pass legacy URLs. */

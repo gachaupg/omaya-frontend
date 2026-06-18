@@ -13,7 +13,6 @@ import {
   fetchSingleOrder,
   fetchConfirmOrder,
   cancelP2POrderThunk,
-  completeP2PTradeThunk,
 } from "@/features/p2p/slices/orderSlice";
 import { submitFeedbackThunk } from "@/features/p2p/slices/feedbackSubmissionSlice";
 import {
@@ -48,6 +47,8 @@ import {
 } from "@/features/p2p/utils/tradeWsAcceptanceGate";
 
 import { logger } from "@/lib/utils/logger";
+import { useP2PTradeCompleteOtp } from "@/features/p2p/hooks/useP2PTradeCompleteOtp";
+import P2PTradeCompleteOtpModal from "@/features/p2p/components/ui/market/sections/P2PTradeCompleteOtpModal";
 
 interface FinalSellProps {
   orderData?: P2POrder;
@@ -139,6 +140,23 @@ const FinalSell: React.FC<FinalSellProps> = ({ orderData }) => {
   const handleCancelTransactionRef = useRef<() => void>(() => {});
   const confirmStatusRef = useRef(confirmOrder?.status);
   confirmStatusRef.current = effectiveStatus;
+
+  const {
+    otpModalOpen,
+    setOtpModalOpen,
+    otpError,
+    otpVerifying,
+    requestOtp,
+    verifyOtp,
+    resendOtp,
+  } = useP2PTradeCompleteOtp({
+    tradeId: confirmOrder?.id,
+    onComplete: () => {
+      if (confirmOrder?.id) {
+        dispatch(fetchConfirmOrder(confirmOrder.id));
+      }
+    },
+  });
 
   // Fetch confirm order when authenticated and orderId is available
   useEffect(() => {
@@ -391,7 +409,8 @@ const FinalSell: React.FC<FinalSellProps> = ({ orderData }) => {
     if (effectiveStatus.toLowerCase() === "completed") {
       return "Trade completed";
     }
-    if (isThisTradeLoading) return "Confirming payment...";
+    if (isThisTradeLoading && !otpModalOpen) return "Sending OTP...";
+    if (isThisTradeLoading || otpVerifying) return "Confirming payment...";
     return "Payments Received Notify Seller";
   };
 
@@ -432,30 +451,9 @@ const FinalSell: React.FC<FinalSellProps> = ({ orderData }) => {
   };
 
   const handleConfirmTrade = () => {
-    const orderId = params?.id as string;
-
-    if (confirmOrder?.id) {
-      lastActionTradeIdRef.current = confirmOrder.id;
-      dispatch(completeP2PTradeThunk(confirmOrder.id))
-        .unwrap()
-        .then(() => {
-          showToast.success(
-            "Trade completed successfully!",
-            "You will be redirected to the dashboard"
-          );
-          // Refresh confirm order after successful trade
-          dispatch(fetchConfirmOrder(confirmOrder.id));
-          // setTimeout(() => {
-          //   router.push("/dashboard");
-          // }, 2000);
-        })
-        .catch((error) => {
-          showToast.error(
-            "Failed to complete trade",
-            error.message || "Please try again"
-          );
-        });
-    }
+    if (!confirmOrder?.id) return;
+    lastActionTradeIdRef.current = confirmOrder.id;
+    void requestOtp();
   };
 
   logger.debug("p2p", "Confirm order:", confirmOrder);
@@ -1048,6 +1046,18 @@ const FinalSell: React.FC<FinalSellProps> = ({ orderData }) => {
           </div>
         )}
       </div>
+      <P2PTradeCompleteOtpModal
+        isOpen={otpModalOpen}
+        onClose={() => setOtpModalOpen(false)}
+        onVerify={(otp) => {
+          void verifyOtp(otp);
+        }}
+        onResend={() => {
+          void resendOtp();
+        }}
+        isLoading={otpVerifying}
+        error={otpError}
+      />
     </div>
   );
 };

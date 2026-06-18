@@ -197,6 +197,8 @@ export interface SupportRequestPayload {
   email_address: string;
   question: string;
   supporting_file?: File | null;
+  /** Set to "deletion" for account deletion requests only. */
+  request_type?: "deletion";
 }
 
 export interface SupportRequestResponse extends SettingsApiResponse {

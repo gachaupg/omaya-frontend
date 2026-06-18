@@ -117,6 +117,17 @@ export interface P2PWithdraw {
   }>;
 }
 
+export interface CompleteP2PTradeOtpResponse {
+  otp_required?: boolean;
+  message?: string;
+  [key: string]: unknown;
+}
+
+export interface CompleteP2PTradeArgs {
+  id: string;
+  otp?: string;
+}
+
 // Common Response Types
 export interface P2PResponse {
   id: string;

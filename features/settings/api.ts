@@ -325,6 +325,10 @@ export const settingsApi = {
       const formData = new FormData();
       formData.append("email_address", payload.email_address);
       formData.append("question", payload.question);
+
+      if (payload.request_type) {
+        formData.append("request_type", payload.request_type);
+      }
       
       if (payload.supporting_file) {
         formData.append("supporting_file", payload.supporting_file);

@@ -154,6 +154,19 @@ const formatAmountForInput = (n: number): string => {
 
 type UserPaymentDetail = RegisteredAccountDetail;
 
+const getPublicProviderName = (provider: any): string =>
+  String(provider?.provider_name || provider?.payment_provider_name || "").trim();
+
+/** Match deposit form: prefer Salaam, else second provider, else first. */
+const getDefaultPublicPaymentProvider = (providers: any[]) => {
+  if (!providers.length) return null;
+  const salaamProvider = providers.find((provider) =>
+    getPublicProviderName(provider).toLowerCase().includes("salaam")
+  );
+  if (salaamProvider) return salaamProvider;
+  return providers[1] || providers[0];
+};
+
 const isUuid = (value: unknown): boolean =>
   /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(
     String(value || "").trim()
@@ -386,6 +399,11 @@ interface DepositFormProps {
     asset?: any;
     paymentDetails?: UserPaymentDetail[];
     payBank?: string;
+    payment?: {
+      provider_name?: string;
+      payment_provider_name?: string;
+      [key: string]: unknown;
+    };
     walletAddress?: string;
     selectedNetwork?: any;
     termsAccepted?: boolean;
@@ -809,6 +827,8 @@ export default function WithdrawalForm({
   const [payBank, setPayBank] = useState(
     initialState?.payBank ||
       initialState?.paymentDetails?.[0]?.payment_provider_name ||
+      initialState?.payment?.provider_name ||
+      initialState?.payment?.payment_provider_name ||
       ""
   );
   const [selectedProviderData, setSelectedProviderData] =
@@ -1166,27 +1186,58 @@ export default function WithdrawalForm({
     return filtered;
   }, [payBank, userPaymentMethodsDisplay.displayData, effectiveUserPaymentMethods, selectedAsset, userPaymentDetails, selectedProviderData]);
 
-  // Auto-select first payment method when payment methods are available
+  // Auto-select payment method — match deposit defaults (Salaam when available).
   useEffect(() => {
-    // Only auto-select if no payment method is currently selected
-    if (payBank) {
+    if (activePublicProviders.length === 0) {
       return;
     }
 
-    // Check if payment methods are available from public payment methods
-    if (activePublicProviders.length > 0) {
-      const firstProvider = activePublicProviders[0];
-      const firstProviderName = firstProvider.provider_name || firstProvider.payment_provider_name;
-
-      if (firstProviderName) {
-        setPayBank(firstProviderName);
-        setSelectedProviderData(firstProvider);
-        setSelectedPaymentDetail(firstProvider);
+    if (initialState?.payment || initialState?.paymentDetails?.length) {
+      const savedProvider =
+        initialState?.payBank ||
+        initialState?.payment?.provider_name ||
+        initialState?.payment?.payment_provider_name ||
+        initialState?.paymentDetails?.[0]?.payment_provider_name ||
+        initialState?.paymentDetails?.[0]?.provider_name ||
+        "";
+      if (savedProvider && selectedProviderData) {
         return;
       }
     }
 
-  }, [payBank, activePublicProviders]);
+    const hasSelected = payBank
+      ? activePublicProviders.some(
+          (provider: any) => getPublicProviderName(provider) === payBank
+        )
+      : false;
+
+    if (!payBank || !hasSelected) {
+      const defaultProvider = getDefaultPublicPaymentProvider(
+        activePublicProviders
+      );
+      const providerName = defaultProvider
+        ? getPublicProviderName(defaultProvider)
+        : "";
+      if (providerName) {
+        setPayBank(providerName);
+        setSelectedProviderData(defaultProvider);
+        setSelectedPaymentDetail(defaultProvider);
+      }
+    } else if (!selectedProviderData) {
+      const matchedProvider = activePublicProviders.find(
+        (provider: any) => getPublicProviderName(provider) === payBank
+      );
+      if (matchedProvider) {
+        setSelectedProviderData(matchedProvider);
+        setSelectedPaymentDetail(matchedProvider);
+      }
+    }
+  }, [
+    activePublicProviders,
+    payBank,
+    selectedProviderData,
+    initialState,
+  ]);
 
   const allRegisteredAccounts = useMemo(
     () =>

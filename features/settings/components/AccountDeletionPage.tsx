@@ -2,9 +2,11 @@
 
 import React, { useRef, useState } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { useDispatch, useSelector } from "react-redux";
 import { AlertTriangle } from "lucide-react";
 import { AppDispatch, RootState } from "@/store";
+import { logout } from "@/features/auth/slices/authSlice";
 import { createSupportRequest } from "@/features/settings/slices/settingsSlice";
 import { showToast } from "@/lib/utils/toast";
 
@@ -18,7 +20,8 @@ const AccountDeletionPage: React.FC<{ variant?: "standalone" | "settings" }> = (
   variant = "standalone",
 }) => {
   const dispatch = useDispatch<AppDispatch>();
-  const { user } = useSelector((state: RootState) => state.auth);
+  const router = useRouter();
+  const { user, isAuthenticated } = useSelector((state: RootState) => state.auth);
   const { supportRequestLoading } = useSelector(
     (state: RootState) => state.settings
   );
@@ -48,12 +51,20 @@ const AccountDeletionPage: React.FC<{ variant?: "standalone" | "settings" }> = (
           email_address: email.trim(),
           question: `[Account deletion request]\n\n${reason.trim()}`,
           supporting_file: supportingFile,
+          request_type: "deletion",
         })
       ).unwrap();
 
       showToast.success(
         "Your account deletion request has been submitted. Our team will contact you after review."
       );
+
+      if (isAuthenticated) {
+        dispatch(logout());
+        router.push("/auth/login");
+        return;
+      }
+
       setReason("");
       setSupportingFile(null);
       setConfirmed(false);

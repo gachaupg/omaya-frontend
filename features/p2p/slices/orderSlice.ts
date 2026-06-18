@@ -2,6 +2,7 @@
  * orderSlice.ts – auto‑generated placeholder
  */
 import { createSlice, createAsyncThunk, Draft } from "@reduxjs/toolkit";
+import type { CompleteP2PTradeArgs } from "../types";
 import {
   getAllP2POrders,
   getAllP2PBuyandSell,
@@ -11,7 +12,7 @@ import {
   SingleOrder1,
   cancelP2POrder,
   confirmP2PTrade,
-  confirmTrade,
+  completeP2PTrade,
   deleteP2POrder,
   toggleP2POrderStatus,
   duplicateP2POrder,
@@ -339,10 +340,12 @@ export const confirmP2PTradeThunk = createAsyncThunk(
 
 export const completeP2PTradeThunk = createAsyncThunk(
   "p2p/completeTrade",
-  async (id: string, { dispatch, rejectWithValue }) => {
+  async ({ id, otp }: CompleteP2PTradeArgs, { dispatch, rejectWithValue }) => {
     try {
-      const response = await confirmTrade(id);
-      await dispatch(fetchConfirmOrder(id));
+      const response = await completeP2PTrade(id, otp ? { otp } : {});
+      if (otp) {
+        await dispatch(fetchConfirmOrder(id));
+      }
       return response;
     } catch (error: any) {
       // Handle specific backend errors
@@ -826,9 +829,11 @@ const p2pMarketSlice = createSlice({
         state.confirmTradeError = null;
         state.confirmTradeSuccess = false;
       })
-      .addCase(completeP2PTradeThunk.fulfilled, (state) => {
+      .addCase(completeP2PTradeThunk.fulfilled, (state, action) => {
         state.confirmTradeLoading = false;
-        state.confirmTradeSuccess = true;
+        if (action.meta.arg.otp) {
+          state.confirmTradeSuccess = true;
+        }
       })
       .addCase(completeP2PTradeThunk.rejected, (state, action) => {
         state.confirmTradeLoading = false;
