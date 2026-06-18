@@ -44,6 +44,7 @@ type Mode = "deposit" | "withdrawal";
 const RETURNING_FROM_LEGAL_KEY = "omaya_returning_from_legal";
 const MONEYX_LEGAL_RETURN_STATE_KEY = "omaya_moneyx_legal_return_state";
 const SWAP_LEGAL_RETURN_STATE_KEY = "omaya_swap_legal_return_state";
+const EXPRESS_HOME_LEGAL_SESSION_KEY = "express_home_legal_session";
 
 interface Currency {
   label: string;
@@ -560,6 +561,11 @@ export default function ExchangeForm({
 
       if (returningFromLegal && hasSwapLegalState) {
         setActiveTab("swap");
+        return;
+      }
+
+      if (returningFromLegal && sessionStorage.getItem(EXPRESS_HOME_LEGAL_SESSION_KEY)) {
+        setActiveTab("express");
         return;
       }
 

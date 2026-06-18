@@ -36,6 +36,10 @@ import { useScrollAppToTopWhen } from "@/hooks/useScrollAppToTopWhen";
 import {
   buildSwapRedirectPath,
   setAuthRedirectPath,
+  setSwapLegalReturnState,
+  peekSwapLegalReturnState,
+  clearSwapLegalReturnState,
+  finalizeSwapLegalReturnState,
 } from "@/lib/utils/authRedirect";
 import { openKYCModal, checkKYCStatus } from "@/features/auth/slices/authSlice";
 import {
@@ -50,6 +54,43 @@ import {
   resolveSwapCreateErrorMessage,
   SWAP_SAME_COIN_MESSAGE,
 } from "@/lib/utils/swapAssetValidation";
+
+const findMatchingSwapAsset = (
+  supportedAssets: SupportedAsset[],
+  snapshot: Partial<SupportedAsset> | null | undefined
+): SupportedAsset | undefined => {
+  if (!snapshot || supportedAssets.length === 0) return undefined;
+
+  return supportedAssets.find((asset: SupportedAsset) => {
+    const snapshotTicker = (snapshot.ticker || "").toLowerCase().trim();
+    const snapshotSymbol = (snapshot.symbol || "").toLowerCase().trim();
+    const snapshotNetwork = (snapshot.network || "").toLowerCase().trim();
+
+    const assetTicker = (asset.ticker || "").toLowerCase().trim();
+    const assetSymbol = (asset.symbol || "").toLowerCase().trim();
+    const assetNetwork = (asset.network || "").toLowerCase().trim();
+
+    if (snapshotTicker && assetTicker && snapshotNetwork && assetNetwork) {
+      if (snapshotTicker === assetTicker && snapshotNetwork === assetNetwork) {
+        return true;
+      }
+    }
+
+    if (snapshotSymbol && assetSymbol && snapshotNetwork && assetNetwork) {
+      if (snapshotSymbol === assetSymbol && snapshotNetwork === assetNetwork) {
+        return true;
+      }
+    }
+
+    if (snapshotTicker && assetTicker && !snapshotNetwork) {
+      if (snapshotTicker === assetTicker) {
+        return true;
+      }
+    }
+
+    return false;
+  });
+};
 
 interface SwapWidgetProps {
   usePublicApi?: boolean;
@@ -95,6 +136,11 @@ const SwapWidget: React.FC<SwapWidgetProps> = ({ usePublicApi = false }) => {
   const [currentStep, setCurrentStep] =
     React.useState<SwapStep>("transaction-info");
   const [showWalletAddress, setShowWalletAddress] = React.useState(false);
+  const [hasAcceptedTerms, setHasAcceptedTerms] = React.useState(false);
+  const [legalReturnState, setLegalReturnState] =
+    React.useState<Record<string, any> | null>(null);
+  const hasStartedLegalRestore = React.useRef(false);
+  const hasAppliedLegalReturn = React.useRef(false);
   useScrollAppToTopWhen(currentStep !== "transaction-info");
   useScrollAppToTopWhen(showWalletAddress);
   const [isInfoModalOpen, setIsInfoModalOpen] = React.useState(false);
@@ -114,8 +160,99 @@ const SwapWidget: React.FC<SwapWidgetProps> = ({ usePublicApi = false }) => {
   const assetsLoadingState =
     homeSwapAssets && homeSwapAssets.length > 0 ? homeAssetsLoading : loading;
 
+  React.useEffect(() => {
+    if (hasStartedLegalRestore.current) return;
+    hasStartedLegalRestore.current = true;
+    const saved = peekSwapLegalReturnState();
+    if (!saved) return;
+    setLegalReturnState(saved);
+    clearSwapLegalReturnState();
+    window.setTimeout(() => finalizeSwapLegalReturnState(), 1000);
+  }, []);
+
+  const handleBeforeLegalNavigate = useCallback(() => {
+    setSwapLegalReturnState({
+      showWalletAddress,
+      walletAddress,
+      hasAcceptedTerms,
+      expandedTerms: true,
+      fromAmount,
+      toAmount,
+      fromAsset,
+      toAsset,
+      activeInputField,
+      scrollY: typeof window !== "undefined" ? window.scrollY : 0,
+    });
+  }, [
+    showWalletAddress,
+    walletAddress,
+    hasAcceptedTerms,
+    fromAmount,
+    toAmount,
+    fromAsset,
+    toAsset,
+    activeInputField,
+  ]);
+
+  // Restore swap form when returning from legal pages (Terms, Privacy, etc.)
+  useEffect(() => {
+    if (!legalReturnState || hasAppliedLegalReturn.current) return;
+
+    if (legalReturnState.walletAddress) {
+      setWalletAddress(legalReturnState.walletAddress);
+    }
+    if (legalReturnState.hasAcceptedTerms) {
+      setHasAcceptedTerms(Boolean(legalReturnState.hasAcceptedTerms));
+    }
+    if (legalReturnState.showWalletAddress) {
+      setShowWalletAddress(true);
+    }
+    if (
+      legalReturnState.activeInputField === "from" ||
+      legalReturnState.activeInputField === "to"
+    ) {
+      setActiveInputField(legalReturnState.activeInputField);
+    }
+    if (legalReturnState.fromAmount) {
+      dispatch(setFromAmount(legalReturnState.fromAmount));
+    }
+    if (legalReturnState.toAmount) {
+      dispatch(setToAmount(legalReturnState.toAmount));
+    }
+
+    if (!combinedAssets || combinedAssets.length === 0 || assetsLoadingState) {
+      return;
+    }
+
+    const matchingFromAsset = findMatchingSwapAsset(
+      combinedAssets,
+      legalReturnState.fromAsset
+    );
+    if (matchingFromAsset) {
+      dispatch(setFromAsset(matchingFromAsset));
+    }
+
+    const matchingToAsset = findMatchingSwapAsset(
+      combinedAssets,
+      legalReturnState.toAsset
+    );
+    if (matchingToAsset) {
+      dispatch(setToAsset(matchingToAsset));
+    }
+
+    hasAppliedLegalReturn.current = true;
+
+    const savedScrollY = legalReturnState.scrollY;
+    if (typeof savedScrollY === "number" && !Number.isNaN(savedScrollY)) {
+      window.setTimeout(() => {
+        window.scrollTo({ top: Math.max(0, savedScrollY), behavior: "auto" });
+      }, 0);
+    }
+  }, [legalReturnState, combinedAssets, assetsLoadingState, dispatch]);
+
   // Auto-select first and second assets when combinedAssets loads (always)
   useEffect(() => {
+    if (legalReturnState) return;
     if (combinedAssets.length >= 2) {
       const first = combinedAssets[0];
       const second = combinedAssets[1];
@@ -908,11 +1045,14 @@ const SwapWidget: React.FC<SwapWidgetProps> = ({ usePublicApi = false }) => {
             <WalletAddressStep
               walletAddress={walletAddress}
               onWalletAddressChange={handleWalletAddressChange}
-              onBack={() => setShowWalletAddress(false)}
               onNext={handleWalletAddressNext}
               fromAsset={fromAsset}
               toAsset={toAsset}
               isLoading={swapLoading}
+              hasAcceptedTerms={hasAcceptedTerms}
+              onHasAcceptedTermsChange={setHasAcceptedTerms}
+              onBeforeLegalNavigate={handleBeforeLegalNavigate}
+              defaultExpandedTerms={Boolean(legalReturnState?.expandedTerms)}
             />
           )}
         </>

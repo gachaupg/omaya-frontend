@@ -333,6 +333,7 @@ export default function TransferForm({ isHomePage = false, onTransfer, commissio
   const toKey = selectedToPaymentDetail?.id ?? selectedToPaymentDetail?.provider_id ?? toPaymentMethod ?? "";
   const isRestoringRef = useRef(false);
   const hasRestoredFromLegalRef = useRef(false);
+  const hasStartedLegalRestore = useRef(false);
   useEffect(() => {
     if (isRestoringRef.current) {
       isRestoringRef.current = false;
@@ -924,10 +925,12 @@ export default function TransferForm({ isHomePage = false, onTransfer, commissio
           toProviderBase: toName,
           fromPaymentDetail: selectedFromPaymentDetail,
           toPaymentDetail: selectedToPaymentDetail,
-          // Keep terms block open after returning from legal pages
           expandedTerms: true,
-          // Preserve current checkbox state across legal-page navigation.
           isTermsAccepted,
+          returnPath:
+            typeof window !== "undefined"
+              ? `${window.location.pathname}${window.location.search}${window.location.hash}`
+              : "/",
         })
       );
       sessionStorage.setItem(RETURNING_FROM_LEGAL_KEY, "1");
@@ -952,6 +955,7 @@ export default function TransferForm({ isHomePage = false, onTransfer, commissio
   // Restore state when returning from legal pages (Terms, Privacy, etc.)
   useEffect(() => {
     if (typeof window === "undefined") return;
+    if (hasStartedLegalRestore.current) return;
     try {
       const returning = sessionStorage.getItem(RETURNING_FROM_LEGAL_KEY);
       if (!returning) return;
@@ -962,6 +966,7 @@ export default function TransferForm({ isHomePage = false, onTransfer, commissio
         return;
       }
 
+      hasStartedLegalRestore.current = true;
       const state = JSON.parse(saved);
       isRestoringRef.current = true;
 
@@ -1013,8 +1018,11 @@ export default function TransferForm({ isHomePage = false, onTransfer, commissio
       }
 
       sessionStorage.removeItem(RETURNING_FROM_LEGAL_KEY);
-      sessionStorage.removeItem(MONEYX_LEGAL_RETURN_STATE_KEY);
       hasRestoredState.current = true;
+
+      window.setTimeout(() => {
+        sessionStorage.removeItem(MONEYX_LEGAL_RETURN_STATE_KEY);
+      }, 1000);
     } catch {
       sessionStorage.removeItem(RETURNING_FROM_LEGAL_KEY);
       sessionStorage.removeItem(MONEYX_LEGAL_RETURN_STATE_KEY);

@@ -46,7 +46,9 @@ import {
 } from "@/lib/utils/swapAssetValidation";
 import {
   setSwapLegalReturnState,
-  consumeSwapLegalReturnState,
+  peekSwapLegalReturnState,
+  clearSwapLegalReturnState,
+  finalizeSwapLegalReturnState,
 } from "@/lib/utils/authRedirect";
 
 // Minimum swap value in USD/USDT - smaller amounts can disappear due to fees
@@ -150,9 +152,9 @@ const SwapWidget = () => {
     React.useState<SwapStep>("transaction-info");
   const [showWalletAddress, setShowWalletAddress] = React.useState(false);
   const [hasAcceptedTerms, setHasAcceptedTerms] = React.useState(false);
-  const [legalReturnState] = React.useState<Record<string, any> | null>(() =>
-    consumeSwapLegalReturnState()
-  );
+  const [legalReturnState, setLegalReturnState] =
+    React.useState<Record<string, any> | null>(null);
+  const hasStartedLegalRestore = React.useRef(false);
   const hasAppliedLegalReturn = React.useRef(false);
   useScrollAppToTopWhen(currentStep !== "transaction-info");
   useScrollAppToTopWhen(showWalletAddress);
@@ -216,11 +218,22 @@ const SwapWidget = () => {
     // });
   }, [dispatch]);
 
+  React.useEffect(() => {
+    if (hasStartedLegalRestore.current) return;
+    hasStartedLegalRestore.current = true;
+    const saved = peekSwapLegalReturnState();
+    if (!saved) return;
+    setLegalReturnState(saved);
+    clearSwapLegalReturnState();
+    window.setTimeout(() => finalizeSwapLegalReturnState(), 1000);
+  }, []);
+
   const handleBeforeLegalNavigate = useCallback(() => {
     setSwapLegalReturnState({
       showWalletAddress,
       walletAddress,
       hasAcceptedTerms,
+      expandedTerms: true,
       fromAmount,
       toAmount,
       fromAsset,
@@ -1031,6 +1044,7 @@ const SwapWidget = () => {
               hasAcceptedTerms={hasAcceptedTerms}
               onHasAcceptedTermsChange={setHasAcceptedTerms}
               onBeforeLegalNavigate={handleBeforeLegalNavigate}
+              defaultExpandedTerms={Boolean(legalReturnState?.expandedTerms)}
             />
           )}
         </>

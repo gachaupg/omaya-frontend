@@ -343,6 +343,11 @@ export default function TransferForm({ onTransfer, initialState, commissionType 
           toProviderBase: toName,
           fromPaymentDetail: selectedFromPaymentDetail,
           toPaymentDetail: selectedToPaymentDetail,
+          expandedTerms: true,
+          returnPath:
+            typeof window !== "undefined"
+              ? `${window.location.pathname}${window.location.search}${window.location.hash}`
+              : "/",
         })
       );
       sessionStorage.setItem(RETURNING_FROM_LEGAL_KEY, "1");
@@ -585,6 +590,7 @@ export default function TransferForm({ onTransfer, initialState, commissionType 
         setIsAddressConfirmed(state.isAddressConfirmed);
       }
       setIsFirstCardSubmitted(true);
+      setExpandedTerms(Boolean(state.expandedTerms ?? true));
 
       if (state.fromPaymentMethod || state.toPaymentMethod) {
         const fromName = state.fromProviderBase || state.fromPaymentMethod || "";
@@ -602,8 +608,11 @@ export default function TransferForm({ onTransfer, initialState, commissionType 
       }
 
       sessionStorage.removeItem(RETURNING_FROM_LEGAL_KEY);
-      sessionStorage.removeItem(MONEYX_LEGAL_RETURN_STATE_KEY);
       hasRestoredState.current = true;
+
+      window.setTimeout(() => {
+        sessionStorage.removeItem(MONEYX_LEGAL_RETURN_STATE_KEY);
+      }, 1000);
     } catch {
       sessionStorage.removeItem(RETURNING_FROM_LEGAL_KEY);
       sessionStorage.removeItem(MONEYX_LEGAL_RETURN_STATE_KEY);

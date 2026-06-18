@@ -116,6 +116,7 @@ interface DepositFormProps {
   onModeChange?: (mode: "deposit" | "withdrawal") => void;
   isHomePage?: boolean;
   initialState?: {
+    mode?: "deposit" | "withdrawal";
     amountValue?: number;
     amountInput?: string;
     receiveAmountValue?: number;
@@ -124,6 +125,10 @@ interface DepositFormProps {
     payment?: any;
     payBank?: string;
     walletAddress?: string;
+    selectedNetwork?: any;
+    termsAccepted?: boolean;
+    isFirstCardSubmitted?: boolean;
+    expandedTerms?: boolean;
   };
 }
 
@@ -482,6 +487,7 @@ export default function DepositForm({
   mode,
   onModeChange,
   isHomePage = false,
+  initialState,
 }: DepositFormProps) {
   const dispatch = useDispatch<AppDispatch>();
   const router = useRouter();
@@ -872,15 +878,15 @@ export default function DepositForm({
 
  
 
-  const [payAmount, setPayAmount] = useState(100); // Set default amount to $100
-  const [payAmountInput, setPayAmountInput] = useState("100"); // String value for input display
-  const [payBank, setPayBank] = useState("");
-  const [getAmount, setGetAmount] = useState(0); // Start empty; fill after calculation
-  const [getAmountInput, setGetAmountInput] = useState(""); // Don't show placeholder value before calculation
-  const [selectedAsset, setSelectedAsset] = useState<any>(null);
-  const [selectedNetwork, setSelectedNetwork] = useState<any>(null);
+  const [payAmount, setPayAmount] = useState(initialState?.amountValue ?? 100);
+  const [payAmountInput, setPayAmountInput] = useState(initialState?.amountInput ?? "100");
+  const [payBank, setPayBank] = useState(initialState?.payBank ?? "");
+  const [getAmount, setGetAmount] = useState(initialState?.receiveAmountValue ?? 0);
+  const [getAmountInput, setGetAmountInput] = useState(initialState?.receiveAmountInput ?? "");
+  const [selectedAsset, setSelectedAsset] = useState<any>(initialState?.asset ?? null);
+  const [selectedNetwork, setSelectedNetwork] = useState<any>(initialState?.selectedNetwork ?? null);
   const [isCalculatingFromPay, setIsCalculatingFromPay] = useState(true);
-  const [walletAddress, setWalletAddress] = useState("");
+  const [walletAddress, setWalletAddress] = useState(initialState?.walletAddress ?? "");
   const [walletError, setWalletError] = useState<string | null>(null);
   const [bookmarkOpen, setBookmarkOpen] = useState(false);
   const bookmarkAnchorRef = useRef<HTMLSpanElement>(null);
@@ -890,7 +896,7 @@ export default function DepositForm({
   const commissionFetchTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const [isAddressConfirmed, setIsAddressConfirmed] = useState(false);
   const [forceUpdate, setForceUpdate] = useState(0);
-  const [selectedPaymentDetail, setSelectedPaymentDetail] = useState<any>(null);
+  const [selectedPaymentDetail, setSelectedPaymentDetail] = useState<any>(initialState?.payment ?? null);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [commissionRefreshSeed, setCommissionRefreshSeed] = useState(0);
 
@@ -1013,7 +1019,15 @@ export default function DepositForm({
   const [estimateError, setEstimateError] = useState<string | null>(null);
 
   // First card submission state
-  const [isFirstCardSubmitted, setIsFirstCardSubmitted] = useState(false);
+  const [isFirstCardSubmitted, setIsFirstCardSubmitted] = useState(
+    Boolean(initialState?.isFirstCardSubmitted)
+  );
+  const hasRestoredFromLegalRef = useRef(
+    Boolean(initialState?.isFirstCardSubmitted)
+  );
+  const isRestoringFromLegalRef = useRef(
+    Boolean(initialState?.isFirstCardSubmitted)
+  );
 
   // Add loading state for "You Receive" calculation
   const [isCalculatingReceive, setIsCalculatingReceive] = useState(false);
@@ -1033,8 +1047,12 @@ export default function DepositForm({
   const [isSupportModalOpen, setIsSupportModalOpen] = useState(false);
 
   // Terms & Conditions expansion
-  const [expandedTerms, setExpandedTerms] = useState(false);
-  const [isTermsAccepted, setIsTermsAccepted] = useState(false);
+  const [expandedTerms, setExpandedTerms] = useState(
+    Boolean(initialState?.expandedTerms)
+  );
+  const [isTermsAccepted, setIsTermsAccepted] = useState(
+    Boolean(initialState?.termsAccepted)
+  );
 
   const handleBeforeLegalNavigate = useCallback(() => {
     if (!isHomePage) return;
@@ -1051,7 +1069,8 @@ export default function DepositForm({
       selectedNetwork,
       walletAddress,
       termsAccepted: isTermsAccepted,
-      isFirstCardSubmitted,
+      isFirstCardSubmitted: true,
+      expandedTerms: true,
     });
   }, [
     isHomePage,
@@ -1336,6 +1355,13 @@ export default function DepositForm({
     ? (selectedAsset.asset_id ?? selectedAsset.ticker ?? selectedAsset.symbol ?? selectedAsset.name ?? "")
     : "";
   useEffect(() => {
+    if (isRestoringFromLegalRef.current) {
+      isRestoringFromLegalRef.current = false;
+      return;
+    }
+    if (hasRestoredFromLegalRef.current) {
+      return;
+    }
     setIsFirstCardSubmitted(false);
     setApiResponse(null);
     setTransactionCode("");

@@ -1,4 +1,5 @@
 import React, { useState, useRef, useEffect, useCallback } from "react";
+import Link from "next/link";
 import { useTheme } from "@/context/theme";
 import { logger } from "@/lib/utils/logger";
 import { useValidateAddress } from "@/hooks/useValidateAddress";
@@ -9,12 +10,15 @@ import { BookmarkDropdown } from "@/features/express/components/forms/BookmarkDr
 interface WalletAddressStepProps {
   walletAddress: string;
   onWalletAddressChange: (e: React.ChangeEvent<HTMLInputElement>) => void;
-  onBack: () => void;
   onNext: () => void;
   fromAsset: SupportedAsset | null;
   toAsset: SupportedAsset | null;
   isLoading?: boolean;
   createSwapError?: string | null;
+  hasAcceptedTerms?: boolean;
+  onHasAcceptedTermsChange?: (checked: boolean) => void;
+  onBeforeLegalNavigate?: () => void;
+  defaultExpandedTerms?: boolean;
 }
 
 const strongBorder =
@@ -23,17 +27,25 @@ const strongBorder =
 const WalletAddressStep: React.FC<WalletAddressStepProps> = ({
   walletAddress,
   onWalletAddressChange,
-  onBack,
   onNext,
   fromAsset,
   toAsset,
   isLoading = false,
   createSwapError,
+  hasAcceptedTerms: hasAcceptedTermsProp,
+  onHasAcceptedTermsChange,
+  onBeforeLegalNavigate,
+  defaultExpandedTerms = false,
 }) => {
   const { isDark } = useTheme();
-  const [hasAcceptedTerms, setHasAcceptedTerms] = useState(false);
+  const [internalHasAcceptedTerms, setInternalHasAcceptedTerms] = useState(false);
+  const hasAcceptedTerms = hasAcceptedTermsProp ?? internalHasAcceptedTerms;
+  const setHasAcceptedTerms = (checked: boolean) => {
+    setInternalHasAcceptedTerms(checked);
+    onHasAcceptedTermsChange?.(checked);
+  };
   const [walletError, setWalletError] = useState<string | null>(null);
-  const [expandedTerms, setExpandedTerms] = useState(false);
+  const [expandedTerms, setExpandedTerms] = useState(defaultExpandedTerms);
   const [legalModal, setLegalModal] = useState<{
     title: string;
     content: string[];
@@ -438,101 +450,133 @@ const WalletAddressStep: React.FC<WalletAddressStepProps> = ({
                           <li>• all the terms and conditions listed above, and</li>
                           <li>
                             • our full{" "}
-                            <button
-                              type="button"
+                            <Link
+                              href="/legal/terms-of-service"
+                              rel="noopener noreferrer"
                               className="text-[#1D8751] underline font-medium hover:text-[#166b3e]"
-                              onClick={() =>
-                                openLegalModal("Terms of Service", [
-                                  "By using this swap service, you confirm that all wallet and transaction information you provide is accurate and belongs to you.",
-                                  "Blockchain transactions are irreversible. Sending to an incorrect address, asset, or network may cause permanent loss of funds.",
-                                  "Rates, fees, timing, and final output can vary based on market conditions, network congestion, liquidity, and provider availability.",
-                                  "By proceeding, you acknowledge and accept OMAYA Terms of Use, Privacy Policy, AML Policy, Payment Policies, and Risk Disclosures."
-                                ])
-                              }
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                onBeforeLegalNavigate?.();
+                              }}
                             >
                               Terms of Service
-                            </button>
+                            </Link>
                           </li>
                         </ul>
                       </div>
                     </div>
                   </div>
                 )}
-                 <button
-                    onClick={() => setExpandedTerms(!expandedTerms)}
-                    className="mb-3 sm:mb-4 mx-11 text-[#1D8751] hover:text-[#166b3e] font-semibold text-xs sm:text-sm flex items-center gap-1.5 transition-colors"
-                  >
-                    {expandedTerms ? (
-                      <>
-                        <span>Show Less</span>
-                        <svg className="w-4 h-4 transform rotate-180" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 14l-7 7m0 0l-7-7m7 7V3" />
-                        </svg>
-                      </>
-                    ) : (
-                      <>
-                        <span>Show More</span>
-                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 14l-7 7m0 0l-7-7m7 7V3" />
-                        </svg>
-                      </>
-                    )}
-                  </button>
+
+                <button
+                  type="button"
+                  onClick={() => setExpandedTerms(!expandedTerms)}
+                  className="w-full px-4 sm:px-5 pb-4 text-[#1D8751] hover:text-[#166b3e] font-semibold text-xs sm:text-sm flex items-center gap-1.5 transition-colors"
+                >
+                  {expandedTerms ? (
+                    <>
+                      <span>Show Less</span>
+                      <svg className="w-4 h-4 transform rotate-180" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 14l-7 7m0 0l-7-7m7 7V3" />
+                      </svg>
+                    </>
+                  ) : (
+                    <>
+                      <span>Show More</span>
+                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 14l-7 7m0 0l-7-7m7 7V3" />
+                      </svg>
+                    </>
+                  )}
+                </button>
               </div>
-              <button
-                onClick={() => setExpandedTerms(!expandedTerms)}
-                className="mt-3 sm:mt-4 text-[#1D8751] hover:text-[#166b3e] font-semibold text-xs sm:text-sm flex items-center gap-1.5 transition-colors"
-              >
-                {expandedTerms ? (
-                  <>
-                    <span>Show Less</span>
-                    <svg className="w-4 h-4 transform rotate-180" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 14l-7 7m0 0l-7-7m7 7V3" />
-                    </svg>
-                  </>
-                ) : (
-                  <>
-                    <span>Show More</span>
-                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 14l-7 7m0 0l-7-7m7 7V3" />
-                    </svg>
-                  </>
-                )}
-              </button>
 
               {/* Terms Acceptance Checkbox */}
-              <label
-                className={`flex items-start gap-3 cursor-pointer select-none mt-2 p-3 rounded-xl border ${
-                  isDark
-                    ? "border-accent hover:bg-[#1a1a22]"
-                    : "border-[#E2E8F0] hover:bg-[#f8fafc]"
-                } transition-colors`}
+              <div
+                className={`mt-4 rounded-xl border-2 border-[#1D8751] p-3 sm:p-4 ${
+                  isDark ? "bg-[#1D8751]/5" : "bg-[#1D8751]/5"
+                }`}
               >
-                <input
-                  type="checkbox"
-                  checked={hasAcceptedTerms}
-                  onChange={(e) => setHasAcceptedTerms(e.target.checked)}
-                  disabled={isLoading}
-                  className="mt-0.5 w-4 h-4 sm:w-5 sm:h-5 rounded border-2 border-[#1D8751] focus:ring-[#1D8751] focus:ring-offset-0 cursor-pointer appearance-none bg-transparent checked:bg-[#1D8751] checked:border-[#1D8751] relative after:content-[''] after:absolute after:w-1.5 after:h-2.5 after:border-white after:border-r-2 after:border-b-2 after:rotate-45 after:opacity-0 checked:after:opacity-100 after:left-[5px] after:top-[1px]"
-                />
-                <span className={`text-xs sm:text-sm ${isDark ? "text-[#788099]" : "text-[#475569]"}`}>
+                <style>{`
+                  input[type="checkbox"].swap-terms-checkbox:checked {
+                    background-image: url("data:image/svg+xml,%3csvg viewBox='0 0 16 16' fill='white' xmlns='http://www.w3.org/2000/svg'%3e%3cpath d='M12.207 4.793a1 1 0 010 1.414l-5 5a1 1 0 01-1.414 0l-2-2a1 1 0 011.414-1.414L6.5 9.086l4.293-4.293a1 1 0 011.414 0z'/%3e%3c/svg%3e");
+                    background-size: 14px 14px;
+                    background-repeat: no-repeat;
+                    background-position: center;
+                  }
+                `}</style>
+                <label className="flex items-start gap-3 cursor-pointer select-none">
+                  <input
+                    type="checkbox"
+                    id="swap-terms-accept"
+                    checked={hasAcceptedTerms}
+                    onChange={(e) => setHasAcceptedTerms(e.target.checked)}
+                    disabled={isLoading}
+                    className="swap-terms-checkbox mt-0.5 w-5 h-5 rounded border-2 border-[#1D8751] focus:ring-[#1D8751] appearance-none bg-white dark:bg-[#18181D] checked:bg-[#1D8751] checked:border-[#1D8751] flex-shrink-0 cursor-pointer disabled:opacity-50"
+                  />
+                  <span className={`text-xs sm:text-sm leading-relaxed ${isDark ? "text-[#788099]" : "text-[#475569]"}`}>
                   I have read and agreed to OMAYA.io{" "}
-                  <button
-                    type="button"
+                  <Link
+                    href="/legal/terms-of-service"
+                    rel="noopener noreferrer"
                     className="text-[#1D8751] underline font-medium hover:text-[#166b3e]"
-                    onClick={() =>
-                      openLegalModal("Terms of Use", [
-                        "By using this swap service, you confirm that all wallet and transaction information you provide is accurate and belongs to you.",
-                        "Blockchain transactions are irreversible. Sending to an incorrect address, asset, or network may cause permanent loss of funds.",
-                        "Rates, fees, timing, and final output can vary based on market conditions, network congestion, liquidity, and provider availability.",
-                        "By proceeding, you acknowledge and accept OMAYA Terms of Use, Privacy Policy, AML Policy, Payment Policies, and Risk Disclosures."
-                      ])
-                    }
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      onBeforeLegalNavigate?.();
+                    }}
                   >
                     Terms of Use
-                  </button>
-                </span>
-              </label>
+                  </Link>{" "}
+                  <Link
+                    href="/legal/privacy-policy"
+                    rel="noopener noreferrer"
+                    className="text-[#1D8751] underline font-medium hover:text-[#166b3e]"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      onBeforeLegalNavigate?.();
+                    }}
+                  >
+                    Privacy Policy
+                  </Link>
+                  ,{" "}
+                  <Link
+                    href="/legal/payment-policy"
+                    rel="noopener noreferrer"
+                    className="text-[#1D8751] underline font-medium hover:text-[#166b3e]"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      onBeforeLegalNavigate?.();
+                    }}
+                  >
+                    Payment Policies
+                  </Link>
+                  ,{" "}
+                  <Link
+                    href="/legal/aml-policy"
+                    rel="noopener noreferrer"
+                    className="text-[#1D8751] font-medium underline hover:text-[#166b3e]"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      onBeforeLegalNavigate?.();
+                    }}
+                  >
+                    AML
+                  </Link>
+                  ,{" "}
+                  <Link
+                    href="/legal/risk-disclosure-statement"
+                    rel="noopener noreferrer"
+                    className="text-[#1D8751] font-medium underline hover:text-[#166b3e]"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      onBeforeLegalNavigate?.();
+                    }}
+                  >
+                    Risk Disclosure Statement
+                  </Link>
+                  </span>
+                </label>
+              </div>
             </div>
           </div>
         </div>
@@ -574,19 +618,8 @@ const WalletAddressStep: React.FC<WalletAddressStepProps> = ({
           </div>
         )}
 
-        {/* Navigation Buttons */}
-        <div className="flex flex-col gap-3 w-full px-0 sm:px-2 mt-3 sm:mt-4">
-          <button
-            onClick={onBack}
-            disabled={isLoading}
-            className={`w-full text-sm sm:text-base font-medium py-2.5 sm:py-2 rounded-2xl transition-colors ${
-              isDark
-                ? "bg-[#2A2A33] text-white hover:bg-[#33333d]"
-                : "bg-gray-100 text-gray-800 hover:bg-gray-200"
-            } ${isLoading ? "opacity-60 cursor-not-allowed" : ""}`}
-          >
-            Back
-          </button>
+        {/* Submit Button */}
+        <div className="w-full px-0 sm:px-2 mt-3 sm:mt-4">
           <button
             onClick={handleNext}
             disabled={isSubmitDisabled}

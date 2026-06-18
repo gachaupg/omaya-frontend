@@ -19,6 +19,7 @@ interface WalletAddressStepProps {
   onHasAcceptedTermsChange?: (checked: boolean) => void;
   onBeforeLegalNavigate?: () => void;
   createSwapError?: string | null;
+  defaultExpandedTerms?: boolean;
 }
 
 const strongBorder =
@@ -36,6 +37,7 @@ const WalletAddressStep: React.FC<WalletAddressStepProps> = ({
   onHasAcceptedTermsChange,
   onBeforeLegalNavigate,
   createSwapError,
+  defaultExpandedTerms = false,
 }) => {
   const { isDark } = useTheme();
   const [internalHasAcceptedTerms, setInternalHasAcceptedTerms] = useState(false);
@@ -45,7 +47,7 @@ const WalletAddressStep: React.FC<WalletAddressStepProps> = ({
     onHasAcceptedTermsChange?.(checked);
   };
   const [walletError, setWalletError] = useState<string | null>(null);
-  const [expandedTerms, setExpandedTerms] = useState(false);
+  const [expandedTerms, setExpandedTerms] = useState(defaultExpandedTerms);
   const [bookmarkOpen, setBookmarkOpen] = useState(false);
   const bookmarkAnchorRef = useRef<HTMLSpanElement>(null);
   const errorBannerRef = useRef<HTMLParagraphElement>(null);
