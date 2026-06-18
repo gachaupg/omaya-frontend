@@ -12,7 +12,6 @@ import {
   fetchSingleOrder,
   fetchConfirmOrder,
   cancelP2POrderThunk,
-  completeP2PTradeThunk,
 } from "@/features/p2p/slices/orderSlice";
 import { submitFeedbackThunk } from "@/features/p2p/slices/feedbackSubmissionSlice";
 import AppealModal from "./appeal";
@@ -28,6 +27,8 @@ import { useBackgroundAwareCountdown } from "@/features/p2p/hooks/useBackgroundA
 import { handleCopyToClipboard, parseDurationToSeconds, formatDurationForDisplay } from "@/features/p2p/components/Common/utils";
 
 import { logger } from '@/lib/utils/logger';
+import { useP2PTradeCompleteOtp } from "@/features/p2p/hooks/useP2PTradeCompleteOtp";
+import P2PTradeCompleteOtpModal from "@/features/p2p/components/ui/market/sections/P2PTradeCompleteOtpModal";
 import {
   roundP2PFiat,
   sellFiatFromUsdtSent,
@@ -485,24 +486,6 @@ const FinalSell: React.FC<FinalSellProps> = ({ orderData }) => {
     },
   });
 
-  const handleConfirmTrade = () => {
-    if (isAuthenticated && confirmOrder?.id) {
-      lastActionTradeIdRef.current = confirmOrder.id;
-      dispatch(completeP2PTradeThunk(confirmOrder.id))
-        .unwrap()
-        .then(() => {
-          showToast.success("Money Sent successfully!");
-          dispatch(fetchConfirmOrder(confirmOrder.id));
-        })
-        .catch((error) => {
-          showToast.error(
-            "Failed to complete trade",
-            error.message || "Please try again"
-          );
-        });
-    }
-  };
-
   const handleRefresh = () => {
     // Use trade_id from localStorage first, then fallback to params
     const tradeIdFromStorage = localStorage.getItem('p2p_trade_id');
@@ -548,6 +531,29 @@ const FinalSell: React.FC<FinalSellProps> = ({ orderData }) => {
     effectiveFlags,
     inPendingAcceptanceSeller
   );
+
+  const {
+    otpModalOpen,
+    setOtpModalOpen,
+    otpError,
+    otpVerifying,
+    requestOtp,
+    verifyOtp,
+    resendOtp,
+  } = useP2PTradeCompleteOtp({
+    tradeId: confirmOrder?.id,
+    onComplete: () => {
+      if (confirmOrder?.id) {
+        dispatch(fetchConfirmOrder(confirmOrder.id));
+      }
+    },
+  });
+
+  const handleConfirmTrade = () => {
+    if (!isAuthenticated || !confirmOrder?.id) return;
+    lastActionTradeIdRef.current = confirmOrder.id;
+    void requestOtp();
+  };
 
   const lifecycleBannerText = tradeLifecycleBanner?.message ?? null;
 
@@ -794,9 +800,10 @@ const FinalSell: React.FC<FinalSellProps> = ({ orderData }) => {
               <div className="flex flex-col gap-4">
                 {paymentDetailsList.length > 0 ? (
                   paymentDetailsList.map((paymentDetails: { id?: number; provider?: string; payment_method?: string; account_name?: string; account_number?: string; wallet_address?: string; provider_logo?: string; logo?: string; logo_url?: string }) => (
-                    <div key={paymentDetails?.id ?? paymentDetails?.provider ?? Math.random()} className="flex flex-col gap-3 p-3 md:p-4 border border-gray-200 dark:border-[#3C3C47] rounded-2xl bg-white dark:bg-[var(--bg-color)]">
-                      <div className="flex flex-col md:flex-row gap-3 md:gap-4">
-                        <div className="flex flex-row gap-2 md:gap-3 items-center p-2 md:p-3 w-full md:w-auto md:min-w-[140px]">
+                    <div key={paymentDetails?.id ?? paymentDetails?.provider ?? Math.random()} className="flex flex-col gap-4 p-3 md:p-4 border border-gray-200 dark:border-[#3C3C47] rounded-2xl bg-white dark:bg-[var(--bg-color)]">
+                      <div className="flex flex-col w-full min-w-0 items-center">
+                        <span className="text-[#788099] text-xs md:text-sm mb-2 w-full text-center">Bank</span>
+                        <div className="flex flex-row gap-2 md:gap-3 items-center justify-center p-2 md:p-3 w-full max-w-xl mx-auto rounded-full border border-[#1D8751] bg-transparent">
                           {paymentDetails?.logo || paymentDetails?.logo_url || paymentDetails?.provider_logo ? (
                             <img
                               src={paymentDetails?.logo || paymentDetails?.logo_url || paymentDetails?.provider_logo}
@@ -822,97 +829,96 @@ const FinalSell: React.FC<FinalSellProps> = ({ orderData }) => {
                             </div>
                           )}
                           <div className="flex flex-col min-w-0">
-                            <span className="text-gray-900 dark:text-white text-sm md:text-base font-semibold">
+                            <span className="text-gray-900 dark:text-white text-sm md:text-base font-semibold truncate">
                               {paymentDetails?.provider}
                             </span>
                             {paymentDetails?.payment_method && (
-                              <span className="text-[#788099] text-xs">
+                              <span className="text-[#788099] text-xs capitalize">
                                 {paymentDetails.payment_method.replace(/_/g, " ")}
                               </span>
                             )}
                           </div>
                         </div>
-                        <div className="flex flex-col gap-3 md:gap-4 w-full md:flex-1 min-w-0">
-                          <div className="flex flex-col gap-3 md:gap-4">
-                            <div className="flex flex-col sm:flex-row w-full items-stretch sm:items-center gap-2 sm:gap-3">
-                              <div className="w-full flex flex-col min-w-0">
-                                <span className="text-[#788099] text-xs md:text-sm mb-2">Account Name</span>
-                                <span className="flex-1 min-w-0 px-3 md:px-4 py-2 rounded-full border border-[#1D8751] text-[#1D8751] bg-transparent font-semibold text-sm md:text-base flex items-center truncate">
-                                  <span className="w-2 h-2 md:w-3 md:h-3 rounded-full bg-[#1D8751] inline-block mr-2 shrink-0"></span>
-                                  <span className="truncate">{paymentDetails?.account_name}</span>
-                                </span>
-                              </div>
-                              <button
-                                className="w-full sm:w-auto px-3 md:px-4 py-2 rounded-full border border-gray-200 dark:border-accent text-[#1D8751] bg-gray-100 dark:bg-(--card-color) font-semibold text-sm flex items-center justify-center gap-1.5 shrink-0"
-                                onClick={() =>
-                                  handleCopyToClipboard(paymentDetails?.account_name || "", `account-name-${paymentDetails?.id}`, setCopiedButton)
-                                }
-                              >
-                                {copiedButton === `account-name-${paymentDetails?.id}` ? "Copied!" : "Copy"}
-                                <Copy className="w-2 h-2 md:w-3 md:h-3" />
-                              </button>
-                            </div>
-                            <div className="flex flex-col sm:flex-row w-full items-stretch sm:items-center gap-2 sm:gap-3">
-                              <div className="w-full flex flex-col min-w-0">
-                                <span className="text-[#788099] text-xs md:text-sm mb-2">Account Number</span>
-                                <span className="flex-1 min-w-0 px-3 md:px-4 py-2 rounded-full border border-[#1D8751] text-[#1D8751] bg-transparent font-semibold text-sm md:text-base flex items-center truncate">
-                                  <span className="w-2 h-2 md:w-3 md:h-3 rounded-full bg-[#1D8751] inline-block mr-2 flex-shrink-0"></span>
-                                  <span className="truncate">{paymentDetails?.account_number}</span>
-                                </span>
-                              </div>
-                              <button
-                                className="w-full sm:w-auto px-3 md:px-4 py-2 rounded-full border border-gray-200 dark:border-[#35353E] text-[#1D8751] bg-gray-100 dark:bg-[var(--card-color)] font-semibold text-sm flex items-center justify-center gap-1.5 flex-shrink-0"
-                                onClick={() =>
-                                  handleCopyToClipboard(paymentDetails?.account_number || "", `account-number-${paymentDetails?.id}`, setCopiedButton)
-                                }
-                              >
-                                {copiedButton === `account-number-${paymentDetails?.id}` ? "Copied!" : "Copy"}
-                                <Copy className="w-2 h-2 md:w-3 md:h-3" />
-                              </button>
-                            </div>
-                            {paymentDetails?.wallet_address ? (
-                              <div className="flex flex-col sm:flex-row w-full items-stretch sm:items-center gap-2 sm:gap-3">
-                                <div className="w-full flex flex-col min-w-0">
-                                  <span className="text-[#788099] text-xs md:text-sm mb-2">Wallet Address</span>
-                                  <span className="flex-1 min-w-0 px-3 md:px-4 py-2 rounded-full border border-[#1D8751] text-[#1D8751] bg-transparent font-semibold text-sm md:text-base flex items-center truncate">
-                                    <span className="w-2 h-2 md:w-3 md:h-3 rounded-full bg-[#1D8751] inline-block mr-2 flex-shrink-0"></span>
-                                    <span className="truncate">{paymentDetails.wallet_address}</span>
-                                  </span>
-                                </div>
-                                <button
-                                  className="w-full sm:w-auto px-3 md:px-4 py-2 rounded-full border border-gray-200 dark:border-[#35353E] text-[#1D8751] bg-gray-100 dark:bg-[var(--card-color)] font-semibold text-sm flex items-center justify-center gap-1.5 flex-shrink-0"
-                                  onClick={() =>
-                                    handleCopyToClipboard(paymentDetails.wallet_address || "", `wallet-address-${paymentDetails?.id}`, setCopiedButton)
-                                  }
-                                >
-                                  {copiedButton === `wallet-address-${paymentDetails?.id}` ? "Copied!" : "Copy"}
-                                  <Copy className="w-2 h-2 md:w-3 md:h-3" />
-                                </button>
-                              </div>
-                            ) : null}
-                          </div>
+                      </div>
+
+                      <div className="flex flex-col w-full min-w-0 items-center">
+                        <span className="text-[#788099] text-xs md:text-sm mb-2 w-full text-center">Account Name</span>
+                        <div className="flex flex-row items-center justify-center gap-2 md:gap-3 w-full max-w-xl mx-auto">
+                          <span className="flex-1 min-w-0 px-3 md:px-4 py-2 rounded-full border border-[#1D8751] text-[#1D8751] bg-transparent font-semibold text-sm md:text-base flex items-center truncate">
+                            <span className="w-2 h-2 md:w-3 md:h-3 rounded-full bg-[#1D8751] inline-block mr-2 shrink-0"></span>
+                            <span className="truncate">{paymentDetails?.account_name}</span>
+                          </span>
+                          <button
+                            className="shrink-0 px-3 md:px-4 py-2 rounded-full border border-gray-200 dark:border-accent text-[#1D8751] bg-gray-100 dark:bg-(--card-color) font-semibold text-sm flex items-center justify-center gap-1.5"
+                            onClick={() =>
+                              handleCopyToClipboard(paymentDetails?.account_name || "", `account-name-${paymentDetails?.id}`, setCopiedButton)
+                            }
+                          >
+                            {copiedButton === `account-name-${paymentDetails?.id}` ? "Copied!" : "Copy"}
+                            <Copy className="w-2 h-2 md:w-3 md:h-3" />
+                          </button>
                         </div>
                       </div>
+
+                      <div className="flex flex-col w-full min-w-0 items-center">
+                        <span className="text-[#788099] text-xs md:text-sm mb-2 w-full text-center">Account Number</span>
+                        <div className="flex flex-row items-center justify-center gap-2 md:gap-3 w-full max-w-xl mx-auto">
+                          <span className="flex-1 min-w-0 px-3 md:px-4 py-2 rounded-full border border-[#1D8751] text-[#1D8751] bg-transparent font-semibold text-sm md:text-base flex items-center truncate">
+                            <span className="w-2 h-2 md:w-3 md:h-3 rounded-full bg-[#1D8751] inline-block mr-2 flex-shrink-0"></span>
+                            <span className="truncate">{paymentDetails?.account_number}</span>
+                          </span>
+                          <button
+                            className="shrink-0 px-3 md:px-4 py-2 rounded-full border border-gray-200 dark:border-[#35353E] text-[#1D8751] bg-gray-100 dark:bg-[var(--card-color)] font-semibold text-sm flex items-center justify-center gap-1.5"
+                            onClick={() =>
+                              handleCopyToClipboard(paymentDetails?.account_number || "", `account-number-${paymentDetails?.id}`, setCopiedButton)
+                            }
+                          >
+                            {copiedButton === `account-number-${paymentDetails?.id}` ? "Copied!" : "Copy"}
+                            <Copy className="w-2 h-2 md:w-3 md:h-3" />
+                          </button>
+                        </div>
+                      </div>
+
+                      {paymentDetails?.wallet_address ? (
+                        <div className="flex flex-col w-full min-w-0 items-center">
+                          <span className="text-[#788099] text-xs md:text-sm mb-2 w-full text-center">Wallet Address</span>
+                          <div className="flex flex-row items-center justify-center gap-2 md:gap-3 w-full max-w-xl mx-auto">
+                            <span className="flex-1 min-w-0 px-3 md:px-4 py-2 rounded-full border border-[#1D8751] text-[#1D8751] bg-transparent font-semibold text-sm md:text-base flex items-center truncate">
+                              <span className="w-2 h-2 md:w-3 md:h-3 rounded-full bg-[#1D8751] inline-block mr-2 flex-shrink-0"></span>
+                              <span className="truncate">{paymentDetails.wallet_address}</span>
+                            </span>
+                            <button
+                              className="shrink-0 px-3 md:px-4 py-2 rounded-full border border-gray-200 dark:border-[#35353E] text-[#1D8751] bg-gray-100 dark:bg-[var(--card-color)] font-semibold text-sm flex items-center justify-center gap-1.5"
+                              onClick={() =>
+                                handleCopyToClipboard(paymentDetails.wallet_address || "", `wallet-address-${paymentDetails?.id}`, setCopiedButton)
+                              }
+                            >
+                              {copiedButton === `wallet-address-${paymentDetails?.id}` ? "Copied!" : "Copy"}
+                              <Copy className="w-2 h-2 md:w-3 md:h-3" />
+                            </button>
+                          </div>
+                        </div>
+                      ) : null}
                     </div>
                   ))
                 ) : (
                   <div className="text-[#788099] text-sm py-4">No payment methods available</div>
                 )}
                 {paymentDetailsList.length > 0 && (
-                  <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 sm:gap-3">
-                    <div className="w-full flex flex-col min-w-0">
-                      <span className="text-[#788099] text-xs md:text-sm mb-2">Transaction ID</span>
+                  <div className="flex flex-col w-full min-w-0 items-center">
+                    <span className="text-[#788099] text-xs md:text-sm mb-2 w-full text-center">Transaction ID</span>
+                    <div className="flex flex-row items-center justify-center gap-2 md:gap-3 w-full max-w-xl mx-auto">
                       <span className="flex-1 min-w-0 font-[11px] md:font-[13px] px-3 md:px-4 py-2 rounded-full border border-[#1D8751] text-[#1D8751] bg-transparent flex items-center truncate">
                         <span className="truncate">{singleOrder?.id}</span>
                       </span>
+                      <button
+                        className="shrink-0 px-3 md:px-4 py-2 font-[11px] md:font-[13px] rounded-full border border-gray-200 dark:border-[#35353E] text-[#1D8751] bg-gray-100 dark:bg-[var(--card-color)] flex items-center justify-center gap-1.5"
+                        onClick={() => handleCopyToClipboard(singleOrder?.id || "", "transaction-id", setCopiedButton)}
+                      >
+                        {copiedButton === "transaction-id" ? "Copied!" : "Copy"}
+                        <Copy className="w-2 h-2 md:w-3 md:h-3" />
+                      </button>
                     </div>
-                    <button
-                      className="w-full sm:w-auto px-3 md:px-4 py-2 font-[11px] md:font-[13px] rounded-full border border-gray-200 dark:border-[#35353E] text-[#1D8751] bg-gray-100 dark:bg-[var(--card-color)] flex items-center justify-center gap-1.5 flex-shrink-0"
-                      onClick={() => handleCopyToClipboard(singleOrder?.id || "", "transaction-id", setCopiedButton)}
-                    >
-                      {copiedButton === "transaction-id" ? "Copied!" : "Copy"}
-                      <Copy className="w-2 h-2 md:w-3 md:h-3" />
-                    </button>
                   </div>
                 )}
 
@@ -995,7 +1001,11 @@ const FinalSell: React.FC<FinalSellProps> = ({ orderData }) => {
                             confirmTradeLoading &&
                             !!confirmOrder?.id &&
                             lastActionTradeIdRef.current === confirmOrder.id;
-                          return isThisTradeLoading ? "Notifying buyer..." : "Payments Received";
+                          return isThisTradeLoading && !otpModalOpen
+                            ? "Sending OTP..."
+                            : isThisTradeLoading || otpVerifying
+                              ? "Confirming payment..."
+                              : "Payments Received";
                         })()}
                       </button>
                     </div>
@@ -1244,6 +1254,18 @@ const FinalSell: React.FC<FinalSellProps> = ({ orderData }) => {
           </div>
         )}
       </div>
+      <P2PTradeCompleteOtpModal
+        isOpen={otpModalOpen}
+        onClose={() => setOtpModalOpen(false)}
+        onVerify={(otp) => {
+          void verifyOtp(otp);
+        }}
+        onResend={() => {
+          void resendOtp();
+        }}
+        isLoading={otpVerifying}
+        error={otpError}
+      />
     </div>
   );
 };

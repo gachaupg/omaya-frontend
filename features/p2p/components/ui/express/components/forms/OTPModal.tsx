@@ -1,4 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
+import { createPortal } from 'react-dom';
 import { useTheme } from '@/context/theme';
 
 interface OTPModalProps {
@@ -8,6 +9,11 @@ interface OTPModalProps {
   onResend: () => void;
   isLoading?: boolean;
   error?: string;
+  title?: string;
+  description?: string;
+  verifyButtonLabel?: string;
+  overlayClassName?: string;
+  usePortal?: boolean;
 }
 
 const OTPModal: React.FC<OTPModalProps> = ({
@@ -16,7 +22,12 @@ const OTPModal: React.FC<OTPModalProps> = ({
   onVerify,
   onResend,
   isLoading = false,
-  error = ''
+  error = '',
+  title = 'Verify Your Withdrawal',
+  description = 'Enter the 6-digit verification code sent to your registered email/phone',
+  verifyButtonLabel = 'Verify OTP',
+  overlayClassName = 'z-[10000]',
+  usePortal = false,
 }) => {
   const { isDark } = useTheme();
   const [otp, setOtp] = useState(['', '', '', '', '', '']);
@@ -105,9 +116,11 @@ const OTPModal: React.FC<OTPModalProps> = ({
 
   if (!isOpen) return null;
 
-  return (
-    <div className="fixed inset-0 bg-black/20 dark:bg-black/50 backdrop-blur-sm flex items-center justify-center z-50">
-      <div className="dark:bg-[#1D1D23] bg-white rounded-3xl p-8 max-w-md w-full mx-4 text-center shadow-2xl dark:border border-[#39394a] border-gray-200">
+  const modal = (
+    <div
+      className={`fixed inset-0 bg-black/20 dark:bg-black/50 backdrop-blur-sm flex items-center justify-center overflow-y-auto p-4 ${overlayClassName}`}
+    >
+      <div className="dark:bg-[#1D1D23] bg-white rounded-3xl p-6 sm:p-8 max-w-md w-full mx-auto my-auto text-center shadow-2xl dark:border border-[#39394a] border-gray-200 max-h-[min(90vh,720px)] overflow-y-auto">
         {/* Header */}
         <div className="mb-6">
           <div className="w-16 h-16 bg-[#1D8751] rounded-full flex items-center justify-center mx-auto mb-4">
@@ -129,10 +142,10 @@ const OTPModal: React.FC<OTPModalProps> = ({
             </svg>
           </div>
           <h2 className="dark:text-white text-gray-900 text-2xl font-semibold mb-2">
-            Verify Your Withdrawal
+            {title}
           </h2>
           <p className="dark:text-[#788099] text-gray-600 text-sm">
-            Enter the 6-digit verification code sent to your registered email/phone
+            {description}
           </p>
         </div>
 
@@ -172,7 +185,7 @@ const OTPModal: React.FC<OTPModalProps> = ({
           {/* Error Message */}
           {error && (
             <div className="mb-4 p-3 dark:bg-red-500/10 bg-red-50 border dark:border-red-500/30 border-red-200 rounded-xl">
-              <p className="dark:text-red-400 text-red-600 text-sm">Invalid OTP. Please try again.</p>
+              <p className="dark:text-red-400 text-red-600 text-sm">{error}</p>
             </div>
           )}
         </div>
@@ -190,7 +203,7 @@ const OTPModal: React.FC<OTPModalProps> = ({
                 Verifying...
               </div>
             ) : (
-              'Verify OTP'
+              verifyButtonLabel
             )}
           </button>
 
@@ -216,6 +229,12 @@ const OTPModal: React.FC<OTPModalProps> = ({
       </div>
     </div>
   );
+
+  if (usePortal && typeof document !== 'undefined') {
+    return createPortal(modal, document.body);
+  }
+
+  return modal;
 };
 
 export default OTPModal;

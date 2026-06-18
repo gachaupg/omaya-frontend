@@ -3611,6 +3611,7 @@ export default function WithdrawalForm({
         onResend={handleOTPResend}
         isLoading={otpLoading}
         error={otpError}
+        usePortal
       />
     </div>
   );

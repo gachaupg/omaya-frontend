@@ -253,11 +253,7 @@ const BasicInfoSection: React.FC<BasicInfoSectionProps> = ({ user }) => {
               placeholder="First name"
               disabled={isVerifiedUser}
             />
-            {isVerifiedUser && (
-              <span className="text-[11px] text-gray-500 dark:text-[#788099] mt-1 inline-block">
-                Name details are locked for verified users.
-              </span>
-            )}
+           
           </div>
           <div>
             <label className="block text-xs dark:text-[#ffff] text-[#0D0D0D] mb-1">
