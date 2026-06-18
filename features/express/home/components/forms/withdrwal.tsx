@@ -378,10 +378,19 @@ interface DepositFormProps {
   onModeChange?: (mode: "deposit" | "withdrawal") => void;
   isHomePage?: boolean;
   initialState?: {
+    mode?: "deposit" | "withdrawal";
     amountValue?: number;
     amountInput?: string;
+    receiveAmountValue?: number;
+    receiveAmountInput?: string;
     asset?: any;
     paymentDetails?: UserPaymentDetail[];
+    payBank?: string;
+    walletAddress?: string;
+    selectedNetwork?: any;
+    termsAccepted?: boolean;
+    isFirstCardSubmitted?: boolean;
+    expandedTerms?: boolean;
   };
 }
 
@@ -798,16 +807,20 @@ export default function WithdrawalForm({
 
   const [payAmount, setPayAmount] = useState(initialState?.amountValue ?? 100);
   const [payBank, setPayBank] = useState(
-    initialState?.paymentDetails?.[0]?.payment_provider_name || ""
+    initialState?.payBank ||
+      initialState?.paymentDetails?.[0]?.payment_provider_name ||
+      ""
   );
   const [selectedProviderData, setSelectedProviderData] =
     useState<any>(initialState?.paymentDetails?.[0] || null);
-  const [getAmount, setGetAmount] = useState(initialState?.amountValue ?? 0);
+  const [getAmount, setGetAmount] = useState(
+    initialState?.receiveAmountValue ?? initialState?.amountValue ?? 0
+  );
   const [payAmountInput, setPayAmountInput] = useState(
     initialState?.amountInput ?? "100"
   );
   const [getAmountInput, setGetAmountInput] = useState(
-    initialState?.amountInput ?? ""
+    initialState?.receiveAmountInput ?? initialState?.amountInput ?? ""
   );
 
   // Keep receive amount non-negative; OTC threshold check is handled separately.
@@ -817,9 +830,11 @@ export default function WithdrawalForm({
   const [selectedAsset, setSelectedAsset] = useState<any>(
     initialState?.asset || null
   );
-  const [selectedNetwork, setSelectedNetwork] = useState<any>(null);
+  const [selectedNetwork, setSelectedNetwork] = useState<any>(
+    initialState?.selectedNetwork ?? null
+  );
   const [isCalculatingFromPay, setIsCalculatingFromPay] = useState(true);
-  const [walletAddress, setWalletAddress] = useState("");
+  const [walletAddress, setWalletAddress] = useState(initialState?.walletAddress ?? "");
   const [walletError, setWalletError] = useState<string | null>(null);
   const [forceUpdate, setForceUpdate] = useState(0);
   const [selectedPaymentDetail, setSelectedPaymentDetail] = useState<any>(null);
@@ -838,8 +853,12 @@ export default function WithdrawalForm({
   const [responseMessage, setResponseMessage] = useState<string>("");
   const [websocketUrl, setWebsocketUrl] = useState<string>("");
   const [transactionId, setTransactionId] = useState<string>("");
-  const [isTermsAccepted, setIsTermsAccepted] = useState(false);
-  const [expandedTerms, setExpandedTerms] = useState(false);
+  const [isTermsAccepted, setIsTermsAccepted] = useState(
+    Boolean(initialState?.termsAccepted)
+  );
+  const [expandedTerms, setExpandedTerms] = useState(
+    Boolean(initialState?.expandedTerms)
+  );
 
   // Forex-specific state for withdrawal
   const [userNotesForex, setUserNotesForex] = useState<string>("");
@@ -954,7 +973,12 @@ export default function WithdrawalForm({
   const [estimateError, setEstimateError] = useState<string | null>(null);
 
   // First card submission state
-  const [isFirstCardSubmitted, setIsFirstCardSubmitted] = useState(false);
+  const [isFirstCardSubmitted, setIsFirstCardSubmitted] = useState(
+    Boolean(initialState?.isFirstCardSubmitted)
+  );
+  const hasRestoredFromLegalRef = useRef(
+    Boolean(initialState?.isFirstCardSubmitted)
+  );
 
   // Add loading state for "You Receive" calculation
   const [isCalculatingReceive, setIsCalculatingReceive] = useState(false);
@@ -962,7 +986,7 @@ export default function WithdrawalForm({
   // Add payment selection state
   const [selectedPaymentDetails, setSelectedPaymentDetails] = useState<
     UserPaymentDetail[]
-  >([]);
+  >(initialState?.paymentDetails ?? []);
 
   const handleBeforeLegalNavigate = useCallback(() => {
     if (!isHomePage) return;
@@ -979,7 +1003,8 @@ export default function WithdrawalForm({
       selectedNetwork,
       walletAddress,
       termsAccepted: isTermsAccepted,
-      isFirstCardSubmitted,
+      isFirstCardSubmitted: true,
+      expandedTerms: true,
     });
   }, [
     isHomePage,

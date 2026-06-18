@@ -2,14 +2,20 @@
 
 import { useRouter } from 'next/navigation';
 import { ArrowLeft } from 'lucide-react';
+import { peekLegalReturnPath } from '@/lib/utils/authRedirect';
 
 export default function BackButton() {
     const router = useRouter();
 
     const handleBack = () => {
+        const legalReturnPath = peekLegalReturnPath();
+        if (legalReturnPath) {
+            router.push(legalReturnPath);
+            return;
+        }
+
         // When page is opened in a new tab (e.g. from policy links with target="_blank"),
         // window.history.length is 1 and router.back() has nowhere to go.
-        // In that case navigate to the home page instead.
         if (typeof window !== 'undefined' && window.history.length > 1) {
             router.back();
         } else {

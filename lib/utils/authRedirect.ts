@@ -4,6 +4,47 @@ const AUTH_REDIRECT_KEY = "auth_redirect";
 const EXPRESS_PREFILL_KEY = "express_prefill_state";
 const RETURNING_FROM_LEGAL_KEY = "omaya_returning_from_legal";
 const EXPRESS_LEGAL_RETURN_STATE_KEY = "omaya_express_legal_return_state";
+const MONEYX_LEGAL_RETURN_STATE_KEY = "omaya_moneyx_legal_return_state";
+const P2P_LEGAL_RETURN_STATE_KEY = "omaya_p2p_legal_return_state";
+const SWAP_LEGAL_RETURN_STATE_KEY = "omaya_swap_legal_return_state";
+
+const withLegalReturnPath = (state: Record<string, any>) => ({
+  ...state,
+  returnPath:
+    state.returnPath ||
+    (typeof window !== "undefined"
+      ? `${window.location.pathname}${window.location.search}${window.location.hash}`
+      : "/"),
+});
+
+/** Path to restore when user taps Back on a legal policy page after leaving exchange/swap. */
+export const peekLegalReturnPath = (): string | null => {
+  if (typeof window === "undefined") return null;
+  if (!sessionStorage.getItem(RETURNING_FROM_LEGAL_KEY)) return null;
+
+  const keys = [
+    SWAP_LEGAL_RETURN_STATE_KEY,
+    EXPRESS_LEGAL_RETURN_STATE_KEY,
+    EXPRESS_HOME_LEGAL_SESSION_KEY,
+    MONEYX_LEGAL_RETURN_STATE_KEY,
+    P2P_LEGAL_RETURN_STATE_KEY,
+  ];
+
+  for (const key of keys) {
+    const raw = sessionStorage.getItem(key);
+    if (!raw) continue;
+    try {
+      const state = JSON.parse(raw) as Record<string, any>;
+      if (typeof state.returnPath === "string" && state.returnPath) {
+        return state.returnPath;
+      }
+    } catch {
+      // try next key
+    }
+  }
+
+  return "/";
+};
 
 export const setAuthRedirectPath = (path: string) => {
   if (typeof window === "undefined") {
@@ -44,7 +85,10 @@ export const consumeExpressPrefillState = (): Record<string, any> | null => {
 export const setExpressLegalReturnState = (state: Record<string, any>) => {
   if (typeof window === "undefined") return;
   try {
-    sessionStorage.setItem(EXPRESS_LEGAL_RETURN_STATE_KEY, JSON.stringify(state));
+    sessionStorage.setItem(
+      EXPRESS_LEGAL_RETURN_STATE_KEY,
+      JSON.stringify(withLegalReturnPath(state))
+    );
     sessionStorage.setItem(RETURNING_FROM_LEGAL_KEY, "1");
   } catch {
     // Ignore storage errors
@@ -153,11 +197,25 @@ export const buildSwapRedirectPath = (state?: Record<string, any>): string => {
 };
 
 const EXPRESS_HOME_FORM_KEY = "express_home_form_state";
+const EXPRESS_HOME_LEGAL_SESSION_KEY = "express_home_legal_session";
 const MONEYX_PREFILL_KEY = "moneyx_prefill_state";
+
 export const setExpressHomeFormState = (state: Record<string, any>) => {
   if (typeof window === "undefined") return;
   try {
-    localStorage.setItem(EXPRESS_HOME_FORM_KEY, JSON.stringify(state));
+    const payload = withLegalReturnPath({
+      ...state,
+      expandedTerms: state.expandedTerms ?? true,
+      scrollY:
+        typeof state.scrollY === "number"
+          ? state.scrollY
+          : typeof window !== "undefined"
+            ? window.scrollY
+            : 0,
+    });
+    localStorage.setItem(EXPRESS_HOME_FORM_KEY, JSON.stringify(payload));
+    sessionStorage.setItem(EXPRESS_HOME_LEGAL_SESSION_KEY, JSON.stringify(payload));
+    sessionStorage.setItem(RETURNING_FROM_LEGAL_KEY, "1");
   } catch {
     // Ignore
   }
@@ -172,6 +230,42 @@ export const getExpressHomeFormState = (): Record<string, any> | null => {
   } catch {
     return null;
   }
+};
+
+/** Read home express legal return state without clearing (safe for React Strict Mode). */
+export const peekExpressHomeLegalReturnState = (): Record<string, any> | null => {
+  if (typeof window === "undefined") return null;
+  try {
+    const sessionRaw = sessionStorage.getItem(EXPRESS_HOME_LEGAL_SESSION_KEY);
+    const localRaw = localStorage.getItem(EXPRESS_HOME_FORM_KEY);
+    const raw = sessionRaw || localRaw;
+    if (!raw) return null;
+    return JSON.parse(raw) as Record<string, any>;
+  } catch {
+    return null;
+  }
+};
+
+export const clearExpressHomeLegalReturnState = () => {
+  if (typeof window === "undefined") return;
+  sessionStorage.removeItem(RETURNING_FROM_LEGAL_KEY);
+};
+
+/** Remove persisted express home form payload after a successful restore. */
+export const finalizeExpressHomeLegalReturnState = () => {
+  if (typeof window === "undefined") return;
+  sessionStorage.removeItem(EXPRESS_HOME_LEGAL_SESSION_KEY);
+  localStorage.removeItem(EXPRESS_HOME_FORM_KEY);
+};
+
+/** Consume home express form state when returning from legal pages */
+export const consumeExpressHomeLegalReturnState = (): Record<string, any> | null => {
+  const state = peekExpressHomeLegalReturnState();
+  if (state) {
+    clearExpressHomeLegalReturnState();
+    finalizeExpressHomeLegalReturnState();
+  }
+  return state;
 };
 
 /** Consume and clear persisted express form state after restore */
@@ -258,8 +352,6 @@ export const consumePaymentModalPrefill = (): { method?: string; provider?: stri
   }
 };
 
-const P2P_LEGAL_RETURN_STATE_KEY = "omaya_p2p_legal_return_state";
-
 /** Save P2P express form state before navigating to legal pages (Terms, Privacy, etc.) */
 export const setP2PLegalReturnState = (state: Record<string, any>) => {
   if (typeof window === "undefined") return;
@@ -284,37 +376,50 @@ export const consumeP2PLegalReturnState = (): Record<string, any> | null => {
   }
 };
 
-const SWAP_LEGAL_RETURN_STATE_KEY = "omaya_swap_legal_return_state";
 
 /** Save swap form state before navigating to legal pages (Terms, Privacy, etc.) */
 export const setSwapLegalReturnState = (state: Record<string, any>) => {
   if (typeof window === "undefined") return;
   try {
-    sessionStorage.setItem(SWAP_LEGAL_RETURN_STATE_KEY, JSON.stringify(state));
+    sessionStorage.setItem(
+      SWAP_LEGAL_RETURN_STATE_KEY,
+      JSON.stringify(withLegalReturnPath(state))
+    );
     sessionStorage.setItem(RETURNING_FROM_LEGAL_KEY, "1");
   } catch {
     // Ignore storage errors
   }
 };
 
-/** Consume swap legal return state when user returns from Terms/Privacy/etc. */
-export const consumeSwapLegalReturnState = (): Record<string, any> | null => {
+/** Read swap legal return state without clearing (safe for React Strict Mode). */
+export const peekSwapLegalReturnState = (): Record<string, any> | null => {
   if (typeof window === "undefined") return null;
   try {
-    const returning = sessionStorage.getItem(RETURNING_FROM_LEGAL_KEY);
-    if (!returning) return null;
     const raw = sessionStorage.getItem(SWAP_LEGAL_RETURN_STATE_KEY);
-    if (!raw) {
-      sessionStorage.removeItem(RETURNING_FROM_LEGAL_KEY);
-      return null;
-    }
-    sessionStorage.removeItem(RETURNING_FROM_LEGAL_KEY);
-    sessionStorage.removeItem(SWAP_LEGAL_RETURN_STATE_KEY);
+    if (!raw) return null;
     return JSON.parse(raw) as Record<string, any>;
   } catch {
-    sessionStorage.removeItem(RETURNING_FROM_LEGAL_KEY);
-    sessionStorage.removeItem(SWAP_LEGAL_RETURN_STATE_KEY);
     return null;
   }
+};
+
+export const clearSwapLegalReturnState = () => {
+  if (typeof window === "undefined") return;
+  sessionStorage.removeItem(RETURNING_FROM_LEGAL_KEY);
+};
+
+export const finalizeSwapLegalReturnState = () => {
+  if (typeof window === "undefined") return;
+  sessionStorage.removeItem(SWAP_LEGAL_RETURN_STATE_KEY);
+};
+
+/** Consume swap legal return state when user returns from Terms/Privacy/etc. */
+export const consumeSwapLegalReturnState = (): Record<string, any> | null => {
+  const state = peekSwapLegalReturnState();
+  if (state) {
+    clearSwapLegalReturnState();
+    finalizeSwapLegalReturnState();
+  }
+  return state;
 };
 
