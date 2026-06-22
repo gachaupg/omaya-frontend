@@ -408,7 +408,14 @@ interface DepositFormProps {
     selectedNetwork?: any;
     termsAccepted?: boolean;
     isFirstCardSubmitted?: boolean;
+    isTransactionSubmitted?: boolean;
     expandedTerms?: boolean;
+    withdrawalAddress?: string;
+    payoutAddress?: string;
+    qrCodeUrl?: string;
+    transactionId?: string;
+    responseMessage?: string;
+    websocketUrl?: string;
   };
 }
 
@@ -866,13 +873,25 @@ export default function WithdrawalForm({
   // Add state for wallet address copy feedback
   const [isWalletAddressCopied, setIsWalletAddressCopied] = useState(false);
   // Add state for API response data
-  const [withdrawalAddress, setWithdrawalAddress] = useState<string>("");
-  const [payoutAddress, setPayoutAddress] = useState<string>("");
-  const [qrCodeUrl, setQrCodeUrl] = useState<string>("");
-  const [isTransactionSubmitted, setIsTransactionSubmitted] = useState(false);
-  const [responseMessage, setResponseMessage] = useState<string>("");
-  const [websocketUrl, setWebsocketUrl] = useState<string>("");
-  const [transactionId, setTransactionId] = useState<string>("");
+  const [withdrawalAddress, setWithdrawalAddress] = useState(
+    initialState?.withdrawalAddress ?? ""
+  );
+  const [payoutAddress, setPayoutAddress] = useState(
+    initialState?.payoutAddress ?? ""
+  );
+  const [qrCodeUrl, setQrCodeUrl] = useState(initialState?.qrCodeUrl ?? "");
+  const [isTransactionSubmitted, setIsTransactionSubmitted] = useState(
+    Boolean(initialState?.isTransactionSubmitted)
+  );
+  const [responseMessage, setResponseMessage] = useState(
+    initialState?.responseMessage ?? ""
+  );
+  const [websocketUrl, setWebsocketUrl] = useState(
+    initialState?.websocketUrl ?? ""
+  );
+  const [transactionId, setTransactionId] = useState(
+    initialState?.transactionId ?? ""
+  );
   const [isTermsAccepted, setIsTermsAccepted] = useState(
     Boolean(initialState?.termsAccepted)
   );
@@ -994,11 +1013,15 @@ export default function WithdrawalForm({
 
   // First card submission state
   const [isFirstCardSubmitted, setIsFirstCardSubmitted] = useState(
-    Boolean(initialState?.isFirstCardSubmitted)
+    Boolean(
+      initialState?.isTransactionSubmitted ?? initialState?.isFirstCardSubmitted
+    )
   );
-  const hasRestoredFromLegalRef = useRef(
-    Boolean(initialState?.isFirstCardSubmitted)
+  const restoredFromLegal = Boolean(
+    initialState?.isTransactionSubmitted ?? initialState?.isFirstCardSubmitted
   );
+  const hasRestoredFromLegalRef = useRef(restoredFromLegal);
+  const isRestoringFromLegalRef = useRef(restoredFromLegal);
 
   // Add loading state for "You Receive" calculation
   const [isCalculatingReceive, setIsCalculatingReceive] = useState(false);
@@ -1023,8 +1046,15 @@ export default function WithdrawalForm({
       selectedNetwork,
       walletAddress,
       termsAccepted: isTermsAccepted,
-      isFirstCardSubmitted: true,
-      expandedTerms: true,
+      isFirstCardSubmitted: isTransactionSubmitted,
+      isTransactionSubmitted,
+      expandedTerms,
+      withdrawalAddress,
+      payoutAddress,
+      qrCodeUrl,
+      transactionId,
+      responseMessage,
+      websocketUrl,
     });
   }, [
     isHomePage,
@@ -1038,7 +1068,14 @@ export default function WithdrawalForm({
     selectedNetwork,
     walletAddress,
     isTermsAccepted,
-    isFirstCardSubmitted,
+    isTransactionSubmitted,
+    expandedTerms,
+    withdrawalAddress,
+    payoutAddress,
+    qrCodeUrl,
+    transactionId,
+    responseMessage,
+    websocketUrl,
   ]);
 
   // Add calculation stability state
@@ -1281,21 +1318,35 @@ export default function WithdrawalForm({
         : [];
 
   // Reset form if user changes asset, payment method, or amount after submission
+  const selectedAssetKey = selectedAsset
+    ? (selectedAsset.asset_id ??
+        selectedAsset.ticker ??
+        selectedAsset.symbol ??
+        selectedAsset.name ??
+        "")
+    : "";
   useEffect(() => {
-    // Only reset if the transaction was already submitted
-    if (isTransactionSubmitted) {
-      // Clear the submission state and API response
-      setIsTransactionSubmitted(false);
-      setWithdrawalAddress("");
-      setPayoutAddress("");
-      setQrCodeUrl("");
-      setResponseMessage("");
-      setWebsocketUrl("");
-      setTransactionId("");
-      setWalletAddress("");
-      setWalletError(null);
+    if (isRestoringFromLegalRef.current) {
+      isRestoringFromLegalRef.current = false;
+      return;
     }
-  }, [selectedAsset, payBank, payAmount, getAmount]);
+    if (hasRestoredFromLegalRef.current) {
+      return;
+    }
+    if (!isTransactionSubmitted) {
+      return;
+    }
+
+    setIsTransactionSubmitted(false);
+    setWithdrawalAddress("");
+    setPayoutAddress("");
+    setQrCodeUrl("");
+    setResponseMessage("");
+    setWebsocketUrl("");
+    setTransactionId("");
+    setWalletAddress("");
+    setWalletError(null);
+  }, [selectedAssetKey, payBank, payAmount, getAmount]);
 
   // Track isTransactionSubmitted changes
   useEffect(() => {

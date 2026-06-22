@@ -180,6 +180,20 @@ export function normalizeTransactionSummary(
     ...(parseSummaryNumber(s.total_moneyx_volume) > 0
       ? { total_moneyx_volume: parseSummaryNumber(s.total_moneyx_volume) }
       : {}),
+    ...(parseSummaryNumber(s.total_approved_changenow_swap_volume) > 0
+      ? {
+          total_approved_changenow_swap_volume: parseSummaryNumber(
+            s.total_approved_changenow_swap_volume
+          ),
+        }
+      : {}),
+    ...(parseSummaryNumber(s.total_changenow_swap_volume) > 0
+      ? {
+          total_changenow_swap_volume: parseSummaryNumber(
+            s.total_changenow_swap_volume
+          ),
+        }
+      : {}),
   } as TransactionSummary;
 }
 
