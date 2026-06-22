@@ -1,11 +1,13 @@
 "use client";
-import React, { useState, useEffect, useMemo } from "react";
+import React, { useState, useEffect, useMemo, useRef } from "react";
 import { useSearchParams } from "next/navigation";
 import WithdrawalForm from "./forms/withdrwal";
 import DepositForm from "./forms/deposit";
 import {
   consumeExpressPrefillState,
-  consumeExpressLegalReturnState,
+  peekExpressDashboardLegalReturnStateIfReturning,
+  clearExpressDashboardLegalReturnFlag,
+  finalizeExpressDashboardLegalReturnState,
 } from "@/lib/utils/authRedirect";
 
 /** Parse prefill from URL synchronously so form gets correct initial state on first render */
@@ -20,11 +22,16 @@ function parsePrefillFromUrl(searchParams: URLSearchParams | null): Record<strin
   }
 }
 
+const readDashboardLegalReturnState = (): Record<string, any> | null => {
+  if (typeof window === "undefined") return null;
+  return peekExpressDashboardLegalReturnStateIfReturning();
+};
+
 interface ExpressExchangeFormProps {
   onExchange: (transactionData: {
     type: "deposit" | "withdrawal";
     amount: number;
-    receiveAmount?: number; // Net amount from form "You Receive"
+    receiveAmount?: number;
     asset: any;
     paymentDetail?: any;
     paymentDetails?: any[];
@@ -61,85 +68,98 @@ const ExpressExchangeForm: React.FC<ExpressExchangeFormProps> = ({
   isHomePage = false,
 }) => {
   const searchParams = useSearchParams();
+  const hasConsumedLegalRef = useRef(false);
   const prefillFromUrl = useMemo(
     () => parsePrefillFromUrl(searchParams),
     [searchParams]
   );
-  const [mode, setMode] = useState<"deposit" | "withdrawal">(initialMode);
+  const [legalReturnState, setLegalReturnState] = useState<
+    Record<string, any> | null
+  >(() => readDashboardLegalReturnState());
+  const [mode, setMode] = useState<"deposit" | "withdrawal">(() => {
+    const saved = readDashboardLegalReturnState();
+    if (saved?.mode === "deposit" || saved?.mode === "withdrawal") {
+      return saved.mode;
+    }
+    return initialMode;
+  });
   const [prefillState, setPrefillState] = useState<Record<string, any> | null>(
     () => prefillFromUrl
   );
-  // Legal return state takes precedence - user returning from Terms/Privacy/etc.
-  const [legalReturnState] = useState<Record<string, any> | null>(
-    () => consumeExpressLegalReturnState()
-  );
-  // Preserve state when switching modes
   const [preservedState, setPreservedState] = useState<any>(null);
 
   const handleModeChange = (newMode: "deposit" | "withdrawal", currentState?: any) => {
-    // Save current state before switching
     if (currentState) {
-      // Mark state coming from an in-form mode toggle so child forms can
-      // restore fields without triggering "auto-expand" behaviors intended
-      // only for legal-return / auth-redirect prefill flows.
       setPreservedState({ ...currentState, __source: "modeSwitch" });
     }
     setMode(newMode);
   };
 
-  // Update mode when initialMode prop changes
   useEffect(() => {
-    setMode(initialMode);
-  }, [initialMode]);
+    if (hasConsumedLegalRef.current) return;
+    hasConsumedLegalRef.current = true;
 
-  // When returning from legal pages, restore the exact mode (deposit/withdrawal)
-  useEffect(() => {
-    const legalMode = legalReturnState?.mode;
-    if (legalMode === "deposit" || legalMode === "withdrawal") {
-      setMode(legalMode);
+    const saved = legalReturnState ?? peekExpressDashboardLegalReturnStateIfReturning();
+    if (saved) {
+      setLegalReturnState(saved);
+      if (saved.mode === "deposit" || saved.mode === "withdrawal") {
+        setMode(saved.mode);
+      }
+      clearExpressDashboardLegalReturnFlag();
+
+      const savedScrollY = saved.scrollY;
+      if (typeof savedScrollY === "number" && !Number.isNaN(savedScrollY)) {
+        window.setTimeout(() => {
+          window.scrollTo({ top: Math.max(0, savedScrollY), behavior: "auto" });
+        }, 0);
+      }
+
+      window.setTimeout(() => {
+        finalizeExpressDashboardLegalReturnState();
+      }, 1000);
     }
   }, [legalReturnState]);
 
-  // Fallback: consume prefill from sessionStorage when URL has no prefill (e.g. truncated)
+  useEffect(() => {
+    if (legalReturnState?.mode) return;
+    setMode(initialMode);
+  }, [initialMode, legalReturnState?.mode]);
+
   useEffect(() => {
     if (prefillState) return;
     const fromStorage = consumeExpressPrefillState();
     if (fromStorage) setPrefillState(fromStorage);
   }, [prefillState]);
 
-  useEffect(() => {
-    if (typeof window === "undefined") return;
-    const savedScrollY = legalReturnState?.scrollY;
-    if (typeof savedScrollY !== "number" || Number.isNaN(savedScrollY)) return;
-
-    const restoreTimer = window.setTimeout(() => {
-      window.scrollTo({ top: Math.max(0, savedScrollY), behavior: "auto" });
-    }, 0);
-
-    return () => window.clearTimeout(restoreTimer);
-  }, [legalReturnState]);
+  const effectiveInitialState =
+    legalReturnState || preservedState || prefillState;
+  const isFormExpanded = Boolean(
+    effectiveInitialState?.isTransactionSubmitted ??
+      effectiveInitialState?.isFirstCardSubmitted
+  );
+  const formKey = legalReturnState
+    ? `legal-restore-${legalReturnState.mode}-${isFormExpanded ? "expanded" : "collapsed"}`
+    : `default-${mode}`;
 
   return (
     <div className="w-full mt-0">
-      {/* Mode Selection */}
-      
-
-      {/* Form Component  sgsgsggs*/}
       {mode === "deposit" ? (
         <DepositForm
+          key={formKey}
           onExchange={onExchange}
           mode={mode}
           onModeChange={handleModeChange}
           isHomePage={isHomePage}
-          initialState={legalReturnState || preservedState || prefillState}
+          initialState={effectiveInitialState}
         />
       ) : (
         <WithdrawalForm
+          key={formKey}
           onExchange={onExchange}
           mode={mode}
           onModeChange={handleModeChange}
           isHomePage={isHomePage}
-          initialState={legalReturnState || preservedState || prefillState}
+          initialState={effectiveInitialState}
         />
       )}
     </div>

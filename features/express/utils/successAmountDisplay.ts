@@ -98,6 +98,67 @@ function parseCommission(value: string | number | null | undefined): number {
   return Number.isFinite(parsed) ? parsed : 0;
 }
 
+export function parseExpressSocketNumberish(value: unknown): number | null {
+  if (value == null || value === "") return null;
+  const parsed =
+    typeof value === "number" ? value : parseFloat(String(value).trim());
+  return Number.isFinite(parsed) && parsed > 0 ? parsed : null;
+}
+
+export type ExpressSocketReceiveFields = {
+  net_amount?: unknown;
+  amount_to?: unknown;
+  estimated_amount?: unknown;
+  amount_expected_to?: unknown;
+};
+
+/** Unwrap status_update payload from express websocket messages. */
+export function unwrapExpressWsStatusPayload(
+  message: unknown
+): Record<string, unknown> {
+  if (!message || typeof message !== "object") return {};
+  const root = message as Record<string, unknown>;
+  const rootData =
+    root.data && typeof root.data === "object" && !Array.isArray(root.data)
+      ? (root.data as Record<string, unknown>)
+      : {};
+
+  if (
+    root.type === "status_update" &&
+    rootData.data &&
+    typeof rootData.data === "object" &&
+    !Array.isArray(rootData.data)
+  ) {
+    return rootData.data as Record<string, unknown>;
+  }
+
+  return rootData;
+}
+
+/**
+ * Resolve the receive amount from express websocket status updates.
+ * Withdrawals pay out fiat: prefer `net_amount` (after commission).
+ * Deposits receive crypto: prefer `amount_to` (swap output).
+ */
+export function resolveExpressSocketReceiveAmount(
+  wsData: ExpressSocketReceiveFields | null | undefined,
+  transactionType?: string
+): number | null {
+  if (!wsData) return null;
+
+  const netAmount = parseExpressSocketNumberish(wsData.net_amount);
+  const amountTo = parseExpressSocketNumberish(wsData.amount_to);
+  const estimatedAmount = parseExpressSocketNumberish(wsData.estimated_amount);
+  const expectedAmountTo = parseExpressSocketNumberish(wsData.amount_expected_to);
+
+  const type = String(transactionType ?? "").toLowerCase();
+  if (type === "withdrawal") {
+    return netAmount ?? amountTo ?? estimatedAmount ?? expectedAmountTo;
+  }
+
+  return amountTo ?? netAmount ?? estimatedAmount ?? expectedAmountTo;
+}
+
 /** Resolves amount + currency for status / exchanging "net receive" rows. */
 export function resolveExpressStatusNetDisplay(
   input: ExpressStatusNetDisplayInput

@@ -6,7 +6,13 @@ import { FiChevronDown, FiInfo } from "react-icons/fi";
 import { useDispatch, useSelector } from "react-redux";
 import { AppDispatch } from "../../../store";
 import { RootState } from "../../../store/rootReducer";
-import { setAuthRedirectPath } from "@/lib/utils/authRedirect";
+import {
+  setAuthRedirectPath,
+  setRatesCalculatorLegalReturnState,
+  clearRatesCalculatorLegalReturnFlag,
+  finalizeRatesCalculatorLegalReturnState,
+  isReturningFromLegalPage,
+} from "@/lib/utils/authRedirect";
 import {
   createDeposit,
   updateDepositAddress,
@@ -3066,6 +3072,16 @@ const getPaymentRestrictionMessage = (status?: string) =>
         receiveAmount,
         isFieldsSwapped,
         isDepositMode,
+        isFirstCardSubmitted,
+        transactionId,
+        responseData,
+        depositCode,
+        withdrawalAddress,
+        payoutAddress,
+        qrCodeUrl,
+        selectedPaymentDetails,
+        forexAccountNumber,
+        forexUserNotes,
       };
       logger.debug('general', "Saving calculator state:", stateToSave);
       localStorage.setItem("rates_calculator_state", JSON.stringify(stateToSave));
@@ -3109,8 +3125,18 @@ const getPaymentRestrictionMessage = (status?: string) =>
         expandedP2pWithdrawalTerms,
         walletAddress,
         payBank,
+        isFirstCardSubmitted,
+        transactionId,
+        responseData,
+        depositCode,
+        withdrawalAddress,
+        payoutAddress,
+        qrCodeUrl,
+        selectedPaymentDetails,
+        forexAccountNumber,
+        forexUserNotes,
       };
-      localStorage.setItem("rates_calculator_state", JSON.stringify(stateToSave));
+      setRatesCalculatorLegalReturnState(stateToSave);
     } catch {
       // Ignore storage errors
     }
@@ -3126,6 +3152,16 @@ const getPaymentRestrictionMessage = (status?: string) =>
     expandedP2pWithdrawalTerms,
     walletAddress,
     payBank,
+    isFirstCardSubmitted,
+    transactionId,
+    responseData,
+    depositCode,
+    withdrawalAddress,
+    payoutAddress,
+    qrCodeUrl,
+    selectedPaymentDetails,
+    forexAccountNumber,
+    forexUserNotes,
   ]);
 
   // Restore calculator state from localStorage
@@ -3157,6 +3193,27 @@ const getPaymentRestrictionMessage = (status?: string) =>
       }
       if (state.walletAddress) setWalletAddress(state.walletAddress);
       if (state.payBank) setPayBank(state.payBank);
+      if (
+        isReturningFromLegalPage() &&
+        state.isFirstCardSubmitted !== undefined
+      ) {
+        setIsFirstCardSubmitted(Boolean(state.isFirstCardSubmitted));
+      }
+      if (state.transactionId) setTransactionId(state.transactionId);
+      if (state.responseData) setResponseData(state.responseData);
+      if (state.depositCode) setDepositCode(state.depositCode);
+      if (state.withdrawalAddress) setWithdrawalAddress(state.withdrawalAddress);
+      if (state.payoutAddress) setPayoutAddress(state.payoutAddress);
+      if (state.qrCodeUrl) setQrCodeUrl(state.qrCodeUrl);
+      if (Array.isArray(state.selectedPaymentDetails)) {
+        setSelectedPaymentDetails(state.selectedPaymentDetails);
+      }
+      if (state.forexAccountNumber) {
+        setForexAccountNumber(String(state.forexAccountNumber));
+      }
+      if (state.forexUserNotes) {
+        setForexUserNotes(String(state.forexUserNotes));
+      }
       // Don't restore selectedPaymentMethod directly; let current provider list auto-select first.
 
       // Store asset and payment detail separately for later restoration (when they load)
@@ -3173,6 +3230,8 @@ const getPaymentRestrictionMessage = (status?: string) =>
 
       // Clear saved state after extracting asset and payment detail
       localStorage.removeItem("rates_calculator_state");
+      clearRatesCalculatorLegalReturnFlag();
+      finalizeRatesCalculatorLegalReturnState();
     } catch (error) {
       console.error("Failed to restore calculator state:", error);
       // Clear corrupted state

@@ -28,6 +28,7 @@ export const peekLegalReturnPath = (): string | null => {
     EXPRESS_HOME_LEGAL_SESSION_KEY,
     MONEYX_LEGAL_RETURN_STATE_KEY,
     P2P_LEGAL_RETURN_STATE_KEY,
+    RATES_CALCULATOR_STATE_KEY,
   ];
 
   for (const key of keys) {
@@ -95,6 +96,72 @@ export const setExpressLegalReturnState = (state: Record<string, any>) => {
   }
 };
 
+const normalizeExpressLegalReturnPayload = (
+  state: Record<string, any>
+): Record<string, any> => {
+  const paymentDetail = state.selectedPaymentDetail ?? state.payment;
+  const paymentDetails =
+    state.selectedPaymentDetails ??
+    state.paymentDetails ??
+    (paymentDetail ? [paymentDetail] : undefined);
+  const expanded = Boolean(
+    state.isTransactionSubmitted ?? state.isFirstCardSubmitted
+  );
+
+  return {
+    mode: state.mode,
+    amountValue: state.payAmount ?? state.amountValue,
+    amountInput: state.payAmountInput ?? state.amountInput,
+    receiveAmountValue: state.getAmount ?? state.receiveAmountValue,
+    receiveAmountInput: state.getAmountInput ?? state.receiveAmountInput,
+    scrollY: state.scrollY,
+    payBank: state.payBank,
+    payment: paymentDetail,
+    paymentDetails,
+    asset: state.selectedAsset ?? state.asset,
+    selectedAsset: state.selectedAsset ?? state.asset,
+    selectedNetwork: state.selectedNetwork,
+    walletAddress: state.walletAddress,
+    termsAccepted: state.termsAccepted ?? state.isTermsAccepted,
+    apiResponse: state.apiResponse,
+    transactionCode: state.transactionCode,
+    isFirstCardSubmitted: expanded,
+    isTransactionSubmitted: expanded,
+    expandedTerms: state.expandedTerms,
+    withdrawalAddress: state.withdrawalAddress,
+    payoutAddress: state.payoutAddress,
+    qrCodeUrl: state.qrCodeUrl,
+    transactionId: state.transactionId,
+    responseMessage: state.responseMessage,
+    websocketUrl: state.websocketUrl,
+  };
+};
+
+/** Read dashboard express legal return state without clearing. */
+export const peekExpressDashboardLegalReturnStateIfReturning =
+  (): Record<string, any> | null => {
+    if (typeof window === "undefined") return null;
+    if (!sessionStorage.getItem(RETURNING_FROM_LEGAL_KEY)) return null;
+    try {
+      const raw = sessionStorage.getItem(EXPRESS_LEGAL_RETURN_STATE_KEY);
+      if (!raw) return null;
+      return normalizeExpressLegalReturnPayload(JSON.parse(raw));
+    } catch {
+      return null;
+    }
+  };
+
+export const clearExpressDashboardLegalReturnFlag = () => {
+  if (typeof window === "undefined") return;
+  sessionStorage.removeItem(RETURNING_FROM_LEGAL_KEY);
+};
+
+export const finalizeExpressDashboardLegalReturnState = () => {
+  if (typeof window === "undefined") return;
+  sessionStorage.removeItem(RETURNING_FROM_LEGAL_KEY);
+  sessionStorage.removeItem(EXPRESS_LEGAL_RETURN_STATE_KEY);
+};
+
 /** Consume express legal return state when user returns from Terms/Privacy/etc. */
 export const consumeExpressLegalReturnState = (): Record<string, any> | null => {
   if (typeof window === "undefined") return null;
@@ -108,28 +175,7 @@ export const consumeExpressLegalReturnState = (): Record<string, any> | null => 
     }
     sessionStorage.removeItem(RETURNING_FROM_LEGAL_KEY);
     sessionStorage.removeItem(EXPRESS_LEGAL_RETURN_STATE_KEY);
-    const state = JSON.parse(raw) as Record<string, any>;
-    const paymentDetail = state.selectedPaymentDetail;
-    const paymentDetails = state.selectedPaymentDetails ?? (paymentDetail ? [paymentDetail] : undefined);
-    return {
-      mode: state.mode,
-      amountValue: state.payAmount,
-      amountInput: state.payAmountInput,
-      receiveAmountValue: state.getAmount,
-      receiveAmountInput: state.getAmountInput,
-      scrollY: state.scrollY,
-      payBank: state.payBank,
-      payment: paymentDetail,
-      paymentDetails,
-      asset: state.selectedAsset,
-      selectedAsset: state.selectedAsset,
-      selectedNetwork: state.selectedNetwork,
-      walletAddress: state.walletAddress,
-      termsAccepted: state.termsAccepted ?? state.isTermsAccepted,
-      apiResponse: state.apiResponse,
-      transactionCode: state.transactionCode,
-      isFirstCardSubmitted: state.isFirstCardSubmitted ?? true,
-    };
+    return normalizeExpressLegalReturnPayload(JSON.parse(raw));
   } catch {
     sessionStorage.removeItem(RETURNING_FROM_LEGAL_KEY);
     sessionStorage.removeItem(EXPRESS_LEGAL_RETURN_STATE_KEY);
@@ -198,6 +244,7 @@ export const buildSwapRedirectPath = (state?: Record<string, any>): string => {
 
 const EXPRESS_HOME_FORM_KEY = "express_home_form_state";
 const EXPRESS_HOME_LEGAL_SESSION_KEY = "express_home_legal_session";
+const RATES_CALCULATOR_STATE_KEY = "rates_calculator_state";
 const MONEYX_PREFILL_KEY = "moneyx_prefill_state";
 
 export const setExpressHomeFormState = (state: Record<string, any>) => {
@@ -219,6 +266,35 @@ export const setExpressHomeFormState = (state: Record<string, any>) => {
   } catch {
     // Ignore
   }
+};
+
+/** Save rates calculator state before navigating to legal pages */
+export const setRatesCalculatorLegalReturnState = (state: Record<string, any>) => {
+  if (typeof window === "undefined") return;
+  try {
+    sessionStorage.setItem(
+      RATES_CALCULATOR_STATE_KEY,
+      JSON.stringify(withLegalReturnPath(state))
+    );
+    localStorage.setItem(
+      RATES_CALCULATOR_STATE_KEY,
+      JSON.stringify(withLegalReturnPath(state))
+    );
+    sessionStorage.setItem(RETURNING_FROM_LEGAL_KEY, "1");
+  } catch {
+    // Ignore storage errors
+  }
+};
+
+export const clearRatesCalculatorLegalReturnFlag = () => {
+  if (typeof window === "undefined") return;
+  sessionStorage.removeItem(RETURNING_FROM_LEGAL_KEY);
+};
+
+export const finalizeRatesCalculatorLegalReturnState = () => {
+  if (typeof window === "undefined") return;
+  sessionStorage.removeItem(RATES_CALCULATOR_STATE_KEY);
+  localStorage.removeItem(RATES_CALCULATOR_STATE_KEY);
 };
 
 /** Get persisted express form state (does not remove - used for init) */
@@ -244,6 +320,19 @@ export const peekExpressHomeLegalReturnState = (): Record<string, any> | null =>
   } catch {
     return null;
   }
+};
+
+/** Same as peek, but only when the user is returning from a legal policy page. */
+export const peekExpressHomeLegalReturnStateIfReturning =
+  (): Record<string, any> | null => {
+    if (typeof window === "undefined") return null;
+    if (!sessionStorage.getItem(RETURNING_FROM_LEGAL_KEY)) return null;
+    return peekExpressHomeLegalReturnState();
+  };
+
+export const isReturningFromLegalPage = (): boolean => {
+  if (typeof window === "undefined") return false;
+  return Boolean(sessionStorage.getItem(RETURNING_FROM_LEGAL_KEY));
 };
 
 export const clearExpressHomeLegalReturnState = () => {

@@ -3,7 +3,7 @@ import React, { useState, useEffect, useRef } from "react";
 import DepositForm from "./forms/deposit";
 import WithdrawalForm from "./forms/withdrwal";
 import {
-  peekExpressHomeLegalReturnState,
+  peekExpressHomeLegalReturnStateIfReturning,
   clearExpressHomeLegalReturnState,
   finalizeExpressHomeLegalReturnState,
 } from "@/lib/utils/authRedirect";
@@ -42,26 +42,42 @@ interface ExpressExchangeFormProps {
   isHomePage?: boolean;
 }
 
+const readHomeLegalRestoreState = (): Record<string, any> | null => {
+  if (typeof window === "undefined") return null;
+  return peekExpressHomeLegalReturnStateIfReturning();
+};
+
 const ExpressExchangeForm: React.FC<ExpressExchangeFormProps> = ({
   onExchange,
   initialMode = "deposit",
   isHomePage = false,
 }) => {
-  const hasRestoredLegalRef = useRef(false);
-  const [restoreReady, setRestoreReady] = useState(!isHomePage);
+  const hasConsumedLegalStateRef = useRef(false);
   const [legalRestoreState, setLegalRestoreState] = useState<
     Record<string, any> | null
-  >(null);
-  const [mode, setMode] = useState<"deposit" | "withdrawal">(initialMode);
+  >(() => (isHomePage ? readHomeLegalRestoreState() : null));
+  const [restoreReady, setRestoreReady] = useState(!isHomePage);
+  const [mode, setMode] = useState<"deposit" | "withdrawal">(() => {
+    if (!isHomePage) return initialMode;
+    const saved = readHomeLegalRestoreState();
+    if (saved?.mode === "deposit" || saved?.mode === "withdrawal") {
+      return saved.mode;
+    }
+    return initialMode;
+  });
 
   useEffect(() => {
-    if (!isHomePage || hasRestoredLegalRef.current) {
+    if (!isHomePage) {
+      setRestoreReady(true);
+      return;
+    }
+    if (hasConsumedLegalStateRef.current) {
       setRestoreReady(true);
       return;
     }
 
-    hasRestoredLegalRef.current = true;
-    const saved = peekExpressHomeLegalReturnState();
+    hasConsumedLegalStateRef.current = true;
+    const saved = legalRestoreState ?? peekExpressHomeLegalReturnStateIfReturning();
     if (saved) {
       setLegalRestoreState(saved);
       if (saved.mode === "deposit" || saved.mode === "withdrawal") {
@@ -87,17 +103,20 @@ const ExpressExchangeForm: React.FC<ExpressExchangeFormProps> = ({
     setMode(newMode);
   };
 
-  useEffect(() => {
-    if (legalRestoreState?.mode) return;
-    setMode(initialMode);
-  }, [initialMode, legalRestoreState?.mode]);
-
   if (!restoreReady) {
     return null;
   }
 
+  const isFormExpanded =
+    legalRestoreState?.mode === "withdrawal"
+      ? Boolean(
+          legalRestoreState.isTransactionSubmitted ??
+            legalRestoreState.isFirstCardSubmitted
+        )
+      : Boolean(legalRestoreState?.isFirstCardSubmitted);
+
   const formKey = legalRestoreState
-    ? `legal-restore-${legalRestoreState.mode}-${legalRestoreState.isFirstCardSubmitted ? "expanded" : "collapsed"}`
+    ? `legal-restore-${legalRestoreState.mode}-${isFormExpanded ? "expanded" : "collapsed"}`
     : `default-${mode}`;
 
   return (
