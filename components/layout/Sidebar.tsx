@@ -357,7 +357,7 @@ export default function Sidebar() {
                             )}
                           >
                             <span
-                              className={isActive ? "dark:text-white text-muted-foreground text-sm sm:text-base font-bold" : "text-[#727272] text-xs sm:text-sm font-bold"}
+                              className={isActive ? "dark:text-white text-muted-foreground text-lg sm:text-xl font-bold uppercase leading-none" : "text-[#727272] text-base sm:text-lg font-bold uppercase leading-none"}
                             >
                               E
                             </span>

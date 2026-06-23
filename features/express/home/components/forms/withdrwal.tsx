@@ -3226,8 +3226,8 @@ export default function WithdrawalForm({
 
     const viewportWidth = typeof window !== "undefined" ? window.innerWidth : 0;
     const minMargin = 16;
-    const minWidth = 280;
-    const maxWidth = 450;
+    const minWidth = 460;
+    const maxWidth = 460;
 
     // Find the card that contains the asset dropdown trigger
     const assetDropdownElement = assetDropdownRef.current;
