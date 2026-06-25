@@ -16,9 +16,11 @@ import {
 import {
   createDeposit,
   updateDepositAddress,
+  fetchAssets,
 } from "../../exchange/slices/exchangeSlice";
 import {
   fetchSwapEstimate,
+  fetchSupportedAssets,
 } from "../../swap/slices/swapSlice";
 import { fetchUserPaymentDetails, fetchPublicPaymentMethods } from "../../p2p/slices/paymentMethodsSlice";
 import { fetchAdminWalletList, fetchAdminPaymentDetails } from "../../exchange/slices/paymentSlice";
@@ -95,6 +97,7 @@ import {
   isExpressBelowMinAmountError,
 } from "@/lib/utils/expressMinAmount";
 import { useChangeNowAssets } from "@/features/express/home/hooks/useChangeNowAssets";
+import { withTimeout } from "@/features/express/utils/fetchWithTimeout";
 import { AssetWithNetworkIcon } from "@/components/ui/AssetWithNetworkIcon";
 import {
   RatesAssetImage,
@@ -103,6 +106,11 @@ import {
   pickRatesAssetImageRaw,
   resolveRatesAssetImageUrl,
 } from "./RatesAssetImage";
+import {
+  ratesFieldClass,
+  ratesFieldLabelClass,
+  ratesSelectTriggerClass,
+} from "../utils/ratesFieldStyles";
 
 const MISSING_FXP_USD_RATE_ERROR =
   "No exchange rate configured for FXP to USD";
@@ -899,23 +907,33 @@ const getPaymentRestrictionMessage = (status?: string) =>
 
   const dispatch = useDispatch<AppDispatch>();
 
-  // Use the same public supported-tokens list as Home so Rates shows
-  // the full asset dropdown (USDC, FXPRIMUS, etc.).
+  const { assets: exchangeAssetsState, loading: exchangeAssetsLoading } =
+    useSelector((state: RootState) => state.exchange);
   const {
-    assets: homeAssets,
-    loading: homeAssetsLoading,
-    error: homeAssetsError,
+    supportedAssets: swapAssets,
+    loading: swapAssetsLoading,
+  } = useSelector((state: RootState) => state.swap);
+
+  // Prefer the public supported-tokens list (same as home express); fall back to
+  // Redux exchange + swap assets like the dashboard express form.
+  const {
+    assets: publicAssets,
+    loading: publicAssetsLoading,
   } = useChangeNowAssets(true, {
     feature: "exchange",
     source: "public",
   });
 
+  const hasPublicAssets =
+    Array.isArray(publicAssets) && publicAssets.length > 0;
+  const usePublicAssetSource = hasPublicAssets || publicAssetsLoading;
+
   const assetsDisplay = useAssetsDisplay(
-    homeAssets,
-    [],
-    homeAssetsLoading,
-    false,
-    homeAssetsError,
+    usePublicAssetSource ? publicAssets : exchangeAssetsState?.assets,
+    usePublicAssetSource ? [] : swapAssets,
+    usePublicAssetSource ? publicAssetsLoading : exchangeAssetsLoading,
+    usePublicAssetSource ? false : swapAssetsLoading,
+    null,
     null
   );
 
@@ -1043,6 +1061,46 @@ const getPaymentRestrictionMessage = (status?: string) =>
       dispatch(fetchAdminPaymentDetails());
     }
   }, [dispatch, isAuthenticated]);
+
+  // Mirror dashboard express: load exchange + swap assets as fallback when public list fails.
+  useEffect(() => {
+    withTimeout(dispatch(fetchAssets(false)).unwrap(), 15_000)
+      .then((data) => {
+        if (!data?.assets || data.assets.length === 0) {
+          return withTimeout(dispatch(fetchAssets(true)).unwrap(), 15_000);
+        }
+        return data;
+      })
+      .catch(() =>
+        withTimeout(dispatch(fetchAssets(true)).unwrap(), 15_000).catch(() => undefined)
+      );
+
+    withTimeout(
+      dispatch(
+        fetchSupportedAssets({ forceRefresh: false, feature: "exchange" })
+      ).unwrap(),
+      35_000
+    )
+      .then((data) => {
+        if (!data || data.length === 0) {
+          return withTimeout(
+            dispatch(
+              fetchSupportedAssets({ forceRefresh: true, feature: "exchange" })
+            ).unwrap(),
+            35_000
+          );
+        }
+        return data;
+      })
+      .catch(() =>
+        withTimeout(
+          dispatch(
+            fetchSupportedAssets({ forceRefresh: true, feature: "exchange" })
+          ).unwrap(),
+          35_000
+        ).catch(() => undefined)
+      );
+  }, [dispatch]);
 
   useEffect(() => {
     // Don't auto-select if we're trying to restore a saved asset
@@ -2930,9 +2988,9 @@ const getPaymentRestrictionMessage = (status?: string) =>
       );
     }
 
-    if (assetsDisplay.hasError) {
+    if (assetsDisplay.hasError && !assetsDisplay.shouldShowData) {
       return (
-        <div className="p-3 text-center text-red-500">Error loading assets</div>
+        <div className="p-3 text-center text-red-500">{t("rates.errorAssets", "Error loading assets")}</div>
       );
     }
 
@@ -4019,15 +4077,13 @@ const getPaymentRestrictionMessage = (status?: string) =>
             className={`relative rounded-2xl p-4 sm:p-6 overflow-visible border-[1.5px] ${isDark ? "border-[#2F2F3A]" : "border-[#E2E8F0] shadow-sm"
               } bg-transparent`}
           >
-            <div className="text-sm sm:text-[17px] text-[#7e7e8f] dark:text-[#ffffff] mb-2 font-semibold flex items-center gap-2">
-              {t("rates.youSend", "You Send")}
-              <div className="w-2 h-2 bg-[#1D8751] rounded-full animate-pulse"></div>
-            </div>
-
-            <div className="flex flex-col sm:flex-row gap-6">
+            <div className="flex flex-col sm:flex-row gap-6 sm:items-start">
               {/* Amount Section */}
               <div className="flex-1 min-w-0">
-                <div className="hidden sm:block text-[15px] mb-2 font-semibold invisible" aria-hidden="true">&nbsp;</div>
+                <label className={`${ratesFieldLabelClass} gap-2`}>
+                  {t("rates.youSend", "You Send")}
+                  <div className="w-2 h-2 bg-[#1D8751] rounded-full animate-pulse"></div>
+                </label>
                 <div className="relative">
                   <input
                     type="text"
@@ -4124,15 +4180,17 @@ const getPaymentRestrictionMessage = (status?: string) =>
                       }
                     }}
                     placeholder={t("rates.enterAmount", "Enter amount")}
-                    className={`w-full rounded-2xl px-4 py-2 pr-16 text-base sm:text-lg focus:outline-none border appearance-none bg-transparent ${(isCalculating || isCalculatingReceive) &&
-                      isCalculatingFromPay &&
-                      selectedAsset &&
-                      !isInstantAmountAsset(selectedAsset)
-                      ? "border-[#1D8751]"
-                      : isDark
-                        ? "border-white/10 text-white"
-                        : "border-gray-200 text-[#111827]"
-                      }`}
+                    className={ratesFieldClass(
+                      isDark,
+                      `pr-16 ${
+                        (isCalculating || isCalculatingReceive) &&
+                        isCalculatingFromPay &&
+                        selectedAsset &&
+                        !isInstantAmountAsset(selectedAsset)
+                          ? "border-[#1D8751]"
+                          : ""
+                      }`
+                    )}
                   />
                   {/* Show loading spinner */}
                   {(isCalculating || isCalculatingReceive) &&
@@ -4153,7 +4211,7 @@ const getPaymentRestrictionMessage = (status?: string) =>
               {!isFieldsSwapped ? (
                 /* Bank/Payment Method Section - exact as express withdrawal */
                 <div className="flex-1 min-w-0">
-                  <label className="block text-sm sm:text-[17px] text-[#7e7e8f] dark:text-[#ffffff] mb-2 font-semibold">
+                  <label className={ratesFieldLabelClass}>
                     {t(
                       "rates.fromPaymentMethod",
                       isDepositMode ? "From Payment Method" : "To Payment Method"
@@ -4187,6 +4245,7 @@ const getPaymentRestrictionMessage = (status?: string) =>
                           logoSize={PAYMENT_LOGO_SIZE}
                           logoClassName={`${PAYMENT_LOGO_BASE_CLASS} rounded-full`}
                           sizeMode="card"
+                          triggerClassName={ratesSelectTriggerClass(isDark)}
                           onChange={(value) => {
                             const selectedProvider = sortedPublicPaymentProviders.find((p: any) => (p.provider_name || p.payment_provider_name) === value);
                             setPayBank(value);
@@ -4340,6 +4399,7 @@ const getPaymentRestrictionMessage = (status?: string) =>
                                 logoSize={PAYMENT_LOGO_SIZE}
                                 logoClassName={`${PAYMENT_LOGO_BASE_CLASS} rounded-full`}
                                 sizeMode="card"
+                                triggerClassName={ratesSelectTriggerClass(isDark)}
                                 className="w-full min-w-0"
                               />
                             </div>
@@ -4395,15 +4455,15 @@ const getPaymentRestrictionMessage = (status?: string) =>
               ) : (
                 /* Asset Section (when swapped) */
                 <div className="flex-1 min-w-0">
-                  <label
-                    className="block text-sm sm:text-[17px] text-[#7e7e8f] dark:text-[#ffffff] mb-2 font-semibold"
-                  >
+                  <label className={ratesFieldLabelClass}>
                     {t("rates.provider", "Provider")}
                   </label>
                   <div className="relative" ref={assetDropdownRef}>
                     <div
-                      className={`w-full rounded-2xl px-4 py-2 text-sm focus:outline-none border flex items-center justify-between gap-3 cursor-pointer bg-transparent ${isDark ? "text-white border-white/10" : "text-[#1F2937] border-gray-200"
-                        }`}
+                      className={ratesFieldClass(
+                        isDark,
+                        "flex items-center justify-between gap-3 cursor-pointer"
+                      )}
                       onClick={() => setIsAssetDropdownOpen(!isAssetDropdownOpen)}
                     >
                       <div className="flex items-center gap-3 min-w-0">
@@ -4419,10 +4479,9 @@ const getPaymentRestrictionMessage = (status?: string) =>
                               }
                               className="w-6 h-6 rounded-full object-cover flex-shrink-0"
                             />
-                            <div className="flex flex-col">
-                              <div className="flex items-center gap-2">
-                                <span
-                                  className={`font-semibold text-sm ${isDark ? "text-white" : "text-[#111827]"}`}
+                            <div className="flex items-center gap-2 min-w-0">
+                              <span
+                                className={`font-semibold text-sm truncate ${isDark ? "text-white" : "text-[#111827]"}`}
                                   title={(
                                     selectedAsset.ticker ||
                                     selectedAsset.symbol ||
@@ -4448,7 +4507,6 @@ const getPaymentRestrictionMessage = (status?: string) =>
                                   )}
                                 </span>
                               </div>
-                            </div>
                           </>
                         ) : (
                           <>
@@ -4509,15 +4567,13 @@ const getPaymentRestrictionMessage = (status?: string) =>
             className={`relative rounded-2xl p-4 sm:p-6 overflow-visible border-[1.5px] ${isDark ? "border-[#2F2F3A]" : "border-[#E2E8F0] shadow-sm"
               } bg-transparent`}
           >
-            <div className="text-sm sm:text-[17px] text-[#7e7e8f] dark:text-[#ffffff] mb-2 font-semibold flex items-center gap-2">
-              {t("rates.youGet", "You Receive")}
-              <div className="w-2 h-2 bg-[#1D8751] rounded-full animate-pulse"></div>
-            </div>
-
-            <div className="flex flex-col sm:flex-row gap-6">
+            <div className="flex flex-col sm:flex-row gap-6 sm:items-start">
               {/* You Get Section */}
               <div className="flex-1 min-w-0">
-                <div className="hidden sm:block text-[15px] mb-2 font-semibold invisible" aria-hidden="true">&nbsp;</div>
+                <label className={`${ratesFieldLabelClass} gap-2`}>
+                  {t("rates.youGet", "You Receive")}
+                  <div className="w-2 h-2 bg-[#1D8751] rounded-full animate-pulse"></div>
+                </label>
                 <div className="relative">
                   <input
                     type="text"
@@ -4531,15 +4587,17 @@ const getPaymentRestrictionMessage = (status?: string) =>
                       applyReceiveAmountInput(pastedText);
                     }}
                     placeholder={t("rates.enterAmount", "Enter amount")}
-                    className={`w-full rounded-2xl px-4 py-2 pr-16 text-base sm:text-lg focus:outline-none border appearance-none bg-transparent ${(isCalculating || isCalculatingReceive) &&
-                      !isCalculatingFromPay &&
-                      selectedAsset &&
-                      !isInstantAmountAsset(selectedAsset)
-                      ? "border-[#1D8751]"
-                      : isDark
-                        ? "border-white/10 text-white"
-                        : "border-gray-200 text-[#111827]"
-                      }`}
+                    className={ratesFieldClass(
+                      isDark,
+                      `pr-16 ${
+                        (isCalculating || isCalculatingReceive) &&
+                        !isCalculatingFromPay &&
+                        selectedAsset &&
+                        !isInstantAmountAsset(selectedAsset)
+                          ? "border-[#1D8751]"
+                          : ""
+                      }`
+                    )}
                   />
                   {/* Show loading spinner */}
                   {(isCalculating || isCalculatingReceive) &&
@@ -4555,13 +4613,15 @@ const getPaymentRestrictionMessage = (status?: string) =>
               {!isFieldsSwapped ? (
                 /* Asset Section */
                 <div className="flex-1 min-w-0">
-                  <label className="block text-sm sm:text-[17px] text-[#7e7e8f] dark:text-[#ffffff] mb-2 font-semibold">
+                  <label className={ratesFieldLabelClass}>
                     {t("rates.provider", "Provider")}
                   </label>
                   <div className="relative" ref={assetDropdownRef}>
                     <div
-                      className={`w-full rounded-2xl px-4 py-2 text-sm focus:outline-none border flex items-center justify-between gap-3 cursor-pointer bg-transparent ${isDark ? "text-white border-white/10" : "text-[#1F2937] border-gray-200"
-                        }`}
+                      className={ratesFieldClass(
+                        isDark,
+                        "flex items-center justify-between gap-3 cursor-pointer"
+                      )}
                       onClick={() => setIsAssetDropdownOpen(!isAssetDropdownOpen)}
                     >
                       <div className="flex items-center gap-3 min-w-0">
@@ -4577,10 +4637,9 @@ const getPaymentRestrictionMessage = (status?: string) =>
                               }
                               className="w-6 h-6 rounded-full object-cover flex-shrink-0"
                             />
-                            <div className="flex flex-col">
-                              <div className="flex items-center gap-2">
-                                <span
-                                  className={`font-semibold text-sm ${isDark ? "text-white" : "text-[#111827]"}`}
+                            <div className="flex items-center gap-2 min-w-0">
+                              <span
+                                className={`font-semibold text-sm truncate ${isDark ? "text-white" : "text-[#111827]"}`}
                                   title={(
                                     selectedAsset.ticker ||
                                     selectedAsset.symbol ||
@@ -4606,7 +4665,6 @@ const getPaymentRestrictionMessage = (status?: string) =>
                                   )}
                                 </span>
                               </div>
-                            </div>
                           </>
                         ) : (
                           <>
@@ -4657,7 +4715,7 @@ const getPaymentRestrictionMessage = (status?: string) =>
               ) : (
                 /* Payment Method Section (when swapped) - same CustomSelect as above */
                 <div className="flex-1 min-w-0">
-                  <label className="block text-sm sm:text-[17px] text-[#7e7e8f] dark:text-[#ffffff] mb-2 font-semibold">
+                  <label className={ratesFieldLabelClass}>
                     {t(
                       "rates.toPaymentMethod",
                       isDepositMode ? "To Payment Method" : "From Payment Method"
@@ -4688,6 +4746,7 @@ const getPaymentRestrictionMessage = (status?: string) =>
                           logoSize={PAYMENT_LOGO_SIZE}
                           logoClassName={`${PAYMENT_LOGO_BASE_CLASS} rounded-full`}
                           sizeMode="card"
+                          triggerClassName={ratesSelectTriggerClass(isDark)}
                           onChange={(value) => {
                             const selectedProvider = sortedPublicPaymentProviders.find((p: any) => (p.provider_name || p.payment_provider_name) === value);
                             setSelectedPaymentMethod(value);
@@ -4792,6 +4851,7 @@ const getPaymentRestrictionMessage = (status?: string) =>
                               logoSize={PAYMENT_LOGO_SIZE}
                               logoClassName={`${PAYMENT_LOGO_BASE_CLASS} rounded-full`}
                               sizeMode="card"
+                              triggerClassName={ratesSelectTriggerClass(isDark)}
                               className="w-full"
                             />
                             </>
@@ -5145,7 +5205,10 @@ const getPaymentRestrictionMessage = (status?: string) =>
                         "rates.forexAccountNumberPlaceholder",
                         "Enter your forex account number"
                       )}
-                      className="w-full text-[#35353e] dark:bg-[#1D1D23] dark:text-[#ffffff] rounded-2xl px-4 py-2 pr-11 text-lg focus:outline-none border border-[#A2A4A9FF] dark:border-[#35353E]"
+                      className={ratesFieldClass(
+                        isDark,
+                        `pr-11 ${isDark ? "dark:bg-[#1D1D23]" : "bg-white"}`
+                      )}
                     />
                     <button
                       ref={forexWhitelistAnchorRef}
@@ -5297,7 +5360,7 @@ const getPaymentRestrictionMessage = (status?: string) =>
                 <label className="block text-[17px] text-[#7e7e8f] mb-2 font-semibold">
                   {t("rates.walletAccountAddress", "Wallet/Account Address")}
                 </label>
-                <div className="flex items-center dark:bg-[#1D1D23] border border-gray-200 dark:border-[#35353E] rounded-2xl px-4 py-2 mb-4">
+                <div className={`flex items-center h-[44px] min-h-[44px] box-border dark:bg-[#1D1D23] border border-gray-200 dark:border-[#35353E] rounded-2xl px-4 mb-4`}>
 
                   <input
                     type="text"
@@ -5315,7 +5378,7 @@ const getPaymentRestrictionMessage = (status?: string) =>
                       }
                     }}
                     placeholder={t("rates.enterWalletAddressPlaceholder", "Enter your wallet address")}
-                    className="flex-1 bg-transparent text-[#35353e] dark:text-[#788099] placeholder-[#7e7e8f] focus:outline-none min-w-0"
+                    className="flex-1 h-full bg-transparent text-[#35353e] dark:text-[#788099] placeholder-[#7e7e8f] focus:outline-none min-w-0 text-sm"
                   />
                   <span
                     ref={bookmarkAnchorRef}
