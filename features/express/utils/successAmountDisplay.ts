@@ -197,13 +197,63 @@ export function resolveHomeExpressSuccessReceiveCurrency(
   toCurrency: string | undefined,
   tx?: any
 ): string {
-  if (tx) {
-    return resolveExpressReceiveCurrency(tx, toCurrency);
-  }
-  const type = String(transactionType ?? "").toLowerCase();
-  if (type === "withdrawal") return "USD";
-  if (type === "deposit") {
-    return String(toCurrency ?? "USDT").trim().toUpperCase() || "USDT";
-  }
+  const type = String(transactionType ?? tx?.type ?? "").toLowerCase();
+  if (type === "deposit" || type === "withdrawal") return "USD";
   return String(toCurrency ?? "USD").trim().toUpperCase() || "USD";
+}
+
+export type HomeDepositSuccessAmountInput = {
+  wsPayload?: Record<string, unknown> | null;
+  receiveAmount?: unknown;
+  paidAmount?: unknown;
+  commission?: string | number | null;
+};
+
+/** Home deposit success: receive amount is socket `net_amount` when present. */
+export function resolveHomeDepositSuccessReceiveAmount(
+  input: HomeDepositSuccessAmountInput
+): number {
+  const fromSocket = parseExpressSocketNumberish(input.wsPayload?.net_amount);
+  if (fromSocket != null) return fromSocket;
+
+  const fromForm = parseExpressSocketNumberish(input.receiveAmount);
+  if (fromForm != null) return fromForm;
+
+  const paid = Number(input.paidAmount ?? 0);
+  const commission = parseCommission(input.commission);
+  const derived = paid - commission;
+  return Number.isFinite(derived) && derived > 0 ? derived : 0;
+}
+
+export type ExpressDepositSuccessDisplayInput = {
+  websocketData?: unknown;
+  transactionData: {
+    amount?: number;
+    receiveAmount?: unknown;
+    commission?: string | number | null;
+  };
+};
+
+/** Deposit success: paid USD from socket amount; receive USD net from socket net_amount. */
+export function resolveExpressDepositSuccessDisplay(
+  input: ExpressDepositSuccessDisplayInput
+): { paidAmount: number; receiveAmount: number; receiveCurrency: "USD" } {
+  const wsPayload = unwrapExpressWsStatusPayload(input.websocketData);
+  const paidFromSocket = parseExpressSocketNumberish(wsPayload?.amount);
+  const paidAmount =
+    paidFromSocket ??
+    parseExpressSocketNumberish(input.transactionData.amount) ??
+    0;
+  const receiveAmount = resolveHomeDepositSuccessReceiveAmount({
+    wsPayload,
+    receiveAmount: input.transactionData.receiveAmount,
+    paidAmount,
+    commission: input.transactionData.commission,
+  });
+
+  return {
+    paidAmount,
+    receiveAmount,
+    receiveCurrency: "USD",
+  };
 }

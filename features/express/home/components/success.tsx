@@ -7,6 +7,7 @@ import { ExpressSuccessHero } from "@/features/express/components/ExpressSuccess
 import {
   resolveExpressReceiveCurrency,
   resolveExpressSendCurrency,
+  resolveExpressDepositSuccessDisplay,
   resolveHomeExpressSuccessReceiveCurrency,
 } from "../../utils/successAmountDisplay";
 
@@ -351,6 +352,27 @@ const SuccessPage: React.FC<SuccessPageProps> = ({
       transactionData
     );
 
+    if (isDeposit) {
+      const depositDisplay = resolveExpressDepositSuccessDisplay({
+        websocketData,
+        transactionData,
+      });
+      const formattedReceive = formatAmount(depositDisplay.receiveAmount);
+
+      return {
+        transactionId: txId,
+        date: transactionDate,
+        paidAmount: `${formatAmount(depositDisplay.paidAmount)} USD`,
+        paidCurrency: "USD",
+        receivedAmount: formattedReceive,
+        receivedCurrency: depositDisplay.receiveCurrency,
+        payinMethod: paymentMethod,
+        payoutMethod: `${toCurrency} Wallet`,
+        transactionHash: txHash,
+        netAmount: formattedReceive,
+      };
+    }
+
     return {
       transactionId: txId,
       date: transactionDate,
@@ -484,7 +506,7 @@ const SuccessPage: React.FC<SuccessPageProps> = ({
                 Final Amount (after fees)
               </div>
               <div className="font-mono flex items-center gap-2" style={{ color: GREEN }}>
-                {transactionData?.asset?.icon && (
+                {!isDeposit && transactionData?.asset?.icon && (
                   <img
                     src={transactionData.asset.icon}
                     alt={realData.receivedCurrency}

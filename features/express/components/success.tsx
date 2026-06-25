@@ -11,6 +11,7 @@ import {
 import {
   resolveExpressReceiveCurrency,
   resolveExpressSendCurrency,
+  resolveExpressDepositSuccessDisplay,
 } from "../utils/successAmountDisplay";
 const formatDateTimeEastAfrica = (input: Date | number | string): string => {
   const d = input instanceof Date ? input : new Date(input);
@@ -420,6 +421,27 @@ const SuccessPage: React.FC<SuccessPageProps> = ({
     } else if (websocketData?.data?.last_checked) {
       transactionDate = websocketData.data.last_checked;
     }
+
+    if (isDeposit) {
+      const depositDisplay = resolveExpressDepositSuccessDisplay({
+        websocketData,
+        transactionData,
+      });
+      const formattedReceive = formatAmount(depositDisplay.receiveAmount);
+
+      return {
+        transactionId: txId,
+        date: transactionDate,
+        paidAmount: `${formatAmount(depositDisplay.paidAmount)} USD`,
+        paidCurrency: "USD",
+        receivedAmount: formattedReceive,
+        receivedCurrency: depositDisplay.receiveCurrency,
+        payinMethod: paymentMethod,
+        payoutMethod: `${toCurrency} Wallet`,
+        transactionHash: txHash,
+        netAmount: formattedReceive,
+      };
+    }
     
     return {
       transactionId: txId,
@@ -610,7 +632,7 @@ const SuccessPage: React.FC<SuccessPageProps> = ({
                     isDark ? "text-gray-400" : "text-gray-600"
                   }`}>You Received</div>
                   <div className="font-bold flex items-center justify-end gap-2" style={{ color: GREEN }}>
-                    <span>{realData.netAmount}</span>
+                    <span>{realData.receivedAmount}</span>
                     <span>{realData.receivedCurrency}</span>
                   </div>
                 </div>
@@ -643,11 +665,12 @@ const SuccessPage: React.FC<SuccessPageProps> = ({
                     Net Amount Processed
                   </div>
                   <div className="font-mono flex items-center gap-2" style={{ color: GREEN }}>
-                    {(transactionData?.asset?.icon ||
-                      transactionData?.asset?.icon_url ||
-                      transactionData?.asset?.image_url ||
-                      transactionData?.asset?.asset_image ||
-                      transactionData?.asset?.image) && (
+                    {!isDeposit &&
+                      (transactionData?.asset?.icon ||
+                        transactionData?.asset?.icon_url ||
+                        transactionData?.asset?.image_url ||
+                        transactionData?.asset?.asset_image ||
+                        transactionData?.asset?.image) && (
                       <img
                         src={
                           transactionData.asset.icon ||
