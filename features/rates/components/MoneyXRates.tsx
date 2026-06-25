@@ -46,6 +46,10 @@ import {
   prepareMoneyXAmountFieldValue,
   toMoneyXClampedInputString,
 } from "@/lib/utils/moneyXAmountInput";
+import {
+  ratesFieldClass,
+  ratesFieldLabelClass,
+} from "../utils/ratesFieldStyles";
 
 const RATES_MONEYX_FORM_STATE_KEY = "rates_moneyx_form_state";
 
@@ -1130,7 +1134,7 @@ const MoneyXRates = ({
           >
             {/* Amount Section */}
             <div className="flex-1 min-w-0">
-              <label className="block text-sm sm:text-[17px] text-[#7e7e8f] dark:text-[#ffffff] mb-2 font-semibold flex items-center gap-2">
+              <label className={`${ratesFieldLabelClass} gap-2`}>
                 {t("rates.youSend", "You Send")}
                 <div className="w-2 h-2 bg-[#1D8751] rounded-full animate-pulse"></div>
               </label>
@@ -1142,17 +1146,14 @@ const MoneyXRates = ({
                   maxLength={MONEYX_MAX_AMOUNT_INPUT_DIGITS + 1}
                   onChange={(e) => handleAmountChange(e.target.value, true)}
                   placeholder="Enter amount"
-                  className={`w-full rounded-2xl px-4 py-2 pr-16 text-lg focus:outline-none border appearance-none bg-transparent ${isDark
-                    ? "border-white/10 text-white"
-                    : "border-gray-200 text-[#111827]"
-                    }`}
+                  className={ratesFieldClass(isDark, "pr-16")}
                 />
               </div>
             </div>
 
             {/* Bank/Payment Method Section */}
             <div className="flex-1 min-w-0" ref={fromDropdownRef}>
-              <label className="block text-sm sm:text-[17px] text-[#7e7e8f] dark:text-[#ffffff] mb-2 font-semibold">
+              <label className={ratesFieldLabelClass}>
                 Bank/Payment Method
               </label>
               <div className="relative">
@@ -1162,12 +1163,9 @@ const MoneyXRates = ({
                     setIsFromDropdownOpen(!isFromDropdownOpen);
                     setIsToDropdownOpen(false);
                   }}
-                  className={`w-full rounded-2xl px-4 py-2 text-[14px] focus:outline-none border appearance-none bg-transparent flex items-center justify-between ${isDark
-                    ? "border-white/10 text-white"
-                    : "border-gray-200 text-[#111827]"
-                    }`}
+                  className={`${ratesFieldClass(isDark, "flex items-center justify-between gap-2")}`}
                 >
-                  <div className="flex items-center gap-3">
+                  <div className="flex items-center gap-3 min-w-0">
                     {resolvePaymentMethodLogo(selectedFromPaymentDetail) ? (
                       <img
                         src={getHighResPaymentLogo(
@@ -1176,16 +1174,16 @@ const MoneyXRates = ({
                           64
                         )}
                         alt={fromPaymentMethod || "Bank"}
-                        className="w-8 h-8 rounded-full object-cover"
+                        className="w-6 h-6 rounded-full object-cover flex-shrink-0"
                       />
                     ) : (
-                      <div className="w-8 h-8 rounded-full bg-[#1D8751] flex items-center justify-center text-white text-xs font-semibold">
+                      <div className="w-6 h-6 rounded-full bg-[#1D8751] flex items-center justify-center text-white text-xs font-semibold flex-shrink-0">
                         {fromPaymentMethod?.charAt(0) || "B"}
                       </div>
                     )}
-                    <span>{fromPaymentMethod || t("rates.selectPaymentMethod", "Select payment method")}</span>
+                    <span className="truncate">{fromPaymentMethod || t("rates.selectPaymentMethod", "Select payment method")}</span>
                   </div>
-                  <FiChevronDown className="w-5 h-5" />
+                  <FiChevronDown className="w-5 h-5 flex-shrink-0" />
                 </button>
 
                 {isFromDropdownOpen && (
@@ -1291,7 +1289,7 @@ const MoneyXRates = ({
           >
             {/* Amount Section */}
             <div className="flex-1 min-w-0">
-              <label className="block text-sm sm:text-[17px] text-[#7e7e8f] dark:text-[#ffffff] mb-2 font-semibold flex items-center gap-2">
+              <label className={`${ratesFieldLabelClass} gap-2`}>
                 {t("rates.youGet", "You Receive")}
                 <div className="w-2 h-2 bg-[#1D8751] rounded-full animate-pulse"></div>
               </label>
@@ -1302,17 +1300,14 @@ const MoneyXRates = ({
                   value={getAmountInput}
                   onChange={(e) => handleAmountChange(e.target.value, false)}
                   placeholder="Enter amount"
-                  className={`w-full rounded-2xl px-4 py-2 pr-16 text-lg focus:outline-none border appearance-none bg-transparent ${isDark
-                    ? "border-white/10 text-white"
-                    : "border-gray-200 text-[#111827]"
-                    }`}
+                  className={ratesFieldClass(isDark, "pr-16")}
                 />
               </div>
             </div>
 
             {/* Provider Section */}
             <div className="flex-1 min-w-0" ref={toDropdownRef}>
-              <label className="block text-sm sm:text-[17px] text-[#7e7e8f] dark:text-[#ffffff] mb-2 font-semibold">
+              <label className={ratesFieldLabelClass}>
                 Bank/Payment Method
               </label>
               <div className="relative">
@@ -1322,12 +1317,9 @@ const MoneyXRates = ({
                     setIsToDropdownOpen(!isToDropdownOpen);
                     setIsFromDropdownOpen(false);
                   }}
-                  className={`w-full rounded-2xl px-4 py-2 text-[14px] focus:outline-none border appearance-none bg-transparent flex items-center justify-between ${isDark
-                    ? "border-white/10 text-white"
-                    : "border-gray-200 text-[#111827]"
-                    }`}
+                  className={`${ratesFieldClass(isDark, "flex items-center justify-between gap-2")}`}
                 >
-                  <div className="flex items-center gap-3">
+                  <div className="flex items-center gap-3 min-w-0">
                     {resolvePaymentMethodLogo(selectedToPaymentDetail) ? (
                       <img
                         src={getHighResPaymentLogo(
@@ -1336,16 +1328,16 @@ const MoneyXRates = ({
                           64
                         )}
                         alt={toPaymentMethod || "Bank"}
-                        className="w-8 h-8 rounded-full object-cover"
+                        className="w-6 h-6 rounded-full object-cover flex-shrink-0"
                       />
                     ) : (
-                      <div className="w-8 h-8 rounded-full bg-[#1D8751] flex items-center justify-center text-white text-xs font-semibold">
+                      <div className="w-6 h-6 rounded-full bg-[#1D8751] flex items-center justify-center text-white text-xs font-semibold flex-shrink-0">
                         {toPaymentMethod?.charAt(0) || "P"}
                       </div>
                     )}
-                    <span>{toPaymentMethod || t("rates.selectProviderPlaceholder", "Select provider")}</span>
+                    <span className="truncate">{toPaymentMethod || t("rates.selectProviderPlaceholder", "Select provider")}</span>
                   </div>
-                  <FiChevronDown className="w-5 h-5" />
+                  <FiChevronDown className="w-5 h-5 flex-shrink-0" />
                 </button>
 
                 {isToDropdownOpen && (
@@ -1561,7 +1553,7 @@ const MoneyXRates = ({
 
               {/* Input group */}
               <div
-                className={`flex items-center ${isDark ? "bg-[#1D1D23]" : "bg-white"} border ${isDark ? "border-[#35353E]" : "border-[#E2E8F0]"} rounded-2xl px-4 py-2 mb-2 overflow-visible gap-2`}
+                className={`flex items-center h-[44px] min-h-[44px] box-border ${isDark ? "bg-[#1D1D23]" : "bg-white"} border ${isDark ? "border-[#35353E]" : "border-[#E2E8F0]"} rounded-2xl px-4 mb-2 overflow-visible gap-2`}
               >
                 {/* Left icon */}
                 <span className="text-[#1D8751] flex-shrink-0">
@@ -1606,7 +1598,7 @@ const MoneyXRates = ({
                           "Paste here your To Bank Account Address"
                         )
                   }
-                  className={`flex-1 min-w-0 bg-transparent border-none outline-none ${isDark ? "text-[#788099]" : "text-[#475569]"} placeholder-[#788099] text-sm sm:text-base ${bankAddressError
+                  className={`flex-1 min-w-0 h-full bg-transparent border-none outline-none ${isDark ? "text-[#788099]" : "text-[#475569]"} placeholder-[#788099] text-sm ${bankAddressError
                     ? "border-red-500"
                     : bankAccountAddress.trim() && !bankAddressError
                       ? "border-green-500"
