@@ -23,6 +23,7 @@ import { updateUser } from "@/features/auth/slices/authSlice";
 import { RootState } from "@/store/rootReducer";
 
 import { logger } from '@/lib/utils/logger';
+import { sanitizeDeviceSessions } from "../utils/deviceSessionRevocation";
 
 /** Avoid showing raw "Request failed with status code 400" etc. on the UI. */
 function normalizeApiErrorMessage(error: any, fallback: string): string {
@@ -580,7 +581,7 @@ const settingsSlice = createSlice({
       state,
       action: PayloadAction<DeviceSession[]>
     ) => {
-      state.deviceSessions = action.payload;
+      state.deviceSessions = sanitizeDeviceSessions(action.payload);
       state.deviceSessionsError = null;
     },
   },
@@ -867,11 +868,12 @@ const settingsSlice = createSlice({
       })
       .addCase(createDeviceSession.fulfilled, (state, action) => {
         state.deviceSessionsLoading = false;
-        if (Array.isArray(action.payload)) {
-          state.deviceSessions.push(...action.payload);
-        } else {
-          state.deviceSessions.push(action.payload);
-        }
+        const incoming = Array.isArray(action.payload)
+          ? action.payload
+          : [action.payload];
+        state.deviceSessions.push(
+          ...sanitizeDeviceSessions(incoming as DeviceSession[])
+        );
       })
       .addCase(createDeviceSession.rejected, (state, action) => {
         state.deviceSessionsLoading = false;
@@ -889,14 +891,16 @@ const settingsSlice = createSlice({
         );
         logger.debug('dashboard', "Redux: payload type:", typeof action.payload);
         logger.debug('dashboard', "Redux: is array:", Array.isArray(action.payload));
-        state.deviceSessions = action.payload;
+        state.deviceSessions = sanitizeDeviceSessions(
+          Array.isArray(action.payload) ? action.payload : []
+        );
       })
       .addCase(fetchDeviceSessions.rejected, (state, action) => {
         state.deviceSessionsLoading = false;
         state.deviceSessionsError = action.payload as string;
       })
       .addCase(logoutDevice.fulfilled, (state, action) => {
-        state.deviceSessions = state.deviceSessions.filter(
+        state.deviceSessions = sanitizeDeviceSessions(state.deviceSessions).filter(
           (session) => session.session_id !== action.payload.sessionId
         );
         state.success = "Device logged out successfully";

@@ -4,10 +4,26 @@ import {
   persistCurrentDeviceSessionId,
 } from "./deviceSessionStorage";
 
+function isValidDeviceSession(value: unknown): value is DeviceSession {
+  if (!value || typeof value !== "object") return false;
+  const row = value as DeviceSession;
+  return Boolean(String(row.session_id ?? "").trim());
+}
+
+/** Drop null/undefined or malformed rows from API / WS / Redux lists. */
+export function sanitizeDeviceSessions(
+  sessions: DeviceSession[] | null | undefined
+): DeviceSession[] {
+  if (!Array.isArray(sessions)) return [];
+  return sessions.filter(isValidDeviceSession);
+}
+
 export function pickCurrentDeviceSession(
   sessions: DeviceSession[]
 ): DeviceSession | undefined {
-  const active = sessions.filter((s) => s.is_active !== false);
+  const active = sanitizeDeviceSessions(sessions).filter(
+    (s) => s.is_active !== false
+  );
   const explicit = active.find((s) => s.is_current === true);
   if (explicit) return explicit;
 
@@ -27,7 +43,9 @@ export function isDeviceSessionStillActive(
   sessionId: string,
   sessions: DeviceSession[]
 ): boolean {
-  const row = sessions.find((s) => s.session_id === sessionId);
+  const row = sanitizeDeviceSessions(sessions).find(
+    (s) => s.session_id === sessionId
+  );
   if (!row) return false;
   return row.is_active !== false;
 }
@@ -46,14 +64,15 @@ export function evaluateDeviceSessionRevocation(
   sessions: DeviceSession[],
   hadKnownCurrentSession: boolean
 ): SessionRevocationCheck {
-  const current = pickCurrentDeviceSession(sessions);
+  const safeSessions = sanitizeDeviceSessions(sessions);
+  const current = pickCurrentDeviceSession(safeSessions);
   if (current?.session_id) {
     return { shouldLogout: false, trackCurrent: current };
   }
 
   const persisted = getPersistedDeviceSessionId();
   if (hadKnownCurrentSession && persisted) {
-    if (!isDeviceSessionStillActive(persisted, sessions)) {
+    if (!isDeviceSessionStillActive(persisted, safeSessions)) {
       return {
         shouldLogout: true,
         message: "This device was signed out from another device.",
@@ -61,7 +80,7 @@ export function evaluateDeviceSessionRevocation(
     }
   }
 
-  if (hadKnownCurrentSession && sessions.length === 0) {
+  if (hadKnownCurrentSession && safeSessions.length === 0) {
     return {
       shouldLogout: true,
       message: "Your session ended. Please sign in again.",
@@ -101,10 +120,11 @@ export function isRemoteLogoutForThisDevice(
   loggedOutSessionId: string,
   sessions: DeviceSession[]
 ): boolean {
+  const safeSessions = sanitizeDeviceSessions(sessions);
   const persisted = getPersistedDeviceSessionId();
   if (persisted && persisted === loggedOutSessionId) return true;
 
-  const current = pickCurrentDeviceSession(sessions);
+  const current = pickCurrentDeviceSession(safeSessions);
   if (current?.session_id === loggedOutSessionId) return true;
 
   return false;

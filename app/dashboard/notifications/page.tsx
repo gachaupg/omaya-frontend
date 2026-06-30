@@ -8,6 +8,7 @@ import { useRouter, useSearchParams } from "next/navigation";
 import {
   fetchMatchedTrades,
   fetchLatestMatchedTradesPage,
+  reconcileCanceledMatchedNotifications,
 } from "@/features/p2p/slices/matchedTradesSlice";
 import { selectPendingMatchedTradeNotifications } from "@/features/p2p/selectors";
 import {
@@ -67,6 +68,11 @@ const Notifications = () => {
   );
 
   // Matched-trades WebSocket + polling live in dashboard layout (MatchedTradesWebSocketProvider).
+  useEffect(() => {
+    if (!isAuthenticated) return;
+    void dispatch(reconcileCanceledMatchedNotifications());
+  }, [dispatch, isAuthenticated]);
+
   useEffect(() => {
     if (!isAuthenticated || hasLoaded) return;
     dispatch(fetchLatestMatchedTradesPage());
@@ -164,13 +170,6 @@ const Notifications = () => {
               account updates, they will appear here. Stay tuned for important
               updates!
             </p>
-
-            {/* Decorative elements */}
-            <div className="flex items-center space-x-2 dark:text-[#A3A3C2] text-gray-600 text-sm">
-              <div className="w-2 h-2 bg-[#1D8751] rounded-full"></div>
-              <span>All caught up</span>
-              <div className="w-2 h-2 bg-[#1D8751] rounded-full"></div>
-            </div>
           </div>
         </div>
       </div>

@@ -88,3 +88,19 @@ export async function getConfirmOrderCached(
   cache.set(key, { promise, fetchedAt: Date.now() });
   return promise;
 }
+
+/** Single GET `/trading_engine/p2p/trades/{id}/confirm/` — use `confirm.id` as the trade key. */
+export async function fetchP2PTradeConfirmOnce(
+  idHint: string,
+  options?: { force?: boolean }
+): Promise<MatchedTrade | null> {
+  const hint = String(idHint ?? "").trim();
+  if (!hint) return null;
+  try {
+    const confirm = await getConfirmOrderCached(hint, options);
+    primeP2PConfirmCache(confirm);
+    return confirm;
+  } catch {
+    return null;
+  }
+}

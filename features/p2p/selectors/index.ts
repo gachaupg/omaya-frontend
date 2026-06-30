@@ -18,6 +18,7 @@ import {
   filterPendingMatchedTradeNotifications,
   sortMatchedTradeNotificationsNewestFirst,
 } from "@/features/p2p/utils/matchedTradeNotifications";
+import { isTradeInDismissedSet } from "@/features/p2p/utils/resolveMatchedTradeRemoval";
 
 // ======================
 // Base Selectors (Input Selectors)
@@ -132,10 +133,18 @@ export const selectActiveMatchedTrades = createSelector(
 /** Pending rows for notification bell and notification center (excludes cancelled/completed). */
 export const selectPendingMatchedTradeNotifications = createSelector(
   [selectMatchedTradesState],
-  (tradesState) =>
-    sortMatchedTradeNotificationsNewestFirst(
-      filterPendingMatchedTradeNotifications(tradesState.data?.results || [])
-    )
+  (tradesState) => {
+    const dismissed = new Set(
+      (tradesState.dismissedNotificationKeys ?? [])
+        .map((key) => String(key).trim())
+        .filter(Boolean)
+    );
+    return sortMatchedTradeNotificationsNewestFirst(
+      filterPendingMatchedTradeNotifications(tradesState.data?.results || []).filter(
+        (trade) => !isTradeInDismissedSet(trade, dismissed)
+      )
+    );
+  }
 );
 
 /** Badge count — always derived from pending rows (stays in sync with WS +/-). */

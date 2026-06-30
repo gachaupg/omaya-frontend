@@ -224,6 +224,7 @@ const MarketTable: React.FC<MarketTableProps> = ({
 
   const navigateToMatchedTrade = useCallback(
     (session: PendingAcceptanceSession, tradeId: string) => {
+      setPendingAcceptance(null);
       navigateToMatchedTradeFromSession(session, tradeId);
     },
     []

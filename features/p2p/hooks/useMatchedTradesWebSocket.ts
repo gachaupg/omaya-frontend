@@ -6,8 +6,10 @@ import {
   upsertMatchedTradeFromWS,
   removeMatchedTradeFromWS,
   removeMatchedTradeByStatusFromWS,
+  dismissMatchedTradesFromNotifications,
   fetchLatestMatchedTradesPage,
   fetchMatchedTrades,
+  reconcileCanceledMatchedNotifications,
 } from "../slices/matchedTradesSlice";
 import { P2P_TRADE_CANCELED_EVENT } from "../constants/tradeSocketEvents";
 import { isTerminalMatchedTradeNotificationStatus } from "../utils/matchedTradeNotifications";
@@ -16,6 +18,10 @@ import {
   WebSocketMessage,
 } from "../services/matchedTradesWebSocket";
 import { cookieUtils } from "@/lib/utils/cookieUtils";
+import {
+  logMatchedTradesWebSocketMessage,
+  logMatchedTradesWebSocketUrl,
+} from "../utils/matchedTradesWsDebug";
 
 import { logger } from '@/lib/utils/logger';
 
@@ -67,10 +73,15 @@ export const useMatchedTradesWebSocket = (
     if (!enabled || typeof window === "undefined") return;
 
     const onTradeCanceled = (event: Event) => {
-      const detail = (event as CustomEvent<{ tradeId?: string }>).detail;
-      const tradeId = detail?.tradeId != null ? String(detail.tradeId).trim() : "";
-      if (!tradeId || !mountedRef.current) return;
-      dispatch(removeMatchedTradeFromWS(tradeId));
+      const detail = (event as CustomEvent<{ tradeId?: string; dismissedKeys?: string[] }>).detail;
+      const keys = Array.isArray(detail?.dismissedKeys)
+        ? detail.dismissedKeys
+        : detail?.tradeId != null
+          ? [String(detail.tradeId)]
+          : [];
+      const normalized = keys.map((key) => String(key).trim()).filter(Boolean);
+      if (!normalized.length || !mountedRef.current) return;
+      dispatch(dismissMatchedTradesFromNotifications(normalized));
     };
 
     window.addEventListener(P2P_TRADE_CANCELED_EVENT, onTradeCanceled);
@@ -132,6 +143,7 @@ export const useMatchedTradesWebSocket = (
     }
 
     // Token validated - connecting to WebSocket
+    logMatchedTradesWebSocketUrl(token, "useMatchedTradesWebSocket");
 
     const ws = wsRef.current;
 
@@ -142,14 +154,24 @@ export const useMatchedTradesWebSocket = (
       try {
         switch (message.type) {
           case "connection_established":
+            logMatchedTradesWebSocketMessage("connection_established", {
+              group: message.data?.group_name ?? message.data?.group,
+            });
             setIsConnected(true);
             setConnectionError(null);
             // Stop polling when WebSocket is connected
             stopPolling();
+            void dispatch(reconcileCanceledMatchedNotifications());
             break;
 
           case "initial_data":
             if (Array.isArray(message.data?.trades)) {
+              logMatchedTradesWebSocketMessage("initial_data", {
+                count: message.data.trades.length,
+                tradeIds: message.data.trades
+                  .slice(0, 10)
+                  .map((t: { id?: unknown }) => String(t?.id ?? "")),
+              });
               dispatch(
                 updateMatchedTradesFromWS({
                   trades: message.data.trades,
@@ -161,6 +183,9 @@ export const useMatchedTradesWebSocket = (
 
           case "trades_update":
             if (Array.isArray(message.data?.trades)) {
+              logMatchedTradesWebSocketMessage("trades_update", {
+                count: message.data.trades.length,
+              });
               dispatch(
                 updateMatchedTradesFromWS({
                   trades: message.data.trades,
@@ -179,6 +204,12 @@ export const useMatchedTradesWebSocket = (
               message.data?.status ?? message.data?.trade?.status ?? ""
             );
             const trade = message.data?.trade;
+
+            logMatchedTradesWebSocketMessage("trade_update", {
+              action,
+              tradeId,
+              status,
+            });
 
             if (
               action === "deleted" ||
@@ -267,6 +298,7 @@ export const useMatchedTradesWebSocket = (
     }
     
     refreshMatchedTradesFromApi();
+    void dispatch(reconcileCanceledMatchedNotifications());
 
     pollingIntervalRef.current = setInterval(() => {
       if (mountedRef.current && !wsRef.current.isConnected()) {

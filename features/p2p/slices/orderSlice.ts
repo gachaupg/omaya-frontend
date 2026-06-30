@@ -35,6 +35,9 @@ import {
   getMessageFromApiError,
   handleP2PErrorSafe,
 } from "../../../lib/utils/errorHandler";
+import {
+  isP2PTradeAlreadyCanceledError,
+} from "../utils/p2pCancelErrors";
 import { fetchWallets } from "./walletSlice";
 import { logger } from "@/lib/logger";
 
@@ -298,13 +301,20 @@ export const fetchSingleOrder = createAsyncThunk(
   }
 );
 
-export const cancelP2POrderThunk = createAsyncThunk(
+export const cancelP2POrderThunk = createAsyncThunk<
+  P2PResponse | { message: string },
+  string,
+  { rejectValue: string }
+>(
   "p2p/cancelOrder",
-  async (id: string, { rejectWithValue }) => {
+  async (id, { rejectWithValue }) => {
     try {
       const response = await cancelP2POrder(id);
       return response;
     } catch (error: any) {
+      if (isP2PTradeAlreadyCanceledError(error)) {
+        return { message: "Trade already canceled" };
+      }
       const msg = handleP2PErrorSafe(error);
       return rejectWithValue(msg || error.message || "An error occurred");
     }

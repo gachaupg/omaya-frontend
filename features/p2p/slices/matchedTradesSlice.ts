@@ -8,10 +8,16 @@ import {
   sortMatchedTradeNotificationsNewestFirst,
 } from "../utils/matchedTradeNotifications";
 import {
+  collectDismissedKeysForHints,
+  isTradeInDismissedSet,
+} from "../utils/resolveMatchedTradeRemoval";
+import { isPendingAcceptanceStatus } from "../utils/tradeWsAcceptanceGate";
+import {
   fetchLatestMatchedTradesPage as fetchLatestMatchedTradesPageApi,
   getMatchedTradesPageSize,
   getMatchedTradesTotalPages,
 } from "../utils/matchedTradesPagination";
+import { cancelP2POrderThunk } from "./orderSlice";
 
 interface MatchedTradesState {
   data: MatchedTradesResponse | null;
@@ -21,6 +27,8 @@ interface MatchedTradesState {
   error: string | null;
   activePage: number;
   totalPages: number;
+  /** Trade / order ids the user dismissed — never re-show in bell or notifications. */
+  dismissedNotificationKeys: string[];
 }
 
 const initialState: MatchedTradesState = {
@@ -31,7 +39,25 @@ const initialState: MatchedTradesState = {
   error: null,
   activePage: 1,
   totalPages: 1,
+  dismissedNotificationKeys: [],
 };
+
+function dismissedKeySet(state: MatchedTradesState): Set<string> {
+  return new Set(
+    (state.dismissedNotificationKeys ?? [])
+      .map((key) => String(key).trim())
+      .filter(Boolean)
+  );
+}
+
+function withoutDismissedTrades(
+  state: MatchedTradesState,
+  trades: MatchedTrade[]
+): MatchedTrade[] {
+  const dismissed = dismissedKeySet(state);
+  if (!dismissed.size) return trades;
+  return trades.filter((trade) => !isTradeInDismissedSet(trade, dismissed));
+}
 
 function sortTradesNewestFirst(trades: MatchedTrade[]): MatchedTrade[] {
   return sortMatchedTradeNotificationsNewestFirst(trades);
@@ -44,7 +70,8 @@ function mergeHttpPageIntoState(
 ): MatchedTradesResponse {
   const merged = mergePendingTrades(
     state.data?.results || [],
-    payload.results || []
+    payload.results || [],
+    dismissedKeySet(state)
   );
   return {
     ...payload,
@@ -54,25 +81,38 @@ function mergeHttpPageIntoState(
 }
 
 /** WS `initial_data` / `trades_update` — server snapshot replaces pending list. */
-function replacePendingTradesFromSnapshot(trades: MatchedTrade[]): MatchedTrade[] {
+function replacePendingTradesFromSnapshot(
+  trades: MatchedTrade[],
+  dismissed: ReadonlySet<string>
+): MatchedTrade[] {
   return sortTradesNewestFirst(
-    filterPendingMatchedTradeNotifications(trades)
+    filterPendingMatchedTradeNotifications(trades).filter(
+      (trade) => !isTradeInDismissedSet(trade, dismissed)
+    )
   );
 }
 
 function mergePendingTrades(
   existing: MatchedTrade[],
-  incoming: MatchedTrade[]
+  incoming: MatchedTrade[],
+  dismissed: ReadonlySet<string> = new Set()
 ): MatchedTrade[] {
   const byId = new Map<string, MatchedTrade>();
   for (const trade of existing) {
-    if (isPendingMatchedTradeNotification(trade)) {
+    if (
+      isPendingMatchedTradeNotification(trade) &&
+      !isTradeInDismissedSet(trade, dismissed)
+    ) {
       byId.set(String(trade.id), trade);
     }
   }
   for (const trade of incoming) {
     const id = String(trade.id);
     if (!id) continue;
+    if (isTradeInDismissedSet(trade, dismissed)) {
+      byId.delete(id);
+      continue;
+    }
     if (isPendingMatchedTradeNotification(trade)) {
       byId.set(id, trade);
     } else {
@@ -92,10 +132,37 @@ function ensureMatchedTradesData(state: MatchedTradesState): MatchedTradesRespon
 /** Keep results pending-only and sync badge count with list length. */
 function syncPendingNotificationCount(state: MatchedTradesState) {
   if (!state.data) return;
-  state.data.results = filterPendingMatchedTradeNotifications(
-    state.data.results
+  state.data.results = withoutDismissedTrades(
+    state,
+    filterPendingMatchedTradeNotifications(state.data.results)
   );
   state.data.count = state.data.results.length;
+}
+
+function dismissMatchedTradesReducer(
+  state: MatchedTradesState,
+  action: PayloadAction<string[]>
+) {
+  const incoming = action.payload
+    .map((key) => String(key).trim())
+    .filter(Boolean);
+  if (!incoming.length) return;
+
+  const merged = new Set([
+    ...(state.dismissedNotificationKeys ?? []),
+    ...incoming,
+  ]);
+  state.dismissedNotificationKeys = Array.from(merged);
+
+  if (state.data?.results) {
+    const dismissed = dismissedKeySet(state);
+    state.data.results = state.data.results.filter(
+      (trade) => !isTradeInDismissedSet(trade, dismissed)
+    );
+    syncPendingNotificationCount(state);
+  }
+
+  markMatchedTradesReady(state);
 }
 
 function markMatchedTradesReady(state: MatchedTradesState) {
@@ -109,9 +176,10 @@ function applyTradeListToState(
   trades: MatchedTrade[],
   options?: { replace?: boolean }
 ) {
+  const dismissed = dismissedKeySet(state);
   const results = options?.replace
-    ? replacePendingTradesFromSnapshot(trades)
-    : mergePendingTrades(state.data?.results || [], trades);
+    ? replacePendingTradesFromSnapshot(trades, dismissed)
+    : mergePendingTrades(state.data?.results || [], trades, dismissed);
 
   state.data = {
     ...(state.data ?? { next: null, previous: null, count: 0 }),
@@ -133,6 +201,15 @@ function upsertMatchedTradeFromWSReducer(
   if (!tradeId) return;
 
   const data = ensureMatchedTradesData(state);
+  const dismissed = dismissedKeySet(state);
+  if (isTradeInDismissedSet(trade, dismissed)) {
+    const index = data.results.findIndex((t) => String(t.id) === tradeId);
+    if (index !== -1) data.results.splice(index, 1);
+    syncPendingNotificationCount(state);
+    markMatchedTradesReady(state);
+    return;
+  }
+
   const index = data.results.findIndex((t) => String(t.id) === tradeId);
   const pending = isPendingMatchedTradeNotification(trade);
 
@@ -158,16 +235,10 @@ function removeMatchedTradeFromWSReducer(
   state: MatchedTradesState,
   action: PayloadAction<string>
 ) {
-  const tradeId = String(action.payload ?? "").trim();
-  if (!tradeId || !state.data?.results) return;
-  const before = state.data.results.length;
-  state.data.results = state.data.results.filter(
-    (trade) => String(trade.id) !== tradeId
-  );
-  if (state.data.results.length !== before) {
-    syncPendingNotificationCount(state);
-    markMatchedTradesReady(state);
-  }
+  dismissMatchedTradesReducer(state, {
+    type: "matchedTrades/dismissMatchedTradesFromNotifications",
+    payload: [String(action.payload ?? "").trim()].filter(Boolean),
+  });
 }
 
 export const fetchMatchedTrades = createAsyncThunk(
@@ -186,6 +257,49 @@ export const fetchLatestMatchedTradesPage = createAsyncThunk(
   }
 );
 
+/** Drop notification rows whose confirm snapshot is already terminal (stale list / WS miss). */
+export const reconcileCanceledMatchedNotifications = createAsyncThunk(
+  "matchedTrades/reconcileCanceledMatchedNotifications",
+  async (_, { getState, dispatch }) => {
+    const state = getState() as { matchedTrades?: MatchedTradesState };
+    const results = state.matchedTrades?.data?.results ?? [];
+    const dismissed = new Set(
+      (state.matchedTrades?.dismissedNotificationKeys ?? []).map(String)
+    );
+    const stalePending = results.filter(
+      (trade) =>
+        isPendingAcceptanceStatus(String(trade.status ?? "")) &&
+        !isTradeInDismissedSet(trade, dismissed)
+    );
+    if (!stalePending.length) return;
+
+    const keysToDismiss: string[] = [];
+    const { fetchP2PTradeConfirmOnce } = await import(
+      "../utils/resolveP2PTradeId"
+    );
+    await Promise.all(
+      stalePending.map(async (trade) => {
+        const confirm = await fetchP2PTradeConfirmOnce(String(trade.id), {
+          force: true,
+        });
+        if (!confirm) return;
+        const status = String(confirm.status ?? "").trim();
+        if (!isTerminalMatchedTradeNotificationStatus(status)) return;
+        keysToDismiss.push(
+          ...collectDismissedKeysForHints([trade], { tradeId: trade.id })
+        );
+      })
+    );
+
+    const unique = Array.from(
+      new Set(keysToDismiss.map((key) => String(key).trim()).filter(Boolean))
+    );
+    if (unique.length) {
+      dispatch(dismissMatchedTradesFromNotifications(unique));
+    }
+  }
+);
+
 const matchedTradesSlice = createSlice({
   name: "matchedTrades",
   initialState,
@@ -196,6 +310,7 @@ const matchedTradesSlice = createSlice({
       state.hasLoaded = false;
       state.activePage = 1;
       state.totalPages = 1;
+      state.dismissedNotificationKeys = [];
     },
     updateMatchedTradesFromWS: (state, action) => {
       const trades: MatchedTrade[] =
@@ -209,6 +324,7 @@ const matchedTradesSlice = createSlice({
     addMatchedTradeFromWS: upsertMatchedTradeFromWSReducer,
     updateSingleTradeFromWS: upsertMatchedTradeFromWSReducer,
     removeMatchedTradeFromWS: removeMatchedTradeFromWSReducer,
+    dismissMatchedTradesFromNotifications: dismissMatchedTradesReducer,
     removeMatchedTradeByStatusFromWS: (
       state,
       action: PayloadAction<{ tradeId: string; status?: string }>
@@ -273,6 +389,18 @@ const matchedTradesSlice = createSlice({
       })
       .addCase(fetchLatestMatchedTradesPage.rejected, (state, action) => {
         onRejected(state, action.error.message);
+      })
+      .addCase(cancelP2POrderThunk.fulfilled, (state, action) => {
+        const id = String(action.meta.arg ?? "").trim();
+        if (!id) return;
+        const keys = collectDismissedKeysForHints(state.data?.results, {
+          tradeId: id,
+        });
+        if (!keys.includes(id)) keys.push(id);
+        dismissMatchedTradesReducer(state, {
+          type: "matchedTrades/dismissMatchedTradesFromNotifications",
+          payload: keys,
+        });
       });
   },
 });
@@ -284,6 +412,7 @@ export const {
   addMatchedTradeFromWS,
   updateSingleTradeFromWS,
   removeMatchedTradeFromWS,
+  dismissMatchedTradesFromNotifications,
   removeMatchedTradeByStatusFromWS,
 } = matchedTradesSlice.actions;
 export default matchedTradesSlice.reducer;
