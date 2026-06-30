@@ -11,7 +11,7 @@ import {
   fetchPublicPaymentMethods,
   fetchAdminPaymentMethods,
 } from "../../../p2p/slices/paymentMethodsSlice";
-import { fetchAdminPaymentDetails, fetchUserPaymentDetails } from "../../../exchange/slices/paymentSlice";
+import { fetchAdminPaymentDetails, fetchAdminWalletList, fetchUserPaymentDetails } from "../../../exchange/slices/paymentSlice";
 import { fetchAssets } from "../../../exchange/slices/exchangeSlice";
 import {
   createDeposit,
@@ -37,6 +37,7 @@ import {
 } from "@/lib/utils/expressMinAmount";
 import { reportAssetLoadIssue } from "@/lib/utils/assetLoadNotice";
 import { DepositResponse } from "../../../exchange/types";
+import { withOptionalPaymentProviderId, flattenPaymentProviderCatalogRows, type PaymentProviderIdLookup } from "@/features/express/utils/depositPayloadHelpers";
 import { SupportedAsset } from "../../../swap/types";
 import { FaSearch } from "react-icons/fa";
 import InfoModal from "./info";
@@ -330,7 +331,7 @@ export default function DepositForm({
     publicMethodsLoading,
     publicMethodsError,
   } = useSelector((state: any) => state.paymentMethods);
-  const { adminPaymentDetails: exchangeAdminPaymentDetails } = useSelector(
+  const { adminPaymentDetails: exchangeAdminPaymentDetails, adminWalletList } = useSelector(
     (state: any) => state.payment
   );
   const {
@@ -361,10 +362,13 @@ export default function DepositForm({
   const [stablePaymentMethods, setStablePaymentMethods] = useState<any[]>([]);
 
   // Use public API payment methods when available (same as home); fallback to admin
-  const hasPublicMethods =
-    publicPaymentMethods?.data?.providers &&
-    Array.isArray(publicPaymentMethods.data.providers) &&
+  const hasPublicProviders =
+    Array.isArray(publicPaymentMethods?.data?.providers) &&
     publicPaymentMethods.data.providers.length > 0;
+  const hasPublicPaymentMethods =
+    Array.isArray(publicPaymentMethods?.data?.payment_methods) &&
+    publicPaymentMethods.data.payment_methods.length > 0;
+  const hasPublicMethods = hasPublicProviders || hasPublicPaymentMethods;
   const paymentMethodsData = hasPublicMethods ? publicPaymentMethods : adminMethods;
   const paymentMethodsLoading = hasPublicMethods
     ? publicMethodsLoading
@@ -395,9 +399,7 @@ export default function DepositForm({
 
     // Check if we have payment methods data (use public API when available, same as home)
     const hasPublicData =
-      publicPaymentMethods?.data?.providers &&
-      Array.isArray(publicPaymentMethods.data.providers) &&
-      publicPaymentMethods.data.providers.length > 0;
+      hasPublicProviders || hasPublicPaymentMethods;
     const hasPaymentData = hasPublicData
       ? true
       : paymentMethodsData &&
@@ -411,9 +413,9 @@ export default function DepositForm({
         // For public payment methods, handle the new API structure (same as home)
         let flattenedMethods: any[] = [];
 
-        // Check for new structure: data.providers (direct providers array)
-        if (Array.isArray(publicPaymentMethods?.data?.providers)) {
-          const providers = publicPaymentMethods.data.providers;
+        // Prefer non-empty providers; fall back to payment_methods → providers
+        if (hasPublicProviders) {
+          const providers = publicPaymentMethods!.data!.providers!;
           console.log("🔍 Processing providers from API:", {
             providersCount: providers.length,
             firstProvider: providers[0]
@@ -456,6 +458,8 @@ export default function DepositForm({
               payment_method_type:
                 provider.method?.method_name ||
                 provider.method?.method_display ||
+                provider.payment_method_type ||
+                provider.payment_method ||
                 "",
               provider_logo: providerLogo,
               logo: providerLogo, // Also add as 'logo' for backward compatibility
@@ -666,6 +670,7 @@ export default function DepositForm({
 
             return {
               ...payment,
+              provider_id: payment.provider_id || payment.payment_provider_id,
               // Always expose a unified payment_details array for the rest of the component
               payment_details: rawDetails,
               account_name,
@@ -932,6 +937,26 @@ export default function DepositForm({
     }
     return list;
   }, [finalPaymentMethods, initialState?.payment, selectedPaymentDetail]);
+
+  const adminWalletCatalog = useMemo(
+    () => flattenPaymentProviderCatalogRows(adminWalletList),
+    [adminWalletList]
+  );
+
+  const paymentProviderIdLookup = useMemo(
+    (): PaymentProviderIdLookup => ({
+      publicMethodsData: publicPaymentMethods,
+      providerList: paymentMethodsForSelect,
+      adminPaymentProviders: Array.isArray(adminMethods) ? adminMethods : [],
+      adminWalletProviders: adminWalletCatalog,
+    }),
+    [
+      publicPaymentMethods,
+      paymentMethodsForSelect,
+      adminMethods,
+      adminWalletCatalog,
+    ]
+  );
 
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [validationErrors, setValidationErrors] = useState<string[]>([]);
@@ -1231,6 +1256,7 @@ export default function DepositForm({
 
     dispatch(fetchAdminPaymentMethods());
     dispatch(fetchAdminPaymentDetails(false));
+    dispatch(fetchAdminWalletList());
   }, [dispatch, isHomePage]);
 
   // Skip reset when restoring from legal pages (user was on second step)
@@ -3021,18 +3047,24 @@ export default function DepositForm({
           throw new Error("Asset information is missing");
         }
 
-        // Build JSON payload — requested_amount sent as a number
-        const depositPayload = {
-          requested_amount: safeAmount,
-          payment_provider: effectivePaymentDetail.provider_name,
-          payment_method: effectivePaymentDetail.payment_method_type,
-          currency: currencyValue,
-          network: networkValue,
-          asset: isForexPrimusAsset(selectedAsset) ? "fxprimus" : assetValue,
-          asset_id: String((selectedAsset as any)?.asset_id || ""),
-          network_id: null,
-          additional_info: "Direct crypto deposit",
-        };
+        const depositPayload = withOptionalPaymentProviderId(
+          {
+            requested_amount: safeAmount,
+            payment_provider: effectivePaymentDetail.provider_name,
+            payment_method: effectivePaymentDetail.payment_method_type,
+            currency: currencyValue,
+            network: networkValue,
+            asset: isForexPrimusAsset(selectedAsset) ? "fxprimus" : assetValue,
+            asset_id: String((selectedAsset as any)?.asset_id || ""),
+            network_id: null,
+            additional_info: "Direct crypto deposit",
+          },
+          effectivePaymentDetail,
+          {
+            ...paymentProviderIdLookup,
+            providerName: effectivePaymentDetail.provider_name,
+          }
+        );
 
         // Submit to API
         const depositResponse = (await dispatch(

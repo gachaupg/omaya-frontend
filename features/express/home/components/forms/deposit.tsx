@@ -10,7 +10,7 @@ import {
   fetchPublicPaymentMethods,
   fetchAdminPaymentMethods,
 } from "../../../../p2p/slices/paymentMethodsSlice";
-import { fetchAdminPaymentDetails, fetchUserPaymentDetails } from "../../../../exchange/slices/paymentSlice";
+import { fetchAdminPaymentDetails, fetchAdminWalletList, fetchUserPaymentDetails } from "../../../../exchange/slices/paymentSlice";
 import {
   fetchAssets,
   createDeposit,
@@ -37,6 +37,12 @@ import {
 import { reportAssetLoadIssue } from "@/lib/utils/assetLoadNotice";
 import { useExpressI18n } from "@/lib/useExpressI18n";
 import { DepositResponse } from "../../../../exchange/types";
+import {
+  resolvePaymentProviderId,
+  withOptionalPaymentProviderId,
+  flattenPaymentProviderCatalogRows,
+  type PaymentProviderIdLookup,
+} from "@/features/express/utils/depositPayloadHelpers";
 import { SupportedAsset } from "../../../../swap/types";
 import { FaSearch } from "react-icons/fa";
 import InfoModal from "./info";
@@ -500,7 +506,7 @@ export default function DepositForm({
     publicMethodsLoading,
     publicMethodsError,
   } = useSelector((state: any) => state.paymentMethods);
-  const { adminPaymentDetails: exchangeAdminPaymentDetails } = useSelector(
+  const { adminPaymentDetails: exchangeAdminPaymentDetails, adminWalletList } = useSelector(
     (state: any) => state.payment
   );
   const {
@@ -875,6 +881,26 @@ export default function DepositForm({
 
   // Use only real provider data (no generic fallback methods).
   const finalPaymentMethods = effectivePaymentMethods;
+
+  const adminWalletCatalog = useMemo(
+    () => flattenPaymentProviderCatalogRows(adminWalletList),
+    [adminWalletList]
+  );
+
+  const paymentProviderIdLookup = useMemo(
+    (): PaymentProviderIdLookup => ({
+      publicMethodsData: publicPaymentMethods,
+      providerList: finalPaymentMethods,
+      adminPaymentProviders: Array.isArray(adminMethods) ? adminMethods : [],
+      adminWalletProviders: adminWalletCatalog,
+    }),
+    [
+      publicPaymentMethods,
+      finalPaymentMethods,
+      adminMethods,
+      adminWalletCatalog,
+    ]
+  );
 
  
 
@@ -1348,6 +1374,7 @@ export default function DepositForm({
     }
 
     dispatch(fetchAdminPaymentMethods());
+    dispatch(fetchAdminWalletList());
   }, [dispatch, isHomePage]);
 
   // When user changes asset, payment method, or amount, reset post state so they can post again
@@ -3283,6 +3310,17 @@ export default function DepositForm({
         }
         // For direct crypto deposits, set minimal additional info
         depositPayload.append("additional_info", "Direct crypto deposit");
+
+        const paymentProviderId = resolvePaymentProviderId(
+          effectiveSelectedPaymentDetail,
+          {
+            ...paymentProviderIdLookup,
+            providerName: effectiveSelectedPaymentDetail.provider_name,
+          }
+        );
+        if (paymentProviderId) {
+          depositPayload.append("payment_provider_id", paymentProviderId);
+        }
 
         // Submit to API - let axios set the correct Content-Type for FormData
         const depositResponse = (await dispatch(
