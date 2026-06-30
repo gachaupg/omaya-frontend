@@ -22,7 +22,7 @@ import {
   fetchSwapEstimate,
   fetchSupportedAssets,
 } from "../../swap/slices/swapSlice";
-import { fetchUserPaymentDetails, fetchPublicPaymentMethods } from "../../p2p/slices/paymentMethodsSlice";
+import { fetchUserPaymentDetails, fetchPublicPaymentMethods, fetchAdminPaymentMethods } from "../../p2p/slices/paymentMethodsSlice";
 import { fetchAdminWalletList, fetchAdminPaymentDetails } from "../../exchange/slices/paymentSlice";
 import PaymentMethodsModal from "../../p2p/components/ui/p2pdashboard/sections/PaymentMethodsModal";
 import {
@@ -42,6 +42,11 @@ import {
   type ExchangeCommissionLookupResponse,
 } from "../../express/api";
 import { Asset, DepositResponse } from "../../exchange/types";
+import {
+  resolvePaymentProviderId,
+  withOptionalPaymentProviderId,
+  flattenPaymentProviderCatalogRows,
+} from "@/features/express/utils/depositPayloadHelpers";
 import { SupportedAsset } from "../../swap/types";
 import { ExpressWithdrawalPayload } from "../../express/types";
 import { useAssetsDisplay, usePaymentMethodsDisplay } from "../../express/hooks/useDataDisplay";
@@ -457,14 +462,37 @@ const enrichRatesPublicProvider = (
     payBank?: string;
     publicMethodsData?: any;
     allProviders?: any[];
+    adminPaymentProviders?: unknown[];
+    adminWalletProviders?: unknown[];
   }
 ): any => {
   if (!provider || typeof provider !== "object") return provider;
   const paymentMethodType = resolveRatesPaymentMethodType(provider, options);
+  const paymentProviderId =
+    provider.payment_provider_id ||
+    provider.provider_id ||
+    resolvePaymentProviderId(provider, {
+      providerName: pickNonEmptyRatesString(
+        provider.provider_name,
+        provider.payment_provider_name,
+        options?.payBank
+      ),
+      publicMethodsData: options?.publicMethodsData,
+      providerList: options?.allProviders,
+      adminPaymentProviders: options?.adminPaymentProviders,
+      adminWalletProviders: options?.adminWalletProviders,
+    });
+
   return {
     ...provider,
     payment_method: provider.payment_method || paymentMethodType,
     payment_method_type: provider.payment_method_type || paymentMethodType,
+    ...(paymentProviderId
+      ? {
+          provider_id: provider.provider_id || paymentProviderId,
+          payment_provider_id: paymentProviderId,
+        }
+      : {}),
   };
 };
 
@@ -1119,7 +1147,8 @@ const getPaymentRestrictionMessage = (status?: string) =>
     userDetailsError,
     publicPaymentMethods,
     publicMethodsLoading,
-    publicMethodsError
+    publicMethodsError,
+    adminMethods,
   } = useSelector((state: RootState) => state.paymentMethods);
 
   const { adminPaymentDetails, adminWalletList, loading: paymentLoading, error: paymentError } = useSelector(
@@ -1216,6 +1245,20 @@ const getPaymentRestrictionMessage = (status?: string) =>
   const fallbackProviderNames = ["Bank", "Crypto", "Forex", "Mobile", "Marchant"];
   const [directPublicPaymentMethods, setDirectPublicPaymentMethods] = useState<any>(null);
 
+  const ratesProviderIdLookup = useMemo(
+    () => ({
+      adminPaymentProviders: Array.isArray(adminMethods) ? adminMethods : [],
+      adminWalletProviders: flattenPaymentProviderCatalogRows(adminWalletList),
+      publicMethodsData: directPublicPaymentMethods || publicPaymentMethods,
+    }),
+    [
+      adminMethods,
+      adminWalletList,
+      directPublicPaymentMethods,
+      publicPaymentMethods,
+    ]
+  );
+
   const assetDropdownRef = useRef<HTMLDivElement>(null);
   const assetDropdownContentRef = useRef<HTMLDivElement | null>(null);  // dropdown panel
 
@@ -1233,6 +1276,7 @@ const getPaymentRestrictionMessage = (status?: string) =>
     if (isAuthenticated) {
       dispatch(fetchAdminWalletList());
       dispatch(fetchAdminPaymentDetails());
+      dispatch(fetchAdminPaymentMethods());
     }
   }, [dispatch, isAuthenticated]);
 
@@ -2991,6 +3035,8 @@ const getPaymentRestrictionMessage = (status?: string) =>
             payBank: firstName,
             publicMethodsData,
             allProviders: sortedPublicPaymentProviders,
+            adminPaymentProviders: ratesProviderIdLookup.adminPaymentProviders,
+            adminWalletProviders: ratesProviderIdLookup.adminWalletProviders,
           });
           setPayBank(firstName);
           setSelectedProviderData(enriched);
@@ -3670,6 +3716,8 @@ const getPaymentRestrictionMessage = (status?: string) =>
         payBank: providerNameHint,
         publicMethodsData,
         allProviders: sortedPublicPaymentProviders,
+        adminPaymentProviders: ratesProviderIdLookup.adminPaymentProviders,
+        adminWalletProviders: ratesProviderIdLookup.adminWalletProviders,
       });
     }
 
@@ -3768,17 +3816,25 @@ const getPaymentRestrictionMessage = (status?: string) =>
       throw new Error("Asset information is missing");
     }
 
-    const depositPayload = {
-      requested_amount: safeAmount,
-      payment_provider: paymentProvider,
-      payment_method: paymentMethod,
-      currency: currencyValue,
-      network: networkValue,
-      asset: assetValue,
-      asset_id: assetId,
-      network_id: null as null,
-      additional_info: "Direct crypto deposit",
-    };
+    const depositPayload = withOptionalPaymentProviderId(
+      {
+        requested_amount: safeAmount,
+        payment_provider: paymentProvider,
+        payment_method: paymentMethod,
+        currency: currencyValue,
+        network: networkValue,
+        asset: assetValue,
+        asset_id: assetId,
+        network_id: null as null,
+        additional_info: "Direct crypto deposit",
+      },
+      provider,
+      {
+        ...ratesProviderIdLookup,
+        providerName: paymentProvider,
+        providerList: sortedPublicPaymentProviders,
+      }
+    );
 
     logger.debug("general", "DEBUG: Rates first-card deposit payload:", depositPayload);
 
@@ -4443,6 +4499,10 @@ const getPaymentRestrictionMessage = (status?: string) =>
                                 payBank: value,
                                 publicMethodsData,
                                 allProviders: sortedPublicPaymentProviders,
+                                adminPaymentProviders:
+                                  ratesProviderIdLookup.adminPaymentProviders,
+                                adminWalletProviders:
+                                  ratesProviderIdLookup.adminWalletProviders,
                               }
                             );
                             setPayBank(value);

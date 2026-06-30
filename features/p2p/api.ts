@@ -290,9 +290,11 @@ const normalizeAdminPaymentProviders = (
 
       return {
         id:
-          item?.provider_id ||
-          item?.id ||
+          item?.id ??
+          item?.provider_id ??
           `${providerName || "provider"}-${paymentMethodType || "method"}`,
+        provider_id: item?.provider_id ?? null,
+        payment_provider_id: item?.provider_id ?? null,
         payment_method_type: paymentMethodType || "",
         provider_name: providerName,
         // Logo fields

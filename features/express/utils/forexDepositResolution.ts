@@ -386,6 +386,10 @@ export const normalizePaymentDetails = (payment: any): any => {
     ...payment,
     provider_name: providerName,
     payment_method_type: methodType || (payment as any).payment_method_type,
+    provider_id:
+      (payment as any).provider_id ||
+      (payment as any).payment_provider_id ||
+      null,
     payment_details: rawDetails,
     account_name,
     account_number,
