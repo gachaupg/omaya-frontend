@@ -130,6 +130,23 @@ export const selectActiveMatchedTrades = createSelector(
   }
 );
 
+/** All matched-trade rows for notification center (includes non-pending until dismissed). */
+export const selectAllMatchedTradeNotifications = createSelector(
+  [selectMatchedTradesState],
+  (tradesState) => {
+    const dismissed = new Set(
+      (tradesState.dismissedNotificationKeys ?? [])
+        .map((key) => String(key).trim())
+        .filter(Boolean)
+    );
+    return sortMatchedTradeNotificationsNewestFirst(
+      (tradesState.data?.results || []).filter(
+        (trade) => !isTradeInDismissedSet(trade, dismissed)
+      )
+    );
+  }
+);
+
 /** Pending rows for notification bell and notification center (excludes cancelled/completed). */
 export const selectPendingMatchedTradeNotifications = createSelector(
   [selectMatchedTradesState],

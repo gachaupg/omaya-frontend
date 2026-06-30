@@ -166,16 +166,22 @@ export const useMatchedTradesWebSocket = (
 
           case "initial_data":
             if (Array.isArray(message.data?.trades)) {
+              const trades = message.data.trades;
               logMatchedTradesWebSocketMessage("initial_data", {
-                count: message.data.trades.length,
-                tradeIds: message.data.trades
+                count: trades.length,
+                tradeIds: trades
                   .slice(0, 10)
                   .map((t: { id?: unknown }) => String(t?.id ?? "")),
               });
               dispatch(
                 updateMatchedTradesFromWS({
-                  trades: message.data.trades,
-                  replace: true,
+                  trades,
+                  count:
+                    typeof message.data?.count === "number"
+                      ? message.data.count
+                      : trades.length,
+                  // Empty WS snapshot must not wipe HTTP-fetched notification rows.
+                  replace: trades.length > 0,
                 })
               );
             }
@@ -183,13 +189,18 @@ export const useMatchedTradesWebSocket = (
 
           case "trades_update":
             if (Array.isArray(message.data?.trades)) {
+              const trades = message.data.trades;
               logMatchedTradesWebSocketMessage("trades_update", {
-                count: message.data.trades.length,
+                count: trades.length,
               });
               dispatch(
                 updateMatchedTradesFromWS({
-                  trades: message.data.trades,
-                  replace: true,
+                  trades,
+                  count:
+                    typeof message.data?.count === "number"
+                      ? message.data.count
+                      : trades.length,
+                  replace: trades.length > 0,
                 })
               );
             }

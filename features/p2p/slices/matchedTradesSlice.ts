@@ -63,12 +63,12 @@ function sortTradesNewestFirst(trades: MatchedTrade[]): MatchedTrade[] {
   return sortMatchedTradeNotificationsNewestFirst(trades);
 }
 
-/** Merge HTTP page rows into existing pending list (avoids wipe on poll/refresh). */
+/** Merge HTTP page rows into existing list (avoids wipe on poll/refresh). */
 function mergeHttpPageIntoState(
   state: MatchedTradesState,
   payload: MatchedTradesResponse
 ): MatchedTradesResponse {
-  const merged = mergePendingTrades(
+  const merged = mergeTrades(
     state.data?.results || [],
     payload.results || [],
     dismissedKeySet(state)
@@ -76,35 +76,30 @@ function mergeHttpPageIntoState(
   return {
     ...payload,
     results: merged,
-    count: merged.length,
+    count: payload.count ?? merged.length,
   };
 }
 
-/** WS `initial_data` / `trades_update` — server snapshot replaces pending list. */
-function replacePendingTradesFromSnapshot(
+/** WS `initial_data` / `trades_update` — server snapshot replaces stored list. */
+function replaceTradesFromSnapshot(
   trades: MatchedTrade[],
   dismissed: ReadonlySet<string>
 ): MatchedTrade[] {
   return sortTradesNewestFirst(
-    filterPendingMatchedTradeNotifications(trades).filter(
-      (trade) => !isTradeInDismissedSet(trade, dismissed)
-    )
+    trades.filter((trade) => !isTradeInDismissedSet(trade, dismissed))
   );
 }
 
-function mergePendingTrades(
+function mergeTrades(
   existing: MatchedTrade[],
   incoming: MatchedTrade[],
   dismissed: ReadonlySet<string> = new Set()
 ): MatchedTrade[] {
   const byId = new Map<string, MatchedTrade>();
   for (const trade of existing) {
-    if (
-      isPendingMatchedTradeNotification(trade) &&
-      !isTradeInDismissedSet(trade, dismissed)
-    ) {
-      byId.set(String(trade.id), trade);
-    }
+    const id = String(trade.id);
+    if (!id || isTradeInDismissedSet(trade, dismissed)) continue;
+    byId.set(id, trade);
   }
   for (const trade of incoming) {
     const id = String(trade.id);
@@ -113,11 +108,7 @@ function mergePendingTrades(
       byId.delete(id);
       continue;
     }
-    if (isPendingMatchedTradeNotification(trade)) {
-      byId.set(id, trade);
-    } else {
-      byId.delete(id);
-    }
+    byId.set(id, trade);
   }
   return sortTradesNewestFirst(Array.from(byId.values()));
 }
@@ -129,14 +120,10 @@ function ensureMatchedTradesData(state: MatchedTradesState): MatchedTradesRespon
   return state.data;
 }
 
-/** Keep results pending-only and sync badge count with list length. */
-function syncPendingNotificationCount(state: MatchedTradesState) {
+/** Keep results free of dismissed keys; badge count uses pending selector. */
+function syncNotificationResults(state: MatchedTradesState) {
   if (!state.data) return;
-  state.data.results = withoutDismissedTrades(
-    state,
-    filterPendingMatchedTradeNotifications(state.data.results)
-  );
-  state.data.count = state.data.results.length;
+  state.data.results = withoutDismissedTrades(state, state.data.results);
 }
 
 function dismissMatchedTradesReducer(
@@ -159,7 +146,7 @@ function dismissMatchedTradesReducer(
     state.data.results = state.data.results.filter(
       (trade) => !isTradeInDismissedSet(trade, dismissed)
     );
-    syncPendingNotificationCount(state);
+    syncNotificationResults(state);
   }
 
   markMatchedTradesReady(state);
@@ -174,18 +161,21 @@ function markMatchedTradesReady(state: MatchedTradesState) {
 function applyTradeListToState(
   state: MatchedTradesState,
   trades: MatchedTrade[],
-  options?: { replace?: boolean }
+  options?: { replace?: boolean; serverCount?: number }
 ) {
   const dismissed = dismissedKeySet(state);
   const results = options?.replace
-    ? replacePendingTradesFromSnapshot(trades, dismissed)
-    : mergePendingTrades(state.data?.results || [], trades, dismissed);
+    ? replaceTradesFromSnapshot(trades, dismissed)
+    : mergeTrades(state.data?.results || [], trades, dismissed);
 
+  const serverCount = options?.serverCount;
   state.data = {
     ...(state.data ?? { next: null, previous: null, count: 0 }),
     results,
-    /** Badge/list count = pending rows only (not server total trade history). */
-    count: results.length,
+    count:
+      typeof serverCount === "number" && serverCount >= results.length
+        ? serverCount
+        : Math.max(state.data?.count ?? 0, results.length),
     next: state.data?.next ?? null,
     previous: state.data?.previous ?? null,
   };
@@ -205,7 +195,7 @@ function upsertMatchedTradeFromWSReducer(
   if (isTradeInDismissedSet(trade, dismissed)) {
     const index = data.results.findIndex((t) => String(t.id) === tradeId);
     if (index !== -1) data.results.splice(index, 1);
-    syncPendingNotificationCount(state);
+    syncNotificationResults(state);
     markMatchedTradesReady(state);
     return;
   }
@@ -215,9 +205,9 @@ function upsertMatchedTradeFromWSReducer(
 
   if (!pending) {
     if (index !== -1) {
-      data.results.splice(index, 1);
+      data.results[index] = trade;
     }
-    syncPendingNotificationCount(state);
+    syncNotificationResults(state);
     markMatchedTradesReady(state);
     return;
   }
@@ -227,7 +217,7 @@ function upsertMatchedTradeFromWSReducer(
   } else {
     data.results = sortTradesNewestFirst([...data.results, trade]);
   }
-  syncPendingNotificationCount(state);
+  syncNotificationResults(state);
   markMatchedTradesReady(state);
 }
 
@@ -315,8 +305,13 @@ const matchedTradesSlice = createSlice({
     updateMatchedTradesFromWS: (state, action) => {
       const trades: MatchedTrade[] =
         action.payload.trades || action.payload.results || [];
+      const serverCount =
+        typeof action.payload.count === "number"
+          ? action.payload.count
+          : undefined;
       applyTradeListToState(state, trades, {
         replace: action.payload.replace !== false,
+        serverCount,
       });
     },
     /** Single trade from matched-trades WS `trade_update` (+1 / update / -1 when terminal). */
