@@ -3,6 +3,7 @@ import {
   SingletonWebSocket,
   WebSocketMessage as BaseWebSocketMessage,
 } from "@/lib/utils/baseWebSocket";
+import { logMatchedTradesWebSocketUrl } from "@/features/p2p/utils/matchedTradesWsDebug";
 
 export interface MatchedTrade {
   id: string;
@@ -145,6 +146,7 @@ export class MatchedTradesWebSocket extends SingletonWebSocket<{
     const token =
       typeof tokenOrParams === "string" ? tokenOrParams : tokenOrParams.token;
     this.lastToken = token;
+    logMatchedTradesWebSocketUrl(token, "connect");
     super.connect({ token });
   }
 

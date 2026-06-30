@@ -1,7 +1,8 @@
 "use client";
 
 import React, { useCallback, useEffect, useRef, useState } from "react";
-import { useSelector } from "react-redux";
+import { useDispatch, useSelector } from "react-redux";
+import type { AppDispatch } from "@/store";
 import { PresenceIndicator } from "./UserStatusBadge";
 import { useTradeStatusWebSocket } from "@/features/p2p/hooks/useTradeStatusWebSocket";
 import { cancelP2POrder } from "@/features/p2p/api";
@@ -30,6 +31,8 @@ import {
   logTradePreview,
   logTradePreviewSockets,
 } from "@/features/p2p/utils/tradePreviewDebug";
+import { isP2PTradeAlreadyCanceledError } from "@/features/p2p/utils/p2pCancelErrors";
+import { syncTradeRemovedFromNotifications } from "@/features/p2p/utils/syncTradeRemovedFromNotifications";
 
 interface PendingAcceptanceWaitModalProps {
   open: boolean;
@@ -68,6 +71,7 @@ export const PendingAcceptanceWaitModal: React.FC<PendingAcceptanceWaitModalProp
   onNavigateToMatched,
   onClose,
 }) => {
+  const dispatch = useDispatch<AppDispatch>();
   const [startedAt, setStartedAt] = useState<number | null>(null);
   const [tick, setTick] = useState(0);
   const [closingMessage, setClosingMessage] = useState<string | null>(null);
@@ -79,7 +83,7 @@ export const PendingAcceptanceWaitModal: React.FC<PendingAcceptanceWaitModalProp
   const exitingRef = useRef(false);
   const acceptedRef = useRef(false);
   const activeTradeIdRef = useRef(tradeId);
-  const closeAfterMessageRef = useRef<number | null>(null);
+  const dismissTimerRef = useRef<number | null>(null);
   const autoCancelTimerRef = useRef<number | null>(null);
   const onNavigateRef = useRef(onNavigateToMatched);
   const onCloseRef = useRef(onClose);
@@ -91,16 +95,20 @@ export const PendingAcceptanceWaitModal: React.FC<PendingAcceptanceWaitModalProp
     (state: RootState) => state.matchedTrades?.data?.results
   );
 
+  const clearDismissTimers = useCallback(() => {
+    if (dismissTimerRef.current) {
+      window.clearTimeout(dismissTimerRef.current);
+      dismissTimerRef.current = null;
+    }
+  }, []);
+
   const clearAutoCancelTimers = useCallback(() => {
     if (autoCancelTimerRef.current) {
       window.clearTimeout(autoCancelTimerRef.current);
       autoCancelTimerRef.current = null;
     }
-    if (closeAfterMessageRef.current) {
-      window.clearTimeout(closeAfterMessageRef.current);
-      closeAfterMessageRef.current = null;
-    }
-  }, []);
+    clearDismissTimers();
+  }, [clearDismissTimers]);
 
   const goToMatchedPage = useCallback(
     (resolvedTradeId: string) => {
@@ -131,23 +139,56 @@ export const PendingAcceptanceWaitModal: React.FC<PendingAcceptanceWaitModalProp
     (force = false) => {
       if (!force && exitingRef.current) return;
       exitingRef.current = true;
-      if (closeAfterMessageRef.current) {
-        window.clearTimeout(closeAfterMessageRef.current);
-        closeAfterMessageRef.current = null;
-      }
-      void cancelP2POrder(activeTradeIdRef.current || tradeId).catch(() => {
-        /* trade may already be cancelled */
-      });
-      try {
-        localStorage.removeItem("p2p_trade_id");
-        clearPendingAcceptanceStartedAt(activeTradeIdRef.current || tradeId);
-      } catch {
-        /* no-op */
-      }
-      onCloseRef.current();
+      clearAutoCancelTimers();
+      const id = activeTradeIdRef.current || tradeId;
+
+      void (async () => {
+        try {
+          await cancelP2POrder(id);
+        } catch (error) {
+          if (!isP2PTradeAlreadyCanceledError(error)) {
+            logTradePreview("cancel on wait modal failed", { tradeId: id, error });
+          }
+        } finally {
+          syncTradeRemovedFromNotifications(
+            dispatch,
+            { tradeId: id, orderId: advertiserOrderId },
+            "wait-modal-cancel"
+          );
+          try {
+            localStorage.removeItem("p2p_trade_id");
+            clearPendingAcceptanceStartedAt(id);
+          } catch {
+            /* no-op */
+          }
+          onCloseRef.current();
+        }
+      })();
     },
-    [tradeId]
+    [tradeId, clearAutoCancelTimers, dispatch, advertiserOrderId]
   );
+
+  const closeWithoutCancelingTrade = useCallback(() => {
+    exitingRef.current = true;
+    clearAutoCancelTimers();
+    const id = activeTradeIdRef.current || tradeId;
+    syncTradeRemovedFromNotifications(
+      dispatch,
+      { tradeId: id, orderId: advertiserOrderId },
+      "wait-modal-terminal"
+    );
+    try {
+      localStorage.removeItem("p2p_trade_id");
+      clearPendingAcceptanceStartedAt(id);
+    } catch {
+      /* no-op */
+    }
+    onCloseRef.current();
+  }, [tradeId, clearAutoCancelTimers, dispatch, advertiserOrderId]);
+
+  const handleCancelAndClose = useCallback(() => {
+    finishAndReturnToTable(true);
+  }, [finishAndReturnToTable]);
 
   const performDismiss = useCallback(
     (opts?: {
@@ -156,26 +197,32 @@ export const PendingAcceptanceWaitModal: React.FC<PendingAcceptanceWaitModalProp
       messageDisplayMs?: number;
     }) => {
       if (exitingRef.current) {
-        finishAndReturnToTable(true);
-        return;
-      }
-      exitingRef.current = true;
-      if (opts?.message) setClosingMessage(opts.message);
-      const delay = opts?.message ? (opts.messageDisplayMs ?? 1400) : 0;
-      window.setTimeout(() => {
         if (opts?.cancelTrade === false) {
-          try {
-            localStorage.removeItem("p2p_trade_id");
-          } catch {
-            /* no-op */
-          }
-          onCloseRef.current();
+          closeWithoutCancelingTrade();
         } else {
           finishAndReturnToTable(true);
         }
-      }, delay);
+        return;
+      }
+      exitingRef.current = true;
+      clearAutoCancelTimers();
+      if (opts?.message) setClosingMessage(opts.message);
+      const delay = opts?.message ? (opts.messageDisplayMs ?? 1400) : 0;
+      const runClose = () => {
+        dismissTimerRef.current = null;
+        if (opts?.cancelTrade === false) {
+          closeWithoutCancelingTrade();
+        } else {
+          finishAndReturnToTable(true);
+        }
+      };
+      if (delay <= 0) {
+        runClose();
+        return;
+      }
+      dismissTimerRef.current = window.setTimeout(runClose, delay);
     },
-    [finishAndReturnToTable]
+    [finishAndReturnToTable, closeWithoutCancelingTrade, clearAutoCancelTimers]
   );
 
   const handleStatusUpdate = useCallback(
@@ -263,8 +310,11 @@ export const PendingAcceptanceWaitModal: React.FC<PendingAcceptanceWaitModalProp
     logTradePreviewSockets(tradeId, "wait-modal");
 
     const tickId = window.setInterval(() => setTick((t) => t + 1), 1000);
-    return () => window.clearInterval(tickId);
-  }, [open, tradeId, advertiserOrderId, advertiserName]);
+    return () => {
+      window.clearInterval(tickId);
+      clearAutoCancelTimers();
+    };
+  }, [open, tradeId, advertiserOrderId, advertiserName, clearAutoCancelTimers]);
 
   // Matched-trades WebSocket → Redux (no REST confirm polling)
   useEffect(() => {
@@ -344,10 +394,6 @@ export const PendingAcceptanceWaitModal: React.FC<PendingAcceptanceWaitModalProp
       if (autoCancelTimerRef.current) {
         window.clearTimeout(autoCancelTimerRef.current);
         autoCancelTimerRef.current = null;
-      }
-      if (closeAfterMessageRef.current) {
-        window.clearTimeout(closeAfterMessageRef.current);
-        closeAfterMessageRef.current = null;
       }
     };
   }, [open, startedAt, performDismiss]);
@@ -434,9 +480,7 @@ export const PendingAcceptanceWaitModal: React.FC<PendingAcceptanceWaitModalProp
           type="button"
           className="w-full py-2.5 rounded-lg border border-gray-300 dark:border-[#788099] text-gray-700 dark:text-[#788099] font-semibold text-sm hover:bg-gray-100 dark:hover:bg-[#35353E] transition"
           onClick={() =>
-            closingMessage
-              ? finishAndReturnToTable(true)
-              : performDismiss()
+            closingMessage ? finishAndReturnToTable(true) : handleCancelAndClose()
           }
         >
           {closingMessage ? "Back to market" : "Cancel and close"}
