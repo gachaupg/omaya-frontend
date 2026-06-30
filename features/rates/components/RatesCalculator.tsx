@@ -352,6 +352,180 @@ const findRatesProviderByDisplayName = (
   );
 };
 
+const pickNonEmptyRatesString = (...values: Array<unknown>): string => {
+  for (const v of values) {
+    const s = String(v ?? "").trim();
+    if (s) return s;
+  }
+  return "";
+};
+
+/** Resolve payment_method_type for deposit POST (Bank, Mobile, Crypto, …). */
+const resolveRatesPaymentMethodType = (
+  provider: any,
+  options?: {
+    payBank?: string;
+    publicMethodsData?: any;
+    allProviders?: any[];
+  }
+): string => {
+  const payBank = options?.payBank?.trim();
+  const allProviders = options?.allProviders ?? [];
+  const root = options?.publicMethodsData?.data ?? options?.publicMethodsData;
+
+  let method = pickNonEmptyRatesString(
+    provider?.payment_method_type,
+    provider?.payment_method,
+    provider?.method?.method_name,
+    provider?.method_name,
+    provider?.payment_method_name
+  );
+
+  if (!method && payBank) {
+    const match = findRatesProviderByDisplayName(allProviders, payBank);
+    if (match) {
+      method = pickNonEmptyRatesString(
+        match.payment_method_type,
+        match.payment_method,
+        match.method?.method_name,
+        match.method_name
+      );
+    }
+  }
+
+  if (!method && Array.isArray(root?.payment_methods)) {
+    const providerName = pickNonEmptyRatesString(
+      provider?.provider_name,
+      provider?.payment_provider_name,
+      payBank
+    ).toLowerCase();
+    if (providerName) {
+      for (const entry of root.payment_methods) {
+        const methodName = pickNonEmptyRatesString(
+          entry?.method_name,
+          entry?.method_display,
+          entry?.name
+        );
+        const providers = entry?.providers;
+        if (!methodName || !Array.isArray(providers)) continue;
+        const hit = providers.some(
+          (p: any) =>
+            pickNonEmptyRatesString(p?.provider_name, p?.payment_provider_name)
+              .toLowerCase() === providerName
+        );
+        if (hit) {
+          method = methodName;
+          break;
+        }
+      }
+    }
+  }
+
+  if (!method) {
+    const label = pickNonEmptyRatesString(
+      provider?.provider_name,
+      provider?.payment_provider_name,
+      payBank
+    ).toLowerCase();
+    if (/bank|salaam|equity|cooperative|fxprimus|fx.?primus|forex/i.test(label)) {
+      method = "Bank";
+    } else if (/mobile|money.?transfer|m-pesa|evc|zaad|sahal|jeeb|edahab/i.test(label)) {
+      method = "Mobile";
+    } else if (/crypto|bitcoin|usdt|tether|bnb|eth/i.test(label)) {
+      method = "Crypto";
+    } else if (/merchant|marchant/i.test(label)) {
+      method = "Marchant";
+    } else if (/forex/i.test(label)) {
+      method = "Forex";
+    }
+  }
+
+  if (!method) {
+    const available = root?.summary?.available_methods;
+    if (Array.isArray(available)) {
+      if (available.includes("Bank")) method = "Bank";
+      else if (available[0]) method = String(available[0]);
+    }
+  }
+
+  return method;
+};
+
+const enrichRatesPublicProvider = (
+  provider: any,
+  options?: {
+    payBank?: string;
+    publicMethodsData?: any;
+    allProviders?: any[];
+  }
+): any => {
+  if (!provider || typeof provider !== "object") return provider;
+  const paymentMethodType = resolveRatesPaymentMethodType(provider, options);
+  return {
+    ...provider,
+    payment_method: provider.payment_method || paymentMethodType,
+    payment_method_type: provider.payment_method_type || paymentMethodType,
+  };
+};
+
+/** Flatten payment_methods → providers (same shape as Express deposit). */
+const flattenRatesPublicPaymentProviders = (publicMethodsData: any): any[] => {
+  if (!publicMethodsData) return [];
+
+  const root = publicMethodsData?.data ?? publicMethodsData;
+  const paymentMethods = root?.payment_methods;
+
+  if (Array.isArray(paymentMethods) && paymentMethods.length > 0) {
+    const flattened: any[] = [];
+    for (const method of paymentMethods) {
+      const methodName = pickNonEmptyRatesString(
+        method?.method_name,
+        method?.method_display,
+        method?.name
+      );
+      const providers = method?.providers;
+      if (!Array.isArray(providers)) continue;
+      for (const provider of providers) {
+        flattened.push(
+          enrichRatesPublicProvider(
+            {
+              ...provider,
+              payment_method: methodName,
+              payment_method_type: methodName,
+            },
+            { publicMethodsData, allProviders: flattened }
+          )
+        );
+      }
+    }
+    if (flattened.length > 0) return flattened;
+  }
+
+  if (Array.isArray(root?.providers)) {
+    return root.providers.map((provider: any) =>
+      enrichRatesPublicProvider(provider, {
+        publicMethodsData,
+        allProviders: root.providers,
+      })
+    );
+  }
+
+  if (Array.isArray(root)) {
+    return root.map((provider: any) =>
+      enrichRatesPublicProvider(provider, { publicMethodsData, allProviders: root })
+    );
+  }
+  if (Array.isArray(publicMethodsData)) {
+    return publicMethodsData.map((provider: any) =>
+      enrichRatesPublicProvider(provider, {
+        publicMethodsData,
+        allProviders: publicMethodsData,
+      })
+    );
+  }
+  return [];
+};
+
 /** Payload for express exchanging — keep user-selected bank, not "direct". */
 const buildRatesExpressPaymentPayload = ({
   isDepositMode,
@@ -2650,12 +2824,10 @@ const getPaymentRestrictionMessage = (status?: string) =>
   // Extract providers array from the response
   const publicMethodsData = (directPublicPaymentMethods || publicPaymentMethods) as any;
 
-  const publicPaymentProviders = useMemo(() => {
-    if (Array.isArray(publicMethodsData?.data?.providers)) return publicMethodsData.data.providers;
-    if (Array.isArray(publicMethodsData?.data)) return publicMethodsData.data;
-    if (Array.isArray(publicMethodsData)) return publicMethodsData;
-    return [];
-  }, [publicMethodsData]);
+  const publicPaymentProviders = useMemo(
+    () => flattenRatesPublicPaymentProviders(publicMethodsData),
+    [publicMethodsData]
+  );
 
   const sortedPublicPaymentProviders = useMemo(
     () => [...publicPaymentProviders].sort(compareRatesProviderDefaultOrder),
@@ -2815,12 +2987,17 @@ const getPaymentRestrictionMessage = (status?: string) =>
     if (!isFieldsSwapped) {
       if (isDepositMode) {
         if (!hasPayBank) {
+          const enriched = enrichRatesPublicProvider(firstProvider, {
+            payBank: firstName,
+            publicMethodsData,
+            allProviders: sortedPublicPaymentProviders,
+          });
           setPayBank(firstName);
-          setSelectedProviderData(firstProvider);
-          setSelectedPaymentDetail(firstProvider);
+          setSelectedProviderData(enriched);
+          setSelectedPaymentDetail(enriched);
         }
         if (!hasSelectedMethod) {
-          setSelectedPaymentMethod(secondName);
+          setSelectedPaymentMethod(firstName);
         }
       } else if (!hasPayBank && !hasSelectedMethod) {
         applySalaamWithdrawalDefault();
@@ -3475,46 +3652,55 @@ const getPaymentRestrictionMessage = (status?: string) =>
     }
   }, [isAuthenticated, publicPaymentMethods, userPaymentDetails]);
 
-  /** Rates deposit POST — shared by first submit (non-FXP) and FX Primus "proceed" (FXP first submit does not POST). */
+  /** Rates deposit POST — first card only (no deposit_address; wallet sent via updateDepositAddress on proceed). */
   const submitRatesCalculatorDeposit = async (): Promise<DepositResponse> => {
-    const pickNonEmpty = (...values: Array<unknown>) => {
-      for (const v of values) {
-        const s = String(v ?? "").trim();
-        if (s) return s;
-      }
-      return "";
-    };
+    const providerNameHint = pickNonEmptyRatesString(payBank, selectedPaymentMethod);
+    let provider =
+      selectedProviderData ||
+      selectedPaymentDetail ||
+      (providerNameHint
+        ? findRatesProviderByDisplayName(
+            sortedPublicPaymentProviders,
+            providerNameHint
+          )
+        : null);
 
-    const paymentDetail = selectedPaymentDetail as any;
-    const nestedDetail = paymentDetail?.payment_details?.[0] || {};
-    const providerName = pickNonEmpty(
-      paymentDetail?.payment_provider_name,
-      paymentDetail?.provider_name,
-      paymentDetail?.provider,
-      nestedDetail?.payment_provider_name,
-      nestedDetail?.provider_name
+    if (provider) {
+      provider = enrichRatesPublicProvider(provider, {
+        payBank: providerNameHint,
+        publicMethodsData,
+        allProviders: sortedPublicPaymentProviders,
+      });
+    }
+
+    if (!provider) {
+      throw new Error("Please select a payment method");
+    }
+
+    const paymentProvider = pickNonEmptyRatesString(
+      provider.provider_name,
+      provider.payment_provider_name,
+      payBank,
+      selectedPaymentMethod
     );
-    const methodName = pickNonEmpty(
-      paymentDetail?.payment_method_name,
-      paymentDetail?.payment_method,
-      paymentDetail?.payment_method_type,
-      paymentDetail?.method?.method_name,
-      paymentDetail?.method?.method_display,
-      nestedDetail?.payment_method_name,
-      nestedDetail?.payment_method,
-      nestedDetail?.payment_method_type
-    );
-    const accountNumber = pickNonEmpty(
-      paymentDetail?.account_number,
-      nestedDetail?.account_number,
-      paymentDetail?.mobile_number,
-      nestedDetail?.mobile_number
-    );
-    const accountName = pickNonEmpty(
-      paymentDetail?.account_name,
-      nestedDetail?.account_name,
-      providerName
-    );
+    const paymentMethod = resolveRatesPaymentMethodType(provider, {
+      payBank: providerNameHint,
+      publicMethodsData,
+      allProviders: sortedPublicPaymentProviders,
+    });
+
+    if (!paymentProvider) {
+      throw new Error("Payment provider is missing");
+    }
+    if (!paymentMethod) {
+      throw new Error("Payment method is missing");
+    }
+
+    const safeAmount = parseFloat(String(amount));
+    if (!safeAmount || Number.isNaN(safeAmount) || safeAmount <= 0) {
+      throw new Error("Invalid amount. Please enter a valid number greater than 0.");
+    }
+
     const rawAssetId = String(
       (selectedAsset as any)?.asset_id || (selectedAsset as any)?.id || ""
     ).trim();
@@ -3543,14 +3729,6 @@ const getPaymentRestrictionMessage = (status?: string) =>
       throw new Error("Asset ID is missing or invalid");
     }
 
-    const formData = new FormData();
-    formData.append("requested_amount", amount);
-
-    formData.append("deposit_address", accountNumber || "");
-
-    formData.append("payment_provider", providerName);
-    formData.append("payment_method", methodName || providerName);
-
     let currencyValue = "";
     if (selectedAsset!.ticker) {
       currencyValue = selectedAsset!.ticker;
@@ -3567,13 +3745,11 @@ const getPaymentRestrictionMessage = (status?: string) =>
     if (!currencyValue) {
       throw new Error("Currency information is missing");
     }
-    formData.append("currency", currencyValue);
 
     const networkValue = getAssetNetwork(selectedAsset!);
     if (!networkValue) {
       throw new Error("Network information is missing");
     }
-    formData.append("network", networkValue);
 
     let assetValue = "";
     if (selectedAsset!.ticker) {
@@ -3591,23 +3767,27 @@ const getPaymentRestrictionMessage = (status?: string) =>
     if (!assetValue) {
       throw new Error("Asset information is missing");
     }
-    formData.append("asset", assetValue);
-    formData.append("asset_id", assetId);
-    // Backend currently accepts null; send empty string in multipart as temporary null.
-    formData.append("network_id", "");
 
-    formData.append("additional_info", `Account: ${accountName || "N/A"}`);
-    formData.append("sent_from", accountName || providerName || "Customer");
+    const depositPayload = {
+      requested_amount: safeAmount,
+      payment_provider: paymentProvider,
+      payment_method: paymentMethod,
+      currency: currencyValue,
+      network: networkValue,
+      asset: assetValue,
+      asset_id: assetId,
+      network_id: null as null,
+      additional_info: "Direct crypto deposit",
+    };
 
-    logger.debug("general", "DEBUG: Complete FormData entries:");
-    for (let [key, value] of formData.entries()) {
-      logger.debug("general", `${key}:`, value);
-    }
+    logger.debug("general", "DEBUG: Rates first-card deposit payload:", depositPayload);
 
     return (await dispatch(
       createDeposit({
-        payload: formData,
-        config: {},
+        payload: depositPayload,
+        config: {
+          headers: { "Content-Type": "application/json" },
+        },
       })
     ).unwrap()) as unknown as DepositResponse;
   };
@@ -3644,7 +3824,16 @@ const getPaymentRestrictionMessage = (status?: string) =>
       }
     }
 
-    if (!selectedAsset || !selectedPaymentMethod) {
+    const hasDepositPayment =
+      Boolean(payBank?.trim()) ||
+      Boolean(selectedPaymentDetail) ||
+      Boolean(selectedProviderData);
+
+    if (
+      !selectedAsset ||
+      (!isDepositMode && !selectedPaymentMethod) ||
+      (isDepositMode && !hasDepositPayment)
+    ) {
       showToast.error("Please select all required fields");
       return;
     }
@@ -3690,7 +3879,7 @@ const getPaymentRestrictionMessage = (status?: string) =>
         return;
       }
     }
-    if (isDepositMode && !selectedPaymentDetail) {
+    if (isDepositMode && !hasDepositPayment) {
       showToast.error("Please select a payment method");
       return;
     }
@@ -4248,9 +4437,18 @@ const getPaymentRestrictionMessage = (status?: string) =>
                           triggerClassName={ratesSelectTriggerClass(isDark)}
                           onChange={(value) => {
                             const selectedProvider = sortedPublicPaymentProviders.find((p: any) => (p.provider_name || p.payment_provider_name) === value);
+                            const enriched = enrichRatesPublicProvider(
+                              selectedProvider,
+                              {
+                                payBank: value,
+                                publicMethodsData,
+                                allProviders: sortedPublicPaymentProviders,
+                              }
+                            );
                             setPayBank(value);
-                            setSelectedProviderData(selectedProvider);
-                            setSelectedPaymentDetail(selectedProvider || null);
+                            setSelectedPaymentMethod(value);
+                            setSelectedProviderData(enriched);
+                            setSelectedPaymentDetail(enriched);
                             setSelectedPaymentDetails([]);
                             setPaymentMethodError(null);
                           }}
