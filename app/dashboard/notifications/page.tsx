@@ -10,7 +10,10 @@ import {
   fetchLatestMatchedTradesPage,
   reconcileCanceledMatchedNotifications,
 } from "@/features/p2p/slices/matchedTradesSlice";
-import { selectPendingMatchedTradeNotifications } from "@/features/p2p/selectors";
+import {
+  selectAllMatchedTradeNotifications,
+} from "@/features/p2p/selectors";
+import { useMatchedTradesWsConnected } from "@/features/p2p/components/MatchedTradesWebSocketProvider";
 import {
   filterPendingMatchedTradeNotificationsByCategory,
   type MatchedTradeNotificationCategory,
@@ -43,16 +46,17 @@ const Notifications = () => {
   const { loading, refreshing, hasLoaded, activePage, totalPages } = useSelector(
     (state: RootState) => state.matchedTrades
   );
-  const pendingNotifications = useSelector(selectPendingMatchedTradeNotifications);
+  const allNotifications = useSelector(selectAllMatchedTradeNotifications);
+  const wsConnected = useMatchedTradesWsConnected();
   const { user, isAuthenticated } = useSelector((state: RootState) => state.auth);
   const filteredNotifications = React.useMemo(
     () =>
       filterPendingMatchedTradeNotificationsByCategory(
-        pendingNotifications,
+        allNotifications,
         user?.email,
         activeCategory
       ),
-    [pendingNotifications, user?.email, activeCategory]
+    [allNotifications, user?.email, activeCategory]
   );
 
   const [respondingTradeId, setRespondingTradeId] = useState<string | null>(null);
@@ -71,12 +75,8 @@ const Notifications = () => {
   useEffect(() => {
     if (!isAuthenticated) return;
     void dispatch(reconcileCanceledMatchedNotifications());
+    void dispatch(fetchLatestMatchedTradesPage());
   }, [dispatch, isAuthenticated]);
-
-  useEffect(() => {
-    if (!isAuthenticated || hasLoaded) return;
-    dispatch(fetchLatestMatchedTradesPage());
-  }, [dispatch, isAuthenticated, hasLoaded]);
 
   const handlePageChange = (page: number) => {
     dispatch(fetchMatchedTrades(page));
@@ -109,7 +109,7 @@ const Notifications = () => {
   };
 
   const showInitialLoader =
-    loading && !hasLoaded && pendingNotifications.length === 0;
+    loading && !hasLoaded && allNotifications.length === 0;
 
   if (showInitialLoader) {
     return (
@@ -191,6 +191,15 @@ const Notifications = () => {
           {refreshing && (
             <span
               className="inline-block w-3 h-3 border-2 border-[#1D8751] border-t-transparent rounded-full animate-spin"
+              aria-hidden
+            />
+          )}
+          {!refreshing && (
+            <span
+              className={`inline-block w-2 h-2 rounded-full ${
+                wsConnected ? "bg-[#1D8751]" : "bg-amber-500"
+              }`}
+              title={wsConnected ? "Live via WebSocket" : "Polling for updates"}
               aria-hidden
             />
           )}

@@ -11,6 +11,7 @@ import {
   selectPendingMatchedTradeNotifications,
 } from "@/features/p2p/selectors";
 import { useMatchedTradesWebSocket } from "@/features/p2p/hooks/useMatchedTradesWebSocket";
+import { useTradeNotificationSound } from "@/features/notifications/hooks/useTradeNotificationSound";
 import { MatchedTradeNotificationCard } from "@/features/p2p/components/MatchedTradeNotificationCard";
 import { openMatchedTradeNotification } from "@/features/p2p/utils/matchedTradeNotificationActions";
 import { PendingAcceptanceWaitModal } from "@/features/p2p/components/ui/market/sections/PendingAcceptanceWaitModal";
@@ -36,8 +37,6 @@ export default function NavbarTradeNotificationsDropdown() {
   const [pendingAcceptance, setPendingAcceptance] =
     useState<PendingAcceptanceSession | null>(null);
   const containerRef = useRef<HTMLDivElement>(null);
-  const audioRef = useRef<HTMLAudioElement | null>(null);
-  const audioEnabledRef = useRef(false);
   const prevCountRef = useRef(0);
   const hasInitializedCountRef = useRef(false);
   const [growAnimationKey, setGrowAnimationKey] = useState(0);
@@ -52,6 +51,7 @@ export default function NavbarTradeNotificationsDropdown() {
   const pendingCount = useSelector(selectPendingMatchedTradeNotificationCount);
 
   useMatchedTradesWebSocket({ enabled: isAuthenticated });
+  useTradeNotificationSound(isAuthenticated);
 
   const previewNotifications = useMemo(
     () => pendingNotifications.slice(0, DROPDOWN_PREVIEW_LIMIT),
@@ -61,8 +61,6 @@ export default function NavbarTradeNotificationsDropdown() {
   useEffect(() => {
     if (typeof window === "undefined") return;
     setMuted(isNotificationSoundMuted());
-    audioRef.current = new Audio("/sounds/notification.mp3");
-    if (audioRef.current) audioRef.current.volume = 0.35;
 
     const onPreferencesChanged = () => {
       setMuted(isNotificationSoundMuted());
@@ -79,14 +77,6 @@ export default function NavbarTradeNotificationsDropdown() {
   }, []);
 
   useEffect(() => {
-    const enableAudio = () => {
-      audioEnabledRef.current = true;
-    };
-    window.addEventListener("click", enableAudio, { once: true });
-    return () => window.removeEventListener("click", enableAudio);
-  }, []);
-
-  useEffect(() => {
     if (!hasInitializedCountRef.current) {
       prevCountRef.current = pendingCount;
       hasInitializedCountRef.current = true;
@@ -97,20 +87,12 @@ export default function NavbarTradeNotificationsDropdown() {
       setGrowAnimationKey((key) => key + 1);
       setIsGrowing(true);
       const growTimer = window.setTimeout(() => setIsGrowing(false), 900);
-
-      if (!muted && audioEnabledRef.current && audioRef.current) {
-        audioRef.current.currentTime = 0;
-        void audioRef.current.play().catch(() => {
-          /* autoplay blocked until user gesture */
-        });
-      }
-
       prevCountRef.current = pendingCount;
       return () => window.clearTimeout(growTimer);
     }
 
     prevCountRef.current = pendingCount;
-  }, [pendingCount, muted]);
+  }, [pendingCount]);
 
   useEffect(() => {
     if (!open) return;
@@ -165,10 +147,7 @@ export default function NavbarTradeNotificationsDropdown() {
     <div className="relative" ref={containerRef}>
       <button
         type="button"
-        onClick={() => {
-          audioEnabledRef.current = true;
-          setOpen((prev) => !prev);
-        }}
+        onClick={() => setOpen((prev) => !prev)}
         className="flex items-center justify-center p-0 min-w-9 min-h-9 w-9 h-9 sm:min-w-10 sm:min-h-10 sm:w-10 sm:h-10 rounded-full shrink-0"
         aria-label="Trade notifications"
         aria-expanded={open}
