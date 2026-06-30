@@ -14,21 +14,36 @@ function isBlankAddressField(v: unknown): boolean {
 }
 
 /**
- * Omit `type: "exchange"` rows where both chain addresses are unset (null or "").
- * Used by dashboard Recent Transactions (All + Exchange tabs).
+ * Omit incomplete `type: "exchange"` stub rows with no addresses and no bank/payment info.
+ * Bank deposits often have null `deposit_address` but valid `from_address` + `payment_method`.
  */
 export function shouldOmitExchangeWithoutDepositOrWithdrawal(tx: {
   type?: unknown;
   transaction_type?: unknown;
   deposit_address?: unknown;
   withdrawal_address?: unknown;
+  from_address?: unknown;
+  to_address?: unknown;
+  payment_method?: unknown;
 }): boolean {
   const ty = String(tx?.type ?? tx?.transaction_type ?? "")
     .trim()
     .toLowerCase();
   if (ty !== "exchange") return false;
-  return (
-    isBlankAddressField(tx?.deposit_address) &&
-    isBlankAddressField(tx?.withdrawal_address)
-  );
+
+  const hasAddress =
+    !isBlankAddressField(tx?.deposit_address) ||
+    !isBlankAddressField(tx?.withdrawal_address) ||
+    !isBlankAddressField(tx?.from_address) ||
+    !isBlankAddressField(tx?.to_address);
+
+  if (hasAddress) return false;
+
+  const pm = tx?.payment_method;
+  const hasPaymentMethod =
+    pm != null &&
+    typeof pm === "object" &&
+    !isBlankAddressField((pm as { provider?: unknown }).provider);
+
+  return !hasPaymentMethod;
 }
