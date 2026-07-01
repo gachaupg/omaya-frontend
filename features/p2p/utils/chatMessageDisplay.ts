@@ -4,6 +4,7 @@ import {
   rememberSenderPhotoByEmail,
 } from "@/features/p2p/utils/tradeMessageDedupe";
 import {
+  getMatchedTradeNotificationDisplayName,
   getTradePartyPhotoByEmail,
   type TradePhotoContext,
 } from "@/features/p2p/utils/matchedTradeNotifications";
@@ -132,6 +133,98 @@ export function resolveChatSenderPhoto(
   }
 
   return undefined;
+}
+
+/** Display name for the chat header — always the other party, never the logged-in user. */
+export function resolveCounterpartyDisplayName(input: {
+  currentUserEmail?: string | null;
+  buyer?: string | null;
+  seller?: string | null;
+  buyerName?: string;
+  sellerName?: string;
+  peerName?: string;
+  owner?: string | null;
+  orderType?: string | null;
+  advertiserName?: string | null;
+  messages?: Array<Pick<TradeMessage, "sender_name" | "sender_username">>;
+}): string {
+  const peer = String(input.peerName ?? "").trim();
+  if (peer && !looksLikeEmail(peer)) return peer;
+
+  const orderType = String(input.orderType ?? "").trim().toLowerCase();
+  if (orderType) {
+    const fromTrade = getMatchedTradeNotificationDisplayName(
+      {
+        owner: input.owner ?? undefined,
+        order_type: orderType,
+        buyer: input.buyer ?? undefined,
+        seller: input.seller ?? undefined,
+        buyer_full_name: input.buyerName,
+        seller_full_name: input.sellerName,
+        advertiser_name: input.advertiserName,
+      },
+      input.currentUserEmail
+    );
+    if (fromTrade && fromTrade !== "Unknown") return fromTrade;
+  }
+
+  const userEmail = normalizeEmail(input.currentUserEmail);
+  const buyerEmail = normalizeEmail(input.buyer);
+  const sellerEmail = normalizeEmail(input.seller);
+
+  const pickName = (name: string | undefined): string => {
+    const trimmed = String(name ?? "").trim();
+    if (trimmed && !looksLikeEmail(trimmed) && trimmed.toLowerCase() !== "you") {
+      return trimmed;
+    }
+    return "";
+  };
+
+  if (userEmail && buyerEmail && userEmail === buyerEmail) {
+    const name = pickName(input.sellerName);
+    if (name) return name;
+  } else if (userEmail && sellerEmail && userEmail === sellerEmail) {
+    const name = pickName(input.buyerName);
+    if (name) return name;
+  }
+
+  const counterpartyEmail = getCounterpartyEmail(input.currentUserEmail, input);
+  if (counterpartyEmail) {
+    if (normalizeEmail(counterpartyEmail) === sellerEmail) {
+      const name = pickName(input.sellerName);
+      if (name) return name;
+    }
+    if (normalizeEmail(counterpartyEmail) === buyerEmail) {
+      const name = pickName(input.buyerName);
+      if (name) return name;
+    }
+  }
+
+  const messages = input.messages ?? [];
+  for (let i = messages.length - 1; i >= 0; i -= 1) {
+    const msg = messages[i];
+    if (isCurrentUserChatMessage(msg, input.currentUserEmail)) continue;
+    if (
+      counterpartyEmail &&
+      normalizeEmail(msg.sender_name) !== normalizeEmail(counterpartyEmail)
+    ) {
+      continue;
+    }
+    const username = String(msg.sender_username ?? "").trim();
+    if (username && !looksLikeEmail(username)) return username;
+  }
+
+  if (userEmail === buyerEmail) return "Seller";
+  if (userEmail === sellerEmail) return "Buyer";
+  if (counterpartyEmail && looksLikeEmail(counterpartyEmail)) {
+    const local = counterpartyEmail.split("@")[0]?.trim();
+    if (local) return local;
+  }
+
+  const advertiser = String(input.advertiserName ?? "").trim();
+  if (advertiser && !looksLikeEmail(advertiser)) return advertiser;
+
+  return "User";
 }
 
 /** Header avatar: counterparty email + latest chat row from that email. */

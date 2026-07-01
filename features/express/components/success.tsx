@@ -12,6 +12,8 @@ import {
   resolveExpressReceiveCurrency,
   resolveExpressSendCurrency,
   resolveExpressDepositSuccessDisplay,
+  resolveExpressWithdrawalSuccessDisplay,
+  isExpressChangeNowDeposit,
 } from "../utils/successAmountDisplay";
 const formatDateTimeEastAfrica = (input: Date | number | string): string => {
   const d = input instanceof Date ? input : new Date(input);
@@ -31,6 +33,8 @@ interface SuccessPageProps {
     isMoneyX?: boolean;
     amount: number;
     receiveAmount?: number;
+    netAmount?: unknown;
+    net_amount?: unknown;
     fromPaymentMethod?: any;
     toPaymentMethod?: any;
     toPaymentDetail?: any;
@@ -127,11 +131,17 @@ interface SuccessPageProps {
   payoutMethod?: string;
   transactionHash?: string;
   netAmount?: string | number;
+  /** Net / you-receive amount shown on the processing page (deposit / withdrawal USD). */
+  processingReceiveAmount?: number | null;
+  /** Crypto send amount from the processing page (withdrawal only). */
+  processingSendAmount?: number | null;
 }
 
 const SuccessPage: React.FC<SuccessPageProps> = ({
   transactionData,
   websocketData,
+  processingReceiveAmount,
+  processingSendAmount,
   transactionId = "TXNWSU09E2DS",
   date = new Date().toLocaleString(),
   paidAmount = "USD 1",
@@ -152,9 +162,11 @@ const SuccessPage: React.FC<SuccessPageProps> = ({
     transactionData?.isMoneyX === true ||
     (!!transactionData?.fromPaymentMethod && !!transactionData?.toPaymentMethod);
 
-  const formatAmount = (amt: number | string) => {
+  const formatAmount = (amt: number | string, cryptoPrecision = false) => {
     const num = typeof amt === "string" ? parseFloat(amt) : amt;
-    return Number.isNaN(num) ? "0" : num.toFixed(2).replace(/\.?0+$/, "");
+    if (Number.isNaN(num)) return "0";
+    const decimals = cryptoPrecision ? 8 : 2;
+    return num.toFixed(decimals).replace(/\.?0+$/, "");
   };
 
   const getMoneyXData = () => {
@@ -394,12 +406,6 @@ const SuccessPage: React.FC<SuccessPageProps> = ({
       }
     }
     
-    // Format amounts properly
-    const formatAmount = (amt: number | string) => {
-      const num = typeof amt === 'string' ? parseFloat(amt) : amt;
-      return isNaN(num) ? "0" : num.toFixed(8).replace(/\.?0+$/, '');
-    };
-    
     // Net amount: prefer websocket net_amount, else estimatedAmount (actual processed)
     let calculatedNetAmount = estimatedAmount;
     if (websocketData?.data) {
@@ -426,20 +432,49 @@ const SuccessPage: React.FC<SuccessPageProps> = ({
       const depositDisplay = resolveExpressDepositSuccessDisplay({
         websocketData,
         transactionData,
+        processingReceiveAmount,
       });
-      const formattedReceive = formatAmount(depositDisplay.receiveAmount);
+      const changeNowDeposit = isExpressChangeNowDeposit(transactionData);
+      const formattedReceive = formatAmount(
+        depositDisplay.receiveAmount,
+        changeNowDeposit
+      );
 
       return {
         transactionId: txId,
         date: transactionDate,
-        paidAmount: `${formatAmount(depositDisplay.paidAmount)} USD`,
-        paidCurrency: "USD",
+        paidAmount: formatAmount(depositDisplay.paidAmount),
+        paidCurrency: depositDisplay.paidCurrency,
         receivedAmount: formattedReceive,
         receivedCurrency: depositDisplay.receiveCurrency,
         payinMethod: paymentMethod,
         payoutMethod: `${toCurrency} Wallet`,
         transactionHash: txHash,
         netAmount: formattedReceive,
+      };
+    }
+
+    if (isWithdrawal) {
+      const withdrawalDisplay = resolveExpressWithdrawalSuccessDisplay({
+        websocketData,
+        transactionData,
+        processingReceiveAmount,
+        processingSendAmount,
+      });
+      const formattedCrypto = formatAmount(withdrawalDisplay.receiveAmount);
+      const formattedUsd = formatAmount(withdrawalDisplay.paidAmount);
+
+      return {
+        transactionId: txId,
+        date: transactionDate,
+        paidAmount: formattedUsd,
+        paidCurrency: withdrawalDisplay.paidCurrency,
+        receivedAmount: formattedCrypto,
+        receivedCurrency: withdrawalDisplay.receiveCurrency,
+        payinMethod: `${withdrawalDisplay.receiveCurrency} Wallet`,
+        payoutMethod: paymentMethod,
+        transactionHash: txHash,
+        netAmount: formattedCrypto,
       };
     }
     
@@ -466,6 +501,7 @@ const SuccessPage: React.FC<SuccessPageProps> = ({
 
   // Extract transaction type for use in JSX
   const isDeposit = transactionData?.type === "deposit";
+  const isWithdrawal = transactionData?.type === "withdrawal";
 
   // Format date in East Africa Time (EAT) on client side
   useEffect(() => {
@@ -622,6 +658,9 @@ const SuccessPage: React.FC<SuccessPageProps> = ({
                   }`}>You Paid</div>
                   <div className="font-bold flex items-center gap-2">
                     <span>{realData.paidAmount}</span>
+                    {(isDeposit || isWithdrawal) && realData.paidCurrency && (
+                      <span>{realData.paidCurrency}</span>
+                    )}
                   </div>
                   <div className={`text-xs mt-1 ${
                     isDark ? "text-gray-400" : "text-gray-600"

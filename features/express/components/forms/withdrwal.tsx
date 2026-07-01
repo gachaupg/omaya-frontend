@@ -108,6 +108,7 @@ import {
   resolveAllUserPaymentAccounts,
   getRegisteredAccountDropdownList,
   findAddedPaymentDetail,
+  refreshRegisteredAccountsAfterAdd,
   type RegisteredAccountDetail,
 } from "@/features/express/utils/registeredAccountHelpers";
 
@@ -1136,6 +1137,37 @@ export default function WithdrawalForm({
 
   // Add PaymentMethodsModal state
   const [isPaymentModalOpen, setIsPaymentModalOpen] = useState(false);
+  const paymentAddRefreshInFlightRef = useRef(false);
+  const paymentAddRefreshErrorToastShownRef = useRef(false);
+
+  const handlePaymentMethodAddSuccess = useCallback(async () => {
+    if (paymentAddRefreshInFlightRef.current) return;
+    paymentAddRefreshInFlightRef.current = true;
+    try {
+      const accounts = await refreshRegisteredAccountsAfterAdd(dispatch);
+      const match = findAddedPaymentDetail(accounts);
+      if (match) {
+        setSelectedPaymentDetails([match as UserPaymentDetail]);
+      }
+      showToast.success("Payment method added successfully!");
+    } catch (error) {
+      console.error("Failed to refresh payment details:", error);
+      if (!paymentAddRefreshErrorToastShownRef.current) {
+        paymentAddRefreshErrorToastShownRef.current = true;
+        showToast.error(
+          "Payment method added, but failed to refresh. Please reload the page."
+        );
+      }
+    } finally {
+      paymentAddRefreshInFlightRef.current = false;
+    }
+  }, [dispatch]);
+
+  useEffect(() => {
+    if (isPaymentModalOpen) {
+      paymentAddRefreshErrorToastShownRef.current = false;
+    }
+  }, [isPaymentModalOpen]);
 
   // Add InfoModal state
   const [isInfoModalOpen, setIsInfoModalOpen] = useState(false);
@@ -1302,38 +1334,37 @@ export default function WithdrawalForm({
     initialState,
   ]);
 
-  const allRegisteredAccounts = useMemo(
-    () =>
-      resolveAllUserPaymentAccounts(
-        userPaymentMethodsDisplay.displayData,
-        effectiveUserPaymentMethods
-      ),
-    [userPaymentMethodsDisplay.displayData, effectiveUserPaymentMethods]
-  );
-
-  // Auto-select account when accounts are available for selected payment type.
-  // Prefer matching accounts; otherwise keep a valid selection from all accounts.
+  // Keep selected account synced to the currently selected payment provider only.
+  const lastRegisteredProviderRef = useRef<string>("");
   useEffect(() => {
-    if (!payBank || allRegisteredAccounts.length === 0) return;
-
+    const providerKey = (payBank || "").trim().toLowerCase();
+    const providerChanged = lastRegisteredProviderRef.current !== providerKey;
+    const hasAccounts = enhancedFilteredUserPaymentDetails.length > 0;
     const selectedId = selectedPaymentDetails[0]?.id;
     const selectedStillValid =
       selectedId != null &&
-      allRegisteredAccounts.some((detail) => detail.id === selectedId);
+      enhancedFilteredUserPaymentDetails.some(
+        (detail) => detail.id === selectedId
+      );
 
-    if (selectedStillValid) return;
-
-    const nextSelection =
-      enhancedFilteredUserPaymentDetails[0] ?? allRegisteredAccounts[0];
-    if (nextSelection) {
-      setSelectedPaymentDetails([nextSelection]);
+    if (providerChanged) {
+      lastRegisteredProviderRef.current = providerKey;
+      if (hasAccounts) {
+        setSelectedPaymentDetails([enhancedFilteredUserPaymentDetails[0]]);
+      } else {
+        setSelectedPaymentDetails([]);
+      }
+      return;
     }
-  }, [
-    payBank,
-    allRegisteredAccounts,
-    enhancedFilteredUserPaymentDetails,
-    selectedPaymentDetails,
-  ]);
+
+    if (!selectedStillValid) {
+      if (hasAccounts) {
+        setSelectedPaymentDetails([enhancedFilteredUserPaymentDetails[0]]);
+      } else if (selectedPaymentDetails.length > 0) {
+        setSelectedPaymentDetails([]);
+      }
+    }
+  }, [payBank, enhancedFilteredUserPaymentDetails, selectedPaymentDetails]);
 
   // Reset form if user changes asset, payment method, or amount after submission
   const selectedAssetKey = selectedAsset
@@ -1404,6 +1435,12 @@ export default function WithdrawalForm({
     selectedPaymentStatus &&
     !isSelectedPaymentApproved
   );
+  const hasRegisteredAccountSelected =
+    selectedPaymentDetails.length > 0 &&
+    enhancedFilteredUserPaymentDetails.some(
+      (detail) => detail.id === selectedPaymentDetails[0]?.id
+    );
+  const isRegisteredAccountMissing = !!payBank && !hasRegisteredAccountSelected;
   // Sync selectedPaymentDetails when WebSocket refetches and status changes (e.g. Pending → APPROVED)
   useEffect(() => {
     if (selectedPaymentDetails.length === 0 || enhancedFilteredUserPaymentDetails.length === 0) return;
@@ -2339,6 +2376,7 @@ export default function WithdrawalForm({
         isInfoModalOpen ||
         (isOtcPopupAsset(selectedAsset) && (payAmount >= 15000 || getAmount >= 15000)) ||
         isSelectedPaymentPending ||
+        isRegisteredAccountMissing ||
         hasBlockingValidationError;
 
   const isSecondCardSubmitDisabled =
@@ -2347,6 +2385,7 @@ export default function WithdrawalForm({
     (isOtcPopupAsset(selectedAsset) && getAmount > 15000) ||
     !isTermsAccepted ||
     isSelectedPaymentPending ||
+    isRegisteredAccountMissing ||
     hasBlockingValidationError;
 
   // Manual estimate trigger for non-direct assets (avoids blocking navigation on every keystroke)
@@ -4965,12 +5004,12 @@ export default function WithdrawalForm({
                               </p>
                             )}
                             {hasFilteredAccounts && (
+                              <>
                               <div className="flex items-center gap-2 mb-2">
                                 <span className="text-sm text-gray-600 dark:text-gray-400">
                                   {enhancedFilteredUserPaymentDetails.length} account(s) found
                                 </span>
                               </div>
-                            )}
                             <div className="w-full min-w-0 relative z-[100] isolate">
                                 <CustomSelect
                                   sizeMode="card"
@@ -5039,7 +5078,7 @@ export default function WithdrawalForm({
                                   }
                                   onChange={(value) => {
                                     const selectedId = Number(value);
-                                    const selectedDetail = allUserAccounts.find(
+                                    const selectedDetail = enhancedFilteredUserPaymentDetails.find(
                                       (detail) => detail.id === selectedId
                                     );
                                     if (selectedDetail) {
@@ -5060,6 +5099,8 @@ export default function WithdrawalForm({
                                   className="w-full min-w-0"
                                 />
                               </div>
+                              </>
+                            )}
                           </div>
                         );
                       })()}
@@ -5138,9 +5179,9 @@ export default function WithdrawalForm({
               <div className="relative">
                 <button
                   type="button"
-                  className={`w-full text-[#35353e] dark:text-[#788099] text-base font-medium py-1.5 rounded-full flex items-center justify-center gap-2 transition-colors ${isFirstCardSubmitDisabled
-                    ? "bg-gray-500 cursor-not-allowed"
-                    : "bg-[#1D8751] hover:bg-[#1D8751]/80"
+                  className={`w-full text-base font-medium py-1.5 rounded-full flex items-center justify-center gap-2 transition-colors ${isFirstCardSubmitDisabled
+                    ? "bg-gray-500 cursor-not-allowed text-white opacity-70"
+                    : "bg-[#1D8751] hover:bg-[#1D8751]/80 text-white"
                     }`}
                   onClick={() => {
                     if (requiresLoginRedirect) {
@@ -5531,24 +5572,7 @@ export default function WithdrawalForm({
             open={isPaymentModalOpen}
             onClose={() => setIsPaymentModalOpen(false)}
             filterByProviderName={payBank?.trim() || undefined}
-            onAddSuccess={async () => {
-              try {
-                const [accounts] = await Promise.all([
-                  withTimeout(dispatch(fetchUserPaymentDetails(true)).unwrap(), 15_000),
-                  withTimeout(dispatch(fetchAdminWalletList(true)).unwrap(), 15_000),
-                ]);
-                if (Array.isArray(accounts)) {
-                  const match = findAddedPaymentDetail(accounts);
-                  if (match) {
-                    setSelectedPaymentDetails([match]);
-                  }
-                }
-                showToast.success("Payment method added successfully!");
-              } catch (error) {
-                console.error("Failed to refresh payment details:", error);
-                showToast.error("Payment method added, but failed to refresh. Please reload the page.");
-              }
-            }}
+            onAddSuccess={handlePaymentMethodAddSuccess}
           />
 
           {/* InfoModal */}

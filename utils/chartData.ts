@@ -1,5 +1,11 @@
 import { TransactionSummary } from "@/components/types";
 import {
+  getP2PApprovedTradeVolume,
+  getP2PApprovedDepositsVolume,
+  getP2PApprovedWithdrawalsVolume,
+  getP2PBuyOrdersByStatus,
+  getP2PCombinedVolume,
+  getP2PSellOrdersByStatus,
   parseSummaryNumber,
   sanitizeExchangeSummaryUsd,
 } from "@/lib/utils/normalizeTransactionSummary";
@@ -46,7 +52,7 @@ function dedupeDonutData(data: DonutChartData[]): DonutChartData[] {
 function getApprovedP2pDepositsVolume(
   transactionSummary: TransactionSummary
 ): number {
-  return parseSummaryNumber(transactionSummary.total_approved_p2p_deposits);
+  return getP2PApprovedDepositsVolume(transactionSummary);
 }
 
 function getExchangeOverviewLegendAmounts(
@@ -109,14 +115,7 @@ export const overviewTotalData = (
   };
 
   if (type === "buy") {
-    const status =
-      (transactionSummary as any).total_buy_trades_by_status ||
-      transactionSummary.total_buy_orders_by_status || {
-      pending: 0,
-      completed: 0,
-      canceled: 0,
-      offline: 0,
-    };
+    const status = getP2PBuyOrdersByStatus(transactionSummary);
 
     return dedupeDonutData([
       {
@@ -130,11 +129,6 @@ export const overviewTotalData = (
         color: "#facc15",
       },
       {
-        label: "Canceled",
-        value: getStatusValue(status, "canceled"),
-        color: "#ef4444",
-      },
-      {
         label: "Offline",
         value: getStatusValue(status, "offline"),
         color: "#64748b",
@@ -143,40 +137,25 @@ export const overviewTotalData = (
   }
 
   if (type === "p2p") {
-    const buyStatus = (transactionSummary as any).total_buy_trades_by_status || {};
-    const sellStatus = (transactionSummary as any).total_sell_trades_by_status || {};
+    const p2pTrades = getP2PApprovedTradeVolume(transactionSummary);
     const p2pDeposits = getApprovedP2pDepositsVolume(transactionSummary);
+    const p2pWithdrawals = getP2PApprovedWithdrawalsVolume(transactionSummary);
 
     return dedupeDonutData([
       {
-        label: "Completed",
-        value: Math.abs(
-          getStatusValue(buyStatus, "completed") +
-            getStatusValue(sellStatus, "completed") +
-            p2pDeposits
-        ),
-        color: "#1D8751",
+        label: "Deposit",
+        value: Math.abs(p2pDeposits),
+        color: "#FFD600",
       },
       {
-        label: "Pending",
-        value: Math.abs(
-          getStatusValue(buyStatus, "pending") + getStatusValue(sellStatus, "pending")
-        ),
-        color: "#facc15",
+        label: "Withdrawals",
+        value: Math.abs(p2pWithdrawals),
+        color: "#E23D3A",
       },
       {
-        label: "Canceled",
-        value: Math.abs(
-          getStatusValue(buyStatus, "canceled") + getStatusValue(sellStatus, "canceled")
-        ),
-        color: "#ef4444",
-      },
-      {
-        label: "Offline",
-        value: Math.abs(
-          getStatusValue(buyStatus, "offline") + getStatusValue(sellStatus, "offline")
-        ),
-        color: "#64748b",
+        label: "P2P",
+        value: Math.abs(p2pTrades),
+        color: "#386AB5",
       },
     ]);
   }
@@ -332,22 +311,10 @@ export const overviewTotalSummary = (
   type: "exchange" | "p2p" | "swap" | "buy" | "moneyx" = "exchange"
 ) => {
   if (type === "p2p") {
-    const buyStatus = (transactionSummary as any).total_buy_trades_by_status || {};
-    const sellStatus = (transactionSummary as any).total_sell_trades_by_status || {};
-    const p2pDeposits = getApprovedP2pDepositsVolume(transactionSummary);
-    const completed =
-      Number(buyStatus.completed || 0) +
-      Number(sellStatus.completed || 0) +
-      p2pDeposits;
-    const pending = Number(buyStatus.pending || 0) + Number(sellStatus.pending || 0);
-    const canceled =
-      Number(buyStatus.canceled ?? buyStatus.cancelled ?? 0) +
-      Number(sellStatus.canceled ?? sellStatus.cancelled ?? 0);
-    const offline = Number(buyStatus.offline || 0) + Number(sellStatus.offline || 0);
-    const netValue = completed + pending + canceled + offline;
     const totalFromApi = parseSummaryNumber(transactionSummary.total_volume);
+    const combined = getP2PCombinedVolume(transactionSummary);
     return {
-      total: Math.abs(totalFromApi > 0 ? totalFromApi : netValue),
+      total: Math.abs(totalFromApi > 0 ? totalFromApi : combined),
       currency: "USD",
     };
   }
@@ -368,15 +335,9 @@ export const overviewTotalSummary = (
     };
   }
   if (type === "buy") {
-    const buyStatus =
-      (transactionSummary as any).total_buy_trades_by_status ||
-      transactionSummary.total_buy_orders_by_status ||
-      {};
+    const buyStatus = getP2PBuyOrdersByStatus(transactionSummary);
     const buyTotal =
-      Number(buyStatus.completed || 0) +
-      Number(buyStatus.pending || 0) +
-      Number(buyStatus.canceled ?? buyStatus.cancelled ?? 0) +
-      Number(buyStatus.offline || 0);
+      buyStatus.completed + buyStatus.pending + buyStatus.offline;
     return {
       total: Math.abs(buyTotal || transactionSummary.total_buy_orders || 0),
       currency: "USD",

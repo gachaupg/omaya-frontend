@@ -34,6 +34,7 @@ import {
   normalizeExpressApiErrorMessage,
   resolveExpressMinAmountDisplayError,
 } from "@/lib/utils/expressMinAmount";
+import { resolveExpressDepositFormUsdNetReceive } from "@/features/express/utils/successAmountDisplay";
 import { reportAssetLoadIssue } from "@/lib/utils/assetLoadNotice";
 import { useExpressI18n } from "@/lib/useExpressI18n";
 import { DepositResponse } from "../../../../exchange/types";
@@ -3561,10 +3562,18 @@ export default function DepositForm({
       // Prepare transaction data for the status page
       const receiveCurrency =
         getCurrencyFromAsset(selectedAsset) || "USDT";
+      const depositUsdNet = resolveExpressDepositFormUsdNetReceive({
+        payAmount,
+        commission: finalResponse.commission ?? commissionAmount,
+        commissionAmount,
+        apiNetAmount: finalResponse.net_amount,
+      });
       const transactionData = {
         type: "deposit" as const,
         amount: payAmount,
         receiveAmount: parseFloat(getAmountInput) || getAmount, // From "You Receive" input
+        usdNetReceive: depositUsdNet,
+        commissionAmount,
         details: {
           from_currency: "USD",
           to_currency: receiveCurrency,
@@ -3593,6 +3602,9 @@ export default function DepositForm({
         ...(finalResponse.expected_amount && { expectedAmount: finalResponse.expected_amount }),
         ...(finalResponse.net_amount && { netAmount: finalResponse.net_amount }),
         ...(finalResponse.changenow_id && { changenowId: finalResponse.changenow_id }),
+        ...(finalResponse.commission != null && {
+          commission: finalResponse.commission,
+        }),
         ...(finalResponse.deposit_address && { finalDepositAddress: finalResponse.deposit_address }),
       };
 

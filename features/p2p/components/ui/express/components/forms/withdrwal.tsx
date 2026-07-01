@@ -656,12 +656,17 @@ export default function WithdrawalForm({
       setOtpLoading(false);
       showToast.success("Withdrawal verified successfully!");
     } catch (error: any) {
-      const responseData = error?.response?.data;
-      const errorMessage =
-        (typeof responseData === "object" && (responseData?.error ?? responseData?.message ?? responseData?.detail)) ||
-        (typeof responseData === "string" ? responseData : null) ||
-        error?.message ||
-        "Failed to verify OTP. Please try again.";
+      let errorMessage =
+        typeof error === "string"
+          ? error
+          : error instanceof Error
+            ? error.message
+            : "Invalid OTP";
+      if (/invalid otp/i.test(errorMessage)) {
+        errorMessage = "Invalid OTP";
+      } else if (/request failed with status code \d+/i.test(errorMessage)) {
+        errorMessage = "Invalid OTP";
+      }
       setOtpError(errorMessage);
       setOtpLoading(false);
     }

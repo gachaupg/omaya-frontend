@@ -37,6 +37,24 @@ export interface TransactionSummary {
   avg_payment_time: string;
   rating: string;
   total_volume: string;
+  /** From transaction summary API – total balance */
+  total_balance?: string;
+  /** From transaction summary API – available to use */
+  available_amount?: string;
+  /** From transaction summary API – in escrow / locked */
+  escrow?: string;
+  /** Alternate API field for P2P funding volume */
+  total_approved_p2p_funding_volume?: number;
+  /** Matched P2P trades by status (dashboard charts) */
+  total_buy_trades_by_status?: OrderStatus;
+  total_sell_trades_by_status?: OrderStatus;
+  total_buy_trades?: number;
+  total_sell_trades?: number;
+  total_moneyx_by_status?: unknown;
+  total_approved_moneyx_volume?: number;
+  total_moneyx_volume?: number;
+  total_approved_changenow_swap_volume?: number;
+  total_changenow_swap_volume?: number;
 }
 
 export const emptyTransactionSummary: TransactionSummary = {

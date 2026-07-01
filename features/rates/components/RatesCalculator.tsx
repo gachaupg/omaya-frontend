@@ -28,6 +28,8 @@ import PaymentMethodsModal from "../../p2p/components/ui/p2pdashboard/sections/P
 import {
   resolveAllUserPaymentAccounts,
   getRegisteredAccountDropdownList,
+  findAddedPaymentDetail,
+  refreshRegisteredAccountsAfterAdd,
   type RegisteredAccountDetail,
 } from "@/features/express/utils/registeredAccountHelpers";
 import {
@@ -70,6 +72,7 @@ import {
   resolveExpressAmountInlineError,
 } from "@/lib/utils/expressAmountValidation";
 import { normalizeExpressApiErrorMessage } from "@/lib/utils/expressMinAmount";
+import { resolveExpressDepositFormUsdNetReceive } from "@/features/express/utils/successAmountDisplay";
 import { openKYCModal, checkKYCStatus } from "@/features/auth/slices/authSlice";
 import { useTheme } from "@/context/theme";
 import MoneyXRates from "./MoneyXRates";
@@ -695,6 +698,7 @@ const RatesCalculator = ({ activeTab = 'crypto' }: RatesCalculatorProps) => {
 
   // Get authentication state and user (for verification check)
   const { isAuthenticated, user } = useSelector((state: RootState) => state.auth);
+  const dispatch = useDispatch<AppDispatch>();
   const isFrozenUser = isAuthenticated && user?.freeze === true;
 
   // Network mapping function
@@ -734,6 +738,36 @@ const RatesCalculator = ({ activeTab = 'crypto' }: RatesCalculatorProps) => {
   const [selectedProviderData, setSelectedProviderData] = useState<any>(null);
   const [selectedPaymentDetails, setSelectedPaymentDetails] = useState<UserPaymentDetail[]>([]);
   const [isPaymentModalOpen, setIsPaymentModalOpen] = useState(false);
+  const paymentAddRefreshInFlightRef = useRef(false);
+  const paymentAddRefreshErrorToastShownRef = useRef(false);
+
+  const handlePaymentMethodAddSuccess = useCallback(async () => {
+    if (paymentAddRefreshInFlightRef.current) return;
+    paymentAddRefreshInFlightRef.current = true;
+    try {
+      const accounts = await refreshRegisteredAccountsAfterAdd(dispatch);
+      const match = findAddedPaymentDetail(accounts);
+      if (match) {
+        setSelectedPaymentDetails([match]);
+      }
+      showToast.success("Payment method added successfully!");
+    } catch {
+      if (!paymentAddRefreshErrorToastShownRef.current) {
+        paymentAddRefreshErrorToastShownRef.current = true;
+        showToast.error(
+          "Payment method added, but failed to refresh. Please reload the page."
+        );
+      }
+    } finally {
+      paymentAddRefreshInFlightRef.current = false;
+    }
+  }, [dispatch]);
+
+  useEffect(() => {
+    if (isPaymentModalOpen) {
+      paymentAddRefreshErrorToastShownRef.current = false;
+    }
+  }, [isPaymentModalOpen]);
   const [paymentMethodError, setPaymentMethodError] = useState<string | null>(null);
   const [isFieldsSwapped, setIsFieldsSwapped] = useState(false); // Track if payment method and asset positions are swapped
   const [amount, setAmount] = useState("100");
@@ -1105,9 +1139,6 @@ const getPaymentRestrictionMessage = (status?: string) =>
   >(new Map());
   const ESTIMATE_CACHE_MS = 2 * 60 * 1000; // 2 min cache
   const ESTIMATE_DEBOUNCE_MS = 350; // Wait 350ms after last keystroke
-
-
-  const dispatch = useDispatch<AppDispatch>();
 
   const { assets: exchangeAssetsState, loading: exchangeAssetsLoading } =
     useSelector((state: RootState) => state.exchange);
@@ -2790,7 +2821,14 @@ const getPaymentRestrictionMessage = (status?: string) =>
         ...(isDepositMode && {
           depositCode: effectiveDepositCode,
           totalAmountDue: effectiveResponse?.total_amount_due,
-          commission: effectiveResponse?.commission,
+          commission: effectiveResponse?.commission ?? commissionAmount,
+          commissionAmount,
+          usdNetReceive: resolveExpressDepositFormUsdNetReceive({
+            payAmount: payNum,
+            commission: effectiveResponse?.commission ?? commissionAmount,
+            commissionAmount,
+            apiNetAmount: effectiveResponse?.net_amount,
+          }),
           networkFee: effectiveResponse?.network_fee,
           currency:
             effectiveResponse?.currency ||
@@ -2799,6 +2837,15 @@ const getPaymentRestrictionMessage = (status?: string) =>
           websocketUrl: effectiveResponse?.websocket_url,
           websocket_url: effectiveResponse?.websocket_url,
           net_amount: effectiveResponse?.net_amount,
+          ...(effectiveResponse?.net_amount != null && {
+            netAmount: effectiveResponse.net_amount,
+          }),
+          ...(effectiveResponse?.expected_amount != null && {
+            expectedAmount: effectiveResponse.expected_amount,
+          }),
+          ...(effectiveResponse?.changenow_id && {
+            changenowId: effectiveResponse.changenow_id,
+          }),
           fees: effectiveResponse?.fees,
         }),
         ...(!isDepositMode && {
@@ -3122,6 +3169,14 @@ const getPaymentRestrictionMessage = (status?: string) =>
       }
     }
   }, [payBank, enhancedFilteredUserPaymentDetails, selectedPaymentDetails]);
+
+  const hasRegisteredAccountSelected =
+    selectedPaymentDetails.length > 0 &&
+    enhancedFilteredUserPaymentDetails.some(
+      (detail) => detail.id === selectedPaymentDetails[0]?.id
+    );
+  const isRegisteredAccountMissing =
+    !isDepositMode && !!payBank && !hasRegisteredAccountSelected;
 
   // Add "Bank" as a default option if not already present
   // Ensure all payment methods are valid strings
@@ -5231,10 +5286,14 @@ const getPaymentRestrictionMessage = (status?: string) =>
             isOtcThresholdReached ||
             hasDecimalPlacesError ||
             isAmountTooLargeForCalculation ||
-            isAmountTooBigToProcess
+            isAmountTooBigToProcess ||
+            isRegisteredAccountMissing
           }
-          className={`w-full py-3 px-4 rounded-xl font-semibold text-white bg-[#1D8751] hover:bg-[#0f8f4d] transition-colors disabled:opacity-50 disabled:cursor-not-allowed ${isSubmitting ? "opacity-50 cursor-not-allowed" : ""
-            }`}
+          className={`w-full py-3 px-4 rounded-xl font-semibold text-white transition-colors ${
+            isSubmitting || isRegisteredAccountMissing
+              ? "bg-gray-500 cursor-not-allowed opacity-70"
+              : "bg-[#1D8751] hover:bg-[#0f8f4d]"
+          } disabled:opacity-50 disabled:cursor-not-allowed`}
         >
           {isSubmitting
             ? t("rates.processing", "Processing...")
@@ -5846,10 +5905,13 @@ const getPaymentRestrictionMessage = (status?: string) =>
                     disabled={
                       isSubmitting ||
                       hasDecimalPlacesError ||
-                      !isP2pWithdrawalTermsAccepted
+                      !isP2pWithdrawalTermsAccepted ||
+                      isRegisteredAccountMissing
                     }
                     className={`w-full font-semibold py-2 px-4 rounded-lg transition-colors flex items-center justify-center gap-2 ${
-                      isSubmitting || !isP2pWithdrawalTermsAccepted
+                      isSubmitting ||
+                      !isP2pWithdrawalTermsAccepted ||
+                      isRegisteredAccountMissing
                         ? "bg-gray-500 cursor-not-allowed text-white"
                         : "bg-[#1D8751] hover:bg-[#166b3f] text-white"
                     }`}
@@ -5876,17 +5938,7 @@ const getPaymentRestrictionMessage = (status?: string) =>
         open={isPaymentModalOpen}
         onClose={() => setIsPaymentModalOpen(false)}
         filterByProviderName={payBank?.trim() || undefined}
-        onAdd={async () => {
-          try {
-            await Promise.all([
-              dispatch(fetchUserPaymentDetails()).unwrap(),
-              dispatch(fetchAdminWalletList()).unwrap(),
-            ]);
-            showToast.success("Payment method added successfully!");
-          } catch {
-            showToast.error("Payment method added, but failed to refresh. Please reload the page.");
-          }
-        }}
+        onAddSuccess={handlePaymentMethodAddSuccess}
       />
       <InfoModal
         isOpen={isInfoModalOpen}

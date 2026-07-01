@@ -8,6 +8,7 @@ import {
   resolveExpressReceiveCurrency,
   resolveExpressSendCurrency,
   resolveExpressDepositSuccessDisplay,
+  resolveExpressWithdrawalSuccessDisplay,
   resolveHomeExpressSuccessReceiveCurrency,
 } from "../../utils/successAmountDisplay";
 
@@ -27,6 +28,9 @@ interface SuccessPageProps {
   transactionData?: {
     type: "deposit" | "withdrawal";
     amount: number;
+    receiveAmount?: number;
+    netAmount?: unknown;
+    net_amount?: unknown;
     asset: any;
     paymentDetail?: any;
     paymentDetails?: any[];
@@ -119,11 +123,17 @@ interface SuccessPageProps {
   payoutMethod?: string;
   transactionHash?: string;
   netAmount?: string | number;
+  /** Net / you-receive amount shown on the processing page (deposit only). */
+  processingReceiveAmount?: number | null;
+  /** Crypto send amount from the processing page (withdrawal only). */
+  processingSendAmount?: number | null;
 }
 
 const SuccessPage: React.FC<SuccessPageProps> = ({
   transactionData,
   websocketData,
+  processingReceiveAmount,
+  processingSendAmount,
   transactionId = "TXNWSU09E2DS",
   date = new Date().toLocaleString(),
   paidAmount = "USD 1",
@@ -356,20 +366,45 @@ const SuccessPage: React.FC<SuccessPageProps> = ({
       const depositDisplay = resolveExpressDepositSuccessDisplay({
         websocketData,
         transactionData,
+        processingReceiveAmount,
       });
       const formattedReceive = formatAmount(depositDisplay.receiveAmount);
 
       return {
         transactionId: txId,
         date: transactionDate,
-        paidAmount: `${formatAmount(depositDisplay.paidAmount)} USD`,
-        paidCurrency: "USD",
+        paidAmount: formatAmount(depositDisplay.paidAmount),
+        paidCurrency: depositDisplay.paidCurrency,
         receivedAmount: formattedReceive,
         receivedCurrency: depositDisplay.receiveCurrency,
         payinMethod: paymentMethod,
         payoutMethod: `${toCurrency} Wallet`,
         transactionHash: txHash,
         netAmount: formattedReceive,
+      };
+    }
+
+    if (isWithdrawal) {
+      const withdrawalDisplay = resolveExpressWithdrawalSuccessDisplay({
+        websocketData,
+        transactionData,
+        processingReceiveAmount,
+        processingSendAmount,
+      });
+      const formattedCrypto = formatAmount(withdrawalDisplay.receiveAmount);
+      const formattedUsd = formatAmount(withdrawalDisplay.paidAmount);
+
+      return {
+        transactionId: txId,
+        date: transactionDate,
+        paidAmount: formattedUsd,
+        paidCurrency: withdrawalDisplay.paidCurrency,
+        receivedAmount: formattedCrypto,
+        receivedCurrency: withdrawalDisplay.receiveCurrency,
+        payinMethod: `${withdrawalDisplay.receiveCurrency} Wallet`,
+        payoutMethod: paymentMethod,
+        transactionHash: txHash,
+        netAmount: formattedCrypto,
       };
     }
 
@@ -391,6 +426,7 @@ const SuccessPage: React.FC<SuccessPageProps> = ({
   
   // Extract transaction type for use in JSX
   const isDeposit = transactionData?.type === "deposit";
+  const isWithdrawal = transactionData?.type === "withdrawal";
 
   // Format date in East Africa Time (EAT) on client side
   useEffect(() => {
@@ -444,7 +480,7 @@ const SuccessPage: React.FC<SuccessPageProps> = ({
         </div>
 
         {/* Exchange Summary Section */}
-        <div className=" pl-6 pr-6">
+        <div className="pl-6 pr-6 pb-6 min-w-0 overflow-hidden">
         <div className={`border-t border-1 my-4 ${
           isDark ? "border-gray-600" : "border-gray-300"
         }`}></div>
@@ -463,6 +499,9 @@ const SuccessPage: React.FC<SuccessPageProps> = ({
               }`}>You Paid</div>
               <div className="font-bold flex items-center gap-2">
                 <span>{realData.paidAmount}</span>
+                {(isDeposit || isWithdrawal) && realData.paidCurrency && (
+                  <span>{realData.paidCurrency}</span>
+                )}
               </div>
               <div className={`text-xs mt-1 ${
                 isDark ? "text-gray-400" : "text-gray-600"
@@ -485,14 +524,23 @@ const SuccessPage: React.FC<SuccessPageProps> = ({
           }`}></div>
 
           {/* Transaction Hash and Net Amount */}
-          <div className="space-y-3">
-            <div>
+          <div className="space-y-3 min-w-0">
+            <div className="min-w-0">
               <div className={`text-sm mb-1 ${
                 isDark ? "text-gray-400" : "text-gray-600"
               }`}>Transaction Hash</div>
-              <div className={` text-[12px] font-mono ${
+              <div className={`flex items-start gap-2 text-[12px] font-mono break-all min-w-0 ${
                 isDark ? "text-white" : "text-gray-900"
-              }`}>{realData.transactionHash} </div>
+              }`}>
+                <span className="flex-1 min-w-0 break-all">
+                  {realData.transactionHash}
+                </span>
+                <CopyButton
+                  value={realData.transactionHash}
+                  className="flex-shrink-0 p-1.5 rounded-lg hover:bg-gray-200 dark:hover:bg-[#35353E] transition-colors"
+                  showText={false}
+                />
+              </div>
             </div>
             <div className={`my-4 rounded-[18px] shadow-xl border-1 ${
               isDark 

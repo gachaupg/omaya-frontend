@@ -30,10 +30,10 @@ import {
 import {
   getCounterpartyEmail,
   isCurrentUserChatMessage,
-  looksLikeEmail,
   resolveChatSenderDisplayName,
   resolveChatSenderPhoto,
   resolveCounterpartyChatPhoto,
+  resolveCounterpartyDisplayName,
 } from "@/features/p2p/utils/chatMessageDisplay";
 import { getTradePartyPhotoByEmail } from "@/features/p2p/utils/matchedTradeNotifications";
 
@@ -131,20 +131,6 @@ const ChatBox: React.FC<{
   onClose?: () => void;
 }> = ({ tradeId, userId, userName, autoreply, seller_photo, buyer_photo, buyer, seller, currentUserEmail, orderType, owner, buyerName, sellerName, messageType = 'p2p', peerName, supportMessages, onClose }) => {
 
-  const emailsEqual = (a?: string, b?: string) =>
-    !!a &&
-    !!b &&
-    String(a).trim().toLowerCase() === String(b).trim().toLowerCase();
-
-  const pickPartyDisplayName = (
-    name: string | undefined,
-    fallbackLabel: string
-  ) => {
-    const trimmed = String(name ?? "").trim();
-    if (trimmed && !looksLikeEmail(trimmed)) return trimmed;
-    return fallbackLabel;
-  };
-
   const tradePhotoContext = React.useMemo(
     () => ({
       buyer,
@@ -194,43 +180,20 @@ const ChatBox: React.FC<{
       };
     }
 
-    const isCurrentBuyer = emailsEqual(currentUserEmail, buyer);
-    const isCurrentSeller = emailsEqual(currentUserEmail, seller);
-
-    if (isCurrentBuyer) {
-      return {
-        photo: peerPhoto,
-        displayName:
-          pickPartyDisplayName(peerName, "") ||
-          pickPartyDisplayName(sellerName, "Seller"),
-      };
-    }
-    if (isCurrentSeller) {
-      return {
-        photo: peerPhoto,
-        displayName:
-          pickPartyDisplayName(peerName, "") ||
-          pickPartyDisplayName(buyerName, "Buyer"),
-      };
-    }
-
-    if (peerName && !looksLikeEmail(peerName)) {
-      return {
-        photo: peerPhoto,
-        displayName: peerName,
-      };
-    }
-
-    if (currentUserEmail && owner && emailsEqual(currentUserEmail, owner)) {
-      return {
-        photo: peerPhoto,
-        displayName: pickPartyDisplayName(buyerName || userName, "Buyer"),
-      };
-    }
-
     return {
       photo: peerPhoto,
-      displayName: pickPartyDisplayName(sellerName || userName, "Seller"),
+      displayName: resolveCounterpartyDisplayName({
+        currentUserEmail,
+        buyer,
+        seller,
+        buyerName,
+        sellerName,
+        peerName,
+        owner,
+        orderType,
+        advertiserName: userName,
+        messages: sortedMessages,
+      }),
     };
   }, [
     sortedMessages,
@@ -241,10 +204,11 @@ const ChatBox: React.FC<{
     seller,
     buyerName,
     sellerName,
-    userName,
     messageType,
     peerName,
     owner,
+    orderType,
+    userName,
   ]);
 
   const apiTradeId = React.useMemo(() => {
