@@ -5,16 +5,19 @@ import { Table } from "../../Common/Table";
 import { RootState } from "@/store/rootReducer";
 import { TransactionType, UserTrade } from "@/features/p2p/types";
 import { fetchAllUserTradesPages } from "@/features/p2p/utils/fetchAllUserTradesPages";
+import type { P2PChartTimeFilter } from "@/features/p2p/utils/p2pTradeChartAggregation";
 import { NoDataFound } from "@/components/dashboard/ui/Transactions";
 import P2PWithdrawalDepositTransactions from "@/components/dashboard/sections/P2PWithdrawalDepositTransactions";
 import type { TableExportRef } from "../../Common/Table";
 
-type TimeFilter =
-  | "Today"
-  | "Last Week"
-  | "Last Month"
-  | "Last 6 Months"
-  | "All Time";
+type TimeFilter = P2PChartTimeFilter;
+
+type P2PChartsProps = {
+  chartTrades?: UserTrade[];
+  tradesLoading?: boolean;
+  chartTimeFilter?: TimeFilter;
+  onChartTimeFilterChange?: (filter: TimeFilter) => void;
+};
 
 const PAGE_SIZE = 10;
 
@@ -54,15 +57,24 @@ const transformUserTradeToTransaction = (
 };
 };
 
-const P2PCharts = () => {
+const P2PCharts = ({
+  chartTrades: chartTradesProp,
+  tradesLoading: tradesLoadingProp,
+  chartTimeFilter: chartTimeFilterProp,
+  onChartTimeFilterChange,
+}: P2PChartsProps = {}) => {
   const { isAuthenticated, user } = useSelector((state: RootState) => state.auth);
-  const [allTrades, setAllTrades] = useState<UserTrade[]>([]);
+  const [allTradesLocal, setAllTradesLocal] = useState<UserTrade[]>([]);
+  const allTrades = chartTradesProp ?? allTradesLocal;
   const [tradesLoading, setTradesLoading] = useState(false);
+  const isTradesLoading = tradesLoadingProp ?? tradesLoading;
   const [tradesError, setTradesError] = useState<string | null>(null);
   const [tablePage, setTablePage] = useState(1);
   const tradesFetchStartedRef = useRef(false);
   const [searchQuery, setSearchQuery] = useState("");
-  const [timeFilter, setTimeFilter] = useState<TimeFilter>("Last Month");
+  const [timeFilterLocal, setTimeFilterLocal] = useState<TimeFilter>("All Time");
+  const timeFilter = chartTimeFilterProp ?? timeFilterLocal;
+  const setTimeFilter = onChartTimeFilterChange ?? setTimeFilterLocal;
   const [dataKey, setDataKey] = useState(0);
   const [mainTab, setMainTab] = useState<"p2p-buy-sell" | "p2p-withdrawal-deposit">("p2p-buy-sell");
   const [depositWithdrawTab, setDepositWithdrawTab] = useState<"all" | "deposit" | "withdrawal">("all");
@@ -85,21 +97,21 @@ const P2PCharts = () => {
     return () => document.removeEventListener("mousedown", onDown);
   }, [isHistoryDateOpen]);
 
-  // Single paginated fetch for chart + table (shared module cache dedupes Strict Mode remounts)
+  // Fetch trades locally only when parent does not supply them.
   useEffect(() => {
-    if (!isAuthenticated || tradesFetchStartedRef.current) return;
+    if (chartTradesProp || !isAuthenticated || tradesFetchStartedRef.current) return;
     tradesFetchStartedRef.current = true;
     setTradesLoading(true);
     setTradesError(null);
-    fetchAllUserTradesPages()
-      .then((rows) => setAllTrades(rows as UserTrade[]))
+    fetchAllUserTradesPages({ fetchAll: true })
+      .then((rows) => setAllTradesLocal(rows as UserTrade[]))
       .catch((err) => {
         setTradesError(
           err instanceof Error ? err.message : "Failed to load P2P history"
         );
       })
       .finally(() => setTradesLoading(false));
-  }, [isAuthenticated]);
+  }, [chartTradesProp, isAuthenticated]);
 
   // Filter data based on time filter
   const filterDataByTime = (
@@ -255,6 +267,7 @@ const P2PCharts = () => {
         title="P2P Overview (USD)"
         timeFrame="Month"
         chartTrades={allTrades}
+        chartLoading={isTradesLoading}
         onTimeFilterChange={handleTimeFilterChange}
         selectedTimeFilter={timeFilter}
         showTimeFilter={true}
@@ -382,14 +395,14 @@ const P2PCharts = () => {
 
         {mainTab === "p2p-buy-sell" ? (
           /* P2P Buy and Sell - orders table */
-          tradesLoading || displayData.length > 0 ? (
+          isTradesLoading || tradesError || displayData.length > 0 ? (
             <Table
               ref={tableExportRef}
               key={`p2p-table-${safeTablePage}-${dataKey}`}
               type="p2p"
               title="P2P History"
               data={displayData}
-              loading={tradesLoading}
+              loading={isTradesLoading}
               error={tradesError}
               currentPage={safeTablePage}
               totalPages={totalPages}

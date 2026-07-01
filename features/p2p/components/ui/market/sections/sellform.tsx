@@ -17,6 +17,7 @@ import { submitFeedbackThunk } from "@/features/p2p/slices/feedbackSubmissionSli
 import AppealModal from "./appeal";
 import { UserStatusBadge } from "./UserStatusBadge";
 import ChatBox from "./ChatBox";
+import { resolveAdvertiserDisplayName } from "@/features/p2p/utils/matchedTradeNotifications";
 import { showToast } from "@/lib/utils/toast";
 import dynamic from "next/dynamic";
 import { RefreshCw, Copy, MessageCircle } from "lucide-react";
@@ -1021,11 +1022,7 @@ const FinalSell: React.FC<FinalSellProps> = ({ orderData }) => {
             onClose={() => setShowChat(false)}
             tradeId={confirmOrder?.id || ""}
             userId={user?.id.toString() || ""}
-            userName={
-              singleOrder?.advertiser_first_name && singleOrder?.advertiser_last_name
-                ? `${singleOrder.advertiser_first_name} ${singleOrder.advertiser_last_name}`
-                : singleOrder?.advertiser_name || ""
-            }
+            userName={resolveAdvertiserDisplayName(singleOrder, confirmOrder)}
             autoreply={singleOrder?.auto_reply || ""}
             // Prefer photos from the trade (confirmOrder) but fall back to data already available on this page.
             seller_photo={confirmOrder?.seller_photo || singleOrder?.advertiser_photo || ""}
@@ -1050,9 +1047,8 @@ const FinalSell: React.FC<FinalSellProps> = ({ orderData }) => {
             owner={confirmOrder?.owner || ""}
             sellerName={
               confirmOrder?.seller_full_name?.trim() ||
-              (singleOrder?.advertiser_first_name && singleOrder?.advertiser_last_name
-                ? `${singleOrder.advertiser_first_name} ${singleOrder.advertiser_last_name}`
-                : singleOrder?.advertiser_name || confirmOrder?.advertiser_name || "Seller")
+              resolveAdvertiserDisplayName(singleOrder, confirmOrder) ||
+              "Seller"
             }
             buyerName={
               confirmOrder?.buyer_full_name?.trim() ||

@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import { useRouter } from "next/navigation";
 import { AppDispatch } from "@/store";
@@ -97,8 +97,8 @@ interface PaymentMethodsModalProps {
   filterByProviderName?: string;
   /** Prefill account / mobile / wallet field when opened from MoneyX whitelist flow */
   initialAccountNumber?: string;
-  /** When provided, called on success instead of onClose - allows parent to show OTP modal etc. */
-  onAddSuccess?: () => void;
+  /** Called after a payment method is added successfully (before the modal closes). */
+  onAddSuccess?: () => void | Promise<void>;
 }
 
 const PaymentMethodsModal: React.FC<PaymentMethodsModalProps> = ({
@@ -144,6 +144,16 @@ const PaymentMethodsModal: React.FC<PaymentMethodsModalProps> = ({
   const [resendCooldown, setResendCooldown] = useState(0);
   const [otpFeedback, setOtpFeedback] = useState<{ type: "success" | "error"; text: string } | null>(null);
   const RESEND_COOLDOWN_SECONDS = 60;
+  const onCloseRef = useRef(onClose);
+  const onAddRef = useRef(onAdd);
+  const onAddSuccessRef = useRef(onAddSuccess);
+  const postSuccessHandledRef = useRef(false);
+  const onAddSuccessInFlightRef = useRef(false);
+  const prevOpenRef = useRef(false);
+
+  onCloseRef.current = onClose;
+  onAddRef.current = onAdd;
+  onAddSuccessRef.current = onAddSuccess;
 
   const applyOtpSendFailure = (payload: unknown) => {
     const { message, cooldownRemaining } = parsePaymentOtpSendRejected(payload);
@@ -193,33 +203,39 @@ const PaymentMethodsModal: React.FC<PaymentMethodsModalProps> = ({
     return () => clearInterval(t);
   }, [resendCooldown]);
 
-     // Fetch public payment methods when modal opens
+     // Reset form only when the modal opens (not on every user/account dep change while open).
    useEffect(() => {
-     if (open && isClient) {
-       // Try to fetch public payment methods, but don't block the UI
-       try {
-         dispatch(fetchPublicPaymentMethods() as any);
-         if (isAuthenticated) {
-           dispatch(fetchUserPaymentDetails() as any);
-         }
-       } catch (error) {
-         logger.debug('p2p', "Error fetching public payment methods:", error);
+     const justOpened = open && !prevOpenRef.current;
+     prevOpenRef.current = open;
+
+     if (!open || !isClient) return;
+
+     if (!justOpened) return;
+
+     try {
+       dispatch(fetchPublicPaymentMethods() as any);
+       if (isAuthenticated) {
+         dispatch(fetchUserPaymentDetails() as any);
        }
-      setMethod("");
-      setMethodTab("bank");
-       setProvider("");
-       // Auto-populate name with user's full name
-       const fullName = user
-         ? `${user.first_name || ""} ${user.last_name || ""}`.trim()
-         : "";
-       setName(fullName);
-       setAccount(String(initialAccountNumber || "").trim());
-       setAllowAutoSend(false);
-       setStep("form");
-       setOtpCode("");
-       setPendingPayload(null);
-       dispatch(clearPostStatus());
+     } catch (error) {
+       logger.debug("p2p", "Error fetching public payment methods:", error);
      }
+     setMethod("");
+     setMethodTab("bank");
+     setProvider("");
+     const fullName = user
+       ? `${user.first_name || ""} ${user.last_name || ""}`.trim()
+       : "";
+     setName(fullName);
+     setAccount(String(initialAccountNumber || "").trim());
+     setAllowAutoSend(false);
+     setStep("form");
+     setOtpCode("");
+     setPendingPayload(null);
+     setOtpFeedback(null);
+     postSuccessHandledRef.current = false;
+     onAddSuccessInFlightRef.current = false;
+     dispatch(clearPostStatus());
    }, [open, dispatch, isClient, user, isAuthenticated, initialAccountNumber]);
 
   // A user that has already had auto-send enabled should not re-enable it
@@ -689,21 +705,38 @@ const PaymentMethodsModal: React.FC<PaymentMethodsModalProps> = ({
      }
    };
 
-  // Close modal on success (or hand off to onAddSuccess for OTP flow)
+  // Close modal immediately on success; refresh parent data afterward (async).
   useEffect(() => {
-    logger.debug('p2p', "postSuccess effect triggered", postSuccess);
-    if (postSuccess) {
-      logger.debug('p2p', "Payment method added successfully!");
-      setOtpFeedback({ type: "success", text: "Payment method added!" });
-      if (onAdd) onAdd();
-      if (onAddSuccess) {
-        onAddSuccess();
-      } else {
-        onClose();
-      }
-      dispatch(clearPostStatus());
+    if (!postSuccess || postSuccessHandledRef.current) return;
+    postSuccessHandledRef.current = true;
+
+    logger.debug("p2p", "postSuccess effect triggered", postSuccess);
+
+    setStep("form");
+    setOtpCode("");
+    setPendingPayload(null);
+    setOtpFeedback(null);
+    dispatch(clearPostStatus());
+    onCloseRef.current();
+
+    if (onAddRef.current) {
+      onAddRef.current();
     }
-  }, [postSuccess, onAdd, onClose, onAddSuccess, dispatch]);
+
+    const runAddSuccess = onAddSuccessRef.current;
+    if (runAddSuccess && !onAddSuccessInFlightRef.current) {
+      onAddSuccessInFlightRef.current = true;
+      void (async () => {
+        try {
+          await runAddSuccess();
+        } catch (error) {
+          logger.debug("p2p", "onAddSuccess callback failed", error);
+        } finally {
+          onAddSuccessInFlightRef.current = false;
+        }
+      })();
+    }
+  }, [postSuccess, dispatch]);
 
   // Handle errors
   useEffect(() => {

@@ -4,7 +4,10 @@
 
 import React from "react";
 import { TransactionSummary } from "../types";
-import { parseSummaryNumber } from "@/lib/utils/normalizeTransactionSummary";
+import {
+  getP2PCombinedVolume,
+  parseSummaryNumber,
+} from "@/lib/utils/normalizeTransactionSummary";
 
 interface VolumeChartProps {
   transactionSummary: TransactionSummary;
@@ -43,15 +46,8 @@ const VolumeChart: React.FC<VolumeChartProps> = ({ transactionSummary }) => {
     parseSummaryNumber(transactionSummary.total_approved_exchange_net) ||
     parseSummaryNumber(transactionSummary.total_approved_exchange_combined);
 
-  const p2pTradeVolume =
-    parseSummaryNumber(transactionSummary.total_approved_p2p_volume) ||
-    parseSummaryNumber(transactionSummary.total_approved_p2p_net) ||
-    parseSummaryNumber(transactionSummary.total_approved_p2p_combined);
-  const p2pDeposits = parseSummaryNumber(
-    transactionSummary.total_approved_p2p_deposits
-  );
-  /** P2P trades + approved P2P deposits (matches total_volume / P2P overview) */
-  const p2pVolume = p2pTradeVolume + p2pDeposits;
+  /** P2P trades + approved deposits + approved withdrawals */
+  const p2pVolume = getP2PCombinedVolume(transactionSummary);
 
   const swapVolume =
     parseSummaryNumber(summary?.total_approved_changenow_swap_volume) ||

@@ -3,7 +3,6 @@ import React, { useState, useEffect } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import Image from "next/image";
 import { AppDispatch } from "@/store";
-import { loadAllP2PTransactions } from "@/features/p2p/slices/p2pTransactionsSlice";
 import {
   overviewTotalData,
   referralCommissionsData,
@@ -16,15 +15,25 @@ import { formatLargeNumber } from "@/utils/formatters";
 import Button from "../ui/Button";
 import { TransactionSummary } from "../types";
 import { fetchUserTrades } from "@/features/p2p/slices/userTradesSlice";
+import { fetchAllUserTradesPages } from "@/features/p2p/utils/fetchAllUserTradesPages";
+import { buildP2PMonthlyChartBuckets } from "@/features/p2p/utils/p2pTradeChartAggregation";
+import { fetchAllUserTransactionsPages } from "@/features/transactions/utils/fetchAllUserTransactionsPages";
+import {
+  buildMoneyXMonthlyChartBuckets,
+  buildP2PFundingMonthlyChartBuckets,
+  buildSwapMonthlyChartBuckets,
+} from "@/features/transactions/utils/userTransactionChartAggregation";
+import type { AllTransactionItem } from "@/features/transactions/api";
 import { RootState } from "@/store";
 import { fetchReferralWallet } from "@/features/settings/slices/referralWalletSlice";
 import { storage } from "@/features/auth/utils/storage";
 import { useTheme } from "@/context/theme";
-import { fetchAllUserTransactions } from "@/features/transactions/slices/allTransactionsSlice";
+import { ChevronLeft, ChevronRight } from "lucide-react";
 import {
-  applyExchangeChartSummaryFallback,
   buildExchangeMonthlyChartBuckets,
+  reconcileExchangeChartBucketsWithSummary,
 } from "@/lib/utils/normalizeTransactionSummary";
+import { formatCurrency } from "@/lib/globalFormatter";
 
 const months = [
   "JAN",
@@ -242,8 +251,36 @@ const GradientLineChart = React.memo(
       [points2, createAreaPoints]
     );
 
+    const [hoverIndex, setHoverIndex] = React.useState<number | null>(null);
+
+    const pointCount = Math.max(
+      data1.data.length,
+      data2.data.length,
+      safeLabels.length
+    );
+
+    const formatChartAmount = (value: number) => formatCurrency(value, "USD");
+
     return (
-      <div className="w-full overflow-x-auto scrollbar-thin">
+      <div className="w-full overflow-x-auto scrollbar-thin relative">
+        {hoverIndex != null && hoverIndex >= 0 && hoverIndex < pointCount && (
+          <div
+            className="pointer-events-none absolute z-20 rounded-lg border px-3 py-2 text-xs shadow-lg dark:bg-[#18181D] dark:border-[#35353E] dark:text-white bg-white border-gray-200 text-gray-900"
+            style={{
+              left: `clamp(8px, ${((points1[hoverIndex]?.x ?? points2[hoverIndex]?.x ?? chartDimensions.left) / chartDimensions.baseWidth) * 100}%, calc(100% - 8px))`,
+              top: 8,
+              transform: "translateX(-50%)",
+            }}
+          >
+            <p className="font-semibold mb-1">{safeLabels[hoverIndex] ?? ""}</p>
+            <p style={{ color: color1 }}>
+              {data1.label}: {formatChartAmount(data1.data[hoverIndex] ?? 0)}
+            </p>
+            <p style={{ color: color2 }}>
+              {data2.label}: {formatChartAmount(data2.data[hoverIndex] ?? 0)}
+            </p>
+          </div>
+        )}
         <svg
           width="100%"
           height={chartDimensions.height}
@@ -355,7 +392,7 @@ const GradientLineChart = React.memo(
                   key={`dep-${i}`}
                   cx={p.x}
                   cy={p.y}
-                  r={4}
+                  r={hoverIndex === i ? 6 : 4}
                   fill={color1}
                 />
               ) : null
@@ -367,11 +404,35 @@ const GradientLineChart = React.memo(
                   key={`wd-${i}`}
                   cx={p.x}
                   cy={p.y}
-                  r={4}
+                  r={hoverIndex === i ? 6 : 4}
                   fill={color2}
                 />
               ) : null
             )}
+          {Array.from({ length: pointCount }, (_, i) => {
+            const denominator = Math.max(pointCount - 1, 1);
+            const normalizedIndex = denominator === 0 ? 0 : i / denominator;
+            const x =
+              chartDimensions.left +
+              normalizedIndex * (chartDimensions.right - chartDimensions.left);
+            const bandWidth =
+              pointCount > 1
+                ? (chartDimensions.right - chartDimensions.left) / (pointCount - 1)
+                : chartDimensions.right - chartDimensions.left;
+            return (
+              <rect
+                key={`hover-${i}`}
+                x={x - bandWidth / 2}
+                y={chartDimensions.top}
+                width={Math.max(bandWidth, 12)}
+                height={chartDimensions.bottom - chartDimensions.top}
+                fill="transparent"
+                className="cursor-pointer"
+                onMouseEnter={() => setHoverIndex(i)}
+                onMouseLeave={() => setHoverIndex(null)}
+              />
+            );
+          })}
           {safeLabels.map((label, i) => {
             const shouldRenderLabel =
               safeLabels.length <= 6 || i % 2 === 0 || safeLabels.length <= 0;
@@ -620,6 +681,151 @@ const Card = ({
   );
 };
 
+const TIME_PERIOD_OPTIONS = ["All", "Last Week", "Month", "One Year"];
+
+function HorizontalChartCarousel({ children }: { children: React.ReactNode }) {
+  const scrollRef = React.useRef<HTMLDivElement>(null);
+  const [canScrollLeft, setCanScrollLeft] = React.useState(false);
+  const [canScrollRight, setCanScrollRight] = React.useState(false);
+
+  const updateScrollState = React.useCallback(() => {
+    const el = scrollRef.current;
+    if (!el) return;
+    setCanScrollLeft(el.scrollLeft > 4);
+    setCanScrollRight(el.scrollLeft + el.clientWidth < el.scrollWidth - 4);
+  }, []);
+
+  React.useEffect(() => {
+    const el = scrollRef.current;
+    if (!el) return;
+    updateScrollState();
+    el.addEventListener("scroll", updateScrollState, { passive: true });
+    window.addEventListener("resize", updateScrollState);
+    return () => {
+      el.removeEventListener("scroll", updateScrollState);
+      window.removeEventListener("resize", updateScrollState);
+    };
+  }, [updateScrollState, children]);
+
+  const scrollByCard = (direction: "left" | "right") => {
+    const el = scrollRef.current;
+    if (!el) return;
+    const step = Math.max(el.clientWidth * 0.85, 280);
+    el.scrollBy({
+      left: direction === "left" ? -step : step,
+      behavior: "smooth",
+    });
+  };
+
+  return (
+    <div className="relative w-full mb-4 lg:mb-8">
+      {canScrollLeft && (
+        <button
+          type="button"
+          aria-label="Scroll charts left"
+          onClick={() => scrollByCard("left")}
+          className="absolute left-0 top-1/2 z-10 flex h-8 w-8 sm:h-9 sm:w-9 -translate-y-1/2 items-center justify-center rounded-full border border-gray-200 bg-white/95 text-gray-700 shadow-md hover:bg-gray-50 dark:border-[#35353E] dark:bg-[#23232B]/95 dark:text-white dark:hover:bg-[#2A2A32]"
+        >
+          <ChevronLeft className="h-5 w-5" />
+        </button>
+      )}
+      {canScrollRight && (
+        <button
+          type="button"
+          aria-label="Scroll charts right"
+          onClick={() => scrollByCard("right")}
+          className="absolute right-0 top-1/2 z-10 flex h-8 w-8 sm:h-9 sm:w-9 -translate-y-1/2 items-center justify-center rounded-full border border-gray-200 bg-white/95 text-gray-700 shadow-md hover:bg-gray-50 dark:border-[#35353E] dark:bg-[#23232B]/95 dark:text-white dark:hover:bg-[#2A2A32]"
+        >
+          <ChevronRight className="h-5 w-5" />
+        </button>
+      )}
+      <div
+        ref={scrollRef}
+        className="flex gap-4 overflow-x-auto scroll-smooth snap-x snap-mandatory scrollbar-thin pb-2 px-1 sm:px-10"
+      >
+        {children}
+      </div>
+    </div>
+  );
+}
+
+type OverviewLineChartCardProps = {
+  title: string;
+  isDeem?: boolean;
+  loading?: boolean;
+  filters: { id: string; label: string }[];
+  activeFilter: string;
+  onFilterChange: (id: string) => void;
+  timePeriod: string;
+  onTimePeriodChange: (value: string) => void;
+  series1: LineChartData;
+  series2: LineChartData;
+  labels: string[];
+  showSeries1: boolean;
+  showSeries2: boolean;
+};
+
+function OverviewLineChartCard({
+  title,
+  isDeem,
+  loading = false,
+  filters,
+  activeFilter,
+  onFilterChange,
+  timePeriod,
+  onTimePeriodChange,
+  series1,
+  series2,
+  labels,
+  showSeries1,
+  showSeries2,
+}: OverviewLineChartCardProps) {
+  return (
+    <Card
+      className={`flex-shrink-0 w-[min(100%,340px)] sm:w-[400px] lg:w-[460px] snap-start rounded-none lg:rounded-2xl bg-gray-50 dark:bg-card shadow-sm ${isDeem ? "border border-[#35353E]" : ""}`}
+    >
+      <h3 className="text-black dark:text-white text-xs sm:text-sm md:text-[14px] mb-2 font-semibold">
+        {title}
+      </h3>
+      <div className="flex flex-nowrap overflow-x-auto overflow-y-hidden scrollbar-thin items-center gap-1 sm:gap-2 mb-4 sm:mb-6 min-w-0 pb-1">
+        {filters.map((item) => (
+          <Button
+            key={item.id}
+            size="sm"
+            variant={activeFilter === item.id ? "primary" : "outline"}
+            onClick={() => onFilterChange(item.id)}
+            className="whitespace-nowrap rounded-3xl text-xs sm:text-sm flex-shrink-0"
+          >
+            {item.label}
+          </Button>
+        ))}
+        <div className="ml-1 sm:ml-4 flex-shrink-0 min-w-0">
+          <Dropdown
+            value={timePeriod}
+            options={TIME_PERIOD_OPTIONS}
+            onChange={onTimePeriodChange}
+          />
+        </div>
+      </div>
+      <div className="w-full min-h-[200px] sm:min-h-[240px] flex items-center justify-center">
+        {loading ? (
+          <span className="text-sm text-gray-500 dark:text-[#788099]">
+            Loading...
+          </span>
+        ) : (
+          <GradientLineChart
+            data1={series1}
+            data2={series2}
+            labels={labels}
+            showData1={showSeries1}
+            showData2={showSeries2}
+          />
+        )}
+      </div>
+    </Card>
+  );
+}
+
 const Legend = ({ data, hideCurrency }: { data: DonutChartData[]; hideCurrency?: boolean }) => (
   <div className="flex flex-col gap-3 sm:gap-4 justify-center min-w-0 sm:min-w-[150px] w-full sm:w-auto">
     {data.map((d) => (
@@ -662,23 +868,22 @@ const LineCharts = React.memo(
     const [period, setPeriod] = useState("Month");
     const [exchangeTimePeriod, setExchangeTimePeriod] = useState("All");
     const [p2pTimePeriod, setP2pTimePeriod] = useState("All");
+    const [p2pFundingFilter, setP2pFundingFilter] = useState<
+      "All" | "Deposits" | "Withdrawals"
+    >("All");
+    const [p2pFundingTimePeriod, setP2pFundingTimePeriod] = useState("All");
+    const [swapFilter, setSwapFilter] = useState<
+      "All" | "Completed" | "Pending"
+    >("All");
+    const [swapTimePeriod, setSwapTimePeriod] = useState("All");
+    const [moneyxFilter, setMoneyxFilter] = useState<
+      "All" | "Completed" | "Failed"
+    >("All");
+    const [moneyxTimePeriod, setMoneyxTimePeriod] = useState("All");
     const [referralTimePeriod, setReferralTimePeriod] = useState("All");
     const [activeTab, setActiveTab] = useState<
       "exchange" | "p2p" | "swap" | "buy"
     >("exchange");
-    const [chartData, setChartData] = useState<{
-      depositData: LineChartData;
-      withdrawalData: LineChartData;
-    }>({
-      depositData: {
-        label: "Deposits",
-        data: Array(12).fill(0),
-      },
-      withdrawalData: {
-        label: "Withdrawals",
-        data: Array(12).fill(0),
-      },
-    });
     const [p2pChartData, setP2pChartData] = useState<{
       buyData: LineChartData;
       sellData: LineChartData;
@@ -693,98 +898,118 @@ const LineCharts = React.memo(
       },
     });
 
-    const { transactions: p2pTransactions } = useSelector(
-      (state: any) => state.p2pTransactions
-    );
-    const allTransactionsRaw = useSelector(
-      (state: any) => state.allTransactions?.data?.results
-    );
+    const [allExchangeTransactions, setAllExchangeTransactions] = useState<
+      AllTransactionItem[]
+    >([]);
+    const [allP2pTransactions, setAllP2pTransactions] = useState<
+      AllTransactionItem[]
+    >([]);
+    const [allSwapTransactions, setAllSwapTransactions] = useState<
+      AllTransactionItem[]
+    >([]);
+    const [allMoneyxTransactions, setAllMoneyxTransactions] = useState<
+      AllTransactionItem[]
+    >([]);
+    const [exchangeTxLoaded, setExchangeTxLoaded] = useState(false);
+    const [allUserTrades, setAllUserTrades] = useState<any[]>([]);
     const userTrades = useSelector((state: any) => state.userTrades.trades);
     const { user, isAuthenticated } = useSelector(
       (state: RootState) => state.auth
     );
 
-    // Fetch transaction lists when authenticated (feeds line charts + recent table)
+    // Exchange graph: /user/all-transactions/?type=exchange (all pages, completed only in buckets)
     useEffect(() => {
-      if (!isAuthenticated) return;
-      dispatch(loadAllP2PTransactions());
+      if (!isAuthenticated) {
+        setExchangeTxLoaded(false);
+        setAllExchangeTransactions([]);
+        setAllP2pTransactions([]);
+        setAllSwapTransactions([]);
+        setAllMoneyxTransactions([]);
+        return;
+      }
+
+      let cancelled = false;
+
+      fetchAllUserTransactionsPages({
+        type: "exchange",
+        fetchAll: true,
+        pageSize: 10,
+      })
+        .then((rows) => {
+          if (cancelled) return;
+          setAllExchangeTransactions(Array.isArray(rows) ? rows : []);
+          setExchangeTxLoaded(true);
+        })
+        .catch(() => {
+          if (cancelled) return;
+          setExchangeTxLoaded(true);
+        });
+
+      Promise.all([
+        fetchAllUserTransactionsPages({
+          type: "p2p",
+          fetchAll: true,
+          pageSize: 10,
+        }),
+        fetchAllUserTransactionsPages({
+          type: "swap",
+          fetchAll: true,
+          pageSize: 10,
+        }),
+        fetchAllUserTransactionsPages({
+          type: "moneyx",
+          fetchAll: true,
+          pageSize: 10,
+        }),
+      ])
+        .then(([p2pRows, swapRows, moneyxRows]) => {
+          if (cancelled) return;
+          setAllP2pTransactions(Array.isArray(p2pRows) ? p2pRows : []);
+          setAllSwapTransactions(Array.isArray(swapRows) ? swapRows : []);
+          setAllMoneyxTransactions(Array.isArray(moneyxRows) ? moneyxRows : []);
+        })
+        .catch(() => {
+          /* keep previous rows */
+        });
+
+      fetchAllUserTradesPages({ fetchAll: true })
+        .then((rows) => {
+          if (!cancelled) {
+            setAllUserTrades(Array.isArray(rows) ? rows : []);
+          }
+        })
+        .catch(() => {
+          /* keep previous P2P trade rows */
+        });
       dispatch(fetchUserTrades({ page: 1 }));
-      dispatch(
-        fetchAllUserTransactions({ type: "all", page: 1, page_size: 500 })
-      );
+
+      return () => {
+        cancelled = true;
+      };
     }, [dispatch, isAuthenticated]);
 
-    // Process exchange transactions for Exchange Overview (approved/completed only)
+    // Process P2P user-trades for P2P Overview (all pages, canceled excluded)
     useEffect(() => {
-      const allTransactions = Array.isArray(allTransactionsRaw)
-        ? allTransactionsRaw
-        : [];
-      const buckets = buildExchangeMonthlyChartBuckets(allTransactions);
-      const withFallback = applyExchangeChartSummaryFallback(
-        buckets.deposits,
-        buckets.withdrawals,
-        transactionSummary
+      const tradeRows =
+        allUserTrades.length > 0 ? allUserTrades : userTrades?.results;
+      if (!tradeRows?.length) return;
+
+      const { buys, sells } = buildP2PMonthlyChartBuckets(
+        tradeRows,
+        user?.email
       );
 
-      setChartData({
-        depositData: {
-          label: "Deposits",
-          data: withFallback.deposits,
+      setP2pChartData({
+        buyData: {
+          label: "Buy Orders",
+          data: buys,
         },
-        withdrawalData: {
-          label: "Withdrawals",
-          data: withFallback.withdrawals,
+        sellData: {
+          label: "Sell Orders",
+          data: sells,
         },
       });
-    }, [allTransactionsRaw, transactionSummary]);
-
-    // Process P2P transactions for P2P Overview
-    useEffect(() => {
-      if (userTrades?.results) {
-        const buyData = Array(12).fill(0);
-        const sellData = Array(12).fill(0);
-        const currentDate = new Date();
-        const currentUserEmail = String(user?.email || "").toLowerCase();
-
-        userTrades.results.forEach((trade: any) => {
-          const tradeDate = new Date(trade.timestamp);
-          const monthDiff =
-            (currentDate.getFullYear() - tradeDate.getFullYear()) * 12 +
-            (currentDate.getMonth() - tradeDate.getMonth());
-          if (monthDiff < 12) {
-            const monthIndex = 11 - monthDiff;
-            const tradeOwnerEmail = String(trade?.owner || "").toLowerCase();
-            const rawOrderType = String(trade?.order_type || "").toLowerCase();
-            const normalizedOrderType =
-              tradeOwnerEmail && currentUserEmail && tradeOwnerEmail !== currentUserEmail
-                ? rawOrderType === "buy"
-                  ? "sell"
-                  : rawOrderType === "sell"
-                    ? "buy"
-                    : rawOrderType
-                : rawOrderType;
-
-            if (normalizedOrderType === "buy") {
-              buyData[monthIndex] += parseFloat(trade.amount);
-            } else if (normalizedOrderType === "sell") {
-              sellData[monthIndex] += parseFloat(trade.amount);
-            }
-          }
-        });
-
-        setP2pChartData({
-          buyData: {
-            label: "Buy Orders",
-            data: buyData,
-          },
-          sellData: {
-            label: "Sell Orders",
-            data: sellData,
-          },
-        });
-
-      }
-    }, [userTrades, user?.email]);
+    }, [allUserTrades, userTrades?.results, user?.email]);
 
     const {
       data: walletData,
@@ -856,12 +1081,30 @@ const LineCharts = React.memo(
     );
 
     const exchangeSeries = React.useMemo(() => {
-      const primary = getFilteredDataset(
-        chartData.depositData,
-        exchangeTimePeriod
+      const buckets = buildExchangeMonthlyChartBuckets(allExchangeTransactions);
+      const syncFullTotals =
+        exchangeTimePeriod === "All" || exchangeTimePeriod === "One Year";
+      const reconciled = reconcileExchangeChartBucketsWithSummary(
+        buckets.deposits,
+        buckets.withdrawals,
+        transactionSummary,
+        {
+          syncFullApprovedTotals: syncFullTotals,
+          transactionsLoaded: exchangeTxLoaded,
+        }
       );
+      const depositSeries: LineChartData = {
+        label: "Deposits",
+        data: reconciled.deposits,
+      };
+      const withdrawalSeries: LineChartData = {
+        label: "Withdrawals",
+        data: reconciled.withdrawals,
+      };
+
+      const primary = getFilteredDataset(depositSeries, exchangeTimePeriod);
       const secondary = getFilteredDataset(
-        chartData.withdrawalData,
+        withdrawalSeries,
         exchangeTimePeriod,
         primary.indices
       );
@@ -871,14 +1114,78 @@ const LineCharts = React.memo(
         labels: primary.labels,
       };
     }, [
-      chartData.depositData,
-      chartData.withdrawalData,
+      allExchangeTransactions,
+      exchangeTxLoaded,
       exchangeTimePeriod,
+      transactionSummary,
       getFilteredDataset,
     ]);
 
     const showExchangeDeposits = filter === "All" || filter === "Deposits";
     const showExchangeWithdrawals = filter === "All" || filter === "Withdrawals";
+
+    const p2pFundingSeries = React.useMemo(() => {
+      const buckets = buildP2PFundingMonthlyChartBuckets(allP2pTransactions);
+      const deposits: LineChartData = { label: "Deposits", data: buckets.deposits };
+      const withdrawals: LineChartData = {
+        label: "Withdrawals",
+        data: buckets.withdrawals,
+      };
+      const primary = getFilteredDataset(deposits, p2pFundingTimePeriod);
+      const secondary = getFilteredDataset(
+        withdrawals,
+        p2pFundingTimePeriod,
+        primary.indices
+      );
+      return {
+        deposits: primary.dataset,
+        withdrawals: secondary.dataset,
+        labels: primary.labels,
+      };
+    }, [allP2pTransactions, p2pFundingTimePeriod, getFilteredDataset]);
+
+    const swapSeries = React.useMemo(() => {
+      const buckets = buildSwapMonthlyChartBuckets(allSwapTransactions);
+      const completed: LineChartData = {
+        label: "Completed",
+        data: buckets.completed,
+      };
+      const pending: LineChartData = {
+        label: "Pending",
+        data: buckets.pending,
+      };
+      const primary = getFilteredDataset(completed, swapTimePeriod);
+      const secondary = getFilteredDataset(
+        pending,
+        swapTimePeriod,
+        primary.indices
+      );
+      return {
+        completed: primary.dataset,
+        pending: secondary.dataset,
+        labels: primary.labels,
+      };
+    }, [allSwapTransactions, swapTimePeriod, getFilteredDataset]);
+
+    const moneyxSeries = React.useMemo(() => {
+      const buckets = buildMoneyXMonthlyChartBuckets(allMoneyxTransactions);
+      const completed: LineChartData = {
+        label: "Completed",
+        data: buckets.completed,
+      };
+      const failed: LineChartData = { label: "Failed", data: buckets.failed };
+      const primary = getFilteredDataset(completed, moneyxTimePeriod);
+      const secondary = getFilteredDataset(
+        failed,
+        moneyxTimePeriod,
+        primary.indices
+      );
+      return {
+        completed: primary.dataset,
+        failed: secondary.dataset,
+        labels: primary.labels,
+      };
+    }, [allMoneyxTransactions, moneyxTimePeriod, getFilteredDataset]);
 
     const p2pSeries = React.useMemo(() => {
       const primary = getFilteredDataset(
@@ -924,103 +1231,115 @@ const LineCharts = React.memo(
 
     return (
       <div className="w-full">
+        <HorizontalChartCarousel>
+          <OverviewLineChartCard
+            title="Exchange Overview (USD)"
+            isDeem={isDeem}
+            loading={isAuthenticated && !exchangeTxLoaded}
+            filters={[
+              { id: "All", label: "All" },
+              { id: "Deposits", label: "Deposits" },
+              { id: "Withdrawals", label: "Withdrawals" },
+            ]}
+            activeFilter={filter}
+            onFilterChange={(id) =>
+              setFilter(id as "All" | "Deposits" | "Withdrawals")
+            }
+            timePeriod={exchangeTimePeriod}
+            onTimePeriodChange={setExchangeTimePeriod}
+            series1={exchangeSeries.deposits}
+            series2={exchangeSeries.withdrawals}
+            labels={exchangeSeries.labels}
+            showSeries1={showExchangeDeposits}
+            showSeries2={showExchangeWithdrawals}
+          />
+          <OverviewLineChartCard
+            title="P2P Overview (USD)"
+            isDeem={isDeem}
+            filters={[
+              { id: "All", label: "All" },
+              { id: "Sell Orders", label: "Sell Orders" },
+              { id: "Buy Orders", label: "Buy Orders" },
+            ]}
+            activeFilter={p2pFilter}
+            onFilterChange={(id) =>
+              setP2pFilter(id as "All" | "Sell Orders" | "Buy Orders")
+            }
+            timePeriod={p2pTimePeriod}
+            onTimePeriodChange={setP2pTimePeriod}
+            series1={p2pSeries.buys}
+            series2={p2pSeries.sells}
+            labels={p2pSeries.labels}
+            showSeries1={p2pFilter === "All" || p2pFilter === "Buy Orders"}
+            showSeries2={p2pFilter === "All" || p2pFilter === "Sell Orders"}
+          />
+          <OverviewLineChartCard
+            title="P2P Withdrawal/Deposit (USD)"
+            isDeem={isDeem}
+            filters={[
+              { id: "All", label: "All" },
+              { id: "Deposits", label: "Deposits" },
+              { id: "Withdrawals", label: "Withdrawals" },
+            ]}
+            activeFilter={p2pFundingFilter}
+            onFilterChange={(id) =>
+              setP2pFundingFilter(id as "All" | "Deposits" | "Withdrawals")
+            }
+            timePeriod={p2pFundingTimePeriod}
+            onTimePeriodChange={setP2pFundingTimePeriod}
+            series1={p2pFundingSeries.deposits}
+            series2={p2pFundingSeries.withdrawals}
+            labels={p2pFundingSeries.labels}
+            showSeries1={
+              p2pFundingFilter === "All" || p2pFundingFilter === "Deposits"
+            }
+            showSeries2={
+              p2pFundingFilter === "All" || p2pFundingFilter === "Withdrawals"
+            }
+          />
+          <OverviewLineChartCard
+            title="Swap Overview (USD)"
+            isDeem={isDeem}
+            filters={[
+              { id: "All", label: "All" },
+              { id: "Completed", label: "Completed" },
+              { id: "Pending", label: "Pending" },
+            ]}
+            activeFilter={swapFilter}
+            onFilterChange={(id) =>
+              setSwapFilter(id as "All" | "Completed" | "Pending")
+            }
+            timePeriod={swapTimePeriod}
+            onTimePeriodChange={setSwapTimePeriod}
+            series1={swapSeries.completed}
+            series2={swapSeries.pending}
+            labels={swapSeries.labels}
+            showSeries1={swapFilter === "All" || swapFilter === "Completed"}
+            showSeries2={swapFilter === "All" || swapFilter === "Pending"}
+          />
+          <OverviewLineChartCard
+            title="MoneyX Overview (USD)"
+            isDeem={isDeem}
+            filters={[
+              { id: "All", label: "All" },
+              { id: "Completed", label: "Completed" },
+              { id: "Failed", label: "Failed" },
+            ]}
+            activeFilter={moneyxFilter}
+            onFilterChange={(id) =>
+              setMoneyxFilter(id as "All" | "Completed" | "Failed")
+            }
+            timePeriod={moneyxTimePeriod}
+            onTimePeriodChange={setMoneyxTimePeriod}
+            series1={moneyxSeries.completed}
+            series2={moneyxSeries.failed}
+            labels={moneyxSeries.labels}
+            showSeries1={moneyxFilter === "All" || moneyxFilter === "Completed"}
+            showSeries2={moneyxFilter === "All" || moneyxFilter === "Failed"}
+          />
+        </HorizontalChartCarousel>
+
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 lg:gap-8 w-full">
-          {/* Exchange Overview */}
-          <Card className={`w-full rounded-none lg:rounded-2xl bg-gray-50 dark:bg-card shadow-sm ${isDeem ? "border border-[#35353E]" : ""}`}>
-            <h3 className="text-black dark:text-white text-xs sm:text-sm md:text-[14px] mb-2 font-semibold">
-              Exchange Overview (USD)
-            </h3>
-            <div className="flex flex-nowrap overflow-x-auto overflow-y-hidden scrollbar-thin items-center gap-1 sm:gap-2 mb-4 sm:mb-6 min-w-0 pb-1">
-              <Button
-                size="sm"
-                variant={filter === "All" ? "primary" : "outline"}
-                onClick={() => setFilter("All")}
-                className="whitespace-nowrap rounded-3xl text-xs sm:text-sm flex-shrink-0"
-              >
-                All
-              </Button>
-              <Button
-                size="sm"
-                variant={filter === "Deposits" ? "primary" : "outline"}
-                onClick={() => setFilter("Deposits")}
-                className="whitespace-nowrap rounded-3xl text-xs sm:text-sm flex-shrink-0"
-              >
-                Deposits
-              </Button>
-              <Button
-                size="sm"
-                variant={filter === "Withdrawals" ? "primary" : "outline"}
-                onClick={() => setFilter("Withdrawals")}
-                className="whitespace-nowrap rounded-3xl text-xs sm:text-sm flex-shrink-0"
-              >
-                Withdrawals
-              </Button>
-              <div className="ml-1 sm:ml-4 flex-shrink-0">
-                <Dropdown
-                  value={exchangeTimePeriod}
-                  options={["All", "Last Week", "Month", "One Year"]}
-                  onChange={setExchangeTimePeriod}
-                />
-              </div>
-            </div>
-            <div className="w-full">
-              <GradientLineChart
-                data1={exchangeSeries.deposits}
-                data2={exchangeSeries.withdrawals}
-                labels={exchangeSeries.labels}
-                showData1={showExchangeDeposits}
-                showData2={showExchangeWithdrawals}
-              />
-            </div>
-          </Card>
-          {/* P2P Overview */}
-          <Card className={`w-full rounded-none lg:rounded-2xl bg-gray-50 dark:bg-card shadow-sm ${isDeem ? "border border-[#35353E]" : ""}`}>
-            <h3 className="dark:text-wh text-[#051015] dark:text-white text-xs sm:text-sm md:text-[14px] mb-2 font-semibold">
-              P2P Overview (USD)
-            </h3>
-            <div className="flex flex-nowrap overflow-x-auto overflow-y-hidden scrollbar-thin items-center gap-1 sm:gap-2 mb-4 sm:mb-6 min-w-0 pb-1">
-              <Button
-                size="sm"
-                variant={p2pFilter === "All" ? "primary" : "outline"}
-                onClick={() => setP2pFilter("All")}
-                className="whitespace-nowrap rounded-3xl text-xs sm:text-sm flex-shrink-0"
-              >
-                All
-              </Button>
-              <Button
-                size="sm"
-                variant={p2pFilter === "Sell Orders" ? "primary" : "outline"}
-                onClick={() => setP2pFilter("Sell Orders")}
-                className="whitespace-nowrap rounded-3xl text-xs sm:text-sm flex-shrink-0"
-              >
-                Sell Orders
-              </Button>
-              <Button
-                size="sm"
-                variant={p2pFilter === "Buy Orders" ? "primary" : "outline"}
-                onClick={() => setP2pFilter("Buy Orders")}
-                className="whitespace-nowrap rounded-3xl text-xs sm:text-sm flex-shrink-0"
-              >
-                Buy Orders
-              </Button>
-              <div className="ml-1 sm:ml-4 flex-shrink-0 min-w-0 w-[80px] sm:w-auto">
-                <Dropdown
-                  value={p2pTimePeriod}
-                  options={["All", "Last Week", "Month", "One Year"]}
-                  onChange={setP2pTimePeriod}
-                />
-              </div>
-            </div>
-            <div className="w-full">
-              <GradientLineChart
-                data1={p2pSeries.buys}
-                data2={p2pSeries.sells}
-                labels={p2pSeries.labels}
-                showData1={p2pFilter === "All" || p2pFilter === "Buy Orders"}
-                showData2={p2pFilter === "All" || p2pFilter === "Sell Orders"}
-              />
-            </div>
-          </Card>
           <Card className={`w-full rounded-none lg:rounded-2xl bg-gray-50 dark:bg-card shadow-sm flex flex-col ${isDeem ? "border border-[#35353E]" : ""}`}>
             {/* Header */}
             <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 px-4 pt-4 pb-3">

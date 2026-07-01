@@ -1,8 +1,19 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useMemo } from "react";
 import { tokens } from "@/styles/tokens";
 import Card from "../../Common/Card";
 import { formatCurrency } from "@/lib/globalFormatter";
-import { parseSummaryNumber } from "@/lib/utils/normalizeTransactionSummary";
+import {
+  getP2PApprovedDepositsVolume,
+  getP2PApprovedTradeVolume,
+  getP2PApprovedWithdrawalsVolume,
+  getP2PBuyTradesByStatus,
+  getP2PBuyTradesTotal,
+  getP2PCombinedVolume,
+  getP2PSellTradesByStatus,
+  getP2PSellTradesTotal,
+  mergeTransactionSummaries,
+  parseSummaryNumber,
+} from "@/lib/utils/normalizeTransactionSummary";
 import { useDispatch, useSelector } from "react-redux";
 import { selectTransactionSummary } from "@/features/p2p/slices/transactionSummarySlice";
 import { fetchTransactionSummary } from "@/features/p2p/slices/transactionSummarySlice";
@@ -14,8 +25,6 @@ const Overview = () => {
   const summary = useSelector(selectTransactionSummary);
   const { isAuthenticated } = useSelector((state: RootState) => state.auth);
   const wsWallet = useP2PWalletBalanceContext();
-  const [buyDateFilter, setBuyDateFilter] = useState("ALL");
-  const [sellDateFilter, setSellDateFilter] = useState("ALL");
 
   useEffect(() => {
     if (isAuthenticated) {
@@ -23,74 +32,51 @@ const Overview = () => {
     }
   }, [dispatch, isAuthenticated]);
 
-  // Prefer live wallet-balance WebSocket; fall back to REST until first WS message
-  const activeSummary = wsWallet.overviewSummary ?? summary;
+  // REST has full trade/order breakdown; WS may only send balance/volume — merge both.
+  const activeSummary = useMemo(
+    () => mergeTransactionSummaries(summary, wsWallet.overviewSummary),
+    [summary, wsWallet.overviewSummary]
+  );
 
-  const p2pDeposits = parseSummaryNumber(
-    activeSummary?.total_approved_p2p_deposits
+  const p2pTrades = getP2PApprovedTradeVolume(activeSummary);
+  const deposits = Math.max(
+    getP2PApprovedDepositsVolume(activeSummary),
+    wsWallet.summary.total_approved_p2p_deposits ?? 0
   );
-  const p2pTradeVolume = parseSummaryNumber(
-    activeSummary?.total_approved_p2p_volume
+  const withdrawals = Math.max(
+    getP2PApprovedWithdrawalsVolume(activeSummary),
+    wsWallet.summary.total_approved_p2p_withdrawals ?? 0
   );
-  /** Trades + approved P2P deposits (funding); matches API total_volume */
-  const p2p = p2pTradeVolume + p2pDeposits;
-  const withdrawals = parseSummaryNumber(
-    activeSummary?.total_approved_p2p_withdrawals
-  );
-  const inProgress =
-    parseSummaryNumber(activeSummary?.total_pending_p2p_deposits) +
-    parseSummaryNumber(activeSummary?.total_pending_p2p_withdrawals);
-  const segmentTotal = withdrawals + inProgress + p2p;
-  /** API `total_volume` (e.g. "91.09 USD") is the canonical dashboard total. */
+  const p2pTotal = getP2PCombinedVolume(activeSummary) || p2pTrades + deposits + withdrawals;
+  const segmentTotal = p2pTotal;
   const totalVolume =
     parseSummaryNumber(activeSummary?.total_volume) || segmentTotal || 0;
   const chartTotal = segmentTotal > 0 ? segmentTotal : totalVolume || 1;
   const circumference = 2 * Math.PI * 90;
-  // Order: Pending, Withdrawals, P2P (deposits included in P2P)
-  const pendingDash = (inProgress / chartTotal) * circumference;
+  const depositsDash = (deposits / chartTotal) * circumference;
   const withdrawalsDash = (withdrawals / chartTotal) * circumference;
-  const p2pDash = (p2p / chartTotal) * circumference;
+  const p2pDash = (p2pTrades / chartTotal) * circumference;
 
-  // Calculate safe values to prevent NaN
-  const safeTotal = chartTotal || 1; // Prevent division by zero
-  const safeInProgress = inProgress || 0;
-  const safeWithdrawals = withdrawals || 0;
+  const buyByStatus = getP2PBuyTradesByStatus(activeSummary);
+  const sellByStatus = getP2PSellTradesByStatus(activeSummary);
 
-  // Calculate stroke dash values safely
-  const calculateStrokeDash = (value: number) => {
-    const percentage = (value / safeTotal) * 691;
-    return `${Math.max(0, percentage)} ${Math.max(0, 691 - percentage)}`;
-  };
+  const buyCompleted = buyByStatus.completed;
+  const buyPending = buyByStatus.pending;
+  const buyCanceled = buyByStatus.canceled;
+  const buyOffline = buyByStatus.offline;
+  const sellCompleted = sellByStatus.completed;
+  const sellPending = sellByStatus.pending;
+  const sellCanceled = sellByStatus.canceled;
+  const sellOffline = sellByStatus.offline;
 
-  // Calculate stroke dash offset safely
-  const calculateStrokeDashOffset = (value: number) => {
-    return Math.max(0, 173 - (value / safeTotal) * 691);
-  };
+  const buyTotal = getP2PBuyTradesTotal(activeSummary);
+  const sellTotal = getP2PSellTradesTotal(activeSummary);
 
-  const buyByStatus =
-    (activeSummary as any)?.total_buy_trades_by_status ||
-    activeSummary?.total_buy_orders_by_status ||
-    {};
-  const buyCompleted = Number(buyByStatus.completed) || 0;
-  const buyPending = Number(buyByStatus.pending) || 0;
-  const buyCanceled = Number(buyByStatus.canceled ?? buyByStatus.cancelled) || 0;
-  const buyOffline = Number(buyByStatus.offline) || 0;
-  const buyTotal = buyCompleted + buyPending + buyCanceled + buyOffline;
+  const buyProgressPercentage =
+    buyTotal > 0 ? (buyCompleted / buyTotal) * 100 : 0;
+  const sellProgressPercentage =
+    sellTotal > 0 ? (sellCompleted / sellTotal) * 100 : 0;
 
-  const sellByStatus =
-    (activeSummary as any)?.total_sell_trades_by_status ||
-    activeSummary?.total_sell_orders_by_status ||
-    {};
-  const sellCompleted = Number(sellByStatus.completed) || 0;
-  const sellPending = Number(sellByStatus.pending) || 0;
-  const sellCanceled = Number(sellByStatus.canceled ?? sellByStatus.cancelled) || 0;
-  const sellOffline = Number(sellByStatus.offline) || 0;
-  const sellTotal = sellCompleted + sellPending + sellCanceled + sellOffline;
-
-  const buyProgressPercentage = buyTotal > 0 ? (buyCompleted / buyTotal) * 100 : 0;
-  const sellProgressPercentage = sellTotal > 0 ? (sellCompleted / sellTotal) * 100 : 0;
-
-  // Check if there's no data (chartTotal includes pending, withdrawals, p2p)
   const hasNoData = chartTotal === 0;
 
   return (
@@ -139,7 +125,6 @@ const Overview = () => {
                 strokeWidth="18"
                 fill="none"
               />
-              {/* Pending - Yellow */}
               <circle
                 cx="110"
                 cy="110"
@@ -147,11 +132,10 @@ const Overview = () => {
                 stroke="#FFD600"
                 strokeWidth="18"
                 fill="none"
-                strokeDasharray={`${pendingDash} ${circumference - pendingDash}`}
+                strokeDasharray={`${depositsDash} ${circumference - depositsDash}`}
                 strokeDashoffset="0"
                 strokeLinecap="butt"
               />
-              {/* Withdrawals - Red */}
               <circle
                 cx="110"
                 cy="110"
@@ -160,10 +144,9 @@ const Overview = () => {
                 strokeWidth="18"
                 fill="none"
                 strokeDasharray={`${withdrawalsDash} ${circumference - withdrawalsDash}`}
-                strokeDashoffset={`-${pendingDash}`}
+                strokeDashoffset={`-${depositsDash}`}
                 strokeLinecap="butt"
               />
-              {/* P2P - Blue (trades + approved P2P deposits / funding) */}
               <circle
                 cx="110"
                 cy="110"
@@ -172,12 +155,11 @@ const Overview = () => {
                 strokeWidth="18"
                 fill="none"
                 strokeDasharray={`${p2pDash} ${circumference - p2pDash}`}
-                strokeDashoffset={`-${pendingDash + withdrawalsDash}`}
+                strokeDashoffset={`-${depositsDash + withdrawalsDash}`}
                 strokeLinecap="butt"
               />
             </svg>
           )}
-          {/* Center totals (matches deposits/withdrawals/p2p values below). */}
           <div className="absolute inset-0 flex flex-col items-center justify-center text-center gap-0.5 px-2">
             <div className="text-[10px] sm:text-xs md:text-[13px] leading-tight text-neutral-500 dark:text-gray-400">
               <span className="text-[#0D0D0D] dark:text-white/80 font-semibold">
@@ -194,9 +176,9 @@ const Overview = () => {
         <div className="mt-3 sm:mt-4 md:mt-6 w-full flex flex-col gap-1.5 sm:gap-2">
           <div className="grid grid-cols-[auto_1fr_auto] items-center gap-3">
             <span className="w-2 h-2 sm:w-2.5 sm:h-2.5 md:w-3 md:h-3 rounded-sm bg-[#FFD600] inline-block flex-shrink-0" />
-            <span className="text-neutral-500 text-xs sm:text-sm md:text-base">Pending</span>
+            <span className="text-neutral-500 text-xs sm:text-sm md:text-base">Deposit</span>
             <span className="text-right text-[#0D0D0D] dark:text-white/80 text-xs sm:text-sm">
-              {formatCurrency(inProgress, "USD")}
+              {formatCurrency(deposits, "USD")}
             </span>
           </div>
           <div className="grid grid-cols-[auto_1fr_auto] items-center gap-3">
@@ -210,14 +192,13 @@ const Overview = () => {
             <span className="w-2 h-2 sm:w-2.5 sm:h-2.5 md:w-3 md:h-3 rounded-sm bg-[#386AB5] inline-block flex-shrink-0" />
             <span className="text-neutral-500 text-xs sm:text-sm md:text-base">P2P</span>
             <span className="text-[#0D0D0D] dark:text-white/80 text-xs sm:text-sm">
-              {formatCurrency(p2p, "USD")}
+              {formatCurrency(p2pTotal, "USD")}
             </span>
           </div>
         </div>
       </Card>
 
-      <div className="flex  flex-col mt-3 sm:mt-4">
-        {/* P2P Buys Card */}
+      <div className="flex flex-col mt-3 sm:mt-4">
         <h3 className="mb-3 font-medium text-sm sm:text-base dark:text-white text-[#0D0D0D]">
           P2P Buys
         </h3>
@@ -229,15 +210,12 @@ const Overview = () => {
           className="p-2 md:p-4 mb-2 sm:mb-4 border"
         >
           <div className="flex flex-col">
-
-            {/* Header */}
             <div className="flex items-center justify-between gap-2 mb-1 sm:mb-1.5">
               <span className="text-[13px] sm:text-base md:text-lg text-[#0D0D0D] dark:text-white/90">
-                {buyTotal.toLocaleString()} <span className="text-xs text-gray-500">USD</span>
+                {formatCurrency(buyTotal, "USD")}
               </span>
             </div>
 
-            {/* Progress */}
             <div className="mb-2 sm:mb-3">
               <div className="w-full bg-[#2D2D37] rounded-r-full h-2 sm:h-2.5 md:h-3">
                 <div
@@ -247,16 +225,14 @@ const Overview = () => {
               </div>
             </div>
 
-            {/* Details */}
             <div className="flex flex-col gap-1.5 sm:gap-2">
-
               <div className="flex items-center justify-between gap-1.5 sm:gap-2">
                 <div className="flex items-center gap-1.5 sm:gap-2">
                   <span className="w-2 h-2 sm:w-2.5 sm:h-2.5 md:w-3 md:h-3 rounded-sm bg-[#1D8751]" />
                   <span className="text-[10px] sm:text-xs dark:text-[#A0A0A0] text-[#788099]">Completed:</span>
                 </div>
                 <span className="text-[11px] sm:text-xs md:text-sm dark:text-white/80 text-muted-foreground">
-                  {buyCompleted.toLocaleString()}
+                  {formatCurrency(buyCompleted, "USD")}
                 </span>
               </div>
 
@@ -266,17 +242,7 @@ const Overview = () => {
                   <span className="text-[10px] sm:text-xs dark:text-[#A0A0A0] text-[#788099]">Pending:</span>
                 </div>
                 <span className="text-[11px] sm:text-xs md:text-sm dark:text-white/80 text-muted-foreground">
-                  {buyPending.toLocaleString()}
-                </span>
-              </div>
-
-              <div className="flex items-center justify-between gap-1.5 sm:gap-2">
-                <div className="flex items-center gap-1.5 sm:gap-2">
-                  <span className="w-2 h-2 sm:w-2.5 sm:h-2.5 md:w-3 md:h-3 rounded-sm bg-[#E23D3A]" />
-                  <span className="text-[10px] sm:text-xs dark:text-[#A0A0A0] text-[#788099]">Canceled:</span>
-                </div>
-                <span className="text-[11px] sm:text-xs md:text-sm dark:text-white/80 text-muted-foreground">
-                  {buyCanceled.toLocaleString()}
+                  {formatCurrency(buyPending, "USD")}
                 </span>
               </div>
 
@@ -286,17 +252,23 @@ const Overview = () => {
                   <span className="text-[10px] sm:text-xs dark:text-[#A0A0A0] text-[#788099]">Offline:</span>
                 </div>
                 <span className="text-[11px] sm:text-xs md:text-sm dark:text-white/80 text-muted-foreground">
-                  {buyOffline.toLocaleString()}
+                  {formatCurrency(buyOffline, "USD")}
                 </span>
               </div>
 
+              <div className="flex items-center justify-between gap-1.5 sm:gap-2">
+                <div className="flex items-center gap-1.5 sm:gap-2">
+                  <span className="w-2 h-2 sm:w-2.5 sm:h-2.5 md:w-3 md:h-3 rounded-sm bg-[#E23D3A]" />
+                  <span className="text-[10px] sm:text-xs dark:text-[#A0A0A0] text-[#788099]">Canceled:</span>
+                </div>
+                <span className="text-[11px] sm:text-xs md:text-sm dark:text-white/80 text-muted-foreground">
+                  {formatCurrency(buyCanceled, "USD")}
+                </span>
+              </div>
             </div>
-
           </div>
         </Card>
 
-
-        {/* P2P Sells Card */}
         <h3 className="mb-3 font-medium text-sm sm:text-base dark:text-white text-[#0D0D0D]">
           P2P Sells
         </h3>
@@ -308,51 +280,10 @@ const Overview = () => {
           className="p-2 sm:p-3 md:p-4 border"
         >
           <div className="flex flex-col">
-
-            {/* Header */}
             <div className="flex items-center justify-between gap-2 mb-1 sm:mb-1.5">
               <span className="text-[13px] sm:text-base md:text-lg text-[#0D0D0D] dark:text-white/90">
-                {sellTotal.toLocaleString()} <span className="text-xs text-gray-500">USD</span>
+                {formatCurrency(sellTotal, "USD")}
               </span>
-
-              <div className="relative flex-shrink-0">
-                <select
-                  className="
-            px-2 sm:px-3 
-            py-1 sm:py-1.5 
-            rounded 
-            text-[10px] sm:text-xs md:text-sm 
-            appearance-none 
-            pr-5 sm:pr-7 
-            dark:bg-[var(--card-color)] bg-white 
-            dark:text-[#A0A0A0] text-[#788099]
-          "
-                  value={sellDateFilter}
-                  onChange={(e) => setSellDateFilter(e.target.value)}
-                >
-                  <option value="ALL">ALL</option>
-                  <option value="Today">Today</option>
-                  <option value="Week">Week</option>
-                  <option value="Month">Month</option>
-                  <option value="Year">Year</option>
-                </select>
-
-                <div className="absolute inset-y-0 right-0 flex items-center pr-1 sm:pr-2 pointer-events-none">
-                  <svg
-                    className="w-3 h-3 sm:w-4 sm:h-4 dark:text-white text-[#0D0D0D]"
-                    fill="none"
-                    stroke="currentColor"
-                    viewBox="0 0 24 24"
-                  >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth={2}
-                      d="M19 9l-7 7-7-7"
-                    />
-                  </svg>
-                </div>
-              </div>
             </div>
 
             <div className="mb-2 sm:mb-3">
@@ -364,10 +295,7 @@ const Overview = () => {
               </div>
             </div>
 
-            {/* Details */}
             <div className="flex flex-col gap-1.5 sm:gap-2">
-
-              {/* Completed */}
               <div className="flex items-center justify-between gap-1.5 sm:gap-2">
                 <div className="flex items-center gap-1.5 sm:gap-2">
                   <span className="w-2 h-2 sm:w-2.5 sm:h-2.5 md:w-3 md:h-3 rounded-sm bg-[#1D8751]" />
@@ -376,11 +304,10 @@ const Overview = () => {
                   </span>
                 </div>
                 <span className="text-[11px] sm:text-xs md:text-sm dark:text-white/80 text-muted-foreground">
-                  {sellCompleted.toLocaleString()}
+                  {formatCurrency(sellCompleted, "USD")}
                 </span>
               </div>
 
-              {/* Pending */}
               <div className="flex items-center justify-between gap-1.5 sm:gap-2">
                 <div className="flex items-center gap-1.5 sm:gap-2">
                   <span className="w-2 h-2 sm:w-2.5 sm:h-2.5 md:w-3 md:h-3 rounded-sm bg-[#FFD600]" />
@@ -389,19 +316,7 @@ const Overview = () => {
                   </span>
                 </div>
                 <span className="text-[11px] sm:text-xs md:text-sm dark:text-white/80 text-muted-foreground">
-                  {sellPending.toLocaleString()}
-                </span>
-              </div>
-
-              <div className="flex items-center justify-between gap-1.5 sm:gap-2">
-                <div className="flex items-center gap-1.5 sm:gap-2">
-                  <span className="w-2 h-2 sm:w-2.5 sm:h-2.5 md:w-3 md:h-3 rounded-sm bg-[#E23D3A]" />
-                  <span className="text-[10px] sm:text-xs dark:text-[#A0A0A0] text-[#788099]">
-                    Canceled:
-                  </span>
-                </div>
-                <span className="text-[11px] sm:text-xs md:text-sm dark:text-white/80 text-muted-foreground">
-                  {sellCanceled.toLocaleString()}
+                  {formatCurrency(sellPending, "USD")}
                 </span>
               </div>
 
@@ -413,15 +328,24 @@ const Overview = () => {
                   </span>
                 </div>
                 <span className="text-[11px] sm:text-xs md:text-sm dark:text-white/80 text-muted-foreground">
-                  {sellOffline.toLocaleString()}
+                  {formatCurrency(sellOffline, "USD")}
                 </span>
               </div>
 
+              <div className="flex items-center justify-between gap-1.5 sm:gap-2">
+                <div className="flex items-center gap-1.5 sm:gap-2">
+                  <span className="w-2 h-2 sm:w-2.5 sm:h-2.5 md:w-3 md:h-3 rounded-sm bg-[#E23D3A]" />
+                  <span className="text-[10px] sm:text-xs dark:text-[#A0A0A0] text-[#788099]">
+                    Canceled:
+                  </span>
+                </div>
+                <span className="text-[11px] sm:text-xs md:text-sm dark:text-white/80 text-muted-foreground">
+                  {formatCurrency(sellCanceled, "USD")}
+                </span>
+              </div>
             </div>
-
           </div>
         </Card>
-
       </div>
     </div>
   );

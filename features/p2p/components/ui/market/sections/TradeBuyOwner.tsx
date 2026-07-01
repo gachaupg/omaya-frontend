@@ -26,6 +26,7 @@ import {
 import AppealModal from "./appeal";
 import { UserStatusBadge } from "./UserStatusBadge";
 import ChatBox from "./ChatBox";
+import { resolveAdvertiserDisplayName } from "@/features/p2p/utils/matchedTradeNotifications";
 import { showToast } from "@/lib/utils/toast";
 import { handleCopy, parseDurationToSeconds } from "../../../Common/utils";
 import Image from "next/image";
@@ -805,9 +806,11 @@ const FinalSell: React.FC<FinalSellProps> = ({ orderData }) => {
             onClose={() => setShowChat(false)}
             tradeId={confirmOrder?.id || ""}
             userId={user?.id.toString() || ""}
-            userName={
-              confirmOrder?.advertiser_name || saveOrder?.advertiser_name || ""
-            }
+            userName={resolveAdvertiserDisplayName(
+              singleOrder,
+              confirmOrder,
+              saveOrder
+            )}
             autoreply={saveOrder?.auto_reply || ""}
             // Prefer photos from the trade (confirmOrder) but fall back to data already available on this page.
             seller_photo={
@@ -840,13 +843,13 @@ const FinalSell: React.FC<FinalSellProps> = ({ orderData }) => {
             owner={confirmOrder?.owner || ""}
             sellerName={
               confirmOrder?.seller_full_name?.trim() ||
-              (singleOrder?.advertiser_first_name &&
-                singleOrder?.advertiser_last_name
-                ? `${singleOrder.advertiser_first_name} ${singleOrder.advertiser_last_name}`
-                : singleOrder?.advertiser_name ||
-                confirmOrder?.advertiser_name ||
-                counterpartyDisplayName ||
-                "Seller")
+              resolveAdvertiserDisplayName(
+                singleOrder,
+                confirmOrder,
+                saveOrder
+              ) ||
+              counterpartyDisplayName ||
+              "Seller"
             }
             buyerName={
               confirmOrder?.buyer_full_name?.trim() ||

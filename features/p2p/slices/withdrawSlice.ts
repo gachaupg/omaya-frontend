@@ -16,6 +16,34 @@ const initialState: WithdrawState = {
   totalCount: 0,
 };
 
+function extractWithdrawApiError(error: any, fallback: string): string {
+  let message = fallback;
+  const data = error?.response?.data;
+
+  if (typeof data === "string" && data.trim()) {
+    message = data.trim();
+  } else if (data && typeof data === "object") {
+    const msg = data.error ?? data.message ?? data.detail;
+    if (typeof msg === "string" && msg.trim()) {
+      message = msg.trim();
+    } else if (Array.isArray(msg) && typeof msg[0] === "string") {
+      message = msg[0];
+    }
+  } else {
+    const raw = String(error?.message || "").trim();
+    if (
+      raw &&
+      !/request failed with status code \d+/i.test(raw) &&
+      !/status code \d+/i.test(raw)
+    ) {
+      message = raw;
+    }
+  }
+
+  if (/invalid otp/i.test(message)) return "Invalid OTP";
+  return message;
+}
+
 // Async thunks
 export const fetchWithdrawals = createAsyncThunk(
   "withdrawals/fetchWithdrawals",
@@ -57,17 +85,27 @@ export const createWithdrawal = createAsyncThunk(
 
 export const verifyWithdrawal = createAsyncThunk(
   "withdrawals/verifyWithdrawal",
-  async (data: { withdrawal_id: string; otp: string }) => {
-    const response = await api.verifyWithdrawal(data);
-    return response;
+  async (data: { withdrawal_id: string; otp: string }, { rejectWithValue }) => {
+    try {
+      const response = await api.verifyWithdrawal(data);
+      return response;
+    } catch (error: any) {
+      return rejectWithValue(extractWithdrawApiError(error, "Invalid OTP"));
+    }
   }
 );
 
 export const resendWithdrawalOTP = createAsyncThunk(
   "withdrawals/resendWithdrawalOTP",
-  async (data: { withdrawal_id: string }) => {
-    const response = await api.resendWithdrawalOTP(data);
-    return response;
+  async (data: { withdrawal_id: string }, { rejectWithValue }) => {
+    try {
+      const response = await api.resendWithdrawalOTP(data);
+      return response;
+    } catch (error: any) {
+      return rejectWithValue(
+        extractWithdrawApiError(error, "Failed to resend OTP")
+      );
+    }
   }
 );
 
@@ -122,7 +160,10 @@ const withdrawSlice = createSlice({
       })
       .addCase(verifyWithdrawal.rejected, (state, action) => {
         state.loading = false;
-        state.error = action.error.message || "Failed to verify withdrawal";
+        state.error =
+          (action.payload as string) ||
+          action.error.message ||
+          "Invalid OTP";
       })
       // Resend Withdrawal OTP
       .addCase(resendWithdrawalOTP.pending, (state) => {
@@ -135,7 +176,10 @@ const withdrawSlice = createSlice({
       })
       .addCase(resendWithdrawalOTP.rejected, (state, action) => {
         state.loading = false;
-        state.error = action.error.message || "Failed to resend OTP";
+        state.error =
+          (action.payload as string) ||
+          action.error.message ||
+          "Failed to resend OTP";
       });
   },
 });

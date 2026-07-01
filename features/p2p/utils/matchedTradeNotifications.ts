@@ -204,6 +204,28 @@ const pickPartyDisplayName = (
   return "";
 };
 
+/** Advertiser / seller label from P2P order or trade API fields. */
+export function resolveAdvertiserDisplayName(...sources: unknown[]): string {
+  for (const raw of sources) {
+    if (!raw || typeof raw !== "object") continue;
+    const src = raw as Record<string, unknown>;
+    const str = (key: string) => {
+      const v = src[key];
+      return typeof v === "string" ? v.trim() : "";
+    };
+    const full =
+      str("advertiser_full_name") ||
+      str("seller_full_name") ||
+      str("seller_name");
+    if (full) return full;
+    const composed = `${str("advertiser_first_name")} ${str("advertiser_last_name")}`.trim();
+    if (composed) return composed;
+    const short = str("advertiser_name") || str("seller_name");
+    if (short) return short;
+  }
+  return "";
+}
+
 /** Counterparty buyer on sell-ad owner trade screens (TradeBuyOwner). */
 export function getSellAdOwnerCounterpartyBuyerName(
   ...sources: unknown[]

@@ -1,10 +1,11 @@
 /* src/components/Common/charts.tsx */
 import React, { useEffect, useState, useRef } from "react";
-import { tokens } from "@/styles/tokens";
-import Button from "./Button";
 import { useSelector } from "react-redux";
 import { RootState } from "@/store/rootReducer";
-import { normalizeP2PTradeStatus } from "@/features/p2p/utils/normalizeP2PTradeStatus";
+import {
+  P2PChartTimeFilter,
+  buildP2PChartDisplayData,
+} from "@/features/p2p/utils/p2pTradeChartAggregation";
 import {
   AreaChart,
   Area,
@@ -18,12 +19,7 @@ import {
 /* ------------------------------------------------------------------ */
 /* Types                                                              */
 /* ------------------------------------------------------------------ */
-type TimeFilter =
-  | "Today"
-  | "Last Week"
-  | "Last Month"
-  | "Last 6 Months"
-  | "All Time";
+type TimeFilter = P2PChartTimeFilter;
 
 interface ChartProps {
   title?: string;
@@ -31,6 +27,8 @@ interface ChartProps {
   data?: any[];
   /** Preloaded trades for the chart (parent fetches once). */
   chartTrades?: unknown[];
+  /** When true, show loader instead of empty chart/table flash. */
+  chartLoading?: boolean;
   onTimeFilterChange?: (filter: TimeFilter) => void;
   selectedTimeFilter?: TimeFilter;
   showTimeFilter?: boolean;
@@ -71,85 +69,12 @@ function getRobustYMax(values: number[]): number {
   return roundUpNice(capBase * 1.1);
 }
 
-const normalizeRangeCurrency = (value: unknown): "USD" | "KES" => {
-  const upper = String(value || "").trim().toUpperCase();
-  return upper === "KES" ? "KES" : "USD";
-};
-
-const transformTradeForChart = (
-  item: any,
-  currentUserEmail?: string
-): {
-  amount: number;
-  type: "buy" | "sell";
-  timestamp: string;
-  rangeCurrency: "USD" | "KES";
-} | null => {
-  const timestamp = String(item?.lastUpdate || item?.timestamp || item?.date || "");
-  const ts = new Date(timestamp);
-  if (isNaN(ts.getTime())) return null;
-
-  const rawOrderType = String(item?.type || item?.order_type || "")
-    .trim()
-    .toLowerCase();
-  if (rawOrderType !== "buy" && rawOrderType !== "sell") {
-    return null;
-  }
-
-  const ownerEmail = String(item?.owner || "").trim().toLowerCase();
-  const userEmail = String(currentUserEmail || "").trim().toLowerCase();
-  const isOwner = Boolean(userEmail && ownerEmail && ownerEmail === userEmail);
-
-  const displayType = item?.type
-    ? rawOrderType
-    : isOwner
-      ? rawOrderType
-      : rawOrderType === "buy"
-        ? "sell"
-        : "buy";
-
-  const parsedAmount = Number.parseFloat(
-    String(item?.amount ?? item?.net_amount ?? 0)
-  );
-  const amount = Number.isFinite(parsedAmount) ? parsedAmount : 0;
-  const rangeCurrency = normalizeRangeCurrency(item?.range_currency);
-  const normalizedStatus = normalizeP2PTradeStatus(item?.status);
-  if (!normalizedStatus) return null;
-
-  return {
-    amount,
-    type: displayType as "buy" | "sell",
-    timestamp,
-    rangeCurrency,
-  };
-};
-
-/* ------------------------------------------------------------------ */
-/* Helpers                                                            */
-/* ------------------------------------------------------------------ */
-const months = [
-  "Jan",
-  "Feb",
-  "Mar",
-  "Apr",
-  "May",
-  "Jun",
-  "Jul",
-  "Aug",
-  "Sep",
-  "Oct",
-  "Nov",
-  "Dec",
-];
-
-/* ------------------------------------------------------------------ */
-/* Component                                                          */
-/* ------------------------------------------------------------------ */
 const Charts: React.FC<ChartProps> = ({
   title = "P2P Overview (USD)",
   timeFrame = "Month",
   data,
   chartTrades = [],
+  chartLoading = false,
   onTimeFilterChange,
   selectedTimeFilter = "All Time",
   showTimeFilter = true,
@@ -183,101 +108,26 @@ const Charts: React.FC<ChartProps> = ({
 
   /* ------------------- Build chart data -------------------- */
   useEffect(() => {
+    if (chartLoading) return;
+
     const raw =
       chartTrades.length > 0
         ? chartTrades
         : data?.length
           ? data
           : trades?.results || [];
-    // Include any trade with a valid timestamp (API may use canceled/cancelled/pending/etc.;
-    // filtering to "completed" only hid all rows when every trade was canceled.)
-    const src = raw
-      .map((item: any) => transformTradeForChart(item, currentUserEmail))
-      .filter(
-        (
-          item
-        ): item is {
-          amount: number;
-          type: "buy" | "sell";
-          timestamp: string;
-          rangeCurrency: "USD" | "KES";
-        } => Boolean(item)
-      );
-    if (!src.length) {
-      setChartDataRaw([]);
-      return;
-    }
 
-    const now = new Date();
-    const pad = (n: number) => n.toString().padStart(2, "0");
-
-    let newData: { name: string; buyValue: number; sellValue: number }[] = [];
-
-    const addToSlot = (idx: number, amt: number, rawType: string) => {
-      const t = String(rawType).toLowerCase();
-      if (newData[idx]) {
-        if (t === "buy") newData[idx].buyValue += amt;
-        else if (t === "sell") newData[idx].sellValue += amt;
-      }
-    };
-
-    if (selectedTimeFilter === "Today") {
-      for (let i = 0; i < 24; i++) {
-        newData.push({ name: `${pad(i)}:00`, buyValue: 0, sellValue: 0 });
-      }
-      const todayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate()).getTime();
-      src.forEach((item: any) => {
-        const ts = new Date(item.timestamp);
-        if (isNaN(ts.getTime())) return;
-        if (ts.getTime() < todayStart) return;
-        const hour = ts.getHours();
-        addToSlot(hour, item.amount, item.type);
-      });
-    } else if (selectedTimeFilter === "Last Week") {
-      for (let i = 0; i < 7; i++) {
-        const d = new Date(now);
-        d.setDate(d.getDate() - (6 - i));
-        newData.push({ name: months[d.getMonth()].slice(0, 3) + " " + d.getDate(), buyValue: 0, sellValue: 0 });
-      }
-      src.forEach((item: any) => {
-        const ts = new Date(item.timestamp);
-        if (isNaN(ts.getTime())) return;
-        const diffDays = Math.floor((now.getTime() - ts.getTime()) / (1000 * 60 * 60 * 24));
-        if (diffDays >= 0 && diffDays < 7) {
-          const idx = 6 - diffDays;
-          addToSlot(idx, item.amount, item.type);
-        }
-      });
-    } else if (selectedTimeFilter === "Last Month" || selectedTimeFilter === "Last 6 Months" || selectedTimeFilter === "All Time") {
-      const slots = selectedTimeFilter === "Last Month" ? 4 : selectedTimeFilter === "Last 6 Months" ? 6 : 12;
-      for (let i = 0; i < slots; i++) {
-        const monthDate = new Date(now.getFullYear(), now.getMonth() - (slots - 1 - i), 1);
-        const lastDay = new Date(monthDate.getFullYear(), monthDate.getMonth() + 1, 0);
-        const monthName = months[monthDate.getMonth()];
-        const isCurrentMonth =
-          monthDate.getFullYear() === now.getFullYear() &&
-          monthDate.getMonth() === now.getMonth();
-        // Do not project the current month to month-end; cap at today's date.
-        const day = isCurrentMonth ? now.getDate() : lastDay.getDate();
-        const isDifferentYear = monthDate.getFullYear() !== now.getFullYear();
-        const label = isDifferentYear
-          ? `${monthName} ${day}, '${String(monthDate.getFullYear()).slice(-2)}`
-          : `${monthName} ${day}`;
-        newData.push({ name: label, buyValue: 0, sellValue: 0 });
-      }
-      src.forEach((item: any) => {
-        const ts = new Date(item.timestamp);
-        if (isNaN(ts.getTime())) return;
-        const diffMonths = (now.getFullYear() - ts.getFullYear()) * 12 + (now.getMonth() - ts.getMonth());
-        if (diffMonths >= 0 && diffMonths < slots) {
-          const idx = slots - 1 - diffMonths;
-          addToSlot(idx, item.amount, item.type);
-        }
-      });
-    }
-
-    setChartDataRaw(newData);
-  }, [data, trades, selectedTimeFilter, chartTrades, currentUserEmail]);
+    setChartDataRaw(
+      buildP2PChartDisplayData(raw, currentUserEmail, selectedTimeFilter)
+    );
+  }, [
+    chartLoading,
+    data,
+    trades,
+    selectedTimeFilter,
+    chartTrades,
+    currentUserEmail,
+  ]);
 
   const { chartData, yAxisMax } = React.useMemo(() => {
     const values: number[] = [];
@@ -435,6 +285,11 @@ const Charts: React.FC<ChartProps> = ({
       {/* Chart card */}
       <div className="w-full rounded-2xl p-6 bg-white border border-[#E8EFF5] dark:border-[#35353E] dark:bg-[#18181D]">
         <div className="h-48 sm:h-64 md:h-80">
+          {chartLoading ? (
+            <div className="flex h-full items-center justify-center text-gray-500 dark:text-[#788099]">
+              Loading...
+            </div>
+          ) : (
           <ResponsiveContainer width="100%" height="100%">
             <AreaChart
               data={chartData}
@@ -492,6 +347,7 @@ const Charts: React.FC<ChartProps> = ({
               )}
             </AreaChart>
           </ResponsiveContainer>
+          )}
         </div>
       </div>
     </div>

@@ -120,7 +120,9 @@ const OTPModal: React.FC<OTPModalProps> = ({
       );
 
       if (verifyWithdrawal.rejected.match(resultAction)) {
-        throw new Error(resultAction.error.message || "Failed to verify OTP");
+        throw new Error(
+          (resultAction.payload as string) || "Invalid OTP"
+        );
       }
 
       if (verifyWithdrawal.fulfilled.match(resultAction)) {
@@ -133,9 +135,14 @@ const OTPModal: React.FC<OTPModalProps> = ({
         onClose();
       }
     } catch (error) {
-      showToast.error(
-        error instanceof Error ? error.message : "Verification failed"
-      );
+      let message =
+        error instanceof Error ? error.message : "Invalid OTP";
+      if (/invalid otp/i.test(message)) {
+        message = "Invalid OTP";
+      } else if (/request failed with status code \d+/i.test(message)) {
+        message = "Invalid OTP";
+      }
+      showToast.error(message);
     } finally {
       setIsSubmitting(false);
     }

@@ -1,3 +1,10 @@
+import type { AppDispatch } from "@/store";
+import {
+  fetchAdminWalletList,
+  fetchUserPaymentDetails,
+} from "@/features/exchange/slices/paymentSlice";
+import { withTimeout } from "@/lib/utils/fetchWithTimeout";
+
 export type RegisteredAccountDetail = {
   id: number;
   user_payment_detail_id?: string;
@@ -13,11 +20,6 @@ export type RegisteredAccountDetail = {
   created_at?: string;
 };
 
-const accountId = (detail: RegisteredAccountDetail): number | null => {
-  const id = detail?.id;
-  return typeof id === "number" && Number.isFinite(id) ? id : null;
-};
-
 /** Prefer cached display list, then live Redux fallback. */
 export function resolveAllUserPaymentAccounts(
   displayData: RegisteredAccountDetail[] | null | undefined,
@@ -29,15 +31,12 @@ export function resolveAllUserPaymentAccounts(
   return Array.isArray(fallback) ? fallback : [];
 }
 
-/** Accounts for the primary dropdown — matching provider first, else all. */
+/** Accounts for the registered-account dropdown — only the selected provider's rows. */
 export function getRegisteredAccountDropdownList(
-  allUserAccounts: RegisteredAccountDetail[],
+  _allUserAccounts: RegisteredAccountDetail[],
   filteredForProvider: RegisteredAccountDetail[]
 ): RegisteredAccountDetail[] {
-  if (filteredForProvider.length > 0) {
-    return filteredForProvider;
-  }
-  return allUserAccounts;
+  return filteredForProvider;
 }
 
 type AddedPaymentPayload = {
@@ -86,4 +85,16 @@ export function findAddedPaymentDetail(
   }
 
   return accounts[accounts.length - 1];
+}
+
+/** Refresh user payment accounts after adding one; admin wallet fetch is best-effort. */
+export async function refreshRegisteredAccountsAfterAdd(
+  dispatch: AppDispatch
+): Promise<RegisteredAccountDetail[]> {
+  const accounts = await withTimeout(
+    dispatch(fetchUserPaymentDetails(true)).unwrap(),
+    15_000
+  );
+  void dispatch(fetchAdminWalletList(true)).catch(() => undefined);
+  return Array.isArray(accounts) ? accounts : [];
 }
