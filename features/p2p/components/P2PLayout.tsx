@@ -16,6 +16,7 @@ import NotFound from "./tabs/NotFound";
 import P2PCenter from "./tabs/p2pCenter";
 import { Chats } from "./tabs/Chats";
 import { P2PDataProvider } from "./P2PDataProvider";
+import { P2PWalletBalanceProvider } from "@/features/p2p/context/P2PWalletBalanceProvider";
 import { useGroupedMessages } from "../hooks/useGroupedMessages";
 import { RootState } from "@/store/rootReducer";
 
@@ -116,6 +117,7 @@ const handleTabChange = (tab: string) => {
   };
   return (
     <P2PDataProvider>
+      <P2PWalletBalanceProvider>
       <div className={`dark:bg-[var(--bg-color)] bg-[#EEF1F4] w-full ${activeTab === "chats" ? "min-h-[calc(100dvh-3rem)] h-[calc(100dvh-3rem)] overflow-hidden flex flex-col" : "min-h-screen"}`}>
          <Tabs 
           tabs={p2pTabs} 
@@ -130,6 +132,7 @@ const handleTabChange = (tab: string) => {
           {renderTabContent()}
         </div>
       </div>
+      </P2PWalletBalanceProvider>
     </P2PDataProvider>
   );
 };

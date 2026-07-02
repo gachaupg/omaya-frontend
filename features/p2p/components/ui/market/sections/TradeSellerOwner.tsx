@@ -20,7 +20,10 @@ import { FaChevronRight } from "react-icons/fa";
 import AppealModal from "./appeal";
 import { UserStatusBadge } from "./UserStatusBadge";
 import ChatBox from "./ChatBox";
-import { resolveAdvertiserDisplayName } from "@/features/p2p/utils/matchedTradeNotifications";
+import {
+  getBuyAdOwnerCounterpartySellerName,
+  resolveAdvertiserDisplayName,
+} from "@/features/p2p/utils/matchedTradeNotifications";
 import { showToast } from "@/lib/utils/toast";
 import {
   handleCopyToClipboard,
@@ -146,6 +149,12 @@ const FinalSell: React.FC<FinalSellProps> = ({ orderData }) => {
       dispatch(fetchSingleOrder(String(orderIdToFetch)));
     }
   }, [orderIdToFetch, dispatch, isAuthenticated]);
+
+  const counterpartyDisplayName = getBuyAdOwnerCounterpartySellerName(
+    confirmOrder,
+    singleOrder,
+    tradeDataJson
+  );
 
   // REST may expose pending_acceptance / flags before WebSocket fires
   useEffect(() => {
@@ -844,6 +853,7 @@ const FinalSell: React.FC<FinalSellProps> = ({ orderData }) => {
               orderType
             }
             owner={confirmOrder?.owner || ""}
+            peerName={counterpartyDisplayName}
             sellerName={
               confirmOrder?.seller_full_name?.trim() ||
               resolveAdvertiserDisplayName(singleOrder, confirmOrder) ||
@@ -851,9 +861,8 @@ const FinalSell: React.FC<FinalSellProps> = ({ orderData }) => {
             }
             buyerName={
               confirmOrder?.buyer_full_name?.trim() ||
-              (user?.email === confirmOrder?.buyer
-                ? `${user?.first_name || ""} ${user?.last_name || ""}`.trim() || "You"
-                : "Buyer")
+              counterpartyDisplayName ||
+              "Buyer"
             }
           />
           {/* Advertiser's Terms */}

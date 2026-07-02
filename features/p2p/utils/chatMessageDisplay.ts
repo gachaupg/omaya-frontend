@@ -135,6 +135,62 @@ export function resolveChatSenderPhoto(
   return undefined;
 }
 
+const pickPartyDisplayNameSafe = (
+  name: string | undefined,
+  options?: { reject?: string }
+): string => {
+  const trimmed = String(name ?? "").trim();
+  if (!trimmed || looksLikeEmail(trimmed) || trimmed.toLowerCase() === "you") {
+    return "";
+  }
+  const reject = String(options?.reject ?? "").trim();
+  if (reject && trimmed.toLowerCase() === reject.toLowerCase()) return "";
+  return trimmed;
+};
+
+function isTradeOwner(
+  currentUserEmail: string | null | undefined,
+  owner?: string | null
+): boolean {
+  const user = normalizeEmail(currentUserEmail);
+  const tradeOwner = normalizeEmail(owner);
+  return Boolean(user && tradeOwner && user === tradeOwner);
+}
+
+/** Resolve counterparty display name from buyer/seller party fields (email-aware). */
+function resolveCounterpartyNameFromTradeParties(input: {
+  currentUserEmail?: string | null;
+  buyer?: string | null;
+  seller?: string | null;
+  buyerName?: string;
+  sellerName?: string;
+  owner?: string | null;
+  advertiserName?: string | null;
+}): string {
+  const counterpartyEmail = getCounterpartyEmail(input.currentUserEmail, input);
+  if (!counterpartyEmail) return "";
+
+  const rejectSelfName = isTradeOwner(input.currentUserEmail, input.owner)
+    ? String(input.advertiserName ?? "").trim()
+    : "";
+
+  const cp = normalizeEmail(counterpartyEmail);
+  const buyerEmail = normalizeEmail(input.buyer);
+  const sellerEmail = normalizeEmail(input.seller);
+
+  if (cp === buyerEmail) {
+    const name = pickPartyDisplayNameSafe(input.buyerName, { reject: rejectSelfName });
+    if (name) return name;
+  }
+  if (cp === sellerEmail) {
+    const name = pickPartyDisplayNameSafe(input.sellerName, { reject: rejectSelfName });
+    if (name) return name;
+  }
+
+  const local = counterpartyEmail.split("@")[0]?.trim();
+  return local && !looksLikeEmail(local) ? local : "";
+}
+
 /** Display name for the chat header — always the other party, never the logged-in user. */
 export function resolveCounterpartyDisplayName(input: {
   currentUserEmail?: string | null;
@@ -149,9 +205,16 @@ export function resolveCounterpartyDisplayName(input: {
   messages?: Array<Pick<TradeMessage, "sender_name" | "sender_username">>;
 }): string {
   const peer = String(input.peerName ?? "").trim();
-  if (peer && !looksLikeEmail(peer)) return peer;
+  if (peer && !looksLikeEmail(peer) && peer !== "—") return peer;
+
+  const fromParties = resolveCounterpartyNameFromTradeParties(input);
+  if (fromParties) return fromParties;
 
   const orderType = String(input.orderType ?? "").trim().toLowerCase();
+  const rejectSelfName = isTradeOwner(input.currentUserEmail, input.owner)
+    ? String(input.advertiserName ?? "").trim()
+    : "";
+
   if (orderType) {
     const fromTrade = getMatchedTradeNotificationDisplayName(
       {
@@ -161,24 +224,24 @@ export function resolveCounterpartyDisplayName(input: {
         seller: input.seller ?? undefined,
         buyer_full_name: input.buyerName,
         seller_full_name: input.sellerName,
-        advertiser_name: input.advertiserName,
+        advertiser_name: isTradeOwner(input.currentUserEmail, input.owner)
+          ? undefined
+          : input.advertiserName,
       },
       input.currentUserEmail
     );
-    if (fromTrade && fromTrade !== "Unknown") return fromTrade;
+    const safeTradeName = pickPartyDisplayNameSafe(fromTrade, {
+      reject: rejectSelfName,
+    });
+    if (safeTradeName && safeTradeName !== "Unknown") return safeTradeName;
   }
 
   const userEmail = normalizeEmail(input.currentUserEmail);
   const buyerEmail = normalizeEmail(input.buyer);
   const sellerEmail = normalizeEmail(input.seller);
 
-  const pickName = (name: string | undefined): string => {
-    const trimmed = String(name ?? "").trim();
-    if (trimmed && !looksLikeEmail(trimmed) && trimmed.toLowerCase() !== "you") {
-      return trimmed;
-    }
-    return "";
-  };
+  const pickName = (name: string | undefined): string =>
+    pickPartyDisplayNameSafe(name, { reject: rejectSelfName });
 
   if (userEmail && buyerEmail && userEmail === buyerEmail) {
     const name = pickName(input.sellerName);
@@ -221,8 +284,10 @@ export function resolveCounterpartyDisplayName(input: {
     if (local) return local;
   }
 
-  const advertiser = String(input.advertiserName ?? "").trim();
-  if (advertiser && !looksLikeEmail(advertiser)) return advertiser;
+  if (!isTradeOwner(input.currentUserEmail, input.owner)) {
+    const advertiser = String(input.advertiserName ?? "").trim();
+    if (advertiser && !looksLikeEmail(advertiser)) return advertiser;
+  }
 
   return "User";
 }

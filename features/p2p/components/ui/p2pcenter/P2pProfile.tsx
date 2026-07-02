@@ -3,12 +3,17 @@ import { formatNumber } from "@/utils/formatters";
 import { formatCurrency } from "@/lib/globalFormatter";
 import { useSelector, useDispatch } from "react-redux";
 import { RootState, AppDispatch } from "@/store";
-import { toNumber } from "@/lib/finanacial";
 import { useRouter } from "next/navigation";
 import { fetchMerchantApplicationStatusThunk } from "@/features/p2p/slices/merchantSlice";
 import { fetchFeedback } from "@/features/p2p/slices/feedbackSlice";
 import { getUserProfile } from "@/features/auth/slices/authSlice";
 import { getP2PProfileThunk } from "@/features/p2p/slices/orderSlice";
+import {
+  selectP2PWalletAmounts,
+  selectTransactionSummary,
+  selectWalletBalance,
+} from "@/features/p2p/selectors";
+import { useP2PWalletBalanceContext } from "@/features/p2p/context/P2PWalletBalanceProvider";
 
 import { logger } from '@/lib/utils/logger';
 
@@ -144,16 +149,25 @@ const P2pProfile = ({
   logger.debug('p2p', "P2pProfile wallets:", wallets);
   logger.debug('p2p', "P2pProfile summary:", summary);
 
-  // Get balance from wallet response - try multiple sources (same logic as P2pWallet.tsx)
-  const totalBalance = wallets?.total_balance ? toNumber(wallets.total_balance) : 0;
-  const walletBalance = wallets?.wallet?.balance ? parseFloat(wallets.wallet.balance) : 0;
-  
-  // For USDT wallets, prioritize the individual wallet balance
-  // This handles cases where total_balance might not be accurate
-  const isUSDTWallet = wallets?.wallet?.currency === "USDT";
-  const balance = isUSDTWallet && walletBalance > 0 ? walletBalance : 
-                  (totalBalance && !isNaN(totalBalance) && totalBalance > 0) ? totalBalance : walletBalance;
-  
+  const { balance: walletBalance, currency: walletCurrency } =
+    useSelector(selectWalletBalance);
+  const summaryFromStore = useSelector(selectTransactionSummary);
+  const activeSummary = summary ?? summaryFromStore;
+  const { balance: summaryBalance, escrow: summaryEscrow } =
+    useSelector(selectP2PWalletAmounts);
+  const wsWallet = useP2PWalletBalanceContext();
+
+  const balanceDisplay =
+    wsWallet.balance ??
+    (activeSummary != null ? summaryBalance : walletBalance);
+
+  const escrowDisplay =
+    wsWallet.escrow ?? (activeSummary != null ? summaryEscrow : 0);
+
+  const displayCurrency =
+    (wsWallet.currency && wsWallet.currency.trim()) ||
+    walletCurrency ||
+    "USDT";
 
   return (
     <div className="w-full min-h-[110px] rounded-[24px] border-2 bg-white dark:bg-[var(--card-color)] border-gray-200 dark:border-[#35353E] flex flex-col sm:flex-row justify-between items-start sm:items-center p-3 sm:p-5 box-border gap-4 sm:gap-0">
@@ -278,20 +292,16 @@ const P2pProfile = ({
         </span>
         <div className="flex items-baseline gap-2">
           <span className="text-gray-900 dark:text-white text-base sm:text-lg font-medium">
-            {formatCurrency(balance ?? 0, "USDT")}
+            {formatCurrency(balanceDisplay ?? 0, displayCurrency)}
           </span>
           <span className="text-gray-500 dark:text-[#7B8191] text-base sm:text-lg font-medium">
-            ≈ {formatCurrency(balance ?? 0, "USD")}
+            ≈ {formatCurrency(balanceDisplay ?? 0, "USD")}
           </span>
         </div>
         <span className="text-gray-500 dark:text-[#7B8191] text-sm sm:text-base font-medium">
           In escrow:{" "}
           <span className="text-gray-900 dark:text-white font-medium">
-            {formatCurrency(
-              (summary?.total_pending_p2p_withdrawals || 0) +
-                (summary?.total_sell_orders_by_status?.pending || 0),
-              "USDT"
-            )}
+            {formatCurrency(escrowDisplay ?? 0, displayCurrency)}
           </span>
         </span>
       </div>

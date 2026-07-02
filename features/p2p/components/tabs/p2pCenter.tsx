@@ -82,18 +82,35 @@ const P2PCenter: React.FC = () => {
 
   useEffect(() => {
     if (isAuthenticated) {
-      // ✅ fetchWallets() and fetchTransactionSummary() now handled by P2PDataProvider
-      // Only fetch data specific to P2P Center tab
-      // dispatch(fetchWallets()); // Removed - handled by provider
-      // Use catch to prevent errors from crashing the app
-      dispatch(p2pBuyandSell(1)).catch(() => {
-        // Silently handle errors
-      });
-      dispatch(fetchMyOrders(1)).catch(() => {
-        // Silently handle errors
-      });
-      // dispatch(fetchTransactionSummary()); // Removed - handled by provider
+      // Always refresh wallet + summary on P2P Center so balance/escrow stay current
+      dispatch(fetchWallets()).catch(() => {});
+      dispatch(fetchTransactionSummary()).catch(() => {});
+      dispatch(p2pBuyandSell(1)).catch(() => {});
+      dispatch(fetchMyOrders(1)).catch(() => {});
     }
+  }, [dispatch, isAuthenticated]);
+
+  useEffect(() => {
+    if (!isAuthenticated || typeof window === "undefined") return;
+
+    const refreshWalletData = () => {
+      dispatch(fetchWallets()).catch(() => {});
+      dispatch(fetchTransactionSummary()).catch(() => {});
+    };
+
+    const onVisibilityChange = () => {
+      if (document.visibilityState === "visible") {
+        refreshWalletData();
+      }
+    };
+
+    window.addEventListener("focus", refreshWalletData);
+    document.addEventListener("visibilitychange", onVisibilityChange);
+
+    return () => {
+      window.removeEventListener("focus", refreshWalletData);
+      document.removeEventListener("visibilitychange", onVisibilityChange);
+    };
   }, [dispatch, isAuthenticated]);
 
   // Transform the trades data to include commission, payment, and last update

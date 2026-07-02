@@ -15,6 +15,52 @@ export function parseSummaryNumber(value: unknown): number {
   return 0;
 }
 
+/** Format API percent fields (`"15.87%"`, `15.87`, etc.) for display. */
+export function formatSummaryPercent(
+  value: unknown,
+  fallback = "0%"
+): string {
+  if (value == null || value === "") return fallback;
+  if (typeof value === "string") {
+    const trimmed = value.trim();
+    if (!trimmed) return fallback;
+    if (trimmed.includes("%")) return trimmed;
+    const parsed = parseFloat(trimmed.replace(/,/g, ""));
+    return Number.isFinite(parsed) ? `${parsed}%` : fallback;
+  }
+  if (typeof value === "number" && Number.isFinite(value)) {
+    return `${value}%`;
+  }
+  return fallback;
+}
+
+/** Completion rate from API, or derived from matched trade status buckets. */
+export function getP2PCompletionRateDisplay(
+  summary: TransactionSummary | null | undefined
+): string {
+  if (
+    summary?.completion_rate != null &&
+    String(summary.completion_rate).trim() !== ""
+  ) {
+    return formatSummaryPercent(summary.completion_rate, "0%");
+  }
+
+  const buy = getP2PBuyTradesByStatus(summary);
+  const sell = getP2PSellTradesByStatus(summary);
+  const completed = buy.completed + sell.completed;
+  const total =
+    completed +
+    buy.pending +
+    sell.pending +
+    buy.canceled +
+    sell.canceled +
+    buy.offline +
+    sell.offline;
+
+  if (total <= 0) return "0%";
+  return `${((completed / total) * 100).toFixed(2)}%`;
+}
+
 function normalizeOrderStatus(raw: unknown): OrderStatus {
   const src =
     raw && typeof raw === "object" ? (raw as Record<string, unknown>) : {};
@@ -153,6 +199,7 @@ export function normalizeTransactionSummary(
     ),
     total_p2p_orders: parseSummaryNumber(s.total_p2p_orders ?? s.total_trades),
     total_trades: parseSummaryNumber(s.total_trades),
+    completion_rate: formatSummaryPercent(s.completion_rate, "0%"),
     avg_release_time: String(s.avg_release_time ?? "0 Min"),
     avg_payment_time: String(s.avg_payment_time ?? "0 Min"),
     rating: String(s.rating ?? "0%"),
@@ -417,6 +464,18 @@ export function mergeTransactionSummaries(
       base.total_approved_p2p_withdrawals
     ),
     total_volume: live.total_volume ?? base.total_volume,
+    completion_rate: live.completion_rate ?? base.completion_rate,
+    avg_release_time:
+      live.avg_release_time && live.avg_release_time !== "0 Min"
+        ? live.avg_release_time
+        : base.avg_release_time,
+    avg_payment_time:
+      live.avg_payment_time && live.avg_payment_time !== "0 Min"
+        ? live.avg_payment_time
+        : base.avg_payment_time,
+    rating:
+      live.rating && live.rating !== "0%" ? live.rating : base.rating,
+    total_trades: mergeSummaryNumber(live.total_trades, base.total_trades),
   } as TransactionSummary;
 }
 

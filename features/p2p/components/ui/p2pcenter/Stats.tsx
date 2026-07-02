@@ -1,15 +1,40 @@
 import React from "react";
+import {
+  formatSummaryPercent,
+  getP2PCompletionRateDisplay,
+  parseSummaryNumber,
+} from "@/lib/utils/normalizeTransactionSummary";
 
 const Stats = ({ summary }: { summary?: any }) => {
-  const safe = summary && typeof summary === "object" && !Array.isArray(summary) ? summary : {};
-  const num = (v: any) => (typeof v === "number" && !Number.isNaN(v) ? v : typeof v === "string" ? parseFloat(v) || 0 : 0);
+  const safe =
+    summary && typeof summary === "object" && !Array.isArray(summary)
+      ? summary
+      : {};
+
   const stats = [
-    { value: num(safe.total_trades) || 0, label: "Trades" },
-    { value: `${num(safe.completion_rate) || 0}%`, label: "Completion rate" },
-    { value: <><span>{safe.avg_release_time ?? "0"}</span></>, label: "Avg. release time" },
-    { value: <><span>{safe.avg_payment_time ?? "0"}</span></>, label: "Avg. pay time" },
-    { value: `${num(safe.rating) || 0}`, label: "Rating" },
-    { value: <><span>{(num(safe.escrow) || 0).toLocaleString()}</span></>, label: "In Escrow / Locked" },
+    { value: parseSummaryNumber(safe.total_trades) || 0, label: "Trades" },
+    {
+      value: getP2PCompletionRateDisplay(safe),
+      label: "Completion rate",
+    },
+    {
+      value: <span>{safe.avg_release_time ?? "0 Min"}</span>,
+      label: "Avg. release time",
+    },
+    {
+      value: <span>{safe.avg_payment_time ?? "0 Min"}</span>,
+      label: "Avg. pay time",
+    },
+    {
+      value: formatSummaryPercent(safe.rating, "0%"),
+      label: "Rating",
+    },
+    {
+      value: (
+        <span>{(parseSummaryNumber(safe.escrow) || 0).toLocaleString()}</span>
+      ),
+      label: "In Escrow / Locked",
+    },
   ];
 
   return (

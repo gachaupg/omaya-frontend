@@ -10,7 +10,6 @@ import { useSelector } from "react-redux";
 import { RootState } from "@/store/rootReducer";
 import { selectP2PWalletAmounts, selectTransactionSummary } from "../../selectors";
 import {
-  P2PWalletBalanceProvider,
   useP2PWalletBalanceContext,
 } from "@/features/p2p/context/P2PWalletBalanceProvider";
 import { useSidebarSectionReset } from "@/lib/utils/sidebarNavigationReset";
@@ -147,10 +146,6 @@ function P2PDashboardContent() {
   );
 }
 
-const P2PDashboard = () => (
-  <P2PWalletBalanceProvider>
-    <P2PDashboardContent />
-  </P2PWalletBalanceProvider>
-);
+const P2PDashboard = () => <P2PDashboardContent />;
 
 export default P2PDashboard;

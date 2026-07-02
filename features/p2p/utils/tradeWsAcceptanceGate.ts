@@ -350,16 +350,19 @@ export function isTerminalTradeStatusForTimer(
   );
 }
 
-/** Start limit_duration countdown on the order screen (no trade-acceptance gate). */
+/** Start limit_duration countdown only while the trade is in matched status. */
 export function isTransactionCountdownActive(
   displaySeconds: number,
   tradeId: string | undefined | null,
   status: string | undefined | null
 ): boolean {
+  const normalized =
+    normalizeP2PTradeStatus(String(status ?? "").trim()) ??
+    String(status ?? "").trim().toLowerCase();
   return (
     displaySeconds > 0 &&
     Boolean(tradeId) &&
-    !isTerminalTradeStatusForTimer(status)
+    normalized.toLowerCase() === "matched"
   );
 }
 

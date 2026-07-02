@@ -195,7 +195,7 @@ function FinalBuy({ orderData }: FinalBuyProps) {
     effectiveStatus === "matched" &&
     effectiveFlags.can_confirm_payment !== false &&
     (!inPendingAcceptanceBuyer || effectiveFlags.can_confirm_payment === true);
-  /** Payment actions (mark paid, etc.) — still gated on acceptance; timer is not. */
+  /** Payment actions (mark paid, etc.) — gated on acceptance; timer runs only in matched status. */
   const buyerPaymentPhaseActive =
     effectiveStatus === "matched" && !inPendingAcceptanceBuyer;
   const transactionTimerActive = isTransactionCountdownActive(
@@ -203,9 +203,9 @@ function FinalBuy({ orderData }: FinalBuyProps) {
     confirmOrder?.id,
     effectiveStatus
   );
+  const effectiveStatusRef = useRef(effectiveStatus);
+  effectiveStatusRef.current = effectiveStatus;
 
-  const buyerPaymentPhaseActiveRef = useRef(buyerPaymentPhaseActive);
-  buyerPaymentPhaseActiveRef.current = buyerPaymentPhaseActive;
   const handleCancelTransactionRef = useRef<() => void>(() => {});
 
   useEffect(() => {
@@ -453,9 +453,9 @@ function FinalBuy({ orderData }: FinalBuyProps) {
   const countdown = useBackgroundAwareCountdown({
     durationSeconds: displaySeconds,
     active: transactionTimerActive,
-    resetKey: confirmOrder?.id ?? null,
+    resetKey: `${confirmOrder?.id ?? ""}-${effectiveStatus}`,
     onExpire: () => {
-      if (!buyerPaymentPhaseActiveRef.current) return;
+      if (effectiveStatusRef.current !== "matched") return;
       logger.debug("p2p", "Countdown reached 0, auto-cancelling transaction");
       handleCancelTransactionRef.current();
     },
@@ -563,12 +563,26 @@ function FinalBuy({ orderData }: FinalBuyProps) {
             </div>
           )}
           <div className="flex items-center justify-between gap-2 flex-wrap mb-2">
-            <p
-              className="text-gray-900 dark:text-white text-[13px] shrink-0"
-              style={{ fontSize: "16px" }}
-            >
-              Advertiser Information
-            </p>
+            <div className="flex items-center gap-3 flex-wrap min-w-0">
+              <p
+                className="text-gray-900 dark:text-white text-[13px] shrink-0"
+                style={{ fontSize: "16px" }}
+              >
+                Advertiser Information
+              </p>
+              <span className="text-[10px] sm:text-xs text-[#1D8751] flex items-center gap-1 whitespace-nowrap">
+                Transaction time:{" "}
+                {isClient ? (
+                  <TimeDisplay
+                    seconds={
+                      transactionTimerActive ? countdown : displaySeconds
+                    }
+                  />
+                ) : (
+                  <span>--:--</span>
+                )}
+              </span>
+            </div>
             <div className="flex items-center gap-2 shrink-0">
               <button
                 type="button"
@@ -582,7 +596,7 @@ function FinalBuy({ orderData }: FinalBuyProps) {
              
             </div>
           </div>
-          {/* Advertiser Info - Image, Name, Live, Time in one row */}
+          {/* Advertiser Info - Image, Name, Live */}
           <section className="rounded-[18px] p-4 flex flex-col md:flex-row md:items-center gap-4 border-2 border-[#E8EFF5] dark:border-[#35353E] bg-gray-50 dark:bg-[var(--bg-color)] mb-2">
             <div className="flex flex-col justify-start gap-2 flex-1 min-w-0">
               <div className="flex items-center gap-2 sm:gap-3 flex-wrap">
@@ -614,18 +628,6 @@ function FinalBuy({ orderData }: FinalBuyProps) {
                   {singleOrder?.advertiser_name || singleOrder?.advertiser_first_name || "Advertiser"}
                 </span>
                 <UserStatusBadge isLive={statusWsConnected} className="flex-shrink-0" />
-                <span className="text-[10px] sm:text-xs text-[#1D8751] flex items-center gap-1 whitespace-nowrap">
-                  Transaction time:{" "}
-                  {isClient ? (
-                    <TimeDisplay
-                      seconds={
-                        transactionTimerActive ? countdown : displaySeconds
-                      }
-                    />
-                  ) : (
-                    <span>--:--</span>
-                  )}
-                </span>
               </div>
 
               <div>

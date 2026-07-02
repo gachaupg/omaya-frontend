@@ -33,6 +33,8 @@ export interface TransactionSummary {
   total_sell_orders: number;
   total_p2p_orders: number;
   total_trades: number;
+  /** P2P profile stats from transaction summary API (e.g. `"15.87%"`). */
+  completion_rate?: string;
   avg_release_time: string;
   avg_payment_time: string;
   rating: string;
@@ -89,6 +91,7 @@ export const emptyTransactionSummary: TransactionSummary = {
   total_sell_orders: 0,
   total_p2p_orders: 0,
   total_trades: 0,
+  completion_rate: "0%",
   avg_release_time: "0 Min",
   avg_payment_time: "0 Min",
   rating: "0%",
