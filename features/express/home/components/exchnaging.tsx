@@ -9,14 +9,16 @@ import { API_CONFIG } from "@/lib/appConfig";
 import {
   parseExpressSocketNumberish,
   isExpressChangeNowDeposit,
+  isExpressDirectCryptoDeposit,
   resolveExpressDepositExchangingReceiveDisplay,
   resolveExpressDepositSuccessProcessingAmount,
   resolveExpressDepositUsdNetAmount,
+  resolveExpressDepositWsAmountUpdate,
   resolveExpressSendCurrency,
   resolveExpressSocketReceiveAmount,
   resolveExpressStatusNetDisplay,
   resolveExpressStatusReceiveCurrency,
-  resolveExpressStatusSendCurrency,
+  resolveExpressStatusSendCurrencyWithWs,
   unwrapExpressWsStatusPayload,
 } from "../../utils/successAmountDisplay";
 import { cookieUtils } from "@/lib/utils/cookieUtils";
@@ -265,31 +267,51 @@ export default function Exchanging({ transactionData, isHomePage = false }: Exch
   const effectiveTransactionData = transactionData || persistedTransactionData;
 
   const getDisplaySendCurrency = React.useCallback(
-    (fallback?: string) =>
-      resolveExpressStatusSendCurrency(
+    () =>
+      resolveExpressStatusSendCurrencyWithWs(
         effectiveTransactionData,
         liveCurrency,
-        fallback
+        finalWebsocketData
       ),
-    [effectiveTransactionData, liveCurrency]
+    [effectiveTransactionData, liveCurrency, finalWebsocketData]
   );
 
   const setSendCurrencyLive = React.useCallback(
     (currency: string | null) => {
       if (effectiveTransactionData?.type === "deposit") {
-        setLiveCurrency("USD");
-        return;
+        if (isExpressChangeNowDeposit(effectiveTransactionData)) {
+          setLiveCurrency("USD");
+          return;
+        }
+        if (!isExpressDirectCryptoDeposit(effectiveTransactionData)) {
+          setLiveCurrency("USD");
+          return;
+        }
       }
       if (currency) setLiveCurrency(currency);
     },
-    [effectiveTransactionData?.type]
+    [effectiveTransactionData]
   );
 
   useEffect(() => {
-    if (effectiveTransactionData?.type === "deposit") {
+    if (effectiveTransactionData?.type !== "deposit") return;
+    const wsPayload = unwrapExpressWsStatusPayload(finalWebsocketData);
+    if (isExpressChangeNowDeposit(effectiveTransactionData, wsPayload)) {
       setLiveCurrency("USD");
+      return;
     }
-  }, [effectiveTransactionData?.type]);
+    if (isExpressDirectCryptoDeposit(effectiveTransactionData, wsPayload)) {
+      const asset = String(
+        effectiveTransactionData?.details?.from_currency ||
+          effectiveTransactionData?.asset?.ticker ||
+          effectiveTransactionData?.asset?.symbol ||
+          "USDT"
+      ).toUpperCase();
+      setLiveCurrency(asset);
+      return;
+    }
+    setLiveCurrency("USD");
+  }, [effectiveTransactionData, finalWebsocketData]);
 
   const setReceiveCurrencyLive = React.useCallback(
     (currency: string | null) => {
@@ -300,6 +322,13 @@ export default function Exchanging({ transactionData, isHomePage = false }: Exch
       if (
         effectiveTransactionData?.type === "deposit" &&
         isExpressChangeNowDeposit(effectiveTransactionData)
+      ) {
+        if (currency) setLiveNetCurrency(currency);
+        return;
+      }
+      if (
+        effectiveTransactionData?.type === "deposit" &&
+        isExpressDirectCryptoDeposit(effectiveTransactionData)
       ) {
         if (currency) setLiveNetCurrency(currency);
         return;
@@ -320,8 +349,27 @@ export default function Exchanging({ transactionData, isHomePage = false }: Exch
     }
     if (
       effectiveTransactionData?.type === "deposit" &&
-      !isExpressChangeNowDeposit(effectiveTransactionData)
+      isExpressChangeNowDeposit(effectiveTransactionData)
     ) {
+      setLiveNetCurrency(
+        String(
+          effectiveTransactionData?.asset?.ticker ||
+            effectiveTransactionData?.asset?.symbol ||
+            "USDT"
+        ).toUpperCase()
+      );
+    } else if (
+      effectiveTransactionData?.type === "deposit" &&
+      isExpressDirectCryptoDeposit(effectiveTransactionData)
+    ) {
+      setLiveNetCurrency(
+        String(
+          effectiveTransactionData?.asset?.ticker ||
+            effectiveTransactionData?.asset?.symbol ||
+            "USDT"
+        ).toUpperCase()
+      );
+    } else if (effectiveTransactionData?.type === "deposit") {
       setLiveNetCurrency("USD");
     }
   }, [effectiveTransactionData]);
@@ -498,9 +546,10 @@ export default function Exchanging({ transactionData, isHomePage = false }: Exch
     }
   }, [transactionData]);
 
-  // Receive amount from form props (crypto for ChangeNow; USD net for simple assets)
+  // Receive amount from form props (simple assets only; ChangeNow uses websocket net_amount)
   useEffect(() => {
     if (effectiveTransactionData?.type !== "deposit") return;
+    if (isExpressChangeNowDeposit(effectiveTransactionData)) return;
     const tx = effectiveTransactionData as any;
     const recv = tx?.receiveAmount ?? tx?.netAmount ?? tx?.net_amount;
     if (recv == null) return;
@@ -508,6 +557,10 @@ export default function Exchanging({ transactionData, isHomePage = false }: Exch
     if (Number.isNaN(parsed) || parsed <= 0) return;
     setLiveNetAmount(parsed);
     if (isExpressChangeNowDeposit(tx)) {
+      setLiveNetCurrency(
+        String(tx?.asset?.ticker || tx?.asset?.symbol || "USDT").toUpperCase()
+      );
+    } else if (isExpressDirectCryptoDeposit(tx)) {
       setLiveNetCurrency(
         String(tx?.asset?.ticker || tx?.asset?.symbol || "USDT").toUpperCase()
       );
@@ -604,61 +657,47 @@ export default function Exchanging({ transactionData, isHomePage = false }: Exch
             const amount = parseFloat(String(statusPayload.amount));
             if (!isNaN(amount)) {
               amountToUpdate = amount;
-              currencyToUpdate =
-                statusPayload?.currency ||
-                getStableSendCurrency();
+              if (effectiveTransactionData?.type !== "deposit") {
+                currencyToUpdate =
+                  statusPayload?.currency ||
+                  getStableSendCurrency();
+              }
             }
           }
-          const socketReceiveFromPayload = resolveExpressSocketReceiveAmount(
-            statusPayload,
-            effectiveTransactionData?.type
-          );
           if (effectiveTransactionData?.type === "deposit") {
-            if (isExpressChangeNowDeposit(effectiveTransactionData)) {
-              const cryptoReceive =
-                parseExpressSocketNumberish(statusPayload.amount_to) ??
-                parseExpressSocketNumberish(statusPayload.estimated_amount) ??
-                parseExpressSocketNumberish(statusPayload.amount_expected_to);
-              if (cryptoReceive != null) {
-                setLiveNetAmount(cryptoReceive);
-              }
+            const wsUpdate = resolveExpressDepositWsAmountUpdate(
+              effectiveTransactionData,
+              statusPayload as Record<string, unknown>
+            );
+            if (wsUpdate.sendAmount != null) {
+              amountToUpdate = wsUpdate.sendAmount;
+            }
+            if (wsUpdate.sendCurrency) {
+              currencyToUpdate = wsUpdate.sendCurrency;
+              setSendCurrencyLive(wsUpdate.sendCurrency);
+            }
+            if (wsUpdate.receiveAmount != null) {
+              setLiveNetAmount(wsUpdate.receiveAmount);
+            }
+            if (wsUpdate.receiveCurrency) {
+              setReceiveCurrencyLive(wsUpdate.receiveCurrency);
+            }
+          } else {
+            const socketReceiveFromPayload = resolveExpressSocketReceiveAmount(
+              statusPayload,
+              effectiveTransactionData?.type
+            );
+            if (socketReceiveFromPayload !== null) {
+              setLiveNetAmount(socketReceiveFromPayload);
               const d = statusPayload as Record<string, unknown>;
               setReceiveCurrencyLive(
                 getStableReceiveCurrency(
-                  (d.to_currency || d.currency || "")
-                    ?.toString()
-                    .toUpperCase() ||
+                  (d.to_currency || d.currency || "")?.toString().toUpperCase() ||
                     effectiveTransactionData?.asset?.ticker ||
                     "USDT"
                 )
               );
-            } else {
-              setLiveNetAmount((prev) => {
-                const usdNet = resolveExpressDepositUsdNetAmount({
-                  wsPayload: statusPayload,
-                  transactionData: effectiveTransactionData as {
-                    amount?: number;
-                    receiveAmount?: unknown;
-                    netAmount?: unknown;
-                    net_amount?: unknown;
-                    commission?: string | number | null;
-                  },
-                  processingReceiveAmount: prev,
-                });
-                return usdNet > 0 ? usdNet : prev;
-              });
-              setReceiveCurrencyLive("USD");
             }
-          } else if (socketReceiveFromPayload !== null) {
-            setLiveNetAmount(socketReceiveFromPayload);
-            const d = statusPayload as Record<string, unknown>;
-            setReceiveCurrencyLive(
-              getStableReceiveCurrency(
-                (d.to_currency || d.currency || "")?.toString().toUpperCase() ||
-                  effectiveTransactionData?.asset?.ticker ||
-                  "USDT"
-              )
-            );
           }
 
           // Check ChangeNow status update format and direct flow format
@@ -689,49 +728,37 @@ export default function Exchanging({ transactionData, isHomePage = false }: Exch
               }
             }
 
-            const socketReceiveAmount = resolveExpressSocketReceiveAmount(
-              wsData,
-              effectiveTransactionData?.type
-            );
             if (effectiveTransactionData?.type === "deposit") {
-              if (isExpressChangeNowDeposit(effectiveTransactionData)) {
-                const cryptoReceive =
-                  parseExpressSocketNumberish(wsData.amount_to) ??
-                  parseExpressSocketNumberish(wsData.estimated_amount) ??
-                  parseExpressSocketNumberish(wsData.amount_expected_to);
-                if (cryptoReceive != null) {
-                  setLiveNetAmount(cryptoReceive);
-                }
+              const wsUpdate = resolveExpressDepositWsAmountUpdate(
+                effectiveTransactionData,
+                wsData as Record<string, unknown>
+              );
+              if (wsUpdate.sendAmount != null) {
+                amountToUpdate = wsUpdate.sendAmount;
+              }
+              if (wsUpdate.sendCurrency) {
+                currencyToUpdate = wsUpdate.sendCurrency;
+                setSendCurrencyLive(wsUpdate.sendCurrency);
+              }
+              if (wsUpdate.receiveAmount != null) {
+                setLiveNetAmount(wsUpdate.receiveAmount);
+              }
+              if (wsUpdate.receiveCurrency) {
+                setReceiveCurrencyLive(wsUpdate.receiveCurrency);
+              }
+            } else {
+              const socketReceiveAmount = resolveExpressSocketReceiveAmount(
+                wsData,
+                effectiveTransactionData?.type
+              );
+              if (socketReceiveAmount !== null) {
                 const toCurrencyLabel =
                   wsData.to_currency?.toUpperCase() ||
                   wsData.currency?.toUpperCase() ||
-                  effectiveTransactionData?.asset?.ticker ||
-                  "USDT";
+                  "USD";
+                setLiveNetAmount(socketReceiveAmount);
                 setReceiveCurrencyLive(getStableReceiveCurrency(toCurrencyLabel));
-              } else {
-                setLiveNetAmount((prev) => {
-                  const usdNet = resolveExpressDepositUsdNetAmount({
-                    wsPayload: wsData as Record<string, unknown>,
-                    transactionData: effectiveTransactionData as {
-                      amount?: number;
-                      receiveAmount?: unknown;
-                      netAmount?: unknown;
-                      net_amount?: unknown;
-                      commission?: string | number | null;
-                    },
-                    processingReceiveAmount: prev,
-                  });
-                  return usdNet > 0 ? usdNet : prev;
-                });
-                setReceiveCurrencyLive("USD");
               }
-            } else if (socketReceiveAmount !== null) {
-              const toCurrencyLabel =
-                wsData.to_currency?.toUpperCase() ||
-                wsData.currency?.toUpperCase() ||
-                "USD";
-              setLiveNetAmount(socketReceiveAmount);
-              setReceiveCurrencyLive(getStableReceiveCurrency(toCurrencyLabel));
             }
 
             // Handle expected amounts if actual amounts are not available
@@ -1313,11 +1340,7 @@ export default function Exchanging({ transactionData, isHomePage = false }: Exch
                     ? liveAmount
                     : effectiveTransactionData?.amount || 0}{" "}
                   <span className="uppercase">
-                    {getDisplaySendCurrency(
-                      effectiveTransactionData?.asset?.ticker ||
-                        effectiveTransactionData?.asset?.symbol ||
-                        effectiveTransactionData?.asset?.name
-                    )}
+                    {getDisplaySendCurrency()}
                   </span>
                 </span>
               </div>
@@ -1391,19 +1414,11 @@ export default function Exchanging({ transactionData, isHomePage = false }: Exch
                       } text-xs mb-0.5`}
                   >
                     Previous: {previousAmount.toFixed(8)}{" "}
-                    {getDisplaySendCurrency(
-                      effectiveTransactionData?.asset?.ticker ||
-                        effectiveTransactionData?.asset?.symbol ||
-                        effectiveTransactionData?.asset?.name
-                    )}
+                    {getDisplaySendCurrency()}
                   </div>
                   <div className="text-green-400 text-xs">
                     Current: {liveAmount.toFixed(8)}{" "}
-                    {getDisplaySendCurrency(
-                      effectiveTransactionData?.asset?.ticker ||
-                        effectiveTransactionData?.asset?.symbol ||
-                        effectiveTransactionData?.asset?.name
-                    )}
+                    {getDisplaySendCurrency()}
                   </div>
                 </div>
               )}

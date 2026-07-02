@@ -11,6 +11,11 @@ import { storage } from "../features/auth/utils/storage";
 import { API_BASE_URL } from "@/config/api";
 import { logger } from "./utils/logger";
 import ApiHealthChecker from "./utils/apiHealthChecker";
+import {
+  collectDeviceInfo,
+  mergeDeviceInfoIntoRequestData,
+  shouldAttachDeviceInfoToRequest,
+} from "./utils/deviceInfo";
 
 if (!API_BASE_URL) {
   throw new Error(
@@ -465,9 +470,35 @@ const addHttpTraceInterceptor = (instance: AxiosInstance): AxiosInstance => {
   return instance;
 };
 
+/** Attach device_info to sensitive POST transaction / registration requests. */
+const addDeviceInfoInterceptor = (instance: AxiosInstance): AxiosInstance => {
+  instance.interceptors.request.use(
+    async (config) => {
+      const method = String(config.method || "get").toLowerCase();
+      const url = config.url || "";
+      if (!shouldAttachDeviceInfoToRequest(url, method)) {
+        return config;
+      }
+      try {
+        const deviceInfo = await collectDeviceInfo();
+        config.data = mergeDeviceInfoIntoRequestData(config.data, deviceInfo);
+      } catch (error) {
+        logger.warn("api", "Failed to attach device_info to request", {
+          url,
+          error,
+        });
+      }
+      return config;
+    },
+    (error) => Promise.reject(error)
+  );
+  return instance;
+};
+
 const createApiClient = (): AxiosInstance => {
   const instance = createAxiosInstance();
-  const withAuth = addAuthInterceptor(instance);
+  const withDeviceInfo = addDeviceInfoInterceptor(instance);
+  const withAuth = addAuthInterceptor(withDeviceInfo);
   const withRefresh = addRefreshTokenInterceptor(withAuth);
   const withRetry = addRetryInterceptor(withRefresh, DEFAULT_CONFIG);
   const withDedup = addDeduplicationInterceptor(withRetry);
