@@ -447,10 +447,13 @@ export function resolveHomeExpressSuccessReceiveCurrency(
 ): string {
   const type = String(transactionType ?? tx?.type ?? "").toLowerCase();
   if (type === "withdrawal") return "USD";
-  if (type === "deposit" && isExpressChangeNowDeposit(tx)) {
-    return assetTicker(tx) || String(toCurrency ?? "USDT").trim().toUpperCase() || "USDT";
+  if (type === "deposit") {
+    return (
+      resolveExpressSelectedAssetCurrency(tx ?? {}) ||
+      String(toCurrency ?? "USDT").trim().toUpperCase() ||
+      "USDT"
+    );
   }
-  if (type === "deposit") return "USD";
   return String(toCurrency ?? "USD").trim().toUpperCase() || "USD";
 }
 
@@ -550,7 +553,60 @@ export function resolveExpressDepositPaidCurrency(tx: {
   return resolveExpressSelectedAssetCurrency(tx);
 }
 
-/** Deposit success: paid USD via bank; receive matches exchanging page (crypto or USD net). */
+/** Deposit success receive row: selected asset amount (form / socket), not USD net. */
+export function resolveExpressDepositCryptoReceiveDisplay(input: {
+  transactionData?: ExpressDepositSuccessDisplayInput["transactionData"];
+  websocketData?: unknown;
+  processingReceiveAmount?: number | null;
+  liveNetAmount?: number | null;
+  liveNetCurrency?: string | null;
+}): ExpressStatusNetDisplay {
+  const tx = input.transactionData ?? {};
+  const wsPayload = unwrapExpressWsStatusPayload(input.websocketData);
+  const changeNow = isExpressChangeNowDeposit(tx);
+
+  const fromSocket =
+    parseExpressSocketNumberish(wsPayload.amount_to) ??
+    parseExpressSocketNumberish(wsPayload.estimated_amount) ??
+    parseExpressSocketNumberish(wsPayload.amount_expected_to) ??
+    parseExpressSocketNumberish(wsPayload.net_amount) ??
+    parseExpressSocketNumberish(wsPayload.netAmount);
+
+  const fromForm = parseExpressSocketNumberish(tx.receiveAmount);
+  const fromTxNet =
+    parseExpressSocketNumberish(tx.netAmount) ??
+    parseExpressSocketNumberish(tx.net_amount);
+
+  const fromProcessing = changeNow
+    ? parseExpressSocketNumberish(input.processingReceiveAmount)
+    : null;
+
+  const fromLive =
+    changeNow &&
+    input.liveNetAmount != null &&
+    input.liveNetAmount > 0
+      ? input.liveNetAmount
+      : null;
+
+  const amount =
+    fromProcessing ??
+    fromLive ??
+    fromSocket ??
+    fromForm ??
+    fromTxNet ??
+    0;
+
+  let currency = String(input.liveNetCurrency ?? "")
+    .trim()
+    .toUpperCase();
+  if (!currency || currency === "USD") {
+    currency = resolveExpressSelectedAssetCurrency(tx);
+  }
+
+  return { amount, currency };
+}
+
+/** Deposit success: paid USD via bank; receive in selected asset. */
 export function resolveExpressDepositSuccessDisplay(
   input: ExpressDepositSuccessDisplayInput
 ): {
@@ -566,33 +622,19 @@ export function resolveExpressDepositSuccessDisplay(
     parseExpressSocketNumberish(input.transactionData.amount) ??
     0;
 
-  if (isExpressChangeNowDeposit(input.transactionData)) {
-    const receiveDisplay = resolveExpressDepositExchangingReceiveDisplay({
-      transactionData: input.transactionData,
-      liveNetAmount: input.processingReceiveAmount,
-      liveNetCurrency: assetTicker(input.transactionData),
-      websocketData: input.websocketData,
-    });
-    return {
-      paidAmount,
-      receiveAmount: receiveDisplay.amount,
-      paidCurrency: "USD",
-      receiveCurrency: receiveDisplay.currency,
-    };
-  }
-
-  const receiveAmount = resolveHomeDepositSuccessReceiveAmount({
-    wsPayload,
+  const receiveDisplay = resolveExpressDepositCryptoReceiveDisplay({
     transactionData: input.transactionData,
-    paidAmount,
+    websocketData: input.websocketData,
     processingReceiveAmount: input.processingReceiveAmount,
+    liveNetAmount: input.processingReceiveAmount,
+    liveNetCurrency: assetTicker(input.transactionData),
   });
 
   return {
     paidAmount,
-    receiveAmount,
+    receiveAmount: receiveDisplay.amount,
     paidCurrency: "USD",
-    receiveCurrency: "USD",
+    receiveCurrency: receiveDisplay.currency,
   };
 }
 
@@ -622,7 +664,7 @@ export type ExpressWithdrawalSuccessDisplayInput = {
   processingSendAmount?: number | null;
 };
 
-/** Withdrawal success: You Paid USD (fiat net); You Received selected asset (crypto sent). */
+/** Withdrawal success: USD net received (bank payout after fees). */
 export function resolveHomeWithdrawalSuccessPaidAmount(
   input: HomeDepositSuccessAmountInput
 ): number {
@@ -662,7 +704,7 @@ export function resolveHomeWithdrawalSuccessPaidAmount(
   return Number.isFinite(derived) && derived > 0 ? derived : 0;
 }
 
-/** Crypto amount for withdrawal success (You Received / selected asset side). */
+/** Crypto amount sent for withdrawal success (You Paid / selected asset side). */
 export function resolveHomeWithdrawalSuccessCryptoAmount(input: {
   wsPayload?: Record<string, unknown> | null;
   transactionData?: {
@@ -698,25 +740,25 @@ export function resolveExpressWithdrawalSuccessDisplay(
 ): {
   paidAmount: number;
   receiveAmount: number;
-  paidCurrency: "USD";
-  receiveCurrency: string;
+  paidCurrency: string;
+  receiveCurrency: "USD";
 } {
   const wsPayload = unwrapExpressWsStatusPayload(input.websocketData);
-  const paidAmount = resolveHomeWithdrawalSuccessPaidAmount({
+  const usdReceived = resolveHomeWithdrawalSuccessPaidAmount({
     wsPayload,
     transactionData: input.transactionData,
     processingReceiveAmount: input.processingReceiveAmount,
   });
-  const receiveAmount = resolveHomeWithdrawalSuccessCryptoAmount({
+  const cryptoSent = resolveHomeWithdrawalSuccessCryptoAmount({
     wsPayload,
     transactionData: input.transactionData,
     processingSendAmount: input.processingSendAmount,
   });
 
   return {
-    paidAmount,
-    receiveAmount,
-    paidCurrency: "USD",
-    receiveCurrency: resolveExpressSelectedAssetCurrency(input.transactionData),
+    paidAmount: cryptoSent,
+    receiveAmount: usdReceived,
+    paidCurrency: resolveExpressSelectedAssetCurrency(input.transactionData),
+    receiveCurrency: "USD",
   };
 }
