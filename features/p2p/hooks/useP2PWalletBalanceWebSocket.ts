@@ -94,7 +94,9 @@ function extractWalletPayload(raw: unknown): WalletBalanceState {
   return {
     balance: parseNumber(data.total_balance),
     available: parseNumber(data.available_amount),
-    escrow: parseNumber(data.locked_balance),
+    escrow: parseNumber(
+      data.locked_balance ?? data.escrow ?? summary.escrow
+    ),
 
     currency:
       typeof data.currency === "string"

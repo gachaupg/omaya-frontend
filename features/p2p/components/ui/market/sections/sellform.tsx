@@ -111,9 +111,9 @@ const FinalSell: React.FC<FinalSellProps> = ({ orderData }) => {
     confirmOrder?.id,
     effectiveStatus
   );
+  const effectiveStatusRef = useRef(effectiveStatus);
+  effectiveStatusRef.current = effectiveStatus;
 
-  const sellerPaymentPhaseActiveRef = useRef(sellerPaymentPhaseActive);
-  sellerPaymentPhaseActiveRef.current = sellerPaymentPhaseActive;
   const handleCancelTransactionRef = useRef<() => void>(() => {});
 
   const initialFetchDone = useRef(false);
@@ -479,9 +479,9 @@ const FinalSell: React.FC<FinalSellProps> = ({ orderData }) => {
   const countdown = useBackgroundAwareCountdown({
     durationSeconds: displaySeconds,
     active: transactionTimerActive,
-    resetKey: confirmOrder?.id ?? null,
+    resetKey: `${confirmOrder?.id ?? ""}-${effectiveStatus}`,
     onExpire: () => {
-      if (!sellerPaymentPhaseActiveRef.current) return;
+      if (effectiveStatusRef.current !== "matched") return;
       logger.debug("p2p", "Countdown reached 0, auto-cancelling transaction");
       handleCancelTransactionRef.current();
     },
@@ -589,7 +589,7 @@ const FinalSell: React.FC<FinalSellProps> = ({ orderData }) => {
               <p className="text-gray-900 dark:text-white text-[13px] shrink-0">
                 Advertiser Information
               </p>
-              <span className="text-xs sm:text-sm text-[#1D8751] flex items-center gap-1 whitespace-nowrap">
+              <span className="text-[10px] sm:text-xs text-[#1D8751] flex items-center gap-1 whitespace-nowrap">
                 Transaction time:{" "}
                 {isAuthenticated ? (
                   <TimeDisplay
@@ -622,7 +622,7 @@ const FinalSell: React.FC<FinalSellProps> = ({ orderData }) => {
             </div>
           </div>
 
-          {/* Advertiser Info - Image, Name, Live, Time in one row */}
+          {/* Advertiser Info - Image, Name, Live */}
           <section className="advertiser-info rounded-[18px] p-2 md:p-4 flex flex-col md:flex-row items-start md:items-center gap-4 border-2 border-gray-200 dark:border-[#35353E] bg-gray-50 dark:bg-[var(--card-color)]">
             <div className="flex flex-col justify-start gap-2 flex-1 min-w-0 w-full">
               <div className="flex items-center gap-2 sm:gap-3 flex-wrap">

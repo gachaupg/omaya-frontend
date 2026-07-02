@@ -26,7 +26,10 @@ import {
 import AppealModal from "./appeal";
 import { UserStatusBadge } from "./UserStatusBadge";
 import ChatBox from "./ChatBox";
-import { resolveAdvertiserDisplayName } from "@/features/p2p/utils/matchedTradeNotifications";
+import {
+  getSellAdOwnerCounterpartyBuyerName,
+  resolveAdvertiserDisplayName,
+} from "@/features/p2p/utils/matchedTradeNotifications";
 import { showToast } from "@/lib/utils/toast";
 import { handleCopy, parseDurationToSeconds } from "../../../Common/utils";
 import Image from "next/image";
@@ -34,7 +37,6 @@ import { useTradeStatusWebSocket } from "@/features/p2p/hooks/useTradeStatusWebS
 import { useP2pTradeCanceledRedirect } from "@/features/p2p/hooks/useP2pTradeCanceledRedirect";
 import { useMarketTradeStatusWsHandler } from "@/features/p2p/hooks/useMarketTradeStatusWsHandler";
 import { useBackgroundAwareCountdown } from "@/features/p2p/hooks/useBackgroundAwareCountdown";
-import { getSellAdOwnerCounterpartyBuyerName } from "@/features/p2p/utils/matchedTradeNotifications";
 import {
   roundP2PFiat,
   sellFiatFromUsdtSent,
@@ -841,6 +843,7 @@ const FinalSell: React.FC<FinalSellProps> = ({ orderData }) => {
               orderType
             }
             owner={confirmOrder?.owner || ""}
+            peerName={counterpartyDisplayName}
             sellerName={
               confirmOrder?.seller_full_name?.trim() ||
               resolveAdvertiserDisplayName(
@@ -848,15 +851,12 @@ const FinalSell: React.FC<FinalSellProps> = ({ orderData }) => {
                 confirmOrder,
                 saveOrder
               ) ||
-              counterpartyDisplayName ||
               "Seller"
             }
             buyerName={
               confirmOrder?.buyer_full_name?.trim() ||
-              (user?.email === confirmOrder?.buyer
-                ? `${user?.first_name || ""} ${user?.last_name || ""}`.trim() ||
-                "You"
-                : "Buyer")
+              counterpartyDisplayName ||
+              "Buyer"
             }
           />
           {/* Advertiser's Terms */}

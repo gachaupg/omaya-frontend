@@ -397,6 +397,8 @@ export interface TransactionSummary {
   total_sell_orders: number;
   total_p2p_orders: number;
   total_trades: number;
+  /** P2P profile stats from transaction summary API (e.g. `"15.87%"`). */
+  completion_rate?: string;
   avg_release_time: string;
   avg_payment_time: string;
   rating: string;

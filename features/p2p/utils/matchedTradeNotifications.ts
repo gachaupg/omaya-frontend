@@ -238,6 +238,18 @@ export function getSellAdOwnerCounterpartyBuyerName(
   return "—";
 }
 
+/** Counterparty seller on buy-ad owner trade screens (TradeSellerOwner). */
+export function getBuyAdOwnerCounterpartySellerName(
+  ...sources: unknown[]
+): string {
+  for (const raw of sources) {
+    const src = toTradeNameSource(raw);
+    const name = pickPartyDisplayName(src?.seller_full_name, src?.seller);
+    if (name) return name;
+  }
+  return "—";
+}
+
 export type TradePhotoContext = {
   buyer?: string | null;
   seller?: string | null;
