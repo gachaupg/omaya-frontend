@@ -1410,6 +1410,7 @@ export default function WithdrawalForm({
     selectedPaymentDetails[0]?.status || ""
   );
   const isSelectedPaymentApproved = isApprovedPaymentStatus(selectedPaymentStatus);
+  const isSelectedPaymentFrozen = isFrozenPaymentStatus(selectedPaymentStatus);
   const isSelectedPaymentPending = !!(
     payBank &&
     selectedPaymentDetails.length > 0 &&
@@ -1422,6 +1423,29 @@ export default function WithdrawalForm({
       (detail) => detail.id === selectedPaymentDetails[0]?.id
     );
   const isRegisteredAccountMissing = !!payBank && !hasRegisteredAccountSelected;
+
+  // Sync selectedPaymentDetails when accounts refresh and status changes (e.g. Pending → APPROVED)
+  useEffect(() => {
+    if (selectedPaymentDetails.length === 0 || enhancedFilteredUserPaymentDetails.length === 0) return;
+    const selectedId = selectedPaymentDetails[0].id;
+    const freshDetail = enhancedFilteredUserPaymentDetails.find(
+      (d: any) => d.id === selectedId || String(d.id) === String(selectedId)
+    );
+    const current = selectedPaymentDetails[0];
+    const hasMeaningfulChange =
+      !!freshDetail &&
+      (
+        String(current?.id) !== String(freshDetail.id) ||
+        (current?.status ?? "") !== (freshDetail.status ?? "") ||
+        (current?.account_name ?? "") !== (freshDetail.account_name ?? "") ||
+        (current?.account_number ?? "") !== (freshDetail.account_number ?? "") ||
+        (current?.wallet_address ?? "") !== (freshDetail.wallet_address ?? "")
+      );
+    if (hasMeaningfulChange) {
+      setSelectedPaymentDetails([freshDetail]);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- only sync when source data changes
+  }, [enhancedFilteredUserPaymentDetails]);
 
   // Fetch admin wallet list
   useEffect(() => {
@@ -5345,6 +5369,72 @@ export default function WithdrawalForm({
                                   dropdownMinWidth={460}
                                   dropdownMaxWidth={460}
                                 />
+                                {(() => {
+                                  if (!payBank) return null;
+
+                                  const pendingAccount =
+                                    isSelectedPaymentPending &&
+                                    selectedPaymentDetails[0]
+                                      ? selectedPaymentDetails[0]
+                                      : enhancedFilteredUserPaymentDetails.find(
+                                          (detail) =>
+                                            detail.status &&
+                                            !isApprovedPaymentStatus(detail.status)
+                                        );
+
+                                  if (!pendingAccount) return null;
+
+                                  const accountFrozen = isFrozenPaymentStatus(
+                                    pendingAccount.status
+                                  );
+
+                                  return (
+                                    <div className="mt-2 flex items-start gap-3 rounded-2xl border border-[#F79330]/40 bg-[#F79330]/10 p-3">
+                                      <svg
+                                        className="mt-0.5 h-5 w-5 flex-shrink-0 text-[#F79330]"
+                                        fill="none"
+                                        viewBox="0 0 24 24"
+                                        stroke="currentColor"
+                                      >
+                                        <path
+                                          strokeLinecap="round"
+                                          strokeLinejoin="round"
+                                          strokeWidth={2}
+                                          d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"
+                                        />
+                                      </svg>
+                                      <div className="flex-1">
+                                        <p className="text-sm font-semibold text-[#F79330]">
+                                          {accountFrozen
+                                            ? "Account Frozen"
+                                            : "Account Pending Approval"}
+                                        </p>
+                                        <p className="mt-1 text-xs text-[#F79330]/80">
+                                          Your account
+                                          {pendingAccount.account_name
+                                            ? ` "${pendingAccount.account_name}"`
+                                            : ""}
+                                          {pendingAccount.account_number ||
+                                          pendingAccount.wallet_address
+                                            ? ` (${pendingAccount.account_number || pendingAccount.wallet_address})`
+                                            : ""}{" "}
+                                          {accountFrozen
+                                            ? "is frozen. Please "
+                                            : "is pending approval. Please "}
+                                          <a
+                                            href="/contactUs"
+                                            className="font-semibold text-[#1D8751] underline transition-colors hover:text-[#17693f]"
+                                          >
+                                            contact support
+                                          </a>{" "}
+                                          {accountFrozen
+                                            ? "for assistance."
+                                            : "to get your account approved."}
+                                        </p>
+                                      </div>
+                                    </div>
+                                  );
+                                })()}
                               </div>
                               </>
                                 )}

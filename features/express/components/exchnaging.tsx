@@ -11,6 +11,7 @@ import {
   isExpressChangeNowDeposit,
   isExpressDirectCryptoDeposit,
   resolveExpressDepositExchangingReceiveDisplay,
+  resolveExpressDepositExchangingSendDisplay,
   resolveExpressDepositSuccessProcessingAmount,
   resolveExpressDepositUsdNetAmount,
   resolveExpressDepositWsAmountUpdate,
@@ -19,6 +20,7 @@ import {
   resolveExpressStatusNetDisplay,
   resolveExpressStatusReceiveCurrency,
   resolveExpressStatusSendCurrencyWithWs,
+  shouldShowExpressDepositReceiveRow,
   unwrapExpressWsStatusPayload,
 } from "../utils/successAmountDisplay";
 import { cookieUtils } from "@/lib/utils/cookieUtils";
@@ -85,6 +87,7 @@ interface ExchangingProps {
       changenow_id?: string;
     };
   };
+  isHomePage?: boolean;
 }
 
 /** Matches `deposit.tsx`: bank lines are often under `payment_details[0]`, not root. */
@@ -188,7 +191,7 @@ const resolveWithdrawalProviderName = (pd: any): string => {
   );
 };
 
-export default function Exchanging({ transactionData }: ExchangingProps) {
+export default function Exchanging({ transactionData, isHomePage = false }: ExchangingProps) {
   const searchParams = useSearchParams();
   const router = useRouter();
   const dispatch = useDispatch<AppDispatch>();
@@ -371,31 +374,37 @@ export default function Exchanging({ transactionData }: ExchangingProps) {
     return `${mins.toString().padStart(2, "0")}:${secs.toString().padStart(2, "0")}`;
   };
 
+  /** Leave exchanging flow — home widget must reload to reset parent showExchanging state. */
+  const exitAfterTransactionEnd = () => {
+    localStorage.removeItem("express_transaction_data");
+    localStorage.removeItem("express_transaction_expiry");
+    expiryTimestampRef.current = null;
+    if (isHomePage) {
+      window.location.reload();
+      return;
+    }
+    router.push("/");
+  };
+
   // Handle transaction cancellation
   const handleCancelTransaction = async () => {
-    if (!effectiveTransactionData?.transactionId) return;
+    const txId = effectiveTransactionId;
+    if (!txId) {
+      exitAfterTransactionEnd();
+      return;
+    }
 
     try {
-      if (effectiveTransactionData.type === "deposit") {
-        await dispatch(
-          cancelDepositTransaction(effectiveTransactionData.transactionId)
-        ).unwrap();
-      } else if (effectiveTransactionData.type === "withdrawal") {
-        await dispatch(
-          cancelWithdrawalTransaction(effectiveTransactionData.transactionId)
-        ).unwrap();
+      if (effectiveTransactionData?.type === "deposit") {
+        await dispatch(cancelDepositTransaction(txId)).unwrap();
+      } else if (effectiveTransactionData?.type === "withdrawal") {
+        await dispatch(cancelWithdrawalTransaction(txId)).unwrap();
       }
 
-      // Clear localStorage
-      localStorage.removeItem("express_transaction_data");
-      localStorage.removeItem("express_transaction_expiry");
-
-      // Redirect to home page
-      router.push("/");
+      exitAfterTransactionEnd();
     } catch (error) {
       logger.error('general', "Failed to cancel transaction:", error);
-      // Still redirect even if cancel fails
-      router.push("/");
+      exitAfterTransactionEnd();
     }
   };
 
@@ -455,6 +464,13 @@ export default function Exchanging({ transactionData }: ExchangingProps) {
 
   // Use persisted data if no transactionData is provided (page reload scenario)
   const effectiveTransactionData = transactionData || persistedTransactionData;
+
+  const effectiveTransactionId = String(
+    (effectiveTransactionData as any)?.transactionId ||
+      (effectiveTransactionData as any)?.transaction_id ||
+      liveTransactionId ||
+      ""
+  ).trim();
 
   const getDisplaySendCurrency = React.useCallback(
     () =>
@@ -606,7 +622,7 @@ export default function Exchanging({ transactionData }: ExchangingProps) {
 
   // Use WebSocket for both deposit and withdrawal transactions
   const shouldUseWebSocket =
-    effectiveTransactionData?.transactionId &&
+    !!effectiveTransactionId &&
     (effectiveTransactionData?.type === "withdrawal" ||
       effectiveTransactionData?.type === "deposit");
 
@@ -643,7 +659,7 @@ export default function Exchanging({ transactionData }: ExchangingProps) {
   const finalWebsocketUrl = websocketUrl;
   const { isConnected, lastMessage, disconnect, sendMessage } =
     useTransactionStatusWebSocket(
-      effectiveTransactionData?.transactionId || "",
+      effectiveTransactionId,
       effectiveTransactionData?.type || "withdrawal",
       finalWebsocketUrl,
       {
@@ -1252,6 +1268,18 @@ export default function Exchanging({ transactionData }: ExchangingProps) {
         : (finalWebsocketData as any)?.data?.to_currency ||
           effectiveTransactionData?.asset?.ticker,
   });
+  const statusSendDisplay = resolveExpressDepositExchangingSendDisplay({
+    transactionData: effectiveTransactionData,
+    liveAmount,
+    liveCurrency,
+    websocketData: finalWebsocketData,
+  });
+  const showDepositReceiveRow = shouldShowExpressDepositReceiveRow({
+    transactionData: effectiveTransactionData,
+    liveNetAmount,
+    websocketData: finalWebsocketData,
+    statusNetDisplay,
+  });
   const resolvedDepositCode =
     effectiveTransactionData?.type === "deposit" &&
     !(effectiveTransactionData as any)?.isMoneyX
@@ -1362,17 +1390,17 @@ export default function Exchanging({ transactionData }: ExchangingProps) {
                   } text-base font-semibold flex items-center gap-2`}
               >
                 <span>
-                  {liveAmount !== null
-                    ? liveAmount
-                    : effectiveTransactionData?.amount || 0}{" "}
+                  {statusSendDisplay.amount}{" "}
                   <span className="uppercase">
-                    {getDisplaySendCurrency()}
+                    {statusSendDisplay.currency}
                   </span>
                 </span>
               </div>
             </div>
-            {((effectiveTransactionData as any)?.receiveAmount != null ||
-              liveNetAmount != null) && (
+            {(effectiveTransactionData?.type === "deposit"
+              ? showDepositReceiveRow
+              : (effectiveTransactionData as any)?.receiveAmount != null ||
+                liveNetAmount != null) && (
               <div>
                 <div
                   className={`${isDark ? "text-[#7B7B7B]" : "text-gray-600"

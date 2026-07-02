@@ -528,6 +528,75 @@ export function resolveExpressDepositExchangingReceiveDisplay(input: {
   return { amount, currency: "USD" };
 }
 
+/** Exchanging page send row: prefer socket amount fields, then live state. */
+export function resolveExpressDepositExchangingSendDisplay(input: {
+  transactionData?: any;
+  liveAmount?: number | null;
+  liveCurrency?: string | null;
+  websocketData?: unknown;
+}): ExpressStatusNetDisplay {
+  const tx = input.transactionData ?? {};
+  const wsPayload = unwrapExpressWsStatusPayload(input.websocketData);
+  const type = String(tx.type ?? "").toLowerCase();
+
+  if (type === "deposit") {
+    const wsUpdate = resolveExpressDepositWsAmountUpdate(tx, wsPayload);
+    const amount =
+      wsUpdate.sendAmount ??
+      (input.liveAmount != null ? input.liveAmount : null) ??
+      parseExpressSocketNumberish(tx.amount) ??
+      0;
+    return {
+      amount,
+      currency: resolveExpressStatusSendCurrencyWithWs(
+        tx,
+        input.liveCurrency,
+        input.websocketData
+      ),
+    };
+  }
+
+  const amount =
+    parseExpressSocketNumberish(wsPayload.amount) ??
+    parseExpressSocketNumberish(wsPayload.paid_amount) ??
+    (input.liveAmount != null ? input.liveAmount : null) ??
+    parseExpressSocketNumberish(tx.amount) ??
+    0;
+
+  return {
+    amount,
+    currency: resolveExpressStatusSendCurrencyWithWs(
+      tx,
+      input.liveCurrency,
+      input.websocketData
+    ),
+  };
+}
+
+/** Show deposit receive row when form, live state, or socket has receive amounts. */
+export function shouldShowExpressDepositReceiveRow(input: {
+  transactionData?: any;
+  liveNetAmount?: number | null;
+  websocketData?: unknown;
+  statusNetDisplay?: ExpressStatusNetDisplay;
+}): boolean {
+  const tx = input.transactionData ?? {};
+  if (String(tx.type ?? "").toLowerCase() !== "deposit") {
+    return false;
+  }
+  if (input.liveNetAmount != null && input.liveNetAmount > 0) return true;
+  if (parseExpressSocketNumberish(tx.receiveAmount) != null) return true;
+  const wsPayload = unwrapExpressWsStatusPayload(input.websocketData);
+  if (
+    parseExpressSocketNumberish(wsPayload.net_amount) != null ||
+    parseExpressSocketNumberish(wsPayload.amount_to) != null ||
+    parseExpressSocketNumberish(wsPayload.amount_expected_to) != null
+  ) {
+    return true;
+  }
+  return (input.statusNetDisplay?.amount ?? 0) > 0;
+}
+
 /** USD net for simple deposits; crypto receive for ChangeNow (matches exchanging page). */
 export function resolveExpressDepositSuccessProcessingAmount(
   tx: any,

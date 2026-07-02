@@ -11,7 +11,6 @@ import {
 } from "@/lib/utils/authRedirect";
 import Exchanging from "../components/exchnaging";
 import ExpressExchangeForm from "../components/ExpressExchangeForm";
-import { useScrollAppToTopWhen } from "@/hooks/useScrollAppToTopWhen";
 import { scrollAppToTop } from "@/lib/utils/scrollAppToTop";
 
 interface ExpressProps {
@@ -33,95 +32,110 @@ const Express = ({ isHomePage = false }: ExpressProps) => {
     setMounted(true);
   }, []);
 
-  // Home UX: if user navigates away/refreshes, return to the main form (do not restore exchanging).
+  // Home UX: landing on the widget should not restore a stale inline exchanging state.
   useEffect(() => {
-    if (typeof window === "undefined") return;
+    if (!isHomePage || typeof window === "undefined") return;
     window.localStorage.removeItem("express_transaction_data");
     window.localStorage.removeItem("express_transaction_expiry");
-  }, []);
-
-  useScrollAppToTopWhen(showExchanging && !!transactionData);
+  }, [isHomePage]);
 
   const handleModeToggle = () => {
-    // If on home page and not authenticated, navigate to login (include saved amount/asset)
     if (isHomePage && !isAuthenticated) {
       const nextMode = currentMode === "deposit" ? "withdrawal" : "deposit";
       const savedState = getExpressHomeFormState();
-      setAuthRedirectPath(buildExpressRedirectPath(nextMode, savedState || undefined));
+      setAuthRedirectPath(
+        buildExpressRedirectPath(nextMode, savedState || undefined)
+      );
       router.push("/auth/login");
       return;
     }
     setCurrentMode(currentMode === "deposit" ? "withdrawal" : "deposit");
   };
 
+  const handleExchange = (data: any) => {
+    const mode = data?.type === "withdrawal" ? "withdrawal" : "deposit";
+
+    if (isHomePage) {
+      if (typeof window !== "undefined") {
+        localStorage.setItem("express_transaction_data", JSON.stringify(data));
+      }
+      scrollAppToTop();
+      router.push(
+        `/dashboard/express-exchange?resumeStatus=1&mode=${encodeURIComponent(mode)}`
+      );
+      return;
+    }
+
+    setTransactionData(data);
+    setShowExchanging(true);
+    scrollAppToTop();
+  };
+
+  if (isHomePage) {
+    return (
+      <div className="w-full mx-auto pt-0 mb-0">
+        <ExpressExchangeForm
+          onExchange={handleExchange}
+          initialMode={currentMode}
+          isHomePage={isHomePage}
+        />
+      </div>
+    );
+  }
+
   return (
     <div className="w-full mx-auto pt-0 mb-0">
-      {!isHomePage && (
-        <div className=" mb-1">
-          <button
-            onClick={handleModeToggle}
-            className="hover:opacity-80  transition-opacity"
-            title={`Switch to ${currentMode === "deposit" ? "withdrawal" : "deposit"} mode`}
+      <div className=" mb-1">
+        <button
+          onClick={handleModeToggle}
+          className="hover:opacity-80  transition-opacity"
+          title={`Switch to ${currentMode === "deposit" ? "withdrawal" : "deposit"} mode`}
+        >
+          <span
+            className="flex items-center justify-center"
+            suppressHydrationWarning
           >
-            <span
-              className="flex items-center justify-center"
-              suppressHydrationWarning
-            >
-              {mounted && isDark ? (
-                <>
-                  <span className="flex items-center justify-center">
-                    <span className="text-[#727272] text-base uppercase font-bold">
-                      E
-                    </span>
-
-                    <img
-                      className="mt-2"
-                      src="/assets/Group_9_gen9av.png"
-                      alt=""
-                    />
+            {mounted && isDark ? (
+              <>
+                <span className="flex items-center justify-center">
+                  <span className="text-[#727272] text-base uppercase font-bold">
+                    E
                   </span>
-                </>
-              ) : (
-                <>
-                  <span className="flex items-center justify-center">
-                    <span className="text-[#727272] text-base uppercase font-bold">
-                      E
-                    </span>
 
-                    <img
-                      className="mt-2"
-                      src="/assets/Group_9_gen9av.png"
-                      alt=""
-                    />
+                  <img
+                    className="mt-2"
+                    src="/assets/Group_9_gen9av.png"
+                    alt=""
+                  />
+                </span>
+              </>
+            ) : (
+              <>
+                <span className="flex items-center justify-center">
+                  <span className="text-[#727272] text-base uppercase font-bold">
+                    E
                   </span>
-                </>
-              )}
-            </span>
-          </button>
-          {/* <div className="mt-2 text-sm text-gray-600">
-          Current Mode: <span className="font-semibold capitalize">{currentMode}</span>
-        </div> */}
-        </div>
-      )}
+
+                  <img
+                    className="mt-2"
+                    src="/assets/Group_9_gen9av.png"
+                    alt=""
+                  />
+                </span>
+              </>
+            )}
+          </span>
+        </button>
+      </div>
       {showExchanging ? (
         <Exchanging transactionData={transactionData} />
       ) : (
         <ExpressExchangeForm
-          onExchange={(data) => {
-            setTransactionData(data);
-            setShowExchanging(true);
-            scrollAppToTop();
-          }}
+          onExchange={handleExchange}
           initialMode={currentMode}
           isHomePage={isHomePage}
         />
       )}
-      {/* <Exchanging transactionData={transactionData} /> */}
-      {/* 
-                     <SuccessPage transactionData={transactionData} /> 
-
-
-       */}
     </div>
   );
 };

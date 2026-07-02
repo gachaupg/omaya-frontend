@@ -35,12 +35,16 @@ import { logger } from "@/lib/utils/logger";
 import { useScrollAppToTopWhen } from "@/hooks/useScrollAppToTopWhen";
 import {
   buildSwapRedirectPath,
+  buildSwapResumePath,
   setAuthRedirectPath,
   setSwapLegalReturnState,
   peekSwapLegalReturnState,
   clearSwapLegalReturnState,
   finalizeSwapLegalReturnState,
+  setSwapTransactionHandoff,
+  clearSwapTransactionHandoff,
 } from "@/lib/utils/authRedirect";
+import { scrollAppToTop } from "@/lib/utils/scrollAppToTop";
 import { openKYCModal, checkKYCStatus } from "@/features/auth/slices/authSlice";
 import {
   normalizeSwapAmountOnChange,
@@ -169,6 +173,11 @@ const SwapWidget: React.FC<SwapWidgetProps> = ({ usePublicApi = false }) => {
     clearSwapLegalReturnState();
     window.setTimeout(() => finalizeSwapLegalReturnState(), 1000);
   }, []);
+
+  React.useEffect(() => {
+    if (!usePublicApi) return;
+    clearSwapTransactionHandoff();
+  }, [usePublicApi]);
 
   const handleBeforeLegalNavigate = useCallback(() => {
     setSwapLegalReturnState({
@@ -821,7 +830,7 @@ const SwapWidget: React.FC<SwapWidgetProps> = ({ usePublicApi = false }) => {
     try {
       setLocalSwapError("");
       dispatch(resetErrorToastFlag());
-      await dispatch(
+      const response = await dispatch(
         createSwapTransaction({
           from_currency: fromAsset.ticker,
           from_network: fromAsset.network,
@@ -833,6 +842,17 @@ const SwapWidget: React.FC<SwapWidgetProps> = ({ usePublicApi = false }) => {
       ).unwrap();
       logger.debug("swap", "Swap created successfully");
       setLocalSwapError("");
+
+      if (usePublicApi) {
+        setSwapTransactionHandoff({
+          swapResponse: response,
+          walletAddress,
+        });
+        scrollAppToTop();
+        router.push(buildSwapResumePath());
+        return;
+      }
+
       setCurrentStep("copy-address");
     } catch (error: any) {
       console.error("Failed to create swap:", error);
