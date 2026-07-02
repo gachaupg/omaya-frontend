@@ -3,10 +3,7 @@ import React, { useState, useEffect } from "react";
 import { useSelector } from "react-redux";
 import { useRouter } from "next/navigation";
 import ExpressExchangeForm from "./ExpressExchangeForm";
-import Exchanging from "./exchnaging";
-import SuccessPage from "./success";
 import { useTheme } from "@/context/theme";
-import { useScrollAppToTopWhen } from "@/hooks/useScrollAppToTopWhen";
 import { scrollAppToTop } from "@/lib/utils/scrollAppToTop";
 
 interface ExpressProps {
@@ -14,8 +11,6 @@ interface ExpressProps {
 }
 
 const Express = ({ isHomePage = false }: ExpressProps) => {
-  const [showExchanging, setShowExchanging] = useState(false);
-  const [transactionData, setTransactionData] = useState<any>(null);
   const [currentMode, setCurrentMode] = useState<"deposit" | "withdrawal">(
     "deposit"
   );
@@ -28,15 +23,38 @@ const Express = ({ isHomePage = false }: ExpressProps) => {
     setMounted(true);
   }, []);
 
-  useScrollAppToTopWhen(showExchanging && !!transactionData);
+  useEffect(() => {
+    if (!isHomePage || typeof window === "undefined") return;
+    window.localStorage.removeItem("express_transaction_data");
+    window.localStorage.removeItem("express_transaction_expiry");
+  }, [isHomePage]);
 
   const handleModeToggle = () => {
-    // If on home page and not authenticated, navigate to login
     if (isHomePage && !isAuthenticated) {
       router.push("/auth/login");
       return;
     }
     setCurrentMode(currentMode === "deposit" ? "withdrawal" : "deposit");
+  };
+
+  const handleExchange = (data: any) => {
+    const mode = data?.type === "withdrawal" ? "withdrawal" : "deposit";
+
+    if (isHomePage) {
+      if (typeof window !== "undefined") {
+        localStorage.setItem("express_transaction_data", JSON.stringify(data));
+      }
+      scrollAppToTop();
+      router.push(
+        `/dashboard/express-exchange?resumeStatus=1&mode=${encodeURIComponent(mode)}`
+      );
+      return;
+    }
+
+    scrollAppToTop();
+    router.push(
+      `/dashboard/express-exchange?resumeStatus=1&mode=${encodeURIComponent(mode)}`
+    );
   };
 
   return (
@@ -83,30 +101,13 @@ const Express = ({ isHomePage = false }: ExpressProps) => {
               )}
             </span>
           </button>
-          {/* <div className="mt-2 text-sm text-gray-600">
-          Current Mode: <span className="font-semibold capitalize">{currentMode}</span>
-        </div> */}
         </div>
       )}
-      {showExchanging ? (
-        <Exchanging transactionData={transactionData} isHomePage={isHomePage} />
-      ) : (
-        <ExpressExchangeForm
-          onExchange={(data) => {
-            setTransactionData(data);
-            setShowExchanging(true);
-            scrollAppToTop();
-          }}
-          initialMode={currentMode}
-          isHomePage={isHomePage}
-        />
-      )}
-      {/* <Exchanging transactionData={transactionData} /> */}
-      {/* 
-                     <SuccessPage transactionData={transactionData} /> 
-
-
-       */}
+      <ExpressExchangeForm
+        onExchange={handleExchange}
+        initialMode={currentMode}
+        isHomePage={isHomePage}
+      />
     </div>
   );
 };

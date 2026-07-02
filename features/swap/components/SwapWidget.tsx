@@ -18,6 +18,7 @@ import {
   createSwapTransaction,
   clearSwapResponse,
   resetErrorToastFlag,
+  setSwapResponse,
 } from "../slices/swapSlice";
 import { RootState, AppDispatch } from "@/store/rootReducer";
 import SwapStatusComponent from "./SwapStatus";
@@ -33,6 +34,7 @@ import InfoModal from "@/features/express/components/forms/info";
 
 import { logger } from "@/lib/utils/logger";
 import { useScrollAppToTopWhen } from "@/hooks/useScrollAppToTopWhen";
+import { scrollAppToTop } from "@/lib/utils/scrollAppToTop";
 import {
   normalizeSwapAmountOnChange,
   isPositiveSwapAmount,
@@ -49,6 +51,8 @@ import {
   peekSwapLegalReturnState,
   clearSwapLegalReturnState,
   finalizeSwapLegalReturnState,
+  getSwapTransactionHandoff,
+  clearSwapTransactionHandoff,
 } from "@/lib/utils/authRedirect";
 
 // Minimum swap value in USD/USDT - smaller amounts can disappear due to fees
@@ -156,6 +160,7 @@ const SwapWidget = () => {
     React.useState<Record<string, any> | null>(null);
   const hasStartedLegalRestore = React.useRef(false);
   const hasAppliedLegalReturn = React.useRef(false);
+  const hasResumedSwapHandoff = React.useRef(false);
   useScrollAppToTopWhen(currentStep !== "transaction-info");
   useScrollAppToTopWhen(showWalletAddress);
   const [hasRestoredState, setHasRestoredState] = React.useState(false);
@@ -307,6 +312,28 @@ const SwapWidget = () => {
       }, 0);
     }
   }, [legalReturnState, supportedAssets, loading, dispatch]);
+
+  // Home swap handoff: open copy-address / exchanging step on dashboard
+  React.useEffect(() => {
+    if (!searchParams || searchParams.get("resumeStatus") !== "1") return;
+    if (hasResumedSwapHandoff.current) return;
+    hasResumedSwapHandoff.current = true;
+
+    const handoff = getSwapTransactionHandoff();
+    if (handoff?.swapResponse) {
+      dispatch(setSwapResponse(handoff.swapResponse as any));
+    }
+    if (typeof handoff?.walletAddress === "string") {
+      setWalletAddress(handoff.walletAddress);
+    }
+
+    if (handoff?.swapResponse) {
+      setCurrentStep("copy-address");
+      scrollAppToTop();
+    }
+
+    router.replace("/dashboard/swap", { scroll: false });
+  }, [searchParams, router, dispatch]);
 
   // Restore state from URL prefill parameter (after login redirect)
   useEffect(() => {

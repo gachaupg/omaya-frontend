@@ -242,6 +242,32 @@ export const buildSwapRedirectPath = (state?: Record<string, any>): string => {
   return `/dashboard/swap?${params.toString()}`;
 };
 
+const SWAP_TRANSACTION_DATA_KEY = "swap_transaction_data";
+
+export const setSwapTransactionHandoff = (payload: Record<string, unknown>) => {
+  if (typeof window === "undefined") return;
+  window.localStorage.setItem(SWAP_TRANSACTION_DATA_KEY, JSON.stringify(payload));
+};
+
+export const getSwapTransactionHandoff = (): Record<string, unknown> | null => {
+  if (typeof window === "undefined") return null;
+  try {
+    const raw = window.localStorage.getItem(SWAP_TRANSACTION_DATA_KEY);
+    if (!raw) return null;
+    const parsed = JSON.parse(raw);
+    return parsed && typeof parsed === "object" ? parsed : null;
+  } catch {
+    return null;
+  }
+};
+
+export const clearSwapTransactionHandoff = () => {
+  if (typeof window === "undefined") return;
+  window.localStorage.removeItem(SWAP_TRANSACTION_DATA_KEY);
+};
+
+export const buildSwapResumePath = () => "/dashboard/swap?resumeStatus=1";
+
 const EXPRESS_HOME_FORM_KEY = "express_home_form_state";
 const EXPRESS_HOME_LEGAL_SESSION_KEY = "express_home_legal_session";
 const RATES_CALCULATOR_STATE_KEY = "rates_calculator_state";

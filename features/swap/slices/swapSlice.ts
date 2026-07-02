@@ -417,6 +417,10 @@ const swapSlice = createSlice({
       state.swapError = null;
       state.hasShownErrorToast = false; // Reset error toast flag
     },
+    setSwapResponse: (state, action: { payload: CreateSwapResponse | null }) => {
+      state.swapResponse = action.payload;
+      state.swapError = null;
+    },
     resetErrorToastFlag: (state) => {
       state.hasShownErrorToast = false;
     },
@@ -584,6 +588,7 @@ export const {
   clearEstimate,
   clearEstimateError,
   clearSwapResponse,
+  setSwapResponse,
   resetErrorToastFlag,
 } = swapSlice.actions;
 

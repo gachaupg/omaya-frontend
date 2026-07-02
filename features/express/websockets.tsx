@@ -355,6 +355,8 @@ export const useTransactionStatusWebSocket = (
   const [lastMessage, setLastMessage] =
     React.useState<TransactionStatusMessage | null>(null);
   const wsRef = React.useRef<BaseTransactionStatusWebSocket | null>(null);
+  const optionsRef = React.useRef(options);
+  optionsRef.current = options;
 
   React.useEffect(() => {
     if (!transactionId) return;
@@ -371,15 +373,15 @@ export const useTransactionStatusWebSocket = (
       ...options,
       onMessage: (data) => {
         setLastMessage(data);
-        options.onMessage?.(data);
+        optionsRef.current.onMessage?.(data);
       },
       onError: (error) => {
         setIsConnected(false);
-        options.onError?.(error);
+        optionsRef.current.onError?.(error);
       },
       onClose: () => {
         setIsConnected(false);
-        options.onClose?.();
+        optionsRef.current.onClose?.();
       },
     });
 

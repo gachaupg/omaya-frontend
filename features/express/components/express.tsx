@@ -48,9 +48,14 @@ const Express = ({ isHomePage = false }: ExpressProps) => {
     try {
       const raw = localStorage.getItem("express_transaction_data");
       if (!raw) return;
-      const parsed = JSON.parse(raw) as { transactionId?: string; type?: string };
-      if (!parsed?.transactionId) return;
-      setTransactionData(parsed);
+      const parsed = JSON.parse(raw) as {
+        transactionId?: string;
+        transaction_id?: string;
+        type?: string;
+      };
+      const txId = parsed?.transactionId || parsed?.transaction_id;
+      if (!txId) return;
+      setTransactionData({ ...parsed, transactionId: txId });
       setShowExchanging(true);
       scrollAppToTop();
       if (parsed.type === "deposit" || parsed.type === "withdrawal") {
