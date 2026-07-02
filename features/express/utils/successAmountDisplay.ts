@@ -25,18 +25,63 @@ export function resolveExpressSendCurrency(
   return assetTicker(tx) || "USD";
 }
 
-/** Send currency on status UI; deposits always USD (ignores socket asset ticker). */
+/** Send currency on status UI; fiat deposits USD; on-chain crypto deposits use asset ticker. */
 export function resolveExpressStatusSendCurrency(
   tx: any,
   liveCurrency?: string | null,
   wsFallback?: string
 ): string {
-  if (String(tx?.type ?? "").toLowerCase() === "deposit") return "USD";
+  if (String(tx?.type ?? "").toLowerCase() === "deposit") {
+    if (isExpressDirectCryptoDeposit(tx)) {
+      const live = String(liveCurrency ?? "")
+        .trim()
+        .toUpperCase();
+      if (live) return live;
+      const ws = String(wsFallback ?? "")
+        .trim()
+        .toUpperCase();
+      if (ws) return ws;
+      return assetTicker(tx) || "USDT";
+    }
+    if (isExpressChangeNowDeposit(tx)) {
+      const live = String(liveCurrency ?? "")
+        .trim()
+        .toUpperCase();
+      if (live) return live;
+      // Exchanging page: send row is always USD for ChangeNow deposits.
+      return "USD";
+    }
+    return "USD";
+  }
   const live = String(liveCurrency ?? "")
     .trim()
     .toUpperCase();
   if (live) return live;
   return resolveExpressSendCurrency(tx, wsFallback);
+}
+
+/** Send currency with websocket context (ChangeNow uses from_currency, not currency). */
+export function resolveExpressStatusSendCurrencyWithWs(
+  tx: any,
+  liveCurrency?: string | null,
+  websocketData?: unknown
+): string {
+  const wsPayload = unwrapExpressWsStatusPayload(websocketData);
+  if (isExpressChangeNowDeposit(tx, wsPayload)) {
+    const live = String(liveCurrency ?? "")
+      .trim()
+      .toUpperCase();
+    if (live) return live;
+    return "USD";
+  }
+  if (isExpressDirectCryptoDeposit(tx, wsPayload)) {
+    return resolveExpressStatusSendCurrency(
+      tx,
+      liveCurrency,
+      String(wsPayload.currency ?? wsPayload.from_currency ?? "")
+    );
+  }
+  return resolveExpressStatusSendCurrency(tx, liveCurrency);
 }
 
 /** Fiat/crypto the user receives on the express status page. */
@@ -76,6 +121,21 @@ export function resolveExpressStatusReceiveCurrency(
       .trim()
       .toUpperCase();
     if (ws && ws !== "USD") return ws;
+    const toDetails = String(tx?.details?.to_currency ?? "")
+      .trim()
+      .toUpperCase();
+    if (toDetails) return toDetails;
+    return assetTicker(tx) || "USDT";
+  }
+  if (type === "deposit" && isExpressDirectCryptoDeposit(tx)) {
+    const live = String(liveNetCurrency ?? "")
+      .trim()
+      .toUpperCase();
+    if (live) return live;
+    const ws = String(wsFallback ?? "")
+      .trim()
+      .toUpperCase();
+    if (ws) return ws;
     return assetTicker(tx) || "USDT";
   }
   if (type === "deposit") return "USD";
@@ -123,7 +183,104 @@ export type ExpressSocketReceiveFields = {
   amount_to?: unknown;
   estimated_amount?: unknown;
   amount_expected_to?: unknown;
+  amount_expected_from?: unknown;
+  amount_from?: unknown;
+  paid_amount?: unknown;
+  requested_amount?: unknown;
+  amount?: unknown;
+  from_currency?: unknown;
+  to_currency?: unknown;
+  is_conversion?: unknown;
+  swap_id?: unknown;
+  payin_address?: unknown;
+  payout_address?: unknown;
 };
+
+/** ChangeNow / cross-asset conversion fields on websocket status payloads. */
+export function isExpressChangeNowWsPayload(
+  wsPayload?: Record<string, unknown> | null
+): boolean {
+  if (!wsPayload || typeof wsPayload !== "object") return false;
+  if (wsPayload.is_conversion === true) return true;
+  if (String(wsPayload.swap_id ?? "").trim()) return true;
+  const from = String(wsPayload.from_currency ?? "")
+    .trim()
+    .toUpperCase();
+  const to = String(wsPayload.to_currency ?? "")
+    .trim()
+    .toUpperCase();
+  if (from && to && from !== to) return true;
+  const payin = String(wsPayload.payin_address ?? "").trim();
+  const payout = String(wsPayload.payout_address ?? "").trim();
+  if (payin && payout && from && to && from !== to) return true;
+  return false;
+}
+
+/** Resolve ChangeNow send amount from websocket (current amount, not stale quote). */
+export function resolveExpressChangeNowSendAmount(
+  wsPayload: Record<string, unknown>
+): number | null {
+  return (
+    parseExpressSocketNumberish(wsPayload.amount) ??
+    parseExpressSocketNumberish(wsPayload.paid_amount) ??
+    parseExpressSocketNumberish(wsPayload.requested_amount) ??
+    parseExpressSocketNumberish(wsPayload.amount_from) ??
+    parseExpressSocketNumberish(wsPayload.amount_expected_from)
+  );
+}
+
+/** Read ChangeNow receive amount directly from socket net_amount (no scaling/conversion). */
+export function resolveExpressChangeNowSocketNetAmount(
+  wsPayload: Record<string, unknown>
+): number | null {
+  return parseExpressSocketNumberish(wsPayload.net_amount);
+}
+
+/** Resolve ChangeNow receive amount from websocket — socket net_amount as-is when present. */
+export function resolveExpressChangeNowReceiveAmount(
+  wsPayload: Record<string, unknown>
+): number | null {
+  const fromNet = parseExpressSocketNumberish(wsPayload.net_amount);
+  if (fromNet != null) return fromNet;
+
+  const amountTo = parseExpressSocketNumberish(wsPayload.amount_to);
+  if (amountTo != null) return amountTo;
+
+  const estimated = parseExpressSocketNumberish(wsPayload.estimated_amount);
+  if (estimated != null) return estimated;
+
+  return parseExpressSocketNumberish(wsPayload.amount_expected_to);
+}
+
+export function resolveExpressChangeNowSendCurrency(
+  wsPayload: Record<string, unknown>,
+  tx?: any
+): string {
+  const fromWs = String(wsPayload.from_currency ?? "")
+    .trim()
+    .toUpperCase();
+  if (fromWs) return fromWs;
+  const fromTx = String(tx?.details?.from_currency ?? "")
+    .trim()
+    .toUpperCase();
+  if (fromTx) return fromTx;
+  return "USDT";
+}
+
+export function resolveExpressChangeNowReceiveCurrency(
+  wsPayload: Record<string, unknown>,
+  tx?: any
+): string {
+  const toWs = String(wsPayload.to_currency ?? "")
+    .trim()
+    .toUpperCase();
+  if (toWs) return toWs;
+  const toTx = String(tx?.details?.to_currency ?? "")
+    .trim()
+    .toUpperCase();
+  if (toTx) return toTx;
+  return assetTicker(tx) || "USDT";
+}
 
 /** Unwrap status_update payload from express websocket messages. */
 export function unwrapExpressWsStatusPayload(
@@ -146,7 +303,35 @@ export function unwrapExpressWsStatusPayload(
   }
 
   // Merge outer + inner so amount fields on either level are available.
-  return { ...rootData, ...inner };
+  const merged: Record<string, unknown> = { ...rootData, ...inner };
+
+  const amountFields = [
+    "net_amount",
+    "amount",
+    "paid_amount",
+    "requested_amount",
+    "amount_from",
+    "amount_to",
+    "amount_expected_from",
+    "amount_expected_to",
+    "estimated_amount",
+    "from_currency",
+    "to_currency",
+    "is_conversion",
+    "swap_id",
+  ] as const;
+
+  for (const field of amountFields) {
+    const innerVal = inner[field];
+    const outerVal = rootData[field];
+    if (innerVal != null && innerVal !== "") {
+      merged[field] = innerVal;
+    } else if (outerVal != null && outerVal !== "") {
+      merged[field] = outerVal;
+    }
+  }
+
+  return merged;
 }
 
 /**
@@ -166,6 +351,10 @@ export function resolveExpressSocketReceiveAmount(
 
   const type = String(transactionType ?? "").toLowerCase();
   if (type === "deposit") {
+    const wsRecord = (wsData ?? {}) as Record<string, unknown>;
+    if (isExpressChangeNowWsPayload(wsRecord)) {
+      return resolveExpressChangeNowReceiveAmount(wsRecord);
+    }
     return netAmount;
   }
   if (type === "withdrawal") {
@@ -176,8 +365,12 @@ export function resolveExpressSocketReceiveAmount(
 }
 
 /** ChangeNow / estimate-API deposit: form "You Receive" is crypto, not USD net. */
-export function isExpressChangeNowDeposit(tx: any): boolean {
+export function isExpressChangeNowDeposit(
+  tx: any,
+  wsPayload?: Record<string, unknown> | null
+): boolean {
   if (!tx || String(tx.type ?? "").toLowerCase() !== "deposit") return false;
+  if (isExpressChangeNowWsPayload(wsPayload)) return true;
   if (
     tx.changenowId ||
     tx.changenow_id ||
@@ -194,6 +387,118 @@ export function isExpressChangeNowDeposit(tx: any): boolean {
   return false;
 }
 
+/** On-chain express deposit (send USDT/USDC to deposit_address; receive net in same asset). */
+export function isExpressDirectCryptoDeposit(
+  tx: any,
+  wsPayload?: Record<string, unknown> | null
+): boolean {
+  if (!tx || String(tx.type ?? "").toLowerCase() !== "deposit") return false;
+  if (isExpressChangeNowDeposit(tx, wsPayload)) return false;
+  if (isExpressChangeNowWsPayload(wsPayload)) return false;
+
+  const ws = wsPayload ?? {};
+  if (String(ws.deposit_address ?? ws.payin_address ?? "").trim()) return true;
+  if (String(tx.deposit_address ?? tx.payin_address ?? "").trim()) return true;
+
+  const info = String(tx.additional_info ?? "").toLowerCase();
+  if (info.includes("direct crypto")) return true;
+
+  const ticker = assetTicker(tx);
+  if (
+    ["USDT", "USDC", "FXP"].includes(ticker) &&
+    !tx.paymentDetail &&
+    !(Array.isArray(tx.paymentDetails) && tx.paymentDetails.length > 0)
+  ) {
+    return true;
+  }
+  return false;
+}
+
+export function resolveExpressDirectCryptoDepositReceiveDisplay(input: {
+  transactionData?: any;
+  liveNetAmount?: number | null;
+  liveNetCurrency?: string | null;
+  websocketData?: unknown;
+}): ExpressStatusNetDisplay {
+  const tx = input.transactionData ?? {};
+  const wsPayload = unwrapExpressWsStatusPayload(input.websocketData);
+  const fromSocket = parseExpressSocketNumberish(wsPayload.net_amount);
+  const fromLive =
+    input.liveNetAmount != null && input.liveNetAmount > 0
+      ? input.liveNetAmount
+      : null;
+  const fromForm =
+    parseExpressSocketNumberish(tx.receiveAmount) ??
+    parseExpressSocketNumberish(tx.net_amount) ??
+    parseExpressSocketNumberish(tx.netAmount);
+  const amount = fromSocket ?? fromLive ?? fromForm ?? 0;
+  let currency = String(
+    wsPayload.currency ?? input.liveNetCurrency ?? ""
+  )
+    .trim()
+    .toUpperCase();
+  if (!currency || currency === "USD") {
+    currency = assetTicker(tx) || "USDT";
+  }
+  return { amount, currency };
+}
+
+export type ExpressDepositWsAmountUpdate = {
+  sendAmount: number | null;
+  sendCurrency: string | null;
+  receiveAmount: number | null;
+  receiveCurrency: string | null;
+};
+
+/** Map express deposit status_update payload to live send/receive amounts. */
+export function resolveExpressDepositWsAmountUpdate(
+  tx: any,
+  wsPayload: Record<string, unknown>
+): ExpressDepositWsAmountUpdate {
+  if (isExpressChangeNowDeposit(tx, wsPayload)) {
+    const receiveAmount = resolveExpressChangeNowReceiveAmount(wsPayload);
+    return {
+      sendAmount: resolveExpressChangeNowSendAmount(wsPayload),
+      sendCurrency: "USD",
+      receiveAmount,
+      receiveCurrency: resolveExpressChangeNowReceiveCurrency(wsPayload, tx),
+    };
+  }
+
+  const sendAmount =
+    parseExpressSocketNumberish(wsPayload.amount) ??
+    parseExpressSocketNumberish(wsPayload.amount_from) ??
+    parseExpressSocketNumberish(wsPayload.paid_amount);
+
+  const sendCurrencyRaw = String(
+    wsPayload.currency ?? wsPayload.from_currency ?? ""
+  )
+    .trim()
+    .toUpperCase();
+
+  if (isExpressDirectCryptoDeposit(tx, wsPayload)) {
+    const receiveAmount = parseExpressSocketNumberish(wsPayload.net_amount);
+    const asset = sendCurrencyRaw || assetTicker(tx) || "USDT";
+    return {
+      sendAmount,
+      sendCurrency: asset,
+      receiveAmount,
+      receiveCurrency: asset,
+    };
+  }
+
+  const receiveAmount = resolveExpressDepositUsdNetAmount({
+    wsPayload,
+    transactionData: tx,
+  });
+  return {
+    sendAmount,
+    sendCurrency: "USD",
+    receiveAmount: receiveAmount > 0 ? receiveAmount : null,
+    receiveCurrency: "USD",
+  };
+}
+
 /** Exchanging page deposit receive row: form amounts (crypto for ChangeNow, USD for simple). */
 export function resolveExpressDepositExchangingReceiveDisplay(input: {
   transactionData?: any;
@@ -204,24 +509,15 @@ export function resolveExpressDepositExchangingReceiveDisplay(input: {
   const tx = input.transactionData ?? {};
   const wsPayload = unwrapExpressWsStatusPayload(input.websocketData);
 
-  if (isExpressChangeNowDeposit(tx)) {
-    const fromLive =
-      input.liveNetAmount != null && input.liveNetAmount > 0
-        ? input.liveNetAmount
-        : null;
-    const fromSocket =
-      parseExpressSocketNumberish(wsPayload.amount_to) ??
-      parseExpressSocketNumberish(wsPayload.estimated_amount) ??
-      parseExpressSocketNumberish(wsPayload.amount_expected_to);
+  if (isExpressChangeNowDeposit(tx, wsPayload)) {
     const fromForm = parseExpressSocketNumberish(tx.receiveAmount);
-    const amount = fromLive ?? fromSocket ?? fromForm ?? 0;
-    let currency = String(input.liveNetCurrency ?? "")
-      .trim()
-      .toUpperCase();
-    if (!currency || currency === "USD") {
-      currency = assetTicker(tx) || "USDT";
-    }
+    const amount = resolveExpressChangeNowReceiveAmount(wsPayload) ?? fromForm ?? 0;
+    const currency = resolveExpressChangeNowReceiveCurrency(wsPayload, tx);
     return { amount, currency };
+  }
+
+  if (isExpressDirectCryptoDeposit(tx, wsPayload)) {
+    return resolveExpressDirectCryptoDepositReceiveDisplay(input);
   }
 
   const amount = resolveExpressDepositStatusReceiveAmount({
@@ -395,12 +691,12 @@ export function resolveExpressDepositUsdNetAmount(input: {
     return isPlausibleUsdDepositNet(parsed, paidUsd, comm) ? parsed : null;
   };
 
-  const fromProcessing = tryCandidate(input.processingReceiveAmount);
-  if (fromProcessing != null) return fromProcessing;
-
   const fromSocketNet =
     tryCandidate(wsPayload.net_amount) ?? tryCandidate(wsPayload.netAmount);
   if (fromSocketNet != null) return fromSocketNet;
+
+  const fromProcessing = tryCandidate(input.processingReceiveAmount);
+  if (fromProcessing != null) return fromProcessing;
 
   const fromFormUsdNet = tryCandidate(tx.usdNetReceive);
   if (fromFormUsdNet != null) return fromFormUsdNet;
@@ -563,14 +859,16 @@ export function resolveExpressDepositCryptoReceiveDisplay(input: {
 }): ExpressStatusNetDisplay {
   const tx = input.transactionData ?? {};
   const wsPayload = unwrapExpressWsStatusPayload(input.websocketData);
-  const changeNow = isExpressChangeNowDeposit(tx);
+  const changeNow = isExpressChangeNowDeposit(tx, wsPayload);
 
-  const fromSocket =
-    parseExpressSocketNumberish(wsPayload.amount_to) ??
-    parseExpressSocketNumberish(wsPayload.estimated_amount) ??
-    parseExpressSocketNumberish(wsPayload.amount_expected_to) ??
-    parseExpressSocketNumberish(wsPayload.net_amount) ??
-    parseExpressSocketNumberish(wsPayload.netAmount);
+  const fromSocket = changeNow
+    ? resolveExpressChangeNowSocketNetAmount(wsPayload) ??
+      resolveExpressChangeNowReceiveAmount(wsPayload)
+    : parseExpressSocketNumberish(wsPayload.amount_to) ??
+      parseExpressSocketNumberish(wsPayload.estimated_amount) ??
+      parseExpressSocketNumberish(wsPayload.amount_expected_to) ??
+      parseExpressSocketNumberish(wsPayload.net_amount) ??
+      parseExpressSocketNumberish(wsPayload.netAmount);
 
   const fromForm = parseExpressSocketNumberish(tx.receiveAmount);
   const fromTxNet =
@@ -588,18 +886,21 @@ export function resolveExpressDepositCryptoReceiveDisplay(input: {
       ? input.liveNetAmount
       : null;
 
-  const amount =
-    fromProcessing ??
-    fromLive ??
-    fromSocket ??
-    fromForm ??
-    fromTxNet ??
-    0;
+  const amount = changeNow
+    ? fromSocket ?? fromForm ?? fromTxNet ?? 0
+    : fromProcessing ??
+      fromLive ??
+      fromSocket ??
+      fromForm ??
+      fromTxNet ??
+      0;
 
-  let currency = String(input.liveNetCurrency ?? "")
-    .trim()
-    .toUpperCase();
-  if (!currency || currency === "USD") {
+  let currency = changeNow
+    ? resolveExpressChangeNowReceiveCurrency(wsPayload, tx)
+    : String(input.liveNetCurrency ?? "")
+        .trim()
+        .toUpperCase();
+  if (!changeNow && (!currency || currency === "USD")) {
     currency = resolveExpressSelectedAssetCurrency(tx);
   }
 

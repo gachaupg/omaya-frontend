@@ -33,16 +33,10 @@ const formatCurrencyLabel = (currency?: string | null) => {
   return currency.toUpperCase();
 };
 
-const getCurrencyOptions = (orders: any): Option[] => {
-  // USDT (asset) + range currencies (KES, USD) for filtering
-  const options: Option[] = [
-    { label: "ALL", value: "ALL" },
-    { label: "USD", value: "USD" },
-
-    { label: "KES", value: "KES" },
-  ];
-  return options;
-};
+const getCurrencyOptions = (): Option[] => [
+  { label: "USD", value: "USD" },
+  { label: "KES", value: "KES" },
+];
 
 type MarketOrdersBundle = {
   buy_orders?: { results?: unknown[] };
@@ -222,7 +216,7 @@ const MarketTransactions = memo(({ activeTab }: { activeTab: string }) => {
 
   const hasInitializedRef = useRef(false);
   const [amount, setAmount] = useState("");
-  const [selectedCurrency, setSelectedCurrency] = useState("ALL");
+  const [selectedCurrency, setSelectedCurrency] = useState("USD");
   const [paymentTypes, setPaymentTypes] = useState<string[]>([]);
   const [providers, setProviders] = useState<string[]>([]);
   const [isPaymentDropdownOpen, setIsPaymentDropdownOpen] = useState(false);
@@ -315,7 +309,7 @@ const MarketTransactions = memo(({ activeTab }: { activeTab: string }) => {
       return next;
     });
   }, [paymentMethodOptions]);
-  const currencyOptions = useMemo(() => getCurrencyOptions(orders), [orders]);
+  const currencyOptions = useMemo(() => getCurrencyOptions(), []);
   const paymentSummary = useMemo(
     () =>
       formatSelectionSummary(
@@ -530,18 +524,14 @@ const MarketTransactions = memo(({ activeTab }: { activeTab: string }) => {
         };
       })
       .filter((row: MarketRow) => {
-        // Currency filter: ALL = show all, USDT = asset, KES/USD = range_currency
+        // Currency filter: USD or KES via range_currency
         if (selectedCurrency) {
           const sel = selectedCurrency.toUpperCase();
-          if (sel === "ALL") {
-            // Show all orders, no currency filter
-          } else if (sel === "USDT") {
-            if ((row.currency || "").toUpperCase() !== "USDT") return false;
-          } else if (sel === "KES") {
+          if (sel === "KES") {
             if ((row.range_currency || "").toUpperCase() !== "KES") return false;
           } else if (sel === "USD") {
             const rc = (row.range_currency || "").toUpperCase();
-            if (rc === "KES") return false; // exclude KES, show USD/null
+            if (rc === "KES") return false;
           }
         }
 
