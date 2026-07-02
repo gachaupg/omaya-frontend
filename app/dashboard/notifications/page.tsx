@@ -11,7 +11,7 @@ import {
   reconcileCanceledMatchedNotifications,
 } from "@/features/p2p/slices/matchedTradesSlice";
 import {
-  selectAllMatchedTradeNotifications,
+  selectPendingMatchedTradeNotifications,
 } from "@/features/p2p/selectors";
 import { useMatchedTradesWsConnected } from "@/features/p2p/components/MatchedTradesWebSocketProvider";
 import {
@@ -46,7 +46,7 @@ const Notifications = () => {
   const { loading, refreshing, hasLoaded, activePage, totalPages } = useSelector(
     (state: RootState) => state.matchedTrades
   );
-  const allNotifications = useSelector(selectAllMatchedTradeNotifications);
+  const allNotifications = useSelector(selectPendingMatchedTradeNotifications);
   const wsConnected = useMatchedTradesWsConnected();
   const { user, isAuthenticated } = useSelector((state: RootState) => state.auth);
   const filteredNotifications = React.useMemo(
