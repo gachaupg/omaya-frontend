@@ -36,7 +36,7 @@ import { resolveExpressTransactionFailureMessage } from "@/lib/utils/websocketUt
 import { OMAYA_IO_ACCOUNT_DETAILS_TITLE } from "../utils/paymentDetailDisplay";
 import { useScrollAppToTopWhen } from "@/hooks/useScrollAppToTopWhen";
 import { encodeQrScanData } from "@/lib/utils/ussdDial";
-import { mapExpressBackendStatusToUi } from "@/features/express/utils/exchangeStatusMapping";
+import { mapExpressBackendStatusToUi, shouldNavigateExpressToSuccessPage } from "@/features/express/utils/exchangeStatusMapping";
 import { formatHowToSend } from "@/features/moneyX/utils/howToSend";
 
 interface ExchangingProps {
@@ -194,6 +194,7 @@ export default function Exchanging({ transactionData }: ExchangingProps) {
   const { tokens } = useSelector((state: any) => state.auth);
   const token = tokens?.access ?? cookieUtils.getCookie("access_token") ?? (typeof window !== "undefined" ? localStorage.getItem("access_token") : null);
   const [showSuccess, setShowSuccess] = useState(false);
+  const successNavigationScheduledRef = React.useRef(false);
   useScrollAppToTopWhen(true);
   useScrollAppToTopWhen(showSuccess);
   const [currentStatus, setCurrentStatus] = useState<string>("pending");
@@ -858,25 +859,10 @@ export default function Exchanging({ transactionData }: ExchangingProps) {
             message = (data as any).message;
           }
 
-          // For withdrawal flows, backend may keep `operational_status` as the source of truth
-          // while `status` briefly moves backward (e.g. admin_approval_required -> pending).
-          const wsOperationalStatus = String(
-            (statusPayload as any)?.operational_status ||
-              (data as any)?.data?.operational_status ||
-              ""
-          )
-            .trim()
-            .toLowerCase();
-          const isWithdrawalFlow = effectiveTransactionData?.type === "withdrawal";
+          // Backend may keep `operational_status` pinned at an approval gate while `status`
+          // continues forward — never replace `status` with `operational_status` here.
 
-          if (
-            isWithdrawalFlow &&
-            ["admin_approval_required", "approval_required", "agent_approve"].includes(
-              wsOperationalStatus
-            )
-          ) {
-            status = wsOperationalStatus;
-          }
+          const isWithdrawalFlow = effectiveTransactionData?.type === "withdrawal";
 
           // Process statuses for both deposit and withdrawal
           const validStatuses = [
@@ -897,6 +883,7 @@ export default function Exchanging({ transactionData }: ExchangingProps) {
             "approval_required",
             "admin_approval_required", // New status for admin approval
             "agent_approve", // New status for agent approval
+            "approved",
             "waiting", // ChangeNow status
           ];
 
@@ -983,6 +970,13 @@ export default function Exchanging({ transactionData }: ExchangingProps) {
                 uiStatus = "exchanging"; // Show as exchanging while waiting for approval
               } else if (status === "admin_approval_required") {
                 uiStatus = "sending"; // Admin approval means exchanging is complete, move to sending
+              } else if (
+                isWithdrawalFlow &&
+                (status === "completed" ||
+                  status === "finished" ||
+                  status === "approved")
+              ) {
+                uiStatus = "completed";
               } else if (status === "completed" || status === "finished") {
                 // Check if this is a final completed status
                 if (
@@ -1007,8 +1001,15 @@ export default function Exchanging({ transactionData }: ExchangingProps) {
                 (data.data as any)?.transaction_type,
             });
 
+            const shouldAutoNavigate = shouldNavigateExpressToSuccessPage({
+              status,
+              uiStatus,
+              transactionType: effectiveTransactionData?.type,
+            });
+
             // Prevent backward UI jumps for withdrawal pipeline after it reaches sending.
             if (
+              !shouldAutoNavigate &&
               isWithdrawalFlow &&
               currentStatus === "sending" &&
               ["pending", "confirming", "exchanging"].includes(uiStatus)
@@ -1018,15 +1019,9 @@ export default function Exchanging({ transactionData }: ExchangingProps) {
 
             setCurrentStatus(uiStatus);
 
-            // Auto-navigate to success page when transaction is completed
-            // Navigate on ANY completed status - whether from ChangeNow or direct transfer
-            const shouldAutoNavigate =
-              uiStatus === "completed" || status === "completed";
-
-            if (shouldAutoNavigate) {
-              // Store final websocket data for success page
+            if (shouldAutoNavigate && !successNavigationScheduledRef.current) {
+              successNavigationScheduledRef.current = true;
               setFinalWebsocketData(data);
-              // Create snapshot of websocket data to prevent changes in success page
               setSnapshotWebsocketData(data);
               if (effectiveTransactionData?.type === "deposit") {
                 const snap = resolveExpressDepositUsdNetAmount({
@@ -1049,44 +1044,14 @@ export default function Exchanging({ transactionData }: ExchangingProps) {
                   }
                 }
               }
-              // Give users time to see the completion status before redirecting
+              const delayMs =
+                isWithdrawalFlow &&
+                (status === "agent_approve" || status === "approved")
+                  ? 1000
+                  : 2000;
               setTimeout(() => {
                 setShowSuccess(true);
-              }, 2000); // 2 seconds delay to show completion status
-            }
-
-            // Auto-navigate to success page when transaction is agent approved
-            if (status === "agent_approve") {
-              // Store final websocket data for success page
-              setFinalWebsocketData(data);
-              // Create snapshot of websocket data to prevent changes in success page
-              setSnapshotWebsocketData(data);
-              if (effectiveTransactionData?.type === "deposit") {
-                const snap = resolveExpressDepositUsdNetAmount({
-                  wsPayload: unwrapExpressWsStatusPayload(data),
-                  transactionData: effectiveTransactionData as {
-                    amount?: number;
-                    receiveAmount?: unknown;
-                    netAmount?: unknown;
-                    net_amount?: unknown;
-                    expectedAmount?: unknown;
-                    usdNetReceive?: unknown;
-                    commission?: string | number | null;
-                    commissionAmount?: number | null;
-                  },
-                });
-                if (snap > 0) {
-                  setDepositNetSnapshot(snap);
-                  if (!isExpressChangeNowDeposit(effectiveTransactionData)) {
-                    setLiveNetAmount(snap);
-                  }
-                }
-              }
-              // Give users time to see the completion status before redirecting
-              setTimeout(() => {
-                setShowSuccess(true);
-                // Remove auto-redirect - let users click the button manually
-              }, 1000);
+              }, delayMs);
             }
           } else {
           }

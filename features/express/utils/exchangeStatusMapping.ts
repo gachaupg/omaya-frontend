@@ -16,6 +16,38 @@ export function isExpressDepositTransaction(
   return fromTx === "deposit" || fromWs === "deposit";
 }
 
+/** Backend statuses that should open the express success page for withdrawals. */
+export const EXPRESS_WITHDRAWAL_SUCCESS_STATUSES = new Set([
+  "completed",
+  "finished",
+  "approved",
+  "agent_approve",
+]);
+
+export function isExpressWithdrawalSuccessStatus(
+  status: string | undefined | null
+): boolean {
+  const normalized = String(status ?? "").trim().toLowerCase();
+  return EXPRESS_WITHDRAWAL_SUCCESS_STATUSES.has(normalized);
+}
+
+/** When the exchanging page should transition to the success screen. */
+export function shouldNavigateExpressToSuccessPage(input: {
+  status?: string;
+  uiStatus: string;
+  transactionType?: string | null;
+}): boolean {
+  const type = String(input.transactionType ?? "").trim().toLowerCase();
+  const status = String(input.status ?? "").trim().toLowerCase();
+  const uiStatus = String(input.uiStatus ?? "").trim().toLowerCase();
+
+  if (type === "withdrawal") {
+    return isExpressWithdrawalSuccessStatus(status) || uiStatus === "completed";
+  }
+
+  return uiStatus === "completed" || status === "completed";
+}
+
 /** Map backend status to exchanging UI status (deposit `processing` → `pending`). */
 export function mapExpressBackendStatusToUi(
   backendStatus: string,
