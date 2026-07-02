@@ -13,7 +13,6 @@ import {
   resolveExpressSendCurrency,
   resolveExpressDepositSuccessDisplay,
   resolveExpressWithdrawalSuccessDisplay,
-  isExpressChangeNowDeposit,
 } from "../utils/successAmountDisplay";
 const formatDateTimeEastAfrica = (input: Date | number | string): string => {
   const d = input instanceof Date ? input : new Date(input);
@@ -434,11 +433,7 @@ const SuccessPage: React.FC<SuccessPageProps> = ({
         transactionData,
         processingReceiveAmount,
       });
-      const changeNowDeposit = isExpressChangeNowDeposit(transactionData);
-      const formattedReceive = formatAmount(
-        depositDisplay.receiveAmount,
-        changeNowDeposit
-      );
+      const formattedReceive = formatAmount(depositDisplay.receiveAmount, true);
 
       return {
         transactionId: txId,
@@ -461,20 +456,20 @@ const SuccessPage: React.FC<SuccessPageProps> = ({
         processingReceiveAmount,
         processingSendAmount,
       });
-      const formattedCrypto = formatAmount(withdrawalDisplay.receiveAmount);
-      const formattedUsd = formatAmount(withdrawalDisplay.paidAmount);
+      const formattedCrypto = formatAmount(withdrawalDisplay.paidAmount, true);
+      const formattedUsd = formatAmount(withdrawalDisplay.receiveAmount);
 
       return {
         transactionId: txId,
         date: transactionDate,
-        paidAmount: formattedUsd,
+        paidAmount: formattedCrypto,
         paidCurrency: withdrawalDisplay.paidCurrency,
-        receivedAmount: formattedCrypto,
+        receivedAmount: formattedUsd,
         receivedCurrency: withdrawalDisplay.receiveCurrency,
-        payinMethod: `${withdrawalDisplay.receiveCurrency} Wallet`,
+        payinMethod: `${withdrawalDisplay.paidCurrency} Wallet`,
         payoutMethod: paymentMethod,
         transactionHash: txHash,
-        netAmount: formattedCrypto,
+        netAmount: formattedUsd,
       };
     }
     
@@ -704,7 +699,7 @@ const SuccessPage: React.FC<SuccessPageProps> = ({
                     Net Amount Processed
                   </div>
                   <div className="font-mono flex items-center gap-2" style={{ color: GREEN }}>
-                    {!isDeposit &&
+                    {isDeposit &&
                       (transactionData?.asset?.icon ||
                         transactionData?.asset?.icon_url ||
                         transactionData?.asset?.image_url ||
@@ -756,7 +751,9 @@ const SuccessPage: React.FC<SuccessPageProps> = ({
             <p className="text-white/95 text-sm sm:text-base leading-relaxed">
               {isMoneyX
                 ? "Your MoneyX transfer is complete. Funds have been sent to the recipient account."
-                : `Your ${realData.receivedCurrency} has been sent to your wallet. It may take a few minutes to reflect in your balance.`}
+                : isWithdrawal
+                  ? `Your ${realData.receivedCurrency} payout has been processed. It may take a few minutes to reflect in your bank account.`
+                  : `Your ${realData.receivedCurrency} has been sent to your wallet. It may take a few minutes to reflect in your balance.`}
             </p>
           </div>
         </div>

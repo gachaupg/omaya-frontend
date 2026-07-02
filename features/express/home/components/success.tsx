@@ -391,20 +391,20 @@ const SuccessPage: React.FC<SuccessPageProps> = ({
         processingReceiveAmount,
         processingSendAmount,
       });
-      const formattedCrypto = formatAmount(withdrawalDisplay.receiveAmount);
-      const formattedUsd = formatAmount(withdrawalDisplay.paidAmount);
+      const formattedCrypto = formatAmount(withdrawalDisplay.paidAmount);
+      const formattedUsd = formatAmount(withdrawalDisplay.receiveAmount);
 
       return {
         transactionId: txId,
         date: transactionDate,
-        paidAmount: formattedUsd,
+        paidAmount: formattedCrypto,
         paidCurrency: withdrawalDisplay.paidCurrency,
-        receivedAmount: formattedCrypto,
+        receivedAmount: formattedUsd,
         receivedCurrency: withdrawalDisplay.receiveCurrency,
-        payinMethod: `${withdrawalDisplay.receiveCurrency} Wallet`,
+        payinMethod: `${withdrawalDisplay.paidCurrency} Wallet`,
         payoutMethod: paymentMethod,
         transactionHash: txHash,
-        netAmount: formattedCrypto,
+        netAmount: formattedUsd,
       };
     }
 
@@ -554,13 +554,24 @@ const SuccessPage: React.FC<SuccessPageProps> = ({
                 Final Amount (after fees)
               </div>
               <div className="font-mono flex items-center gap-2" style={{ color: GREEN }}>
-                {!isDeposit && transactionData?.asset?.icon && (
+                {isDeposit &&
+                  (transactionData?.asset?.icon ||
+                    transactionData?.asset?.icon_url ||
+                    transactionData?.asset?.image_url ||
+                    transactionData?.asset?.asset_image ||
+                    transactionData?.asset?.image) && (
                   <img
-                    src={transactionData.asset.icon}
+                    src={
+                      transactionData.asset.icon ||
+                      transactionData.asset.icon_url ||
+                      transactionData.asset.image_url ||
+                      transactionData.asset.asset_image ||
+                      transactionData.asset.image
+                    }
                     alt={realData.receivedCurrency}
-                    className="w-4 h-4"
+                    className="w-4 h-4 rounded-full object-contain"
                     onError={(e) => {
-                      e.currentTarget.style.display = 'none';
+                      e.currentTarget.style.display = "none";
                     }}
                   />
                 )}
