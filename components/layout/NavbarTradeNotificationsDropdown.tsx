@@ -50,7 +50,9 @@ export default function NavbarTradeNotificationsDropdown() {
   );
   const pendingCount = useSelector(selectPendingMatchedTradeNotificationCount);
 
-  useMatchedTradesWebSocket({ enabled: isAuthenticated });
+  const { isConnected: wsConnected } = useMatchedTradesWebSocket({
+    enabled: isAuthenticated,
+  });
   useTradeNotificationSound(isAuthenticated);
 
   const previewNotifications = useMemo(

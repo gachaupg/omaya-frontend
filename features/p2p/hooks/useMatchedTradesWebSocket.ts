@@ -180,8 +180,7 @@ export const useMatchedTradesWebSocket = (
                     typeof message.data?.count === "number"
                       ? message.data.count
                       : trades.length,
-                  // Empty WS snapshot must not wipe HTTP-fetched notification rows.
-                  replace: trades.length > 0,
+                  replace: true,
                 })
               );
             }
@@ -200,7 +199,7 @@ export const useMatchedTradesWebSocket = (
                     typeof message.data?.count === "number"
                       ? message.data.count
                       : trades.length,
-                  replace: trades.length > 0,
+                  replace: true,
                 })
               );
             }
