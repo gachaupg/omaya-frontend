@@ -32,11 +32,28 @@ export function getWalletAmountsFromSummary(
   if (!summary) {
     return { balance: 0, availableAmount: 0, escrow: 0 };
   }
+  const lockedBalance = parseWalletAmount(
+    (summary as TransactionSummary & { locked_balance?: string }).locked_balance
+  );
+  const escrowFromField = parseWalletAmount(summary.escrow);
   return {
     balance: parseWalletAmount(summary.total_balance),
     availableAmount: parseWalletAmount(summary.available_amount),
-    escrow: parseWalletAmount(summary.escrow),
+    escrow: lockedBalance > 0 ? lockedBalance : escrowFromField,
   };
+}
+
+/**
+ * Single source for "in escrow / locked" UI — prefer live wallet WS, then merged summary.
+ */
+export function getP2PEscrowDisplay(
+  wsEscrow: number | null | undefined,
+  summary: TransactionSummary | null | undefined
+): number {
+  if (wsEscrow != null && Number.isFinite(wsEscrow)) {
+    return wsEscrow;
+  }
+  return getWalletAmountsFromSummary(summary ?? null).escrow;
 }
 
 /**
