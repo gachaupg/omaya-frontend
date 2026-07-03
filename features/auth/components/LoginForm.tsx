@@ -16,6 +16,10 @@ import { logger } from '@/lib/utils/logger';
 import DragFitCaptcha from "./capture";
 import { useTheme } from "@/context/theme";
 import { consumeAuthRedirectPath } from "@/lib/utils/authRedirect";
+import {
+  authHardRedirect,
+  clearAuthRedirectBounceGuard,
+} from "@/lib/utils/authSession";
 import { storage } from "../utils/storage";
 
 export default function LoginPage() {
@@ -66,9 +70,9 @@ export default function LoginPage() {
         redirectFromQuery ||
         normalizeRedirectPath(consumeAuthRedirectPath()) ||
         "/dashboard";
-      // Use hard navigation to ensure cookies/middleware run
+      clearAuthRedirectBounceGuard();
       setTimeout(() => {
-        window.location.href = redirectPath;
+        authHardRedirect(redirectPath);
       }, 100);
     }
   }, [isAuthenticated, searchParams]);

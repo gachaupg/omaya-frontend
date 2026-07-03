@@ -32,7 +32,13 @@ import {
 import { API_ENDPOINTS } from "../api";
 import { post, get, AxiosError } from "../../../lib/apiClient";
 import { storage } from "../utils/storage";
-import { cookieUtils } from "@/lib/utils/cookieUtils";
+import {
+  authHardRedirect,
+  clearMiddlewareAccessTokenCookie,
+  clearStoredAuthCredentials,
+  setMiddlewareAccessTokenCookie,
+  clearAuthRedirectBounceGuard,
+} from "@/lib/utils/authSession";
 import {
   clearPersistedDeviceSessionId,
   resetDeviceSessionTrackingForLogin,
@@ -85,13 +91,6 @@ function applyKycStatusPayload(
 }
 /** Access cookie max-age when "Remember me" is checked (refresh still in localStorage per existing app behavior). */
 const REMEMBER_ME_ACCESS_COOKIE_MAX_AGE_SEC = 30 * 24 * 60 * 60;
-
-const accessTokenCookieOptions = (rememberMe: boolean) =>
-  ({
-    maxAge: rememberMe ? REMEMBER_ME_ACCESS_COOKIE_MAX_AGE_SEC : undefined,
-    secure: true,
-    sameSite: "strict" as const,
-  });
 
 const initialState: AuthState = {
   user: null,
@@ -447,11 +446,7 @@ const authSlice = createSlice({
           }
         }
         
-        cookieUtils.setCookie("access_token", tokens.access, {
-          maxAge: 86400,
-          secure: true,
-          sameSite: "strict",
-        });
+        setMiddlewareAccessTokenCookie(tokens.access, 86400);
       }
     },
     updateUser: (
@@ -516,11 +511,7 @@ const authSlice = createSlice({
       }
 
       if (action.payload.access) {
-        cookieUtils.setCookie("access_token", action.payload.access, {
-          maxAge: 86400,
-          secure: true,
-          sameSite: "strict",
-        });
+        setMiddlewareAccessTokenCookie(action.payload.access, 86400);
       }
     },
     logout(state) {
@@ -539,7 +530,7 @@ const authSlice = createSlice({
       storage.removeProfile();
       storage.removeUserEmail();
       // Clear access token cookie
-      cookieUtils.removeCookie("access_token");
+      clearMiddlewareAccessTokenCookie();
 
       if (typeof window !== "undefined") {
         localStorage.removeItem("access_token");
@@ -595,7 +586,7 @@ const authSlice = createSlice({
           state.profile = null;
           state.error = suspensionMessage;
           storage.removeProfile();
-          cookieUtils.removeCookie("access_token");
+          clearMiddlewareAccessTokenCookie();
           if (typeof window !== "undefined") {
             localStorage.removeItem("access_token");
             localStorage.removeItem("refresh_token");
@@ -625,6 +616,7 @@ const authSlice = createSlice({
           if (!storedUser && authData.user) {
             localStorage.setItem('user', JSON.stringify(authData.user));
           }
+          setMiddlewareAccessTokenCookie(authData.tokens.access);
         }
       } else {
         // Check if we have tokens in localStorage as fallback (might be in transition)
@@ -645,7 +637,7 @@ const authSlice = createSlice({
                 state.profile = null;
                 state.error = suspensionMessage;
                 storage.removeProfile();
-                cookieUtils.removeCookie("access_token");
+                clearMiddlewareAccessTokenCookie();
                 localStorage.removeItem("access_token");
                 localStorage.removeItem("refresh_token");
                 localStorage.removeItem("user");
@@ -664,6 +656,7 @@ const authSlice = createSlice({
               state.tokens = tokens;
               state.isAuthenticated = true;
               state.profile = null;
+              setMiddlewareAccessTokenCookie(accessToken);
               return;
             } catch (e) {
               console.error('Error restoring auth from localStorage:', e);
@@ -688,18 +681,15 @@ const authSlice = createSlice({
           
           // Clear ALL localStorage and cookies (but preserve p2p_act)
           if (typeof window !== 'undefined') {
-            // Preserve p2p_act before clearing localStorage
             const p2pAct = localStorage.getItem("p2p_act");
-            localStorage.clear();
+            clearStoredAuthCredentials();
             if (p2pAct) {
               localStorage.setItem("p2p_act", p2pAct);
             }
-            cookieUtils.removeCookie("access_token");
-            
+
             console.log('🔒 Invalid or incomplete profile found, redirecting to login...');
-            // Use setTimeout to ensure state is updated before redirect
             setTimeout(() => {
-              window.location.href = '/auth/login';
+              authHardRedirect("/auth/login");
             }, 100);
           }
         } else {
@@ -804,10 +794,10 @@ const authSlice = createSlice({
         const rememberMe = Boolean(
           (action as { meta?: { arg?: LoginPayload } }).meta?.arg?.remember_me
         );
-        cookieUtils.setCookie(
-          "access_token",
+        clearAuthRedirectBounceGuard();
+        setMiddlewareAccessTokenCookie(
           action.payload.access,
-          accessTokenCookieOptions(rememberMe)
+          rememberMe ? REMEMBER_ME_ACCESS_COOKIE_MAX_AGE_SEC : 60 * 60
         );
 
         if (typeof window !== "undefined") {
@@ -987,11 +977,10 @@ const authSlice = createSlice({
           localStorage.setItem('user', JSON.stringify(action.payload.user));
         }
 
-        // Set access token as cookie
-        cookieUtils.setCookie(
-          "access_token",
+        clearAuthRedirectBounceGuard();
+        setMiddlewareAccessTokenCookie(
           action.payload.access,
-          accessTokenCookieOptions(rememberMe)
+          rememberMe ? REMEMBER_ME_ACCESS_COOKIE_MAX_AGE_SEC : 60 * 60
         );
 
         if (typeof window !== "undefined") {

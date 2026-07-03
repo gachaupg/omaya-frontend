@@ -4,7 +4,11 @@
 import axios from "axios";
 import { API_BASE_URL } from "@/config/api";
 import { storage } from "@/features/auth/utils/storage";
-import { cookieUtils } from "./cookieUtils";
+import {
+  clearStoredAuthCredentials,
+  authHardRedirect,
+  setMiddlewareAccessTokenCookie,
+} from "./authSession";
 import { logger } from "./logger";
 import { tokenRefreshMutex } from "./tokenRefreshMutex";
 
@@ -66,12 +70,7 @@ export const refreshAccessToken = async (): Promise<string | null> => {
 
       storage.setProfile(updatedProfile);
 
-      // Update cookie
-      cookieUtils.setCookie("access_token", access, {
-        maxAge: 86400,
-        secure: true,
-        sameSite: "strict",
-      });
+      setMiddlewareAccessTokenCookie(access, 86400);
 
       // Dispatch Redux action if available
       if (storeDispatch && refreshTokensAction) {
@@ -101,15 +100,16 @@ export const refreshAccessToken = async (): Promise<string | null> => {
         logger.warn("auth", "Refresh token expired or invalid, user needs to login again");
       }
 
-      // Clear invalid tokens
+      // Clear invalid tokens (including loose localStorage keys checkAuth would re-hydrate)
       storage.removeProfile();
-      cookieUtils.removeCookie("access_token");
+      clearStoredAuthCredentials();
 
-      // Only redirect if we're in the browser and not already on login page
-      if (typeof window !== "undefined" && !window.location.pathname.includes("/auth/login")) {
-        // Small delay to ensure cleanup happens first
+      if (
+        typeof window !== "undefined" &&
+        !window.location.pathname.includes("/auth/login")
+      ) {
         setTimeout(() => {
-          window.location.href = "/auth/login";
+          authHardRedirect("/auth/login");
         }, 100);
       }
 
