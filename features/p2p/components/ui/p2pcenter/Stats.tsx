@@ -1,15 +1,28 @@
-import React from "react";
+import React, { useMemo } from "react";
 import {
   formatSummaryPercent,
   getP2PCompletionRateDisplay,
+  mergeTransactionSummaries,
   parseSummaryNumber,
 } from "@/lib/utils/normalizeTransactionSummary";
+import { useP2PWalletBalanceContext } from "@/features/p2p/context/P2PWalletBalanceProvider";
+import { getP2PEscrowDisplay } from "@/features/p2p/walletAmounts";
+import type { TransactionSummary } from "@/features/p2p/types";
 
-const Stats = ({ summary }: { summary?: any }) => {
+const Stats = ({ summary }: { summary?: TransactionSummary | null }) => {
+  const wsWallet = useP2PWalletBalanceContext();
+
+  const activeSummary = useMemo(
+    () => mergeTransactionSummaries(summary, wsWallet.overviewSummary),
+    [summary, wsWallet.overviewSummary]
+  );
+
   const safe =
-    summary && typeof summary === "object" && !Array.isArray(summary)
-      ? summary
+    activeSummary && typeof activeSummary === "object" && !Array.isArray(activeSummary)
+      ? activeSummary
       : {};
+
+  const escrowDisplay = getP2PEscrowDisplay(wsWallet.escrow, activeSummary);
 
   const stats = [
     { value: parseSummaryNumber(safe.total_trades) || 0, label: "Trades" },
@@ -30,9 +43,7 @@ const Stats = ({ summary }: { summary?: any }) => {
       label: "Rating",
     },
     {
-      value: (
-        <span>{(parseSummaryNumber(safe.escrow) || 0).toLocaleString()}</span>
-      ),
+      value: <span>{escrowDisplay.toLocaleString()}</span>,
       label: "In Escrow / Locked",
     },
   ];

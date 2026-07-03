@@ -11,6 +11,7 @@ import {
   selectTransactionSummary,
 } from "@/features/p2p/selectors";
 import { useP2PWalletBalanceContext } from "@/features/p2p/context/P2PWalletBalanceProvider";
+import { getP2PEscrowDisplay } from "@/features/p2p/walletAmounts";
 
 import { logger } from "@/lib/utils/logger";
 
@@ -26,7 +27,7 @@ const P2pWallet = memo(
   }) => {
     const { balance: walletBalance, currency, loading } = useSelector(selectWalletBalance);
     const summary = useSelector(selectTransactionSummary);
-    const { balance: summaryBalance, availableAmount, escrow } =
+    const { balance: summaryBalance, availableAmount } =
       useSelector(selectP2PWalletAmounts);
 
     const wsWallet = useP2PWalletBalanceContext();
@@ -36,8 +37,10 @@ const P2pWallet = memo(
 
     const availableDisplay =
       wsWallet.available ?? (summary != null ? availableAmount : 0);
-    const escrowDisplay =
-      wsWallet.escrow ?? (summary != null ? escrow : 0);
+    const escrowDisplay = getP2PEscrowDisplay(
+      wsWallet.escrow,
+      wsWallet.overviewSummary ?? summary
+    );
 
     const displayCurrency =
       (wsWallet.currency && wsWallet.currency.trim()) ||

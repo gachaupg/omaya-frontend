@@ -207,7 +207,12 @@ export function normalizeTransactionSummary(
     total_balance: s.total_balance != null ? String(s.total_balance) : undefined,
     available_amount:
       s.available_amount != null ? String(s.available_amount) : undefined,
-    escrow: s.escrow != null ? String(s.escrow) : undefined,
+    escrow:
+      s.locked_balance != null
+        ? String(s.locked_balance)
+        : s.escrow != null
+          ? String(s.escrow)
+          : undefined,
     // Extended fields used by dashboard charts (not in base interface)
     ...(s.total_moneyx_by_status
       ? { total_moneyx_by_status: s.total_moneyx_by_status }
@@ -446,7 +451,16 @@ export function mergeTransactionSummaries(
     total_approved_p2p_volume: liveVolume > 0 ? liveVolume : baseVolume,
     total_balance: live.total_balance ?? base.total_balance,
     available_amount: live.available_amount ?? base.available_amount,
-    escrow: live.escrow ?? base.escrow,
+    escrow: (() => {
+      const liveLocked = parseSummaryNumber(
+        (live as TransactionSummary & { locked_balance?: unknown }).locked_balance
+      );
+      const liveEscrow = parseSummaryNumber(live.escrow);
+      const baseEscrow = parseSummaryNumber(base.escrow);
+      const value =
+        liveLocked > 0 ? liveLocked : liveEscrow > 0 ? liveEscrow : baseEscrow;
+      return value > 0 ? String(value) : base.escrow ?? live.escrow;
+    })(),
     total_pending_p2p_deposits: mergeSummaryNumber(
       live.total_pending_p2p_deposits,
       base.total_pending_p2p_deposits
