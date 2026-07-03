@@ -187,16 +187,9 @@ const getCoordinatesFromIP = async (
   }
 };
 
-const promptUserToEnableLocation = (): boolean => {
-  if (typeof window === "undefined") return false;
-  return window.confirm(
-    "Location is required for this transaction. Please turn on location services in your browser and device settings, then tap OK to continue."
-  );
-};
-
 const getBrowserGeolocation = (
   timeoutMs = GEOLOCATION_TIMEOUT_MS,
-  options?: { enableHighAccuracy?: boolean }
+  options?: { enableHighAccuracy?: boolean; maximumAge?: number }
 ): Promise<{
   coords: GeoCoords | null;
   permission: LocationPermissionState;
@@ -234,15 +227,16 @@ const getBrowserGeolocation = (
       },
       {
         enableHighAccuracy: options?.enableHighAccuracy ?? true,
-        maximumAge: 0,
+        maximumAge: options?.maximumAge ?? 0,
         timeout: timeoutMs,
       }
     );
   });
 
-/** Resolve lat/long: cached → browser GPS (with user prompt) → IP estimate. */
+/** Resolve lat/long for API payloads (no browser permission prompt on POST). */
 const resolveDeviceCoordinates = async (
-  ipAddress: string
+  ipAddress: string,
+  { requestBrowserLocation = false }: { requestBrowserLocation?: boolean } = {}
 ): Promise<{
   latitude: number | null;
   longitude: number | null;
@@ -257,33 +251,21 @@ const resolveDeviceCoordinates = async (
   }
 
   let permission = await getGeolocationPermission();
-  let attempt = await getBrowserGeolocation(GEOLOCATION_TIMEOUT_MS, {
-    enableHighAccuracy: true,
-  });
 
-  if (attempt.coords) {
-    return {
-      ...attempt.coords,
-      location_permission: attempt.permission,
-    };
-  }
+  if (requestBrowserLocation || permission === "granted") {
+    const attempt = await getBrowserGeolocation(GEOLOCATION_TIMEOUT_MS, {
+      enableHighAccuracy: requestBrowserLocation,
+      maximumAge: requestBrowserLocation ? 0 : 60_000,
+    });
 
-  permission = attempt.permission || permission;
-
-  if (permission !== "denied" && permission !== "unsupported") {
-    const userConfirmed = promptUserToEnableLocation();
-    if (userConfirmed) {
-      attempt = await getBrowserGeolocation(GEOLOCATION_TIMEOUT_MS, {
-        enableHighAccuracy: true,
-      });
-      if (attempt.coords) {
-        return {
-          ...attempt.coords,
-          location_permission: "granted",
-        };
-      }
-      permission = attempt.permission || permission;
+    if (attempt.coords) {
+      return {
+        ...attempt.coords,
+        location_permission: attempt.permission,
+      };
     }
+
+    permission = attempt.permission || permission;
   }
 
   const ipCoords = await getCoordinatesFromIP(ipAddress);
@@ -301,6 +283,19 @@ const resolveDeviceCoordinates = async (
     longitude: null,
     location_permission: permission,
   };
+};
+
+/** Ask for browser location once when the user enters the site (not on POST). */
+export const prefetchDeviceLocation = async (): Promise<void> => {
+  if (typeof window === "undefined") return;
+  if (readStoredCoords()) return;
+
+  try {
+    const ipAddress = await getCurrentIPAddress();
+    await resolveDeviceCoordinates(ipAddress, { requestBrowserLocation: true });
+  } catch (error) {
+    logger.warn("api", "prefetchDeviceLocation failed:", error);
+  }
 };
 
 const buildFingerprintData = (): Record<string, unknown> => {
@@ -395,7 +390,7 @@ export const collectDeviceInfo = async (): Promise<DeviceInfo> => {
     const ipAddress = await getCurrentIPAddress();
     const [locationFromIp, coordinates] = await Promise.all([
       getLocationFromIP(ipAddress),
-      resolveDeviceCoordinates(ipAddress),
+      resolveDeviceCoordinates(ipAddress, { requestBrowserLocation: false }),
     ]);
 
     const info: DeviceInfo = {

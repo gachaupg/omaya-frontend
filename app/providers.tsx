@@ -14,6 +14,13 @@ import { GoogleOAuthProvider } from "@react-oauth/google";
 import { initializeCrossTabSync } from "@/lib/utils/crossTabSync";
 import { Spinner } from "@/components/ui/Skeletons";
 import { storage } from "@/features/auth/utils/storage";
+import {
+  authHardRedirect,
+  clearAuthRedirectBounceGuard,
+  clearMiddlewareAccessTokenCookie,
+  clearStoredAuthCredentials,
+  setMiddlewareAccessTokenCookie,
+} from "@/lib/utils/authSession";
 import { initializeTokenRefresh } from "@/lib/utils/tokenRefresh";
 import { clearSupportedTokensCachesOnReload } from "@/lib/utils/supportedTokensCache";
 import GlobalSessionManager from "@/components/GlobalSessionManager";
@@ -40,6 +47,12 @@ export default function Providers({
 }) {
   useEffect(() => {
     void clearSupportedTokensCachesOnReload();
+  }, []);
+
+  useEffect(() => {
+    void import("@/lib/utils/deviceInfo").then(({ prefetchDeviceLocation }) =>
+      prefetchDeviceLocation()
+    );
   }, []);
 
   // Handle auth state changes (for Google OAuth and other external auth)
@@ -76,9 +89,8 @@ export default function Providers({
           },
         });
 
-        // Set same-origin cookie for middleware checks (1 hour)
-          const maxAge = 60 * 60;
-          document.cookie = `access_token=${tokens.access}; Max-Age=${maxAge}; Path=/; SameSite=Lax`;
+        // Set same-origin cookie for middleware checks
+        setMiddlewareAccessTokenCookie(tokens.access);
         }
       }
     // Add event listener for auth state changes
@@ -87,14 +99,13 @@ export default function Providers({
     // Set up the auth callback to handle 401 errors
     setAuthCallback(() => {
       store.dispatch(logout());
-      // Preserve p2p_act before clearing localStorage
       const p2pAct = localStorage.getItem("p2p_act");
       localStorage.clear();
       if (p2pAct) {
         localStorage.setItem("p2p_act", p2pAct);
       }
-      document.cookie = 'access_token=; Max-Age=0; Path=/; SameSite=Lax';
-      window.location.href = '/auth/login';
+      clearMiddlewareAccessTokenCookie();
+      authHardRedirect("/auth/login");
     });
 
     // Utility to read a cookie value by name
@@ -150,13 +161,12 @@ export default function Providers({
             }
           }
 
-          // Ensure middleware can see auth (1 hour cookie)
-          const maxAge = 60 * 60;
-          document.cookie = `access_token=${profileData.tokens.access}; Max-Age=${maxAge}; Path=/; SameSite=Lax`;
+          setMiddlewareAccessTokenCookie(profileData.tokens.access);
           
           // If we're on an auth page but already logged in, redirect to dashboard
           if (isAuthPage) {
-            window.location.href = '/dashboard';
+            clearAuthRedirectBounceGuard();
+            authHardRedirect("/dashboard");
           }
         } catch (e) {
           console.error(' Error setting credentials from profile:', e);
@@ -187,13 +197,11 @@ export default function Providers({
             },
           });
 
-          // Ensure middleware can see auth (1 hour cookie)
-          const maxAge = 60 * 60;
-          document.cookie = `access_token=${accessToken}; Max-Age=${maxAge}; Path=/; SameSite=Lax`;
+          setMiddlewareAccessTokenCookie(accessToken);
           
-          // If we're on an auth page but already logged in, redirect to dashboard
           if (isAuthPage) {
-            window.location.href = '/dashboard';
+            clearAuthRedirectBounceGuard();
+            authHardRedirect("/dashboard");
           }
         } catch (e) {
           console.error(' Error parsing user data:', e);
@@ -234,12 +242,13 @@ export default function Providers({
 
           // If we are on auth pages, go to dashboard
           if (isAuthPage) {
-            window.location.href = '/dashboard';
+            clearAuthRedirectBounceGuard();
+            authHardRedirect("/dashboard");
           }
         } catch (e) {
           console.warn(' Failed to hydrate session from cookie:', e);
-          // Clean up bad cookie
-          document.cookie = 'access_token=; Max-Age=0; Path=/; SameSite=Lax';
+          clearMiddlewareAccessTokenCookie();
+          clearStoredAuthCredentials();
         }
         return;
       }
@@ -247,9 +256,7 @@ export default function Providers({
       // Case 4: No session anywhere → only clear if we're not on auth page
       // Don't clear on auth pages as user might be logging in
       if (!isAuthPage) {
-        localStorage.removeItem('access_token');
-        localStorage.removeItem('refresh_token');
-        localStorage.removeItem('user');
+        clearStoredAuthCredentials();
       }
     };
     checkAuth();

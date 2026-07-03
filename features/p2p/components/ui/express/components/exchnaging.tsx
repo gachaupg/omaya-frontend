@@ -1152,43 +1152,7 @@ export default function Exchanging({ transactionData }: ExchangingProps) {
                 </div>
               )} */}
 
-            {/* Display previous amount if it changed */}
-            {previousAmount !== null &&
-              liveAmount !== null &&
-              previousAmount !== liveAmount && (
-                <div
-                  className={`mt-2 p-2 ${isDark
-                    ? "bg-[#1A1A1A] border-[#35353E]"
-                    : "bg-gray-100 border-gray-300"
-                    } rounded border`}
-                >
-                  <div
-                    className={`${isDark ? "text-[#7B7B7B]" : "text-gray-600"
-                      } text-xs font-semibold mb-1`}
-                  >
-                    Amount Change:
-                  </div>
-                  <div
-                    className={`${isDark ? "text-[#7B7B7B]" : "text-gray-600"
-                      } text-xs mb-0.5`}
-                  >
-                    Previous: {previousAmount.toFixed(8)}{" "}
-                    {liveCurrency ||
-                      effectiveTransactionData?.asset?.ticker ||
-                      effectiveTransactionData?.asset?.symbol ||
-                      effectiveTransactionData?.asset?.name ||
-                      "USDT"}
-                  </div>
-                  <div className="text-green-400 text-xs">
-                    Current: {liveAmount.toFixed(8)}{" "}
-                    {liveCurrency ||
-                      effectiveTransactionData?.asset?.ticker ||
-                      effectiveTransactionData?.asset?.symbol ||
-                      effectiveTransactionData?.asset?.name ||
-                      "USDT"}
-                  </div>
-                </div>
-              )}
+          
             {/* Deposit-specific information display */}
             {effectiveTransactionData?.type === "deposit" && (
               <>
