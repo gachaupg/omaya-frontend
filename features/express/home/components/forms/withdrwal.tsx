@@ -68,7 +68,7 @@ import {
   useAssetsDisplay,
   usePaymentMethodsDisplay,
 } from "../../../hooks/useDataDisplay";
-import { useChangeNowAssets } from "@/features/express/home/hooks/useChangeNowAssets";
+import { useChangeNowAssetsContext } from "@/features/express/home/context/ChangeNowAssetsProvider";
 import CustomSelect from "@/components/ui/HomeCommonSelect";
 import { AssetWithNetworkIcon } from "@/components/ui/AssetWithNetworkIcon";
 import ForexWithdrawal from "./ForexWithdrawal";
@@ -512,10 +512,7 @@ export default function WithdrawalForm({
   const {
     assets: publicAssets,
     loading: publicAssetsLoading,
-  } = useChangeNowAssets(isHomePage, {
-    feature: "exchange",
-    source: "public",
-  });
+  } = useChangeNowAssetsContext();
 
   // Add swap assets state
   const {

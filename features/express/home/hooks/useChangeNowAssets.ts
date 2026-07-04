@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useState } from "react";
 
 import { API_CONFIG, CHANGE_NOW_PUBLIC_ASSET_ID_OVERRIDES } from "@/lib/appConfig";
+import { get } from "@/lib/apiClient";
 import {
   clearSupportedTokensCachesOnReload,
   shouldForceSupportedTokensRefetch,
@@ -25,6 +26,12 @@ type PaginatedResponse<T> = {
   results?: T[];
 };
 
+type ChangeNowAssetsCacheOpts = {
+  feature: ChangeNowAssetFeature;
+  source: ChangeNowAssetSource;
+  ticker?: string;
+};
+
 function buildQuery(params: Record<string, string | undefined>) {
   const query = Object.entries(params)
     .filter(([, v]) => v != null && String(v).trim() !== "")
@@ -33,42 +40,59 @@ function buildQuery(params: Record<string, string | undefined>) {
   return query ? `?${query}` : "";
 }
 
-const getChangeNowApiUrl = (opts: {
-  feature: ChangeNowAssetFeature;
-  source: ChangeNowAssetSource;
-  ticker?: string;
-  page?: number;
-  pageSize?: number;
-}) => {
-  const base =
-    opts.source === "public"
-      ? `${API_CONFIG.BASE_URL}${API_CONFIG.SWAP.SUPPORTED_ASSETS_PUBLIC}`
-      : `${API_CONFIG.BASE_URL}${API_CONFIG.SWAP.SUPPORTED_ASSETS}`;
+const getSupportedTokensEndpoint = (source: ChangeNowAssetSource): string =>
+  source === "public"
+    ? API_CONFIG.SWAP.SUPPORTED_ASSETS_PUBLIC
+    : API_CONFIG.SWAP.SUPPORTED_ASSETS;
 
-  return `${base}${buildQuery({
+const buildSupportedTokensRequestPath = (
+  opts: ChangeNowAssetsCacheOpts,
+  page: number,
+  pageSize: number
+): string =>
+  `${getSupportedTokensEndpoint(opts.source)}${buildQuery({
     feature: opts.feature === "exchange" ? "exchange" : undefined,
     search: opts.ticker,
-    page: opts.page ? String(opts.page) : undefined,
-    page_size: opts.pageSize ? String(opts.pageSize) : undefined,
+    page: String(page),
+    page_size: String(pageSize),
   })}`;
-};
 
-const resolveNextUrl = (nextUrl: string, fallbackBaseUrl: string): string => {
-  if (/^https?:\/\//i.test(nextUrl)) {
-    return nextUrl;
-  }
-  const baseOrigin = (() => {
-    try {
-      return new URL(fallbackBaseUrl).origin;
-    } catch {
-      return "";
+const SUPPORTED_TOKENS_PAGE_SIZE = 2000;
+const SUPPORTED_TOKENS_MAX_PAGES = 20;
+const SUPPORTED_TOKENS_TIMEOUT_MS = 180_000;
+
+/** Paginate via relative apiClient paths (same as swap API) — avoids CORS on absolute `next` URLs. */
+async function fetchAllChangeNowApiAssets(
+  opts: ChangeNowAssetsCacheOpts
+): Promise<ChangeNowApiAsset[]> {
+  const data: ChangeNowApiAsset[] = [];
+
+  for (let page = 1; page <= SUPPORTED_TOKENS_MAX_PAGES; page += 1) {
+    const path = buildSupportedTokensRequestPath(
+      opts,
+      page,
+      SUPPORTED_TOKENS_PAGE_SIZE
+    );
+    const response = await get<
+      ChangeNowApiAsset[] | PaginatedResponse<ChangeNowApiAsset>
+    >(path, { timeout: SUPPORTED_TOKENS_TIMEOUT_MS });
+    const raw = response.data;
+
+    if (Array.isArray(raw)) {
+      data.push(...raw);
+      break;
     }
-  })();
-  if (baseOrigin) {
-    return `${baseOrigin}${nextUrl.startsWith("/") ? nextUrl : `/${nextUrl}`}`;
+
+    const pageResults = Array.isArray(raw?.results) ? raw.results : [];
+    data.push(...pageResults);
+
+    if (!raw?.next || pageResults.length === 0) {
+      break;
+    }
   }
-  return nextUrl;
-};
+
+  return data;
+}
 
 interface ChangeNowApiAsset {
   ticker?: string;
@@ -421,6 +445,41 @@ const mapChangeNowAsset = (
   };
 };
 
+function resolveChangeNowAssetsCache(
+  opts: ChangeNowAssetsCacheOpts,
+  bypassCache = false
+): {
+  cacheKey: string;
+  freshAssets: ChangeNowMappedAsset[] | null;
+  staleAssets: ChangeNowMappedAsset[];
+} {
+  const cacheKey = getAssetsCacheKey(opts);
+  if (bypassCache) {
+    return { cacheKey, freshAssets: null, staleAssets: [] };
+  }
+
+  const now = Date.now();
+  const mem = inMemoryPublicAssetsCache[cacheKey];
+  if (mem && now - mem.ts < PUBLIC_ASSETS_CACHE_TTL_MS) {
+    return { cacheKey, freshAssets: mem.assets, staleAssets: mem.assets };
+  }
+
+  const cached =
+    readAssetsCacheFromLocalStorage(cacheKey) ||
+    readPublicAssetsCacheFromLocalStorageByFeature(opts.feature);
+  const staleAssets =
+    cached && Array.isArray(cached.assets) ? cached.assets : [];
+
+  const isFresh =
+    !!cached && now - cached.ts < PUBLIC_ASSETS_CACHE_TTL_MS;
+
+  return {
+    cacheKey,
+    freshAssets: isFresh ? cached!.assets : null,
+    staleAssets,
+  };
+}
+
 export function useChangeNowAssets(
   shouldFetch: boolean,
   options: ChangeNowAssetFeature | ChangeNowAssetsOptions = "exchange"
@@ -447,9 +506,42 @@ export function useChangeNowAssets(
     [normalizedFeature, normalizedSource, normalizedTicker]
   );
 
-  const [assets, setAssets] = useState<ChangeNowMappedAsset[]>([]);
-  const [loading, setLoading] = useState(false);
+  const initialCache = useMemo(() => {
+    if (!shouldFetch || typeof window === "undefined") {
+      return {
+        cacheKey: getAssetsCacheKey(opts),
+        freshAssets: null as ChangeNowMappedAsset[] | null,
+        staleAssets: [] as ChangeNowMappedAsset[],
+      };
+    }
+    return resolveChangeNowAssetsCache(
+      opts,
+      shouldForceSupportedTokensRefetch()
+    );
+  }, [shouldFetch, opts.feature, opts.source, opts.ticker]);
+
+  const [assets, setAssets] = useState<ChangeNowMappedAsset[]>(
+    () => initialCache.freshAssets ?? initialCache.staleAssets
+  );
+  const [loading, setLoading] = useState(
+    () =>
+      shouldFetch &&
+      !(initialCache.freshAssets ?? initialCache.staleAssets).length
+  );
   const [error, setError] = useState<string | null>(null);
+
+  // If another tab/instance filled the in-memory cache while this hook had [] state, sync it.
+  useEffect(() => {
+    if (!shouldFetch || assets.length > 0) return;
+    const { freshAssets, staleAssets } = resolveChangeNowAssetsCache(opts);
+    const cached = freshAssets ?? (staleAssets.length ? staleAssets : null);
+    if (!cached?.length) return;
+    setAssets(cached);
+    if (freshAssets?.length) {
+      setLoading(false);
+      setError(null);
+    }
+  }, [shouldFetch, assets.length, opts.feature, opts.source, opts.ticker]);
 
   useEffect(() => {
     if (!shouldFetch) {
@@ -463,8 +555,11 @@ export function useChangeNowAssets(
       setLoading(false);
     }, ASSETS_FETCH_TIMEOUT_MS);
 
-    const cacheKey = getAssetsCacheKey(opts);
     const bypassCache = shouldForceSupportedTokensRefetch();
+    const { cacheKey, freshAssets, staleAssets } = resolveChangeNowAssetsCache(
+      opts,
+      bypassCache
+    );
 
     if (bypassCache) {
       void clearSupportedTokensCachesOnReload();
@@ -474,34 +569,18 @@ export function useChangeNowAssets(
       delete inFlightAssetsFetch[cacheKey];
     }
 
-    // Serve cached data immediately (public assets are relatively stable).
-    // If cache is fresh, we don't refetch.
-    const now = Date.now();
-    const featureCache =
-      !bypassCache && inMemoryPublicAssetsCache[cacheKey]
-        ? inMemoryPublicAssetsCache[cacheKey]
-        : null;
-    const cached = bypassCache
-      ? null
-      : (featureCache &&
-          now - featureCache.ts < PUBLIC_ASSETS_CACHE_TTL_MS
-          ? featureCache
-          : null) ||
-        readAssetsCacheFromLocalStorage(cacheKey) ||
-        // Legacy fallback (older keys)
-        readPublicAssetsCacheFromLocalStorageByFeature(opts.feature);
-    const staleCached = cached && Array.isArray(cached.assets) ? cached.assets : [];
-    const isFresh =
-      !bypassCache &&
-      !!cached &&
-      now - cached.ts < PUBLIC_ASSETS_CACHE_TTL_MS;
-
-    if (isFresh) {
-      setAssets(cached!.assets);
+    if (freshAssets) {
+      setAssets(freshAssets);
       setLoading(false);
       setError(null);
       window.clearTimeout(timeoutId);
-      return () => {};
+      return () => {
+        window.clearTimeout(timeoutId);
+      };
+    }
+
+    if (staleAssets.length > 0) {
+      setAssets((prev) => (prev.length ? prev : staleAssets));
     }
 
     const fetchAssets = async () => {
@@ -511,42 +590,7 @@ export function useChangeNowAssets(
       try {
         if (!inFlightAssetsFetch[cacheKey]) {
           inFlightAssetsFetch[cacheKey] = (async () => {
-            // Use a much larger page_size so this is usually ONE request.
-            // Backend may still paginate; we still follow `next` if present.
-            const pageSize = 2000;
-            const firstPageUrl = getChangeNowApiUrl({
-              ...opts,
-              page: 1,
-              pageSize,
-            });
-            const data: ChangeNowApiAsset[] = [];
-            let nextUrl: string | null = firstPageUrl;
-
-            while (nextUrl) {
-              const response = await fetch(nextUrl);
-
-              if (!response.ok) {
-                throw new Error(
-                  `ChangeNOW request failed with status ${response.status}`
-                );
-              }
-
-              const raw = (await response.json()) as
-                | ChangeNowApiAsset[]
-                | PaginatedResponse<ChangeNowApiAsset>;
-
-              if (Array.isArray(raw)) {
-                data.push(...raw);
-                nextUrl = null;
-                continue;
-              }
-
-              const pageResults = Array.isArray(raw?.results) ? raw.results : [];
-              data.push(...pageResults);
-              nextUrl = raw?.next
-                ? resolveNextUrl(raw.next, firstPageUrl)
-                : null;
-            }
+            const data = await fetchAllChangeNowApiAssets(opts);
 
             const uniqueAssets = new Map<string, ChangeNowMappedAsset>();
 
@@ -591,7 +635,7 @@ export function useChangeNowAssets(
         // Never inject fake fallback assets; prefer already loaded assets,
         // then stale cache, otherwise keep empty and surface error.
         setAssets((prev) =>
-          prev.length ? prev : staleCached.length ? staleCached : []
+          prev.length ? prev : staleAssets.length ? staleAssets : []
         );
       } finally {
         window.clearTimeout(timeoutId);

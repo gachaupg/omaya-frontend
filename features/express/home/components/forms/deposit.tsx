@@ -52,7 +52,7 @@ import {
   useAssetsDisplay,
   usePaymentMethodsDisplay,
 } from "../../../hooks/useDataDisplay";
-import { useChangeNowAssets } from "@/features/express/home/hooks/useChangeNowAssets";
+import { useChangeNowAssetsContext } from "@/features/express/home/context/ChangeNowAssetsProvider";
 import CustomSelect from "@/components/ui/HomeCommonSelect";
 import { AssetWithNetworkIcon } from "@/components/ui/AssetWithNetworkIcon";
 import Select from "@/features/p2p/components/Common/Select";
@@ -565,10 +565,7 @@ export default function DepositForm({
   const {
     assets: publicAssets,
     loading: publicAssetsLoading,
-  } = useChangeNowAssets(isHomePage, {
-    feature: "exchange",
-    source: "public",
-  });
+  } = useChangeNowAssetsContext();
 
   // Add swap assets state
   const { supportedAssets: swapAssets, loading: swapAssetsLoading } =
@@ -1490,9 +1487,15 @@ export default function DepositForm({
 
   // Auto-select first asset when assets are loaded
   useEffect(() => {
-    if (assetsDisplay.shouldShowData && assetsDisplay.displayData.length > 0 && !selectedAsset) {
-      // Use the sorted assets to get the first one (USDT on BSC first, USDC on BSC second)
-      const sortedAssets = [...assetsDisplay.displayData].sort((a, b) => {
+    if (
+      !assetsDisplay.shouldShowData ||
+      assetsDisplay.displayData.length === 0 ||
+      selectedAsset
+    ) {
+      return;
+    }
+
+    const sortedAssets = [...assetsDisplay.displayData].sort((a, b) => {
         const tickerA = (a?.ticker || a?.symbol || a?.name || "").toString().toLowerCase();
         const tickerB = (b?.ticker || b?.symbol || b?.name || "").toString().toLowerCase();
         const networkA = (a?.network || "").toString().toLowerCase();
@@ -1524,8 +1527,7 @@ export default function DepositForm({
         network_id: networkValue,
         network_type: networkValue,
       });
-    }
-  }, [assetsDisplay.displayData, selectedAsset]);
+  }, [assetsDisplay.shouldShowData, assetsDisplay.displayData, selectedAsset]);
 
   // Close dropdown when clicking outside
   useEffect(() => {
