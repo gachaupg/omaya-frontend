@@ -7,6 +7,7 @@ import {
   clearExpressHomeLegalReturnState,
   finalizeExpressHomeLegalReturnState,
 } from "@/lib/utils/authRedirect";
+import { ChangeNowAssetsProvider } from "@/features/express/home/context/ChangeNowAssetsProvider";
 
 interface ExpressExchangeFormProps {
   onExchange: (transactionData: {
@@ -56,7 +57,10 @@ const ExpressExchangeForm: React.FC<ExpressExchangeFormProps> = ({
   const [legalRestoreState, setLegalRestoreState] = useState<
     Record<string, any> | null
   >(() => (isHomePage ? readHomeLegalRestoreState() : null));
-  const [restoreReady, setRestoreReady] = useState(!isHomePage);
+  const [restoreReady, setRestoreReady] = useState(() => {
+    if (!isHomePage) return true;
+    return readHomeLegalRestoreState() == null;
+  });
   const [mode, setMode] = useState<"deposit" | "withdrawal">(() => {
     if (!isHomePage) return initialMode;
     const saved = readHomeLegalRestoreState();
@@ -97,15 +101,11 @@ const ExpressExchangeForm: React.FC<ExpressExchangeFormProps> = ({
       }, 1000);
     }
     setRestoreReady(true);
-  }, [isHomePage]);
+  }, [isHomePage, legalRestoreState]);
 
   const handleModeChange = (newMode: "deposit" | "withdrawal") => {
     setMode(newMode);
   };
-
-  if (!restoreReady) {
-    return null;
-  }
 
   const isFormExpanded =
     legalRestoreState?.mode === "withdrawal"
@@ -120,27 +120,31 @@ const ExpressExchangeForm: React.FC<ExpressExchangeFormProps> = ({
     : `default-${mode}`;
 
   return (
-    <div className="w-full mx-auto p-0">
-      {mode === "deposit" ? (
-        <DepositForm
-          key={formKey}
-          onExchange={onExchange}
-          mode={mode}
-          onModeChange={handleModeChange}
-          isHomePage={isHomePage}
-          initialState={legalRestoreState ?? undefined}
-        />
-      ) : (
-        <WithdrawalForm
-          key={formKey}
-          onExchange={onExchange}
-          mode={mode}
-          onModeChange={handleModeChange}
-          isHomePage={isHomePage}
-          initialState={legalRestoreState ?? undefined}
-        />
+    <ChangeNowAssetsProvider enabled={isHomePage}>
+      {!restoreReady ? null : (
+        <div className="w-full mx-auto p-0">
+          {mode === "deposit" ? (
+            <DepositForm
+              key={formKey}
+              onExchange={onExchange}
+              mode={mode}
+              onModeChange={handleModeChange}
+              isHomePage={isHomePage}
+              initialState={legalRestoreState ?? undefined}
+            />
+          ) : (
+            <WithdrawalForm
+              key={formKey}
+              onExchange={onExchange}
+              mode={mode}
+              onModeChange={handleModeChange}
+              isHomePage={isHomePage}
+              initialState={legalRestoreState ?? undefined}
+            />
+          )}
+        </div>
       )}
-    </div>
+    </ChangeNowAssetsProvider>
   );
 };
 
