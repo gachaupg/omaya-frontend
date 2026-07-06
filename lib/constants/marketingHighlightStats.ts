@@ -25,7 +25,7 @@ export const HOME_ACHIEVEMENT_STATS = [
   },
   {
     value: MARKETING_HIGHLIGHT_STATS.successful_transactions,
-    label: "Successful Transactions",
+    label: "Completed Total Trades",
   },
   {
     value: MARKETING_HIGHLIGHT_STATS.years_of_experience,

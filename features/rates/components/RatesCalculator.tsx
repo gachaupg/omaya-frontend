@@ -92,6 +92,8 @@ import {
 import { ExpressLegalTermsLinks } from "@/features/express/components/legal/ExpressLegalTermsLinks";
 import ForexWithdrawal from "../../express/components/forms/ForexWithdrawal";
 import InfoModal from "../../express/components/forms/info";
+import { CryptoSendOnlyWarningBanner } from "@/features/express/components/CryptoSendOnlyWarningBanner";
+import { getCryptoDepositAddressHeading } from "@/lib/utils/cryptoSendWarning";
 import { useBookmarkedAddresses } from "../../express/hooks/useBookmarkedAddresses";
 import { BookmarkDropdown } from "../../express/components/forms/BookmarkDropdown";
 import FrozenAccountModal from "@/components/ui/FrozenAccountModal";
@@ -5817,15 +5819,19 @@ const getPaymentRestrictionMessage = (status?: string) =>
             ) : (
               // Withdrawal Mode: Show destination address + QR after submission (crypto)
               <div className="space-y-4">
+                {selectedAsset && (
+                  <CryptoSendOnlyWarningBanner
+                    asset={selectedAsset}
+                    network={getAssetNetwork(selectedAsset)}
+                    showTemporaryAddressNotice={
+                      shouldShowTemporaryWalletAddressNotice
+                    }
+                  />
+                )}
                 <div>
                   <h3 className="text-sm sm:text-base text-[#35353e] dark:text-[#788099] font-semibold mb-2">
-                    USDT Wallet Address
+                    {getCryptoDepositAddressHeading(selectedAsset)}
                   </h3>
-                  {shouldShowTemporaryWalletAddressNotice && (
-                    <p className="text-xs sm:text-sm text-amber-600 dark:text-amber-400 mb-3">
-                      This wallet address is temporary and may change if you repeat the process. Always use the most recently generated address.
-                    </p>
-                  )}
                   <div className="border border-[#1D8751] rounded-xl p-3 sm:p-4">
                     {withdrawalAddress ? (
                       <div className="flex items-center justify-between gap-3">

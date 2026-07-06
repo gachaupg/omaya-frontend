@@ -56,7 +56,7 @@ const steps = [
 ];
 
 const features = [
-  "Low Transaction Fee",
+  "Lowest Exchange Fee",
   "Secure Payment Service",
   "Fast Transactions",
   "We Work 24/7",
@@ -875,11 +875,11 @@ export default function MarketingPage() {
                   <div className="relative">
                     <div className="relative w-full overflow-hidden rounded-t-[1.5rem] md:rounded-t-[2rem] rounded-b-lg">
                       <Image
-                        src="/assets/Container_17_n6i2xm.png"
+                        src="/assets/omaya-office-about.png"
                         alt="Safe & Reliable Cryptocurrency Exchange Platform"
                         width={800}
                         height={600}
-                        className="w-full h-auto object-contain"
+                        className="w-full h-auto object-cover rounded-t-[1.5rem] md:rounded-t-[2rem] rounded-b-lg"
                         unoptimized
                       />
                     </div>
@@ -1276,8 +1276,11 @@ export default function MarketingPage() {
         ">
                 {[
                   {
-                    title: "Low Transaction Fee",
-                    desc: "Industry-leading fees starting from 0.1%",
+                    title: t("marketing.features.items.lowFee", "Lowest Exchange Fee"),
+                    desc: t(
+                      "marketing.features.items.lowFeeDesc",
+                      "Competitive exchange fees with transparent pricing"
+                    ),
                     icon: <DollarSign className="w-5 h-5 sm:w-6 sm:h-6 text-white" />,
                     bg: "bg-gradient-to-br from-[#22C55E] to-[#16A34A]"
                   },

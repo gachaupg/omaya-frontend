@@ -100,6 +100,8 @@ import {
   resolveExpressBankWithdrawalTermsFields,
 } from "@/features/express/components/legal/ExpressBankWithdrawalTermsPanel";
 import { ExpressLegalTermsLinks } from "@/features/express/components/legal/ExpressLegalTermsLinks";
+import { CryptoSendOnlyWarningBanner } from "@/features/express/components/CryptoSendOnlyWarningBanner";
+import { getCryptoDepositAddressHeading } from "@/lib/utils/cryptoSendWarning";
 import {
   resolveAllUserPaymentAccounts,
   getRegisteredAccountDropdownList,
@@ -5591,16 +5593,20 @@ export default function WithdrawalForm({
                 Wallet Address
               </h2>
               <div className="dark:bg-[#0F0F17] border-1 border-[#35353e] rounded-2xl p-3 sm:p-5 shadow-lg w-full text-[#35353e] dark:text-[#788099]">
-                {/* USDT Wallet Address */}
+                {selectedAsset && (
+                  <CryptoSendOnlyWarningBanner
+                    asset={selectedAsset}
+                    network={selectedAsset?.network}
+                    className="mb-4"
+                    showTemporaryAddressNotice={
+                      shouldShowTemporaryWalletAddressNotice
+                    }
+                  />
+                )}
                 <div className="mb-4">
                   <h3 className="text-sm sm:text-base text-[#35353e] dark:text-[#788099] font-semibold mb-2">
-                    USDT Wallet Address
+                    {getCryptoDepositAddressHeading(selectedAsset)}
                   </h3>
-                  {shouldShowTemporaryWalletAddressNotice && (
-                    <p className="text-xs sm:text-sm text-amber-600 dark:text-amber-400 mb-3">
-                      This wallet address is temporary and may change if you repeat the process. Always use the most recently generated address.
-                    </p>
-                  )}
                   {withdrawalAddress ? (
                     <div className=" dark:bg-[#1D1D23]  border border-[#1D8751] rounded-xl p-3 sm:p-4">
                       <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2 sm:gap-0">
