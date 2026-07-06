@@ -32,7 +32,7 @@ export default function KeyAchievementsSection() {
   return (
     <div
       id="key-achievements"
-      data-stats-version="2026-06-01"
+      data-stats-version="2026-07-06-fee"
       className="pt-4 sm:pt-6 md:pt-8 pb-12 sm:pb-16 md:pb-20 px-4 md:px-10 lg:px-16 xl:px-[100px] bg-white dark:bg-(--card-color) relative z-10 overflow-hidden"
     >
       <div className="absolute top-0 left-90 w-[200px] sm:w-[300px] h-[200px] sm:h-[300px] bg-[#1D8751]/10 blur-3xl rounded-full hidden sm:block pointer-events-none" aria-hidden />
@@ -79,7 +79,7 @@ export default function KeyAchievementsSection() {
               { compactMillions: true }
             )}
             title={t("marketing.achievements.card1.title", "USD Fiat Transactions")}
-            description={t("marketing.achievements.card1.desc", "Total trading volume.")}
+            description={t("marketing.achievements.card1.desc", "Total Trading Volume")}
           />
           <AchievementCard
             icon={Users}
@@ -101,11 +101,11 @@ export default function KeyAchievementsSection() {
             )}
             title={t(
               "marketing.achievements.card3.title",
-              "Successful Transactions"
+              "Completed Total Trades"
             )}
             description={t(
               "marketing.achievements.card3.desc",
-              "Completed daily trades."
+              "All-time completed transactions."
             )}
           />
           <AchievementCard
@@ -141,7 +141,7 @@ export default function KeyAchievementsSection() {
                   </svg>
                 </div>
                 <span className="text-gray-900 dark:text-white text-xs sm:text-sm md:text-base font-medium text-center">
-                  0.1% Trading Fee
+                  Lowest Exchange Fee
                 </span>
               </div>
 
