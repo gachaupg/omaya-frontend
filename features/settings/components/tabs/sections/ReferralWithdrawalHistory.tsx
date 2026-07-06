@@ -52,21 +52,35 @@ const ReferralWithdrawalHistory: React.FC = () => {
     return assetMap[symbol?.toUpperCase()] || symbol;
   };
 
-  // Format timestamp to "X min ago" format
-  const formatTimeAgo = (timestamp: string) => {
-    const now = new Date();
+  // Relative time for recent rows; absolute date from 4+ days to avoid overlap
+  const formatWithdrawalDate = (timestamp: string) => {
+    if (!timestamp) return "—";
+
     const time = new Date(timestamp);
+    if (Number.isNaN(time.getTime())) return "—";
+
+    const now = new Date();
     const diffInMs = now.getTime() - time.getTime();
     const diffInMins = Math.floor(diffInMs / 60000);
-    
+
     if (diffInMins < 1) return "Just now";
     if (diffInMins < 60) return `${diffInMins} min ago`;
-    
+
     const diffInHours = Math.floor(diffInMins / 60);
-    if (diffInHours < 24) return `${diffInHours} hour${diffInHours > 1 ? "s" : ""} ago`;
-    
+    if (diffInHours < 24) {
+      return `${diffInHours} hour${diffInHours > 1 ? "s" : ""} ago`;
+    }
+
     const diffInDays = Math.floor(diffInHours / 24);
-    return `${diffInDays} day${diffInDays > 1 ? "s" : ""} ago`;
+    if (diffInDays < 4) {
+      return `${diffInDays} day${diffInDays > 1 ? "s" : ""} ago`;
+    }
+
+    return new Intl.DateTimeFormat("en-GB", {
+      day: "2-digit",
+      month: "short",
+      year: "numeric",
+    }).format(time);
   };
 
   // Status color helper
@@ -167,7 +181,7 @@ const ReferralWithdrawalHistory: React.FC = () => {
 
       {/* Desktop Table View - with proper horizontal scroll */}
       <div className="hidden md:block overflow-x-auto -mx-2 px-2">
-        <div className="bg-white dark:bg-[var(--card-color)] border border-[#E8EFF5] dark:border-[#35353F] rounded-xl overflow-hidden min-w-[700px]">
+        <div className="bg-white dark:bg-[var(--card-color)] border border-[#E8EFF5] dark:border-[#35353F] rounded-xl overflow-hidden min-w-[760px]">
           <table className="w-full border-collapse">
             <thead className="bg-gray-100 dark:bg-[#35353E]">
               <tr className="border-b border-[#E8EFF5] dark:border-[#35353F]">
@@ -189,7 +203,7 @@ const ReferralWithdrawalHistory: React.FC = () => {
                 <th className="text-left py-3 px-4 text-sm font-semibold text-gray-400 dark:text-gray-500">
                   Status
                 </th>
-                <th className="text-left py-3 px-4 text-sm font-semibold text-gray-400 dark:text-gray-500">
+                <th className="text-left py-3 px-4 text-sm font-semibold text-gray-400 dark:text-gray-500 min-w-[120px] whitespace-nowrap">
                   Date
                 </th>
               </tr>
@@ -241,8 +255,8 @@ const ReferralWithdrawalHistory: React.FC = () => {
                       {withdrawal.status.toUpperCase()}
                     </span>
                   </td>
-                  <td className="py-4 px-4 text-sm text-gray-500 dark:text-gray-400">
-                    {formatTimeAgo(withdrawal.timestamp)}
+                  <td className="py-4 px-4 text-sm text-gray-500 dark:text-gray-400 min-w-[120px] whitespace-nowrap">
+                    {formatWithdrawalDate(withdrawal.timestamp)}
                   </td>
                 </tr>
               ))}
@@ -310,8 +324,8 @@ const ReferralWithdrawalHistory: React.FC = () => {
                 <span className="text-sm text-gray-500 dark:text-gray-400">
                   Date:
                 </span>
-                <span className="text-xs text-gray-600 dark:text-gray-400">
-                  {formatTimeAgo(withdrawal.timestamp)}
+                <span className="text-xs text-gray-600 dark:text-gray-400 whitespace-nowrap">
+                  {formatWithdrawalDate(withdrawal.timestamp)}
                 </span>
               </div>
             </div>

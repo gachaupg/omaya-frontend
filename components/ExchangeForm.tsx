@@ -20,6 +20,7 @@ import { FaSearch } from "react-icons/fa";
 import Express from "@/features/express/home/express/express";
 import SwapWidget from "@/features/express/home/swap copy/components/SwapWidget";
 import MoneyX from "@/features/express/home/components/moneyX/components/MoneyX";
+import { HomeP2P } from "@/features/express/home/components/p2p";
 import { MoneyXLabel } from "@/components/ui/MoneyXLabel";
 import FrozenAccountModal from "@/components/ui/FrozenAccountModal";
 import {
@@ -39,7 +40,7 @@ import {
  *   - Express Excahnge.svg / Express Excahnge-light.svg
  */
 
-type Tab = "express" | "moneyx" | "swap";
+type Tab = "express" | "moneyx" | "p2p" | "swap";
 type Mode = "deposit" | "withdrawal";
 const RETURNING_FROM_LEGAL_KEY = "omaya_returning_from_legal";
 const MONEYX_LEGAL_RETURN_STATE_KEY = "omaya_moneyx_legal_return_state";
@@ -541,6 +542,10 @@ export default function ExchangeForm({
     swap: {
       pay: { label: "BTC", sub: "Bitcoin", icon: "/images/Bitcoin.svg" },
       get: { label: "ETH", sub: "Ethereum", icon: "/images/eth.svg" },
+    },
+    p2p: {
+      pay: { label: "USDT", sub: "Tether US", icon: "/images/tether.svg" },
+      get: { label: "USD", icon: "/images/salam.svg" },
     },
   };
 
@@ -1068,10 +1073,15 @@ export default function ExchangeForm({
   const TabButton: React.FC<{
     id: Tab;
     label: string;
-    variant: "express" | "moneyx" | "swap";
-    position?: "first" | "middle" | "last";
-  }> = ({ id, label, variant, position = "middle" }) => {
+    variant: "express" | "moneyx" | "p2p" | "swap";
+    position?: "first" | "second" | "third" | "last";
+  }> = ({ id, label, variant, position = "second" }) => {
     const isActive = activeTab === id;
+    const tabOrder: Tab[] = ["express", "moneyx", "swap", "p2p"];
+    const tabIndex = tabOrder.indexOf(id);
+    const leftNeighbor = tabIndex > 0 ? tabOrder[tabIndex - 1] : null;
+    const rightNeighbor =
+      tabIndex < tabOrder.length - 1 ? tabOrder[tabIndex + 1] : null;
     const [isSmallScreen, setIsSmallScreen] = useState(false);
 
     useEffect(() => {
@@ -1084,8 +1094,9 @@ export default function ExchangeForm({
     }, []);
 
     // Determine if neighbors are active to know where to apply slanting
-    const leftNeighborActive = (position === "middle" && activeTab === "express") || (position === "last" && activeTab === "moneyx");
-    const rightNeighborActive = (position === "first" && activeTab === "moneyx") || (position === "middle" && activeTab === "swap");
+    const leftNeighborActive = leftNeighbor === activeTab;
+    const rightNeighborActive = rightNeighbor === activeTab;
+    const isInnerTab = position === "second" || position === "third";
 
     // Only apply slanting when:
     // 1. This tab is active (slants where it meets inactive neighbors)
@@ -1118,8 +1129,8 @@ export default function ExchangeForm({
       } else {
         clipPath = undefined;
       }
-    } else {
-      // Middle tab (MoneyX): slanted on both sides only where it meets active neighbors
+    } else if (isInnerTab) {
+      // Inner tabs (MoneyX, P2P): slanted on both sides only where they meet active neighbors
       const slantRight = isActive || rightNeighborActive;
       const slantLeft = isActive || leftNeighborActive;
 
@@ -1184,7 +1195,9 @@ export default function ExchangeForm({
         ? t("marketing.exchange.tabs.express", "Express Exchange")
         : variant === "moneyx"
           ? "MoneyX"
-          : label || t("marketing.exchange.tabs.swap", "Swap");
+          : variant === "p2p"
+            ? t("marketing.exchange.tabs.p2p", "P2P Trading")
+            : label || t("marketing.exchange.tabs.swap", "Swap");
 
     // Icon Sources
     // Express / Exchange Icons (from Sidebar)
@@ -1221,7 +1234,7 @@ export default function ExchangeForm({
       return label?.trim() ? <span className={textColorClass}>{label}</span> : null;
     };
 
-    const flexGrowValue = variant === "express" || variant === "swap" ? 2 : 1.6;
+    const flexGrowValue = 1;
 
     // Determine which edges have slants (for border drawing)
     const hasSlantRightTop = clipPath && clipPath.includes("92% 0"); // Right edge slants top-right (Express active)
@@ -1243,12 +1256,12 @@ export default function ExchangeForm({
         }
         return '0';
       } else if (position === "last") {
-        // Swap tab: curve at bottom-left meeting point (where it meets MoneyX)
+        // Swap tab: curve at bottom-left meeting point (where it meets inner tab)
         if (hasSlantLeft) {
           return '0 0 0 12px'; // Bottom-left corner curved
         }
         return '0';
-      } else {
+      } else if (isInnerTab) {
         // MoneyX tab: curve at both meeting points
         if (hasSlantLeft && hasSlantRight) {
           return '0 12px 12px 0'; // Top-right and bottom-left corners curved
@@ -1259,6 +1272,7 @@ export default function ExchangeForm({
         }
         return '0';
       }
+      return '0';
     };
 
     return (
@@ -1481,29 +1495,10 @@ export default function ExchangeForm({
   const renderTabs = () => {
     const borderColor = isDark ? "#2f323b" : "#6B7280";
 
-    // Tab layout math (flexGrow: Express=2, MoneyX=1.6, Swap=2 => total=5.6)
-    // Express width = 2/5.6 = 35.714%
-    // MoneyX width  = 1.6/5.6 = 28.571%
-    // Swap starts at 64.285%
-    // Slants used in clipPaths:
-    // - Right slant uses 92% at top (or 92% at bottom depending on state)
-    // - Left slant uses 8% at bottom for the "upward" cut
-    const P_EXPRESS = "35.714%";
-    const P_SWAP_START = "64.285%";
-    const P_MONEYX_W = "28.571%";
-    const P_MONEYX_LEFT_BOTTOM_INSET = "2.286%"; // 8% of MoneyX width (0.08 * 28.571)
-    const P_EXPRESS_RIGHT_BOTTOM_INSET = "32.857%"; // 92% of Express width (0.92 * 35.714)
-    const P_MONEYX_RIGHT_TOP_CUT = "62%"; // Express start + (92% of MoneyX width) = 35.714 + 26.285 ≈ 62
-    // Swap width = 100% - 64.285% = 35.715%, 8% of Swap width = 2.857%
-    const P_SWAP_LEFT_BOTTOM_INSET = "2.857%"; // 8% of Swap width (0.08 * 35.715)
-    const P_SWAP_BOTTOM_END = "67.142%"; // Swap start + 8% of Swap width = 64.285 + 2.857
-
     return (
       <div
         className="relative flex w-full overflow-hidden mt-0 mb-0 rounded-t-2xl bg-gray-300 dark:bg-[#18181D] gap-0 border border-b-0 dark:border-accent border-gray-400"
       >
-        {/* Uniform OUTER border that DOES NOT touch the active tab area (segmented). */}
-        {/* Left / Right borders (hide the side border next to the active outer tab) */}
         {activeTab !== "express" && (
           <div
             className="pointer-events-none absolute left-0 top-0 bottom-0 z-30"
@@ -1511,15 +1506,13 @@ export default function ExchangeForm({
             aria-hidden="true"
           />
         )}
-        {activeTab !== "swap" && (
+        {activeTab !== "p2p" && (
           <div
             className="pointer-events-none absolute right-0 top-0 bottom-0 z-30"
             style={{ borderColor }}
             aria-hidden="true"
           />
         )}
-
-        {/* Rounded top corners (hide the corner border next to the active tab) */}
         {activeTab !== "express" && (
           <div
             className="pointer-events-none absolute top-0 left-0 h-10 w-10 sm:w-12 z-30"
@@ -1527,44 +1520,10 @@ export default function ExchangeForm({
             aria-hidden="true"
           />
         )}
-        {activeTab !== "swap" && (
+        {activeTab !== "p2p" && (
           <div
             className="pointer-events-none absolute top-0 right-0 h-10 w-10 sm:w-12 z-30"
             style={{ borderColor }}
-            aria-hidden="true"
-          />
-        )}
-
-        {/* Top border segments (skip the active tab width) */}
-        {activeTab === "express" && (
-          <div
-            className="pointer-events-none absolute top-0 z-30"
-            // Express active => MoneyX inactive has a LEFT slant at the BOTTOM only, so TOP join is straight.
-            style={{ borderColor, left: P_EXPRESS, right: 0 }}
-            aria-hidden="true"
-          />
-        )}
-        {activeTab === "moneyx" && (
-          <>
-            <div
-              className="pointer-events-none absolute top-0 left-0  z-30"
-              // MoneyX active => Express top border extends until it meets the start of slanting part (full Express width)
-              style={{ borderColor, width: P_EXPRESS }}
-              aria-hidden="true"
-            />
-            <div
-              className="pointer-events-none absolute top-0 z-30"
-              // MoneyX active => Swap inactive join is straight at the TOP.
-              style={{ borderColor, left: P_SWAP_START, right: 0 }}
-              aria-hidden="true"
-            />
-          </>
-        )}
-        {activeTab === "swap" && (
-          <div
-            className="pointer-events-none absolute top-0 left-0 z-30"
-            // Swap active => MoneyX inactive has a RIGHT slant at the TOP (92%), so stop before the slant point.
-            style={{ borderColor, width: P_MONEYX_RIGHT_TOP_CUT }}
             aria-hidden="true"
           />
         )}
@@ -1577,92 +1536,78 @@ export default function ExchangeForm({
         <TabButton
           id="moneyx"
           variant="moneyx"
-          position="middle"
+          position="second"
           label="MoneyX"
         />
         <TabButton
           id="swap"
           variant="swap"
-          position="last"
+          position="third"
           label={t("marketing.exchange.tabs.swap", "Swap")}
         />
+        <TabButton
+          id="p2p"
+          variant="p2p"
+          position="last"
+          label={t("marketing.exchange.tabs.p2p", "P2P")}
+        />
 
-        {/* Bottom border segments (skip the active tab width) */}
-        {activeTab === "express" && (
-          <div
-            className="pointer-events-none absolute bottom-0 h-[2px] z-30"
-            // Express active => MoneyX inactive LEFT edge is inset by 8% at the BOTTOM.
-            style={{
-              backgroundColor: borderColor,
-              left: `calc(${P_EXPRESS} + ${P_MONEYX_LEFT_BOTTOM_INSET})`,
-              right: 0,
-            }}
-            aria-hidden="true"
-          />
-        )}
-        {activeTab === "moneyx" && (
-          <>
-            <div
-              className="pointer-events-none absolute bottom-0 left-0 h-[2px] z-30"
-              // MoneyX active => Express inactive RIGHT edge is inset by 92% at the BOTTOM.
-              // Border stops at the slant point (92% of Express width)
-              style={{ backgroundColor: borderColor, width: P_EXPRESS_RIGHT_BOTTOM_INSET }}
-              aria-hidden="true"
-            />
-            <div
-              className="pointer-events-none absolute bottom-0 h-[2px] z-30"
-              // MoneyX active => Swap inactive LEFT edge slant starts at 8% from Swap's left edge.
-              // Border starts at Swap start + 8% of Swap width, ends at right edge
-              style={{
-                backgroundColor: borderColor,
-                left: P_SWAP_BOTTOM_END,
-                right: 0,
-              }}
-              aria-hidden="true"
-            />
-          </>
-        )}
-        {activeTab === "swap" && (
-          <div
-            className="pointer-events-none absolute bottom-0 left-0 h-[2px] z-30"
-            // Swap active => MoneyX inactive RIGHT edge reaches 100% at the BOTTOM (slant goes to full width).
-            style={{ backgroundColor: borderColor, width: P_SWAP_START }}
-            aria-hidden="true"
-          />
-        )}
       </div>
     );
+  };
+
+  const homeCardShellClass = `w-full mx-auto bg-background dark:bg-[#18181D] rounded-2xl ${
+    isHomePage
+      ? "max-w-full sm:max-w-lg md:max-w-xl lg:max-w-2xl xl:max-w-3xl 2xl:max-w-4xl"
+      : "max-w-none"
+  }`;
+
+  const frozenGuardProps = {
+    onSubmitCapture: (e: React.FormEvent) => {
+      if (!isFrozenUser) return;
+      e.preventDefault();
+      e.stopPropagation();
+      setShowFrozenModal(true);
+    },
+    onClickCapture: (e: React.MouseEvent) => {
+      if (!isFrozenUser) return;
+      const target = e.target as HTMLElement | null;
+      const button = target?.closest?.("button");
+      if (!button || (button as HTMLButtonElement).disabled) return;
+      e.preventDefault();
+      e.stopPropagation();
+      setShowFrozenModal(true);
+    },
   };
 
   // If Swap Crypto tab is active, render SwapWidget with tab controls
   if (activeTab === "swap") {
     return (
-      <div
-        className={`w-full mx-auto bg-background dark:bg-[#18181D]
-        rounded-2xl ${isHomePage
-            ? "max-w-full sm:max-w-lg md:max-w-xl lg:max-w-2xl xl:max-w-3xl 2xl:max-w-4xl"
-            : "max-w-none"
-          }`}>
+      <div className={homeCardShellClass}>
         {renderTabs()}
         <div
           className="pt-5 sm:pt-5 px-3 sm:px-4 md:px-5 py-3 border-l border-r border-b border-border dark:border-accent rounded-b-2xl"
-          onSubmitCapture={(e) => {
-            if (!isFrozenUser) return;
-            e.preventDefault();
-            e.stopPropagation();
-            setShowFrozenModal(true);
-          }}
-          onClickCapture={(e) => {
-            if (!isFrozenUser) return;
-            const target = e.target as HTMLElement | null;
-            const button = target?.closest?.("button");
-            if (!button || (button as HTMLButtonElement).disabled) return;
-            e.preventDefault();
-            e.stopPropagation();
-            setShowFrozenModal(true);
-          }}
+          {...frozenGuardProps}
         >
           <SwapWidget usePublicApi={isHomePage} />
+        </div>
+        <FrozenAccountModal
+          isOpen={showFrozenModal}
+          onClose={() => setShowFrozenModal(false)}
+        />
+      </div>
+    );
+  }
+
+  if (activeTab === "p2p") {
+    return (
+      <div className={homeCardShellClass}>
+        {renderTabs()}
+        <div
+          className="pt-2 sm:pt-3 px-3 sm:px-4 md:px-5 py-3 border-l border-r border-b border-border dark:border-accent rounded-b-2xl"
+          {...frozenGuardProps}
+        >
+          <HomeP2P isHomePage={isHomePage} />
         </div>
         <FrozenAccountModal
           isOpen={showFrozenModal}
@@ -1675,30 +1620,11 @@ export default function ExchangeForm({
   // If Money X tab is active, render MoneyX component
   if (activeTab === "moneyx") {
     return (
-      <div
-        className={`w-full mx-auto bg-background dark:bg-[#18181D] 
-        rounded-2xl ${isHomePage
-            ? "max-w-full sm:max-w-lg md:max-w-xl lg:max-w-2xl xl:max-w-3xl 2xl:max-w-4xl"
-            : "max-w-none"
-          }`}>
+      <div className={homeCardShellClass}>
         {renderTabs()}
         <div
           className="pt-2 sm:pt-3 px-3 sm:px-4 md:px-5 py-3 border-l border-r border-b border-border dark:border-accent rounded-b-2xl"
-          onSubmitCapture={(e) => {
-            if (!isFrozenUser) return;
-            e.preventDefault();
-            e.stopPropagation();
-            setShowFrozenModal(true);
-          }}
-          onClickCapture={(e) => {
-            if (!isFrozenUser) return;
-            const target = e.target as HTMLElement | null;
-            const button = target?.closest?.("button");
-            if (!button || (button as HTMLButtonElement).disabled) return;
-            e.preventDefault();
-            e.stopPropagation();
-            setShowFrozenModal(true);
-          }}
+          {...frozenGuardProps}
         >
           <MoneyX isHomePage={isHomePage} commissionType="deposit" />
         </div>
@@ -1712,31 +1638,11 @@ export default function ExchangeForm({
 
   // Default: Express Exchange tab
   return (
-    <div
-      className={`w-full mx-auto bg-background dark:bg-[#18181D] 
-      rounded-2xl ${isHomePage
-          ? "max-w-full sm:max-w-lg md:max-w-xl lg:max-w-2xl xl:max-w-3xl 2xl:max-w-4xl"
-          : "max-w-none"
-        }`}>
+    <div className={homeCardShellClass}>
       {renderTabs()}
-      {/* Express Exchange Content */}
       <div
         className="pt-2 sm:pt-3 px-3 sm:px-4 md:px-5 py-3 border-l border-r border-b border-border dark:border-accent rounded-b-2xl"
-        onSubmitCapture={(e) => {
-          if (!isFrozenUser) return;
-          e.preventDefault();
-          e.stopPropagation();
-          setShowFrozenModal(true);
-        }}
-        onClickCapture={(e) => {
-          if (!isFrozenUser) return;
-          const target = e.target as HTMLElement | null;
-          const button = target?.closest?.("button");
-          if (!button || (button as HTMLButtonElement).disabled) return;
-          e.preventDefault();
-          e.stopPropagation();
-          setShowFrozenModal(true);
-        }}
+        {...frozenGuardProps}
       >
         <Express isHomePage={isHomePage} />
       </div>

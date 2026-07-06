@@ -442,16 +442,19 @@ export const getAllP2POrders = async (
   });
 };
 
-/** Fetch P2P market orders from /trading_engine/p2p/all-orders/?page=N - buy_orders and sell_orders with results */
+/** Fetch P2P market orders from /trading_engine/p2p/all-orders/?page=N - public, no auth required. */
 export const getAllP2PBuyandSell = async (
   page: number = 1
 ): Promise<P2PMyOrders> => {
   return withRetry(async () => {
     const url = `${API_CONFIG.P2P.ALL_ORDERS}?page=${page}`;
-    const response = await get<P2PMyOrders>(url);
+    const response = await get<P2PMyOrders>(url, { skipAuth: true });
     return response.data;
   });
 };
+
+/** Alias for home card — same public endpoint, no token. */
+export const getAllP2PBuyandSellPublic = getAllP2PBuyandSell;
 
 export const getMyP2POrders = async (
   page: number = 1
