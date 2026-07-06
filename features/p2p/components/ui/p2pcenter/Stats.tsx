@@ -17,29 +17,24 @@ const Stats = ({ summary }: { summary?: TransactionSummary | null }) => {
     [summary, wsWallet.overviewSummary]
   );
 
-  const safe =
-    activeSummary && typeof activeSummary === "object" && !Array.isArray(activeSummary)
-      ? activeSummary
-      : {};
-
   const escrowDisplay = getP2PEscrowDisplay(wsWallet.escrow, activeSummary);
 
   const stats = [
-    { value: parseSummaryNumber(safe.total_trades) || 0, label: "Trades" },
+    { value: parseSummaryNumber(activeSummary?.total_trades) || 0, label: "Trades" },
     {
-      value: getP2PCompletionRateDisplay(safe),
+      value: getP2PCompletionRateDisplay(activeSummary),
       label: "Completion rate",
     },
     {
-      value: <span>{safe.avg_release_time ?? "0 Min"}</span>,
+      value: <span>{activeSummary?.avg_release_time ?? "0 Min"}</span>,
       label: "Avg. release time",
     },
     {
-      value: <span>{safe.avg_payment_time ?? "0 Min"}</span>,
+      value: <span>{activeSummary?.avg_payment_time ?? "0 Min"}</span>,
       label: "Avg. pay time",
     },
     {
-      value: formatSummaryPercent(safe.rating, "0%"),
+      value: formatSummaryPercent(activeSummary?.rating, "0%"),
       label: "Rating",
     },
     {

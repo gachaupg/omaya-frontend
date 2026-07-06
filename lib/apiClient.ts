@@ -7,6 +7,13 @@ import axios, {
   AxiosError,
   AxiosResponse,
 } from "axios";
+
+declare module "axios" {
+  export interface AxiosRequestConfig {
+    /** When true, do not attach Bearer token or attempt token refresh on 401. */
+    skipAuth?: boolean;
+  }
+}
 import { storage } from "../features/auth/utils/storage";
 import { API_BASE_URL } from "@/config/api";
 import { logger } from "./utils/logger";
@@ -214,6 +221,9 @@ const createAxiosInstance = (config: ApiClientConfig = DEFAULT_CONFIG): AxiosIns
 const addAuthInterceptor = (instance: AxiosInstance): AxiosInstance => {
   instance.interceptors.request.use(
     (config) => {
+      if (config.skipAuth) {
+        return config;
+      }
       const profile = storage.getProfile();
       if (profile?.tokens?.access) {
         config.headers.Authorization = `Bearer ${profile.tokens.access}`;
@@ -248,7 +258,8 @@ const addRefreshTokenInterceptor = (instance: AxiosInstance): AxiosInstance => {
         profile?.tokens?.refresh &&
         originalRequest &&
         !(originalRequest as any)._retry &&
-        !originalRequest?.url?.includes('/api/token/refresh/')
+        !originalRequest?.url?.includes('/api/token/refresh/') &&
+        !originalRequest.skipAuth
       ) {
         (originalRequest as any)._retry = true;
         try {
