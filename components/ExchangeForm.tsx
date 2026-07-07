@@ -1580,11 +1580,9 @@ export default function ExchangeForm({
     },
   };
 
-  const homeTabPanelMinHeight = isHomePage
-    ? "h-[560px] sm:h-[580px] flex flex-col overflow-hidden"
-    : "";
-
-  const tabContentPanelClass = `-mt-px pt-2 sm:pt-3 px-3 sm:px-4 md:px-5 py-3 border-l border-r border-b border-border dark:border-accent rounded-b-2xl ${homeTabPanelMinHeight}`;
+  const tabContentPanelClass = `-mt-px pt-2 sm:pt-3 px-3 sm:px-4 md:px-5 ${
+    isHomePage ? "pb-2 sm:pb-3" : "py-3"
+  } border-l border-r border-b border-border dark:border-accent rounded-b-2xl`;
 
   const renderActiveTabContent = () => {
     switch (activeTab) {
@@ -1605,15 +1603,7 @@ export default function ExchangeForm({
     <div className={homeCardShellClass}>
       {renderTabs()}
       <div className={tabContentPanelClass} {...frozenGuardProps}>
-        <div
-          className={
-            isHomePage
-              ? "flex min-h-0 flex-1 flex-col overflow-y-auto overflow-x-hidden"
-              : undefined
-          }
-        >
-          {renderActiveTabContent()}
-        </div>
+        {renderActiveTabContent()}
       </div>
       <FrozenAccountModal
         isOpen={showFrozenModal}

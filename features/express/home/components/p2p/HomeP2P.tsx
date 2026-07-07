@@ -71,12 +71,11 @@ export default function HomeP2P({ isHomePage = true }: HomeP2PProps) {
         sellLabel={t("marketing.p2p.sellCrypto", "Sell Crypto")}
       />
 
-      <div className="pt-1">
+      <div className="pt-0.5">
         <P2POfferList
           offers={offers}
           mode={mode}
           loading={loading}
-          fillHeight={isHomePage}
           emptyLabel={t(
             "marketing.p2p.emptyOffers",
             "No offers available right now."
