@@ -29,7 +29,7 @@ function formatRating(completionRate: unknown): string {
 export function mapHomeP2POffers(
   orders: unknown[],
   mode: HomeP2PMode,
-  limit = 3
+  limit = 4
 ): HomeP2POffer[] {
   return orders.slice(0, limit).flatMap((raw, index): HomeP2POffer[] => {
     const order = raw as Record<string, unknown>;

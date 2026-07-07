@@ -1,6 +1,7 @@
 "use client";
 
 import React from "react";
+import { PresenceIndicator } from "@/features/p2p/components/ui/market/sections/UserStatusBadge";
 import type { HomeP2POffer, HomeP2PMode } from "../types";
 import { P2PPaymentMethods } from "./P2PPaymentMethods";
 
@@ -56,32 +57,32 @@ export function P2POfferRow({
   const showCryptoIcon = isCryptoCurrency(offer.assetTicker);
 
   return (
-    <div className="flex items-start gap-3 py-4 border-b border-gray-200 dark:border-[#35353E]/70 last:border-b-0">
+    <div className="flex items-start gap-3 py-3 border-b border-gray-200 dark:border-[#35353E]/70 last:border-b-0 last:pb-0">
       <div className="flex min-w-0 flex-1 gap-3">
-        <div className="relative shrink-0">
+        <div className="relative h-10 w-10 shrink-0">
           {offer.advertiserPhoto ? (
             <img
               src={offer.advertiserPhoto}
               alt={offer.displayName}
-              className="h-9 w-9 rounded-full object-cover"
+              className="h-10 w-10 rounded-full object-cover bg-[#1D8751]"
               onError={(event) => {
                 event.currentTarget.style.display = "none";
+                event.currentTarget.nextElementSibling?.classList.remove("hidden");
               }}
             />
-          ) : (
-            <span
-              className="flex h-9 w-9 items-center justify-center rounded-full text-[10px] font-bold text-white"
-              style={{ backgroundColor: offer.avatarColor }}
-            >
-              {offer.advertiserInitials}
-            </span>
-          )}
-          {offer.online ? (
-            <span
-              className="absolute bottom-0 right-0 h-2.5 w-2.5 rounded-full border-2 border-white dark:border-[#18181D] bg-[#1D8751]"
-              aria-hidden
-            />
           ) : null}
+          <span
+            className={`flex h-10 w-10 items-center justify-center rounded-full text-xs font-bold text-white ${
+              offer.advertiserPhoto ? "hidden" : ""
+            }`}
+            style={{ backgroundColor: offer.avatarColor }}
+          >
+            {offer.advertiserInitials}
+          </span>
+          <PresenceIndicator
+            isOnline={offer.online}
+            className="dark:border-[#18181D]"
+          />
         </div>
 
         <div className="min-w-0 flex-1">

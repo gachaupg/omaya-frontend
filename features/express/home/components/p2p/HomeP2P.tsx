@@ -56,7 +56,11 @@ export default function HomeP2P({ isHomePage = true }: HomeP2PProps) {
   }, []);
 
   return (
-    <div className="w-full max-w-full mx-auto pt-0 mb-0 text-[#788099]">
+    <div
+      className={`w-full max-w-full mx-auto pt-0 mb-0 text-[#788099] ${
+        isHomePage ? "flex flex-col" : ""
+      }`}
+    >
       <P2PMarketTabs
         mode={mode}
         onModeChange={(nextMode) => {
@@ -72,6 +76,7 @@ export default function HomeP2P({ isHomePage = true }: HomeP2PProps) {
           offers={offers}
           mode={mode}
           loading={loading}
+          fillHeight={isHomePage}
           emptyLabel={t(
             "marketing.p2p.emptyOffers",
             "No offers available right now."

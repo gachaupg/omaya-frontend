@@ -1,6 +1,7 @@
 "use client";
 
 import React from "react";
+import { cn } from "@/lib/utils";
 
 interface PresenceIndicatorProps {
   isOnline: boolean;
@@ -13,9 +14,11 @@ export const PresenceIndicator: React.FC<PresenceIndicatorProps> = ({
   className = "",
 }) => (
   <span
-    className={`absolute bottom-0 right-0 h-3 w-3 rounded-full border-2 border-white dark:border-[var(--card-color)] ${
-      isOnline ? "bg-[#1D8751]" : "bg-red-500"
-    } ${className}`}
+    className={cn(
+      "absolute -bottom-0.5 -right-0.5 z-10 h-3 w-3 rounded-full border-2 border-white dark:border-[var(--card-color)]",
+      isOnline ? "bg-[#1D8751]" : "bg-red-500",
+      className
+    )}
     aria-label={isOnline ? "Online" : "Offline"}
     title={isOnline ? "Online" : "Offline"}
   />

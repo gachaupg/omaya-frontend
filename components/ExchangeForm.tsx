@@ -1161,8 +1161,8 @@ export default function ExchangeForm({
     const shouldHideBorders = position === "first" && activeTab === "moneyx";
 
     const buttonClasses = [
-      "relative flex w-full items-center justify-center overflow-hidden transition-all duration-200",
-      "px-3.5 sm:px-4.5 md:px-5.5 lg:px-6.5 xl:px-7 py-2.5 sm:py-3 md:py-3.5 lg:py-4 min-h-[48px] sm:min-h-[50px] md:min-h-[54px] lg:min-h-[58px]",
+      "relative flex w-full h-full items-center justify-center overflow-hidden transition-all duration-200",
+      "px-3.5 sm:px-4.5 md:px-5.5 lg:px-6.5 xl:px-7 py-2.5 sm:py-3 md:py-3.5 lg:py-4",
       isActive
         ? "bg-transparent"
         : isDark
@@ -1281,7 +1281,7 @@ export default function ExchangeForm({
         onClick={() => handleTabClick(id)}
         aria-pressed={isActive}
         aria-label={ariaLabel}
-        className={`group flex-1 px-0 rounded-none focus:outline-none focus-visible:ring-2 focus-visible:ring-[#1D8751] focus-visible:ring-offset-2 focus-visible:ring-offset-transparent relative overflow-visible`}
+        className={`group flex-1 h-full px-0 rounded-none focus:outline-none focus-visible:ring-2 focus-visible:ring-[#1D8751] focus-visible:ring-offset-2 focus-visible:ring-offset-transparent relative overflow-visible ${isActive ? "z-10" : "z-0"}`}
         style={{
           clipPath,
           flexGrow: flexGrowValue,
@@ -1497,7 +1497,7 @@ export default function ExchangeForm({
 
     return (
       <div
-        className="relative flex w-full overflow-hidden mt-0 mb-0 rounded-t-2xl bg-gray-300 dark:bg-[#18181D] gap-0 border border-b-0 dark:border-accent border-gray-400"
+        className="relative flex w-full items-stretch overflow-hidden mt-0 mb-0 rounded-t-2xl bg-gray-300 dark:bg-[#18181D] gap-0 border border-b-0 dark:border-accent border-gray-400 h-[48px] sm:h-[50px] md:h-[54px] lg:h-[58px] shrink-0"
       >
         {activeTab !== "express" && (
           <div
@@ -1558,7 +1558,7 @@ export default function ExchangeForm({
 
   const homeCardShellClass = `w-full mx-auto bg-background dark:bg-[#18181D] rounded-2xl ${
     isHomePage
-      ? "max-w-full sm:max-w-lg md:max-w-xl lg:max-w-2xl xl:max-w-3xl 2xl:max-w-4xl"
+      ? "max-w-full sm:max-w-lg md:max-w-xl lg:max-w-2xl xl:max-w-3xl 2xl:max-w-4xl flex flex-col"
       : "max-w-none"
   }`;
 
@@ -1580,71 +1580,40 @@ export default function ExchangeForm({
     },
   };
 
-  // If Swap Crypto tab is active, render SwapWidget with tab controls
-  if (activeTab === "swap") {
-    return (
-      <div className={homeCardShellClass}>
-        {renderTabs()}
-        <div
-          className="pt-5 sm:pt-5 px-3 sm:px-4 md:px-5 py-3 border-l border-r border-b border-border dark:border-accent rounded-b-2xl"
-          {...frozenGuardProps}
-        >
-          <SwapWidget usePublicApi={isHomePage} />
-        </div>
-        <FrozenAccountModal
-          isOpen={showFrozenModal}
-          onClose={() => setShowFrozenModal(false)}
-        />
-      </div>
-    );
-  }
+  const homeTabPanelMinHeight = isHomePage
+    ? "h-[560px] sm:h-[580px] flex flex-col overflow-hidden"
+    : "";
 
-  if (activeTab === "p2p") {
-    return (
-      <div className={homeCardShellClass}>
-        {renderTabs()}
-        <div
-          className="pt-2 sm:pt-3 px-3 sm:px-4 md:px-5 py-3 border-l border-r border-b border-border dark:border-accent rounded-b-2xl"
-          {...frozenGuardProps}
-        >
-          <HomeP2P isHomePage={isHomePage} />
-        </div>
-        <FrozenAccountModal
-          isOpen={showFrozenModal}
-          onClose={() => setShowFrozenModal(false)}
-        />
-      </div>
-    );
-  }
+  const tabContentPanelClass = `-mt-px pt-2 sm:pt-3 px-3 sm:px-4 md:px-5 py-3 border-l border-r border-b border-border dark:border-accent rounded-b-2xl ${homeTabPanelMinHeight}`;
 
-  // If Money X tab is active, render MoneyX component
-  if (activeTab === "moneyx") {
-    return (
-      <div className={homeCardShellClass}>
-        {renderTabs()}
-        <div
-          className="pt-2 sm:pt-3 px-3 sm:px-4 md:px-5 py-3 border-l border-r border-b border-border dark:border-accent rounded-b-2xl"
-          {...frozenGuardProps}
-        >
+  const renderActiveTabContent = () => {
+    switch (activeTab) {
+      case "swap":
+        return <SwapWidget usePublicApi={isHomePage} />;
+      case "p2p":
+        return <HomeP2P isHomePage={isHomePage} />;
+      case "moneyx":
+        return (
           <MoneyX isHomePage={isHomePage} commissionType="deposit" />
-        </div>
-        <FrozenAccountModal
-          isOpen={showFrozenModal}
-          onClose={() => setShowFrozenModal(false)}
-        />
-      </div>
-    );
-  }
+        );
+      default:
+        return <Express isHomePage={isHomePage} />;
+    }
+  };
 
-  // Default: Express Exchange tab
   return (
     <div className={homeCardShellClass}>
       {renderTabs()}
-      <div
-        className="pt-2 sm:pt-3 px-3 sm:px-4 md:px-5 py-3 border-l border-r border-b border-border dark:border-accent rounded-b-2xl"
-        {...frozenGuardProps}
-      >
-        <Express isHomePage={isHomePage} />
+      <div className={tabContentPanelClass} {...frozenGuardProps}>
+        <div
+          className={
+            isHomePage
+              ? "flex min-h-0 flex-1 flex-col overflow-y-auto overflow-x-hidden"
+              : undefined
+          }
+        >
+          {renderActiveTabContent()}
+        </div>
       </div>
       <FrozenAccountModal
         isOpen={showFrozenModal}
