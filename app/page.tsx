@@ -442,7 +442,7 @@ export default function MarketingPage() {
         </div>
 
         <div className="w-full max-w-[1600px] mx-auto px-2 sm:px-4 lg:px-8 xl:px-10 relative z-10 mt-0 lg:mt-0 pt-10 sm:pt-4 lg:pt-5">
-          <div className="grid grid-cols-1 lg:grid-cols-2 items-start lg:items-center gap-y-4 md:gap-y-3 md:gap-x-6 lg:gap-x-8 xl:gap-x-10">
+          <div className="grid grid-cols-1 lg:grid-cols-2 items-start gap-y-4 md:gap-y-3 md:gap-x-6 lg:gap-x-8 xl:gap-x-10">
             <div className="space-y-2 md:space-y-2 pl-0 md:pl-4 lg:pl-5 text-center lg:text-left">
               {/* Green pill banner */}
               <div className="inline-flex mt-3 items-center justify-center md:justify-start mt-4 sm:mt-0">
@@ -538,7 +538,7 @@ export default function MarketingPage() {
                 </div>
               </div> */}
             </div>
-            <div className="flex justify-center w-full mt-0">
+            <div className="flex justify-center w-full mt-2 sm:mt-3">
               <div className="w-full max-w-full sm:max-w-lg md:max-w-xl lg:max-w-2xl xl:max-w-3xl 2xl:max-w-4xl">
                 <ExchangeForm isHomePage={true} />
               </div>

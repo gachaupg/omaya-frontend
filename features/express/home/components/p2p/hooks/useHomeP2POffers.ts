@@ -78,7 +78,7 @@ export function useHomeP2POffers(mode: HomeP2PMode) {
 
   const offers: HomeP2POffer[] = useMemo(() => {
     const orders = collectOrdersForMode(buy_orders, sell_orders, mode);
-    return mapHomeP2POffers(orders, mode, 3);
+    return mapHomeP2POffers(orders, mode, 4);
   }, [buy_orders, sell_orders, mode]);
 
   const activeTradersLabel = useMemo(() => {

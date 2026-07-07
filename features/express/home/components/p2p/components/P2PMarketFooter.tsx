@@ -16,7 +16,7 @@ export function P2PMarketFooter({
   onViewAll,
 }: P2PMarketFooterProps) {
   return (
-    <div className="flex items-center justify-between gap-3 pt-4">
+    <div className="flex items-center justify-between gap-3 pt-2">
       <p className="text-xs sm:text-sm font-medium text-[#1D8751]">
         {activeTradersLabel} {tradersOnlineText}
       </p>
