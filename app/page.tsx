@@ -840,39 +840,14 @@ export default function MarketingPage() {
             <div className="rounded-b-3xl">
               {/* Inner content card (flat top, rounded bottom) */}
               <div className="relative bg-gray-50 dark:bg-(--card-color) rounded-b-3xl p-5 sm:p-6 md:p-8 shadow-sm overflow-hidden">
-                {/* green glow bg — filter blur causes horizontal line artifacts on some mobile GPUs */}
-                <div
-                  className="absolute pointer-events-none z-1 hidden sm:block bg-[#1D8751] blur-3xl w-90 h-70 bottom-30 right-40 opacity-20"
-                  aria-hidden
-                />
-                {/* Bottom fade overlays — desktop only; on mobile they bleed into the next section and cause stripe glitches */}
-                <div
-                  className="absolute inset-x-0 bottom-0 h-3/4 rounded-b-3xl pointer-events-none dark:hidden hidden sm:block"
-                  style={{
-                    background: 'linear-gradient(to top, rgb(255, 255, 255) 0%, rgba(255, 255, 255, 0.95) 25%, rgba(255, 255, 255, 0.8) 50%, rgba(255, 255, 255, 0.5) 75%, transparent 100%)',
-                  }}
-                ></div>
-                <div
-                  className="absolute inset-x-0 bottom-0 h-3/4 rounded-b-3xl pointer-events-none hidden sm:dark:block"
-                  style={{
-                    background: 'linear-gradient(to top, rgb(10, 10, 15) 0%, rgba(10, 10, 15, 0.95) 25%, rgba(10, 10, 15, 0.8) 50%, rgba(10, 10, 15, 0.5) 75%, transparent 100%)',
-                  }}
-                ></div>
-                <div
-                  className="absolute inset-x-0 bottom-0 h-1/2 rounded-b-3xl pointer-events-none z-0 dark:hidden hidden sm:block"
-                  style={{
-                    background: 'linear-gradient(to top, rgb(255, 255, 255) 0%, transparent 100%)',
-                  }}
-                ></div>
-                <div
-                  className="absolute inset-x-0 bottom-0 h-1/2 rounded-b-3xl pointer-events-none hidden sm:dark:block z-0"
-                  style={{
-                    background: 'linear-gradient(to top, rgb(10, 10, 15) 0%, transparent 100%)',
-                  }}
-                ></div>
                 <div className="relative z-10 grid grid-cols-1 lg:grid-cols-2 gap-8 lg:gap-12 items-center">
                   {/* Left Section - Text */}
-                  <div className="space-y-6 order-2 lg:order-1">
+                  <div className="relative order-2 lg:order-1">
+                    <div
+                      className="pointer-events-none absolute -left-6 -bottom-6 hidden sm:block bg-[#1D8751] blur-3xl w-72 h-56 opacity-15"
+                      aria-hidden
+                    />
+                    <div className="relative z-10 space-y-6">
                     {/* ABOUT OMAYA Header */}
                     <div className="bg-[#1D8751]/15 border border-[#1D8751]/25 rounded-3xl px-4 py-2 inline-block">
                       <div className="text-[#1D8751] text-sm font-medium uppercase tracking-wide">
@@ -961,18 +936,21 @@ export default function MarketingPage() {
                         </div>
                       ))}
                     </div>
+                    </div>
                   </div>
 
                   {/* Right Section - Image */}
-                  <div className="relative order-1 lg:order-2">
-                    <div className="relative w-full overflow-hidden rounded-t-[1.5rem] md:rounded-t-[2rem] rounded-b-lg">
+                  <div className="relative order-1 lg:order-2 isolate">
+                    <div className="relative w-full overflow-hidden rounded-t-[1.5rem] md:rounded-t-[2rem] rounded-b-lg bg-gray-100 dark:bg-[#14141A] ring-1 ring-black/5 dark:ring-white/10">
                       <Image
                         src="/assets/omaya-office-about.png"
                         alt={t("marketing.about.imageAlt", "OMAYA corporate office in Mogadishu")}
-                        width={800}
-                        height={600}
-                        className="w-full h-auto object-cover rounded-t-[1.5rem] md:rounded-t-[2rem] rounded-b-lg"
-                        unoptimized
+                        width={1400}
+                        height={1050}
+                        quality={95}
+                        sizes="(max-width: 1024px) 100vw, 560px"
+                        priority
+                        className="w-full h-auto object-cover object-center rounded-t-[1.5rem] md:rounded-t-[2rem] rounded-b-lg contrast-[1.05] saturate-[1.08]"
                       />
                     </div>
 
