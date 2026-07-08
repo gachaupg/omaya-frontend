@@ -431,13 +431,14 @@ const AboutPage = () => {
 
             {/* Right Column - Image */}
             <div className="relative">
-              <div className="relative w-full h-[600px] rounded-3xl overflow-hidden">
+              <div className="relative w-full aspect-[4/3] md:aspect-[5/4] rounded-3xl overflow-hidden bg-gray-100 dark:bg-[#14141A] ring-1 ring-black/5 dark:ring-white/10">
                 <Image
                   src="/assets/omaya-office-about.png"
                   alt={t("marketing.about.imageAlt", "OMAYA corporate office in Mogadishu")}
                   fill
-                  className="object-cover"
-                  sizes="(max-width: 768px) 100vw, 50vw"
+                  quality={95}
+                  sizes="(max-width: 768px) 100vw, (max-width: 1280px) 50vw, 640px"
+                  className="object-cover object-center contrast-[1.05] saturate-[1.08]"
                 />
               </div>
             </div>
@@ -451,13 +452,14 @@ const AboutPage = () => {
           <div className="grid md:grid-cols-2 gap-12 items-center">
             {/* Left Column - Image */}
             <div className="relative order-2 md:order-1">
-              <div className="relative w-full h-[600px] rounded-3xl overflow-hidden">
+              <div className="relative w-full aspect-[4/3] md:aspect-[5/4] rounded-3xl overflow-hidden bg-gray-100 dark:bg-[#14141A] ring-1 ring-black/5 dark:ring-white/10">
                 <Image
                   src="/assets/omaya-office-about.png"
                   alt={t("marketing.about.imageAlt", "OMAYA corporate office in Mogadishu")}
                   fill
-                  className="object-cover"
-                  sizes="(max-width: 768px) 100vw, 50vw"
+                  quality={95}
+                  sizes="(max-width: 768px) 100vw, (max-width: 1280px) 50vw, 640px"
+                  className="object-cover object-center contrast-[1.05] saturate-[1.08]"
                 />
               </div>
             </div>
