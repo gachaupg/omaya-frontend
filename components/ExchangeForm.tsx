@@ -1077,21 +1077,98 @@ export default function ExchangeForm({
     position?: "first" | "second" | "third" | "last";
   }> = ({ id, label, variant, position = "second" }) => {
     const isActive = activeTab === id;
+
+    const ariaLabel =
+      variant === "express"
+        ? t("marketing.exchange.tabs.express", "Express Exchange")
+        : variant === "moneyx"
+          ? "MoneyX"
+          : variant === "p2p"
+            ? t("marketing.exchange.tabs.p2p", "P2P Trading")
+            : label || t("marketing.exchange.tabs.swap", "Swap");
+
+    const homeTabIcons: Record<Tab, string> = {
+      express: "/assets/Vector_2_xauedx.png",
+      moneyx: "/assets/uil_exchange_1_okxkvb.png",
+      swap: "/assets/Group_164002_fgt2kf.png",
+      p2p: "/assets/users-profiles-left_e2oejc.png",
+    };
+
+    if (isHomePage) {
+      const textColorClass = isActive
+        ? isDark
+          ? "text-white"
+          : "text-[#727272]"
+        : "text-[#727272]";
+
+      const renderHomeLabel = () => {
+        if (variant === "express") {
+          return (
+            <span className="flex flex-row items-center justify-center gap-0.5">
+              <span className={`${textColorClass} text-xs sm:text-sm font-bold uppercase`}>E</span>
+              <img
+                src={isActive && isDark ? "/images/Group_5_gkxzdz.png" : "/images/Group_9_momvgo.png"}
+                className="h-[11px] mt-1.5 sm:h-[12px] md:h-[13px] w-auto"
+                alt=""
+                aria-hidden
+              />
+            </span>
+          );
+        }
+
+        if (variant === "moneyx") {
+          return (
+            <MoneyXLabel
+              moneyClassName={`${textColorClass} text-xs sm:text-sm font-bold`}
+              xClassName="h-[11px] mt-1.5 sm:h-[12px] md:h-[13px] w-auto"
+              active={isActive}
+            />
+          );
+        }
+
+        return (
+          <span className={`${textColorClass} text-xs sm:text-sm font-bold capitalize`}>
+            {label}
+          </span>
+        );
+      };
+
+      return (
+        <button
+          type="button"
+          onClick={() => handleTabClick(id)}
+          aria-pressed={isActive}
+          aria-label={ariaLabel}
+          className={`relative flex flex-1 min-w-0 h-full items-center justify-center gap-1.5 sm:gap-2 px-2 sm:px-3 transition-colors duration-200 focus:outline-none focus-visible:ring-2 focus-visible:ring-[#1D8751] focus-visible:ring-offset-2 focus-visible:ring-offset-transparent ${
+            isActive
+              ? isDark
+                ? "bg-[#23232B] z-10"
+                : "bg-white z-10"
+              : "bg-transparent z-0"
+          }`}
+        >
+          {isActive && (
+            <span
+              className="absolute inset-x-0 top-0 h-[3px] bg-[#1D8751]"
+              aria-hidden="true"
+            />
+          )}
+          <img
+            src={homeTabIcons[id]}
+            alt=""
+            aria-hidden
+            className="h-4 w-4 sm:h-5 sm:w-5 shrink-0 object-contain"
+          />
+          {renderHomeLabel()}
+        </button>
+      );
+    }
+
     const tabOrder: Tab[] = ["express", "moneyx", "swap", "p2p"];
     const tabIndex = tabOrder.indexOf(id);
     const leftNeighbor = tabIndex > 0 ? tabOrder[tabIndex - 1] : null;
     const rightNeighbor =
       tabIndex < tabOrder.length - 1 ? tabOrder[tabIndex + 1] : null;
-    const [isSmallScreen, setIsSmallScreen] = useState(false);
-
-    useEffect(() => {
-      const checkScreenSize = () => {
-        setIsSmallScreen(window.innerWidth < 640);
-      };
-      checkScreenSize();
-      window.addEventListener("resize", checkScreenSize);
-      return () => window.removeEventListener("resize", checkScreenSize);
-    }, []);
 
     // Determine if neighbors are active to know where to apply slanting
     const leftNeighborActive = leftNeighbor === activeTab;
@@ -1189,15 +1266,6 @@ export default function ExchangeForm({
       "text-xs sm:text-sm md:text-base lg:text-[1.05rem] transition-colors whitespace-nowrap",
       textColorClass
     ].join(" ");
-
-    const ariaLabel =
-      variant === "express"
-        ? t("marketing.exchange.tabs.express", "Express Exchange")
-        : variant === "moneyx"
-          ? "MoneyX"
-          : variant === "p2p"
-            ? t("marketing.exchange.tabs.p2p", "P2P Trading")
-            : label || t("marketing.exchange.tabs.swap", "Swap");
 
     // Icon Sources
     // Express / Exchange Icons (from Sidebar)
@@ -1495,6 +1563,37 @@ export default function ExchangeForm({
   const renderTabs = () => {
     const borderColor = isDark ? "#2f323b" : "#6B7280";
 
+    if (isHomePage) {
+      return (
+        <div className="relative flex w-full items-stretch overflow-hidden mt-0 mb-0 rounded-t-2xl shrink-0 h-[48px] sm:h-[50px] md:h-[54px] lg:h-[58px] border border-b-0 border-gray-200 dark:border-[#35353E] bg-gray-100 dark:bg-[#0A0A0F]">
+          <TabButton
+            id="express"
+            variant="express"
+            position="first"
+            label={t("marketing.exchange.tabs.express", "Express")}
+          />
+          <TabButton
+            id="moneyx"
+            variant="moneyx"
+            position="second"
+            label="MoneyX"
+          />
+          <TabButton
+            id="swap"
+            variant="swap"
+            position="third"
+            label={t("marketing.exchange.tabs.swap", "Swap")}
+          />
+          <TabButton
+            id="p2p"
+            variant="p2p"
+            position="last"
+            label={t("marketing.exchange.tabs.p2p", "P2P")}
+          />
+        </div>
+      );
+    }
+
     return (
       <div
         className="relative flex w-full items-stretch overflow-hidden mt-0 mb-0 rounded-t-2xl bg-gray-300 dark:bg-[#18181D] gap-0 border border-b-0 dark:border-accent border-gray-400 h-[48px] sm:h-[50px] md:h-[54px] lg:h-[58px] shrink-0"
@@ -1581,7 +1680,7 @@ export default function ExchangeForm({
   };
 
   const tabContentPanelClass = `-mt-px pt-2 sm:pt-3 px-3 sm:px-4 md:px-5 ${
-    isHomePage ? "pb-2 sm:pb-3" : "py-3"
+    isHomePage ? "pb-2 sm:pb-3 overflow-visible" : "py-3"
   } border-l border-r border-b border-border dark:border-accent rounded-b-2xl`;
 
   const renderActiveTabContent = () => {

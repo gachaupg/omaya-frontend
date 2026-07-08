@@ -55,7 +55,7 @@ export function P2PPaymentMethods({ paymentDetails }: P2PPaymentMethodsProps) {
     : methods.slice(0, PAYMENT_PREVIEW_COUNT);
 
   return (
-    <div className="mt-2 flex flex-wrap items-center gap-1.5">
+    <div className="mt-1.5 flex flex-wrap items-center gap-1.5 sm:mt-2">
       {displayList.map((method, index) => (
         <PaymentMethodPill
           key={method.id ?? `${method.provider}-${index}`}
