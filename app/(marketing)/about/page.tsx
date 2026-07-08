@@ -245,13 +245,12 @@ const AboutPage = () => {
     <div className="min-h-screen bg-white dark:bg-(--bg-color)">
       {/* Hero Section */}
 
-      <section className="relative mt-16 md:mt-20 pt-12 md:pt-16 pb-20 px-4 overflow-hidden bg-gradient-to-br from-[#1D8751] via-[#16864a] to-[#0e5c33] dark:from-[#0A0A0F] dark:via-[#0A0A0F]/5 dark:to-[#0A0A0F]">
+      <section className="relative mt-10 md:mt-12 pt-6 md:pt-8 pb-8 md:pb-10 px-4 overflow-hidden bg-gradient-to-br from-[#1D8751] via-[#16864a] to-[#0e5c33] dark:from-[#0A0A0F] dark:via-[#0A0A0F]/5 dark:to-[#0A0A0F]">
         <FloatingParticles count={15} size={4} />
 
         <div className="max-w-7xl mx-auto relative z-10">
-          <div className="text-center">
-            {/* Welcome Banner */}
-            <div className="inline-block mb-8">
+          <div className="text-center max-w-4xl mx-auto">
+            <div className="inline-block mb-4 md:mb-5">
               <div className="px-4 py-1.5 rounded-3xl bg-[#1D87511A] border border-[#1D87514D] dark:bg-[#1D8751]/10 dark:border-[#1D8751]/30">
                 <p className="text-sm md:text-sm text-white dark:text-[#1D8751] font-medium">
                   {t("marketing.aboutPage.welcome", "Welcome to OMAYA.io")}
@@ -259,29 +258,28 @@ const AboutPage = () => {
               </div>
             </div>
 
-            {/* Main Heading */}
-            <h1 className="text-5xl md:text-6xl lg:text-7xl font-bold mb-6">
-              <div className="text-white">{t("marketing.aboutPage.titleAbout", "About")}</div>
-              <div className="text-white dark:text-[#1D8751]">{t("marketing.aboutPage.titleBrand", "OMAYA.io")}</div>
+            <h1 className="flex flex-row flex-wrap justify-center items-baseline gap-x-3 text-4xl md:text-5xl lg:text-6xl font-bold mb-5 md:mb-6">
+              <span className="text-white">{t("marketing.aboutPage.titleAbout", "About")}</span>
+              <span className="text-white dark:text-[#1D8751]">{t("marketing.aboutPage.titleBrand", "OMAYA.io")}</span>
             </h1>
 
-            {/* Tagline */}
-            <p className="text-xl dark:text-muted-foreground text-muted max-w-3xl mx-auto mb-10">
-              {t("marketing.aboutPage.tagline", "Leading the future of digital asset exchange with innovation, security, and trust")}
-            </p>
+            <div className="space-y-3 md:space-y-4 text-base md:text-lg text-white/90 dark:text-muted-foreground mb-5 md:mb-6">
+              <p>{t("marketing.aboutPage.tagline", "OMAYA is a fintech platform built for East Africa, bringing Crypto and Forex into a single platform.")}</p>
+              <p>{t("marketing.aboutPage.heroBody2", "The country's mobile money services such as — EVC Plus, Zaad, SAHAL, and e-Dahab — have always run in isolation; OMAYA connects them, so people can move money across providers and currencies without switching apps.")}</p>
+              <p>{t("marketing.aboutPage.heroBody3", "Headquartered in Mogadishu, OMAYA is building financial infrastructure that runs reliably.")}</p>
+            </div>
 
-            {/* CTA Buttons */}
             <div className="flex flex-col sm:flex-row gap-4 justify-center items-center">
               <a
                 href="#story"
-                className="relative px-8 py-3 bg-[#1D8751] text-white hover:bg-white/90 transition-all duration-300 shadow-lg dark:bg-[#1D8751] dark:text-white dark:hover:bg-[#166b3e]"
+                className="relative px-8 py-3 bg-[#1D8751] text-white hover:bg-white/90 transition-all duration-300 shadow-lg dark:bg-[#1D8751] dark:text-white dark:hover:bg-[#166b3e] text-center"
                 style={{ borderRadius: '2rem' }}
               >
                 {t("marketing.aboutPage.exploreJourney", "Explore Our Journey")}
               </a>
               <a
                 href="/contactUs"
-                className="px-8 py-3 bg-transparent border-1 border-white text-white font-semibold hover:bg-white/10 transition-all duration-300 dark:border-[#1D8751] dark:text-[#1D8751] dark:hover:bg-[#1D8751]/10"
+                className="px-8 py-3 bg-transparent border-1 border-white text-white font-semibold hover:bg-white/10 transition-all duration-300 dark:border-[#1D8751] dark:text-[#1D8751] dark:hover:bg-[#1D8751]/10 text-center"
                 style={{ borderRadius: '2rem' }}
               >
                 {t("marketing.aboutPage.contactUs", "Contact Us")}
@@ -435,8 +433,8 @@ const AboutPage = () => {
             <div className="relative">
               <div className="relative w-full h-[600px] rounded-3xl overflow-hidden">
                 <Image
-                  src="/assets/Container_ihax20.png"
-                  alt="Our Mission"
+                  src="/assets/omaya-office-about.png"
+                  alt={t("marketing.about.imageAlt", "OMAYA corporate office in Mogadishu")}
                   fill
                   className="object-cover"
                   sizes="(max-width: 768px) 100vw, 50vw"
@@ -455,8 +453,8 @@ const AboutPage = () => {
             <div className="relative order-2 md:order-1">
               <div className="relative w-full h-[600px] rounded-3xl overflow-hidden">
                 <Image
-                  src="/assets/Container_2_yazuhu.png"
-                  alt="Our Vision"
+                  src="/assets/omaya-office-about.png"
+                  alt={t("marketing.about.imageAlt", "OMAYA corporate office in Mogadishu")}
                   fill
                   className="object-cover"
                   sizes="(max-width: 768px) 100vw, 50vw"

@@ -871,58 +871,31 @@ export default function MarketingPage() {
                   }}
                 ></div>
                 <div className="relative z-10 grid grid-cols-1 lg:grid-cols-2 gap-8 lg:gap-12 items-center">
-                  {/* Left Section - Image */}
-                  <div className="relative">
-                    <div className="relative w-full overflow-hidden rounded-t-[1.5rem] md:rounded-t-[2rem] rounded-b-lg">
-                      <Image
-                        src="/assets/omaya-office-about.png"
-                        alt="Safe & Reliable Cryptocurrency Exchange Platform"
-                        width={800}
-                        height={600}
-                        className="w-full h-auto object-cover rounded-t-[1.5rem] md:rounded-t-[2rem] rounded-b-lg"
-                        unoptimized
-                      />
-                    </div>
-
-                    {/* Badge - Since 2019 (positioned slightly below top edge) */}
-                    <div className="absolute -top-6 right-4 md:-top-6 md:right-8 bg-[#1D8751] rounded-full px-3 md:px-4 py-1 md:py-1.5 z-20 shadow-md">
-                      <span className="text-white text-xs font-medium">Since 2019</span>
-                    </div>
-
-                    {/* Badge - 10K+ Users (inside image card, raised above bottom edge) */}
-                    <div className="absolute bottom-2 left-4 md:bottom-3 md:left-8 bg-[#1D8751] rounded-full px-3 md:px-4 py-1 md:py-1.5 z-20 shadow-md">
-                      <span className="text-white text-xs font-medium">10K+ Users</span>
-                    </div>
-                  </div>
-
-                  {/* Right Section - Text and Feature Cards */}
-                  <div className="space-y-6">
+                  {/* Left Section - Text */}
+                  <div className="space-y-6 order-2 lg:order-1">
                     {/* ABOUT OMAYA Header */}
                     <div className="bg-[#1D8751]/15 border border-[#1D8751]/25 rounded-3xl px-4 py-2 inline-block">
                       <div className="text-[#1D8751] text-sm font-medium uppercase tracking-wide">
-                        ABOUT OMAYA
+                        {t("marketing.about.label", "ABOUT US")}
                       </div>
                     </div>
 
                     {/* Title */}
                     <h2 className="text-3xl md:text-4xl 2xl:text-5xl font-semibold text-gray-900 dark:text-white">
-                      <span className="text-[#1D8751]">Safe & Reliable</span>{" "}
-                      <span className="text-gray-900 dark:text-white">Cryptocurrency Exchange Platform</span>
+                      <span className="text-[#1D8751]">
+                        {t("marketing.about.titleHighlight", "Built for East Africa")}
+                      </span>{" "}
+                      <span className="text-gray-900 dark:text-white">
+                        {t("marketing.about.titleRest", "Crypto & Forex in One Platform")}
+                      </span>
                     </h2>
 
                     {/* Descriptive Text */}
-                    <p className="text-[#788099] text-sm md:text-base leading-relaxed">
-                      Established in 2019, OMAYA.io is a leading digital asset and cryptocurrency trading platform in Somalia,
-                      licensed by the{" "}
-                      <span className="text-[#1D8751] font-semibold">Central Bank of Somalia</span>.
-                      With a team deeply rooted in East Africa, OMAYA.io is built to serve the region&apos;s unique financial
-                      landscape by delivering secure, compliant, and localized trading and exchange solutions.
-                      <br />
-                      At OMAYA.io, we go beyond transactions. We are committed to empowering our users through education,
-                      transparency, and access to expert insights that support informed financial decision-making. Backed by
-                      deep regional market knowledge, we provide reliable, responsive, and secure services tailored to the
-                      evolving needs of individuals, traders, and businesses across emerging markets.
-                    </p>
+                    <div className="space-y-4 text-[#788099] text-sm md:text-base leading-relaxed">
+                      <p>{t("marketing.about.body1", "OMAYA is a fintech platform built for East Africa, bringing Crypto and Forex into a single platform.")}</p>
+                      <p>{t("marketing.about.body2", "The country's mobile money services such as — EVC Plus, Zaad, SAHAL, and e-Dahab — have always run in isolation; OMAYA connects them, so people can move money across providers and currencies without switching apps.")}</p>
+                      <p>{t("marketing.about.body3", "Headquartered in Mogadishu, OMAYA is building financial infrastructure that runs reliably.")}</p>
+                    </div>
 
                     {/* Feature Boxes - Responsive Grid */}
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mt-3">
@@ -989,6 +962,30 @@ export default function MarketingPage() {
                       ))}
                     </div>
                   </div>
+
+                  {/* Right Section - Image */}
+                  <div className="relative order-1 lg:order-2">
+                    <div className="relative w-full overflow-hidden rounded-t-[1.5rem] md:rounded-t-[2rem] rounded-b-lg">
+                      <Image
+                        src="/assets/omaya-office-about.png"
+                        alt={t("marketing.about.imageAlt", "OMAYA corporate office in Mogadishu")}
+                        width={800}
+                        height={600}
+                        className="w-full h-auto object-cover rounded-t-[1.5rem] md:rounded-t-[2rem] rounded-b-lg"
+                        unoptimized
+                      />
+                    </div>
+
+                    <div className="absolute -top-6 right-4 md:-top-6 md:right-8 bg-[#1D8751] rounded-full px-3 md:px-4 py-1 md:py-1.5 z-20 shadow-md">
+                      <span className="text-white text-xs font-medium">
+                        {t("marketing.about.badgeHq", "Mogadishu HQ")}
+                      </span>
+                    </div>
+
+                    <div className="absolute bottom-2 left-4 md:bottom-3 md:left-8 bg-[#1D8751] rounded-full px-3 md:px-4 py-1 md:py-1.5 z-20 shadow-md">
+                      <span className="text-white text-xs font-medium">10K+ Users</span>
+                    </div>
+                  </div>
                 </div>
               </div>
             </div>
@@ -1034,7 +1031,7 @@ export default function MarketingPage() {
 
           {/* Steps Cards — margin spacing on mobile (flex gap + GPU layers causes stripe artifacts) */}
           <div className="w-full max-w-6xl mx-auto">
-            <div className="flex flex-col max-sm:gap-0 sm:grid sm:grid-cols-2 lg:grid-cols-4 sm:gap-6 lg:gap-4">
+            <div className="flex flex-col max-sm:gap-0 sm:grid sm:grid-cols-2 lg:grid-cols-4 sm:items-stretch sm:gap-6 lg:gap-4">
               {[
                 {
                   number: 1,
@@ -1091,9 +1088,9 @@ export default function MarketingPage() {
               ].map((step, index) => (
                 <div
                   key={step.number}
-                  className={`relative w-full marketing-step-card max-sm:mb-8 ${index === 3 ? "max-sm:mb-0" : ""}`}
+                  className={`relative flex h-full w-full flex-col marketing-step-card max-sm:mb-8 ${index === 3 ? "max-sm:mb-0" : ""}`}
                 >
-                  <div className="relative w-full bg-white dark:bg-[#141419] sm:dark:bg-white/5 rounded-3xl p-6 pt-2 border border-[#1D8751]/80 sm:border-2 max-sm:shadow-none sm:shadow-lg flex flex-col items-center text-center">
+                  <div className="relative flex h-full w-full flex-1 flex-col items-center text-center bg-white dark:bg-[#141419] sm:dark:bg-white/5 rounded-3xl p-6 pt-2 border border-[#1D8751]/80 sm:border-2 max-sm:shadow-none sm:shadow-lg">
                     <div className="absolute top-4 right-4 w-10 h-10 rounded-full bg-[#1D8751]/20 border border-[#1D8751]/30 flex items-center justify-center">
                       <span className="text-[#1D8751] text-base font-bold">{step.number}</span>
                     </div>
@@ -1112,12 +1109,12 @@ export default function MarketingPage() {
                     </div>
 
                     {/* Title */}
-                    <h3 className="text-gray-900 dark:text-white font-bold text-xl mb-3">
+                    <h3 className="mb-3 text-xl font-bold text-gray-900 dark:text-white min-h-[3.5rem] flex items-center justify-center">
                       {step.title}
                     </h3>
 
                     {/* Description */}
-                    <p className="text-gray-700 dark:text-[#788099] text-sm mb-4 grow px-2">
+                    <p className="mb-4 min-h-[4.5rem] grow px-2 text-sm text-gray-700 dark:text-[#788099]">
                       {step.description}
                     </p>
 

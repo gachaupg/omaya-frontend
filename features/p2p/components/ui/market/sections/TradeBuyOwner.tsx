@@ -756,25 +756,25 @@ const FinalSell: React.FC<FinalSellProps> = ({ orderData }) => {
               After confirming the payment, be sure to click Payment Received
               button below
             </div>
-            <div className="flex flex-col sm:flex-row gap-3 sm:gap-4 mt-4 sm:mt-6">
+            <div className="mt-4 sm:mt-6 flex flex-row items-stretch gap-2 sm:gap-4">
               {sellerPaymentPhaseActive && countdown > 0 && (
-                <span className="inline-flex items-center rounded-lg px-4 sm:px-6 py-2 text-sm sm:text-base border border-gray-200 dark:border-[#35353E] bg-gray-50 dark:bg-[var(--card-color)] text-gray-500 dark:text-[#A3A3C2] w-full sm:w-auto">
+                <span className="inline-flex flex-[2] min-w-0 sm:flex-1 items-center justify-center text-center rounded-lg border border-gray-200 dark:border-[#35353E] bg-gray-50 dark:bg-[var(--card-color)] px-3 sm:px-6 py-2 text-xs sm:text-base leading-tight text-gray-500 dark:text-[#A3A3C2]">
                   Appeal after {formatCountdown(countdown)}
                 </span>
               )}
               {(!sellerPaymentPhaseActive || countdown === 0) && (
                 <button
                   onClick={() => window.location.href = "/dashboard/p2p/"}
-                  className="bg-gray-100 dark:bg-[var(--card-color)] text-gray-600 dark:text-[#A3A3C2] rounded-lg px-4 sm:px-6 py-2 text-sm sm:text-base border border-gray-200 dark:border-[#35353E] w-full sm:w-auto hover:bg-gray-200 dark:hover:bg-[#404040] transition-colors"
+                  className="flex-[2] min-w-0 sm:flex-1 flex items-center justify-center text-center rounded-lg border border-gray-200 dark:border-[#35353E] bg-gray-100 dark:bg-[var(--card-color)] px-3 sm:px-6 py-2 text-xs sm:text-base leading-tight text-gray-600 dark:text-[#A3A3C2] hover:bg-gray-200 dark:hover:bg-[#404040] transition-colors"
                 >
                   Cancel
                 </button>
               )}
               <button
-                className={`${!sellerMayMarkReceived
+                className={`flex-[3] min-w-0 sm:flex-1 flex items-center justify-center text-center rounded-lg px-3 sm:px-6 py-2 text-xs sm:text-base font-semibold leading-tight ${!sellerMayMarkReceived
                   ? "bg-gray-100 dark:bg-[var(--card-color)]"
                   : "bg-[#1D8751] text-white hover:bg-[#167a45] transition-colors"
-                  } dark:text-white rounded-lg px-4 sm:px-6 py-2 text-sm sm:text-base font-semibold w-full sm:w-auto ${(() => {
+                  } dark:text-white ${(() => {
                     const isThisTradeLoading =
                       confirmTradeLoading &&
                       !!confirmOrder?.id &&
@@ -1025,7 +1025,7 @@ const FinalSell: React.FC<FinalSellProps> = ({ orderData }) => {
                 </div>
 
                 {/* Action Buttons */}
-                <div className="flex flex-col sm:flex-row gap-2 sm:gap-3">
+                <div className="flex flex-row gap-2 sm:gap-3">
                   <button
                     onClick={() => {
                       setShowFeedbackModal(false);

@@ -143,7 +143,8 @@ const CustomSelect: React.FC<CustomSelectProps> = ({
     const viewportWidth = window.innerWidth || 0;
     const viewportHeight = window.innerHeight || 0;
     const minMargin = 16;
-    const minWidth = dropdownMinWidth ?? 280;
+    const isMobileViewport = viewportWidth < 640;
+    const minWidth = isMobileViewport ? 0 : (dropdownMinWidth ?? 280);
     const maxWidth = dropdownMaxWidth ?? 450;
     
     // Get trigger button position - get fresh values
@@ -163,6 +164,26 @@ const CustomSelect: React.FC<CustomSelectProps> = ({
     
     if (targetCard) {
       const cardRect = targetCard.getBoundingClientRect();
+
+      if (isMobileViewport) {
+        let width = Math.min(cardRect.width, viewportWidth - minMargin * 2);
+        let left = cardRect.left;
+
+        if (left < minMargin) {
+          left = minMargin;
+        }
+        if (left + width > viewportWidth - minMargin) {
+          width = Math.max(0, viewportWidth - minMargin * 2);
+          left = minMargin;
+        }
+
+        setDropdownStyles({
+          top: cardRect.top,
+          left,
+          width,
+        });
+        return;
+      }
 
       // Width strategy:
       // - When dropdownMatchTriggerWidth=true, match the Asset dropdown behavior:
@@ -493,7 +514,7 @@ const CustomSelect: React.FC<CustomSelectProps> = ({
           <div
             id={dropdownId}
             ref={dropdownContentRef}
-            className="z-[99999] bg-white dark:bg-[#1D1D23] border border-gray-300 dark:border-[#35353E] rounded-2xl shadow-xl overflow-hidden"
+            className="z-[99999] bg-white dark:bg-[#1D1D23] border border-gray-300 dark:border-[#35353E] rounded-2xl shadow-xl overflow-hidden max-h-[85vh] sm:max-h-[70vh]"
             role="listbox"
             style={{
               position: "fixed",
@@ -501,7 +522,6 @@ const CustomSelect: React.FC<CustomSelectProps> = ({
               left: `${Math.max(0, dropdownStyles.left)}px`,
               width: `${dropdownStyles.width || 200}px`,
               minWidth: `${dropdownStyles.width || 200}px`,
-              maxHeight: '70vh',
               zIndex: 99999,
             }}
           >
@@ -536,10 +556,7 @@ const CustomSelect: React.FC<CustomSelectProps> = ({
 
             {/* Options List */}
             <div 
-              className="overflow-y-auto p-1"
-              style={{ 
-                maxHeight: 'calc(70vh - 120px)'
-              }}
+              className="overflow-y-auto p-1 max-h-[calc(85vh-120px)] sm:max-h-[calc(70vh-120px)]"
             >
               {filteredOptions.length === 0 ? (
                 <div className="px-4 py-3 text-sm text-gray-500 dark:text-gray-400 text-center">

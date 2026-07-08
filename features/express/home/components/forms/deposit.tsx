@@ -2684,8 +2684,9 @@ export default function DepositForm({
 
     const viewportWidth = typeof window !== "undefined" ? window.innerWidth : 0;
     const minMargin = 16;
-    const minWidth = 460;
-    const maxWidth = 460;
+    const isMobileViewport = viewportWidth < 640;
+    const minWidth = isMobileViewport ? 0 : 460;
+    const maxWidth = isMobileViewport ? viewportWidth - minMargin * 2 : 460;
 
     // Find the card that contains the asset dropdown trigger
     const assetDropdownElement = assetDropdownRef.current;
@@ -2720,6 +2721,25 @@ export default function DepositForm({
       const cardRect = currentCard.getBoundingClientRect();
       const dropdownRect = assetDropdownElement.getBoundingClientRect();
 
+      if (isMobileViewport) {
+        let width = Math.min(cardRect.width, viewportWidth - minMargin * 2);
+        let left = cardRect.left;
+
+        if (left < minMargin) {
+          left = minMargin;
+        }
+        if (left + width > viewportWidth - minMargin) {
+          width = Math.max(0, viewportWidth - minMargin * 2);
+          left = minMargin;
+        }
+
+        dropdownStyle = {
+          position: "fixed",
+          top: cardRect.top,
+          left,
+          width,
+        };
+      } else {
       // Check if this is "You Send" section (has data-select-card) or "You Receive" section
       const isYouSend = currentCard.hasAttribute('data-select-card');
 
@@ -2759,13 +2779,14 @@ export default function DepositForm({
         left,
         width: desiredWidth,
       };
+      }
     }
 
     return createPortal(
       (
         <div
           ref={assetDropdownContentRef}
-          className="bg-white dark:bg-[#1D1D23] border border-gray-300 dark:border-accent rounded-2xl shadow-xl z-9999 max-h-[70vh] sm:max-h-[60vh] overflow-hidden flex flex-col"
+          className="bg-white dark:bg-[#1D1D23] border border-gray-300 dark:border-accent rounded-2xl shadow-xl z-9999 max-h-[85vh] sm:max-h-[70vh] overflow-hidden flex flex-col"
           style={dropdownStyle}
         >
           {/* Dropdown Title */}
