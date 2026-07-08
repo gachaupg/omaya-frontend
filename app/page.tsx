@@ -832,15 +832,15 @@ export default function MarketingPage() {
       </div>
 
       {/* Safe & Reliable Section */}
-      <div className="w-full bg-white dark:bg-[var(--bg-color)] pt-8 pb-8 sm:pb-16 overflow-hidden isolate marketing-mobile-safe">
+      <div className="w-full bg-white dark:bg-[var(--bg-color)] pt-8 pb-8 sm:pb-16 max-sm:overflow-visible sm:overflow-hidden marketing-about-section marketing-mobile-no-blur">
         <div className="container mx-auto max-w-6xl 2xl:max-w-screen-2xl px-4">
           {/* Outer card with border that fades downward (no rounded top edge) */}
           <div className="relative rounded-b-3xl">
             {/* Content wrapper without visible border */}
             <div className="rounded-b-3xl">
               {/* Inner content card (flat top, rounded bottom) */}
-              <div className="relative bg-gray-50 dark:bg-(--card-color) rounded-b-3xl p-5 sm:p-6 md:p-8 shadow-sm overflow-hidden">
-                <div className="relative z-10 grid grid-cols-1 lg:grid-cols-2 gap-8 lg:gap-12 items-center">
+              <div className="relative bg-gray-50 dark:bg-(--card-color) rounded-b-3xl p-5 sm:p-6 md:p-8 shadow-sm max-sm:overflow-visible sm:overflow-hidden">
+                <div className="relative z-10 grid grid-cols-1 lg:grid-cols-2 gap-8 lg:gap-12 items-center max-sm:gap-6">
                   {/* Left Section - Text */}
                   <div className="relative order-2 lg:order-1">
                     <div
@@ -902,7 +902,7 @@ export default function MarketingPage() {
                       ].map((feature, index) => (
                         <div
                           key={index}
-                          className="flex items-start gap-3 bg-gray-50 dark:bg-[#1A1A1F] rounded-xl p-3 sm:p-4 border border-gray-200 dark:border-[#2A2A35]"
+                          className="about-feature-card flex items-start gap-3 bg-gray-50 dark:bg-[#1A1A1F] rounded-xl p-3 sm:p-4 border border-gray-200 dark:border-[#2A2A35]"
                         >
                           <div className={`w-9 h-9 sm:w-10 sm:h-10 ${feature.bgColor} rounded-lg flex items-center justify-center shrink-0`}>
                             <feature.icon className="w-5 h-5 sm:w-6 sm:h-6 text-white" />
@@ -929,7 +929,7 @@ export default function MarketingPage() {
                       ].map((item, index) => (
                         <div
                           key={index}
-                          className="border border-[#1D8751]/25 bg-[#1D8751]/15 rounded-full px-4 py-2 flex items-center gap-2"
+                          className="about-tag-pill border border-[#1D8751]/25 bg-[#1D8751]/15 rounded-full px-4 py-2 flex items-center gap-2"
                         >
                           <item.icon className="w-4 h-4 text-[#1D8751]" />
                           <span className="text-[#1D8751] text-xs font-medium">{item.label}</span>
@@ -940,27 +940,36 @@ export default function MarketingPage() {
                   </div>
 
                   {/* Right Section - Image */}
-                  <div className="relative order-1 lg:order-2 isolate">
+                  <div className="relative order-1 lg:order-2 max-sm:mb-2">
                     <div className="relative w-full overflow-hidden rounded-t-[1.5rem] md:rounded-t-[2rem] rounded-b-lg bg-gray-100 dark:bg-[#14141A] ring-1 ring-black/5 dark:ring-white/10">
                       <Image
                         src="/assets/omaya-office-about.png"
                         alt={t("marketing.about.imageAlt", "OMAYA corporate office in Mogadishu")}
                         width={1400}
                         height={1050}
-                        quality={95}
-                        sizes="(max-width: 1024px) 100vw, 560px"
-                        priority
-                        className="w-full h-auto object-cover object-center rounded-t-[1.5rem] md:rounded-t-[2rem] rounded-b-lg contrast-[1.05] saturate-[1.08]"
+                        quality={90}
+                        sizes="(max-width: 640px) 100vw, (max-width: 1024px) 100vw, 560px"
+                        loading="lazy"
+                        className="w-full h-auto object-cover object-center rounded-t-[1.5rem] md:rounded-t-[2rem] rounded-b-lg sm:contrast-[1.05] sm:saturate-[1.08]"
                       />
                     </div>
 
-                    <div className="absolute -top-6 right-4 md:-top-6 md:right-8 bg-[#1D8751] rounded-full px-3 md:px-4 py-1 md:py-1.5 z-20 shadow-md">
+                    <div className="mt-3 flex flex-wrap gap-2 sm:hidden">
+                      <span className="bg-[#1D8751] rounded-full px-3 py-1.5 text-white text-xs font-medium">
+                        {t("marketing.about.badgeHq", "Mogadishu HQ")}
+                      </span>
+                      <span className="bg-[#1D8751] rounded-full px-3 py-1.5 text-white text-xs font-medium">
+                        10K+ Users
+                      </span>
+                    </div>
+
+                    <div className="absolute -top-6 right-4 md:-top-6 md:right-8 bg-[#1D8751] rounded-full px-3 md:px-4 py-1 md:py-1.5 z-20 shadow-md hidden sm:inline-flex">
                       <span className="text-white text-xs font-medium">
                         {t("marketing.about.badgeHq", "Mogadishu HQ")}
                       </span>
                     </div>
 
-                    <div className="absolute bottom-2 left-4 md:bottom-3 md:left-8 bg-[#1D8751] rounded-full px-3 md:px-4 py-1 md:py-1.5 z-20 shadow-md">
+                    <div className="absolute bottom-2 left-4 md:bottom-3 md:left-8 bg-[#1D8751] rounded-full px-3 md:px-4 py-1 md:py-1.5 z-20 shadow-md hidden sm:inline-flex">
                       <span className="text-white text-xs font-medium">10K+ Users</span>
                     </div>
                   </div>
@@ -972,7 +981,7 @@ export default function MarketingPage() {
       </div>
 
       {/* Easy Onboarding Section — no decorative layers on mobile (they paint in the gap between stacked cards and cause GPU static) */}
-      <div className="w-full pt-4 md:pt-6 pb-16 md:pb-24 relative overflow-hidden isolate marketing-mobile-safe marketing-mobile-no-blur">
+      <div className="w-full pt-4 md:pt-6 pb-16 md:pb-24 relative max-sm:overflow-visible sm:overflow-hidden marketing-mobile-no-blur">
         <div
           className="pointer-events-none absolute inset-0 z-0 bg-white dark:bg-[var(--bg-color)]"
           aria-hidden
@@ -1152,7 +1161,7 @@ export default function MarketingPage() {
   w-full bg-white dark:bg-linear-to-t from-[#0A0A0F] to-[#18181D]
   py-16 sm:py-20 lg:py-28
   px-4 sm:px-6 md:px-10 lg:px-20 xl:px-28
-  relative overflow-hidden
+  relative overflow-hidden marketing-mobile-no-blur
 ">
         {/* Subtle floating particles — hidden on mobile (animated layers + blur cause compositor artifacts) */}
         <div className="hidden sm:block absolute inset-0 pointer-events-none" aria-hidden>
@@ -1194,11 +1203,10 @@ export default function MarketingPage() {
     ">
             {/* Left Side - Phone */}
             <div className="relative flex justify-center order-2 lg:order-1">
-              {/* Green Glow */}
-              <div className="absolute inset-0 flex items-center justify-center">
+              {/* Green Glow — desktop only (blur breaks mobile GPU compositing) */}
+              <div className="absolute inset-0 hidden sm:flex items-center justify-center pointer-events-none" aria-hidden>
                 <div className="relative w-[320px] h-[320px] sm:w-[420px] sm:h-[420px] lg:w-[650px] lg:h-[650px]">
                   <div className="absolute inset-0 bg-[#1D8751]/30 rounded-full blur-3xl"></div>
-                  {/* <div className="absolute inset-0 bg-gradient-to-br from-[#13B562]/20 via-[#1D8751]/15 to-transparent rounded-full blur-2xl"></div> */}
                 </div>
               </div>
 
@@ -1213,7 +1221,7 @@ export default function MarketingPage() {
                   className="
               w-[220px] sm:w-[240px] md:w-[260px] lg:w-[280px]
               h-auto
-            drop-shadow-[8px_14px_28px_rgba(0,0,0,0.45)]
+            max-sm:drop-shadow-none sm:drop-shadow-[8px_14px_28px_rgba(0,0,0,0.45)]
 
             "
                 />

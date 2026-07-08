@@ -348,14 +348,12 @@ textarea:active {
 /* Mobile marketing: avoid GPU stripe artifacts between stacked cards (flex gap + blur layers) */
 @media (max-width: 639px) {
   .marketing-mobile-safe {
-    overflow: hidden;
-    isolation: isolate;
+    overflow: visible;
+    isolation: auto;
   }
 
-  .marketing-step-card {
-    isolation: isolate;
-    contain: paint;
-    overflow: hidden;
+  .marketing-mobile-no-blur {
+    overflow: visible;
   }
 
   .marketing-mobile-no-blur,
@@ -363,6 +361,41 @@ textarea:active {
     filter: none !important;
     backdrop-filter: none !important;
     -webkit-backdrop-filter: none !important;
+  }
+
+  .marketing-about-section {
+    isolation: auto;
+  }
+
+  .marketing-about-section img {
+    transform: none !important;
+    -webkit-transform: none !important;
+  }
+
+  .marketing-about-section .about-feature-card {
+    position: relative;
+    z-index: 1;
+    background-color: var(--card-color, #1a1a1f);
+  }
+
+  :root:not(.dark) .marketing-about-section .about-feature-card {
+    background-color: #f9fafb;
+  }
+
+  .marketing-step-card {
+    isolation: auto;
+    contain: none;
+    overflow: visible;
+  }
+
+  .marketing-about-section .about-tag-pill {
+    background-color: rgba(29, 135, 81, 0.12);
+    -webkit-backface-visibility: hidden;
+    backface-visibility: hidden;
+  }
+
+  :root:not(.dark) .marketing-about-section .about-tag-pill {
+    background-color: rgba(29, 135, 81, 0.1);
   }
 }
 
