@@ -38,5 +38,8 @@
   "transactions.noTransactionsFound": "No P2P Transactions Found",
   "transactions.noTransactionsMessage": "There are currently no P2P transactions to display. Please check back later or try adjusting your filters.",
   "transactions.noWithdrawalDepositFound": "No P2P Withdrawal/Deposit Transactions Found",
-  "transactions.noWithdrawalDepositMessage": "There are currently no P2P withdrawal/deposit transactions to display. Please check back later or try adjusting your filters."
+  "transactions.noWithdrawalDepositMessage": "There are currently no P2P withdrawal/deposit transactions to display. Please check back later or try adjusting your filters.",
+  "tradeLink.expiredTitle": "Your trade has expired",
+  "tradeLink.expiredMessage": "Explore P2P market.",
+  "tradeLink.close": "Close"
 }
