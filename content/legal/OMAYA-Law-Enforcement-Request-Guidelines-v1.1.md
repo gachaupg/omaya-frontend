@@ -122,6 +122,3 @@ Aaran Plaza, Taleh, Hodan District, Mogadishu, Somalia
 - Law enforcement and government requests: **lawenforcement@omaya.io**
 - Compliance enquiries: **compliance@omaya.io**
 
----
-
-*These Guidelines should be reviewed by qualified legal counsel familiar with Somali law and with the requirements for responding to domestic and foreign legal process, and the response thresholds, preservation periods, and contact routes should be confirmed against OMAYA's internal procedures before publication.*

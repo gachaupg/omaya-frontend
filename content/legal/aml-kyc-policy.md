@@ -110,6 +110,3 @@ Aaran Plaza, Taleh, Hodan District, Mogadishu, Somalia
 - Compliance and AML/KYC enquiries: **compliance@omaya.io**  
 - General and support: **support@omaya.io**
 
----
-
-*This public AML/KYC Policy is a summary and should be reviewed by OMAYA's MLRO and qualified legal counsel before publication.*

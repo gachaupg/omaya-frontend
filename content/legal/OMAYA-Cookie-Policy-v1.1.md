@@ -91,6 +91,3 @@ Aaran Plaza, Taleh, Hodan District, Mogadishu, Somalia
 - Privacy and data-protection enquiries: **privacy@omaya.io**
 - General and support: **support@omaya.io**
 
----
-
-*This Cookie Policy should be reviewed by qualified legal counsel, and the categories above should be confirmed against the cookies and similar technologies actually used on the OMAYA.io website and app. The specific cookies in use should be listed and kept up to date in the cookie banner or settings tool on the Platform.*
