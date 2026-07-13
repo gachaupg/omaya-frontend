@@ -138,6 +138,3 @@ Aaran Plaza, Taleh, Hodan District, Mogadishu, Somalia
 
 - Referral program enquiries: **support@omaya.io**
 
----
-
-*These Referral Program Terms should be reviewed by qualified legal counsel before publication, and the rewards, qualifying conditions, limits, expiry periods, and any tax-reporting thresholds referred to here should be confirmed against the Program details shown on the Platform and any applicable promotion, consumer-protection, and tax requirements.*

@@ -139,6 +139,3 @@ Aaran Plaza, Taleh, Hodan District, Mogadishu, Somalia
 
 - Payments, fees, and refund enquiries: **support@omaya.io**
 
----
-
-*This Payment Policy should be reviewed by qualified legal counsel before publication, and the fees, spreads, limits, cut-off times, refund handling, and dormant-account terms referred to here should be confirmed against OMAYA's actual pricing and operational practices and kept consistent with the fee information shown on the Platform.*
