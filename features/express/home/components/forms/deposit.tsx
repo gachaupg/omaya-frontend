@@ -184,19 +184,21 @@ const extractSubmitErrorMessage = (error: any, fallback: string): string => {
     responseData?.detail ||
     responseData?.details;
   const cleanedDirect = clean(direct);
-  if (cleanedDirect) return cleanedDirect;
+  if (cleanedDirect) {
+    return normalizeExpressApiErrorMessage(cleanedDirect, responseData, error);
+  }
 
   if (typeof error === "string") {
     const cleaned = clean(error);
-    if (cleaned) return cleaned;
+    if (cleaned) return normalizeExpressApiErrorMessage(cleaned, error);
   }
 
   if (error?.message) {
     const cleaned = clean(error.message);
-    if (cleaned) return cleaned;
+    if (cleaned) return normalizeExpressApiErrorMessage(cleaned, responseData, error);
   }
 
-  return fallback;
+  return normalizeExpressApiErrorMessage(fallback, responseData, error);
 };
 
 const handleExpressEstimateAmountFieldErrors = (
@@ -3422,6 +3424,12 @@ export default function DepositForm({
           errorMessage = "Your wallet address doesn't match the asset requested";
         }
 
+        errorMessage = normalizeExpressApiErrorMessage(
+          errorMessage,
+          error?.response?.data,
+          error
+        );
+
         if (
           !applyExpressAmountSubmitError(
             error,
@@ -3974,6 +3982,12 @@ export default function DepositForm({
       if (errorMessage === "Failed to process request" || errorMessage === "Failed to submit deposit request") {
         errorMessage = "Your wallet address doesn't match the asset requested";
       }
+
+      errorMessage = normalizeExpressApiErrorMessage(
+        errorMessage,
+        error?.response?.data,
+        error
+      );
 
       if (
         !applyExpressAmountSubmitError(

@@ -4135,7 +4135,13 @@ const getPaymentRestrictionMessage = (status?: string) =>
       if (isVerificationError) {
         dispatch(openKYCModal());
       } else {
-        showToast.error(errorMessage);
+        showToast.error(
+          normalizeExpressApiErrorMessage(
+            errorMessage,
+            error?.response?.data,
+            error
+          )
+        );
       }
     } finally {
       setIsSubmitting(false);

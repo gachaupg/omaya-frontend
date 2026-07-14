@@ -1,5 +1,14 @@
 /** Shared min-amount copy for Express withdrawal/deposit and Rates. */
 
+import { resolveScamFlagDisplayError } from "@/lib/utils/scamFlagError";
+
+export {
+  SCAM_FLAG_USER_MESSAGE,
+  isScamFlagConfirmedError,
+  resolveScamFlagDisplayError,
+  showScamFlagToastIfNeeded,
+} from "@/lib/utils/scamFlagError";
+
 /** ChangeNOW create-transaction 400 (amount below provider minimum). */
 export const EXPRESS_CHANGE_NOW_TOO_SMALL_MESSAGE =
   "Amount is too small to complete the transaction.";
@@ -186,11 +195,13 @@ export function resolveExpressMinAmountDisplayError(
   return buildExpressMinAmountErrorText(payloads);
 }
 
-/** Normalize any backend error line; rewrites min-amount failures. */
+/** Normalize any backend error line; rewrites min-amount / scam-flag failures. */
 export function normalizeExpressApiErrorMessage(
   message: unknown,
   ...payloadSources: unknown[]
 ): string {
+  const scamMsg = resolveScamFlagDisplayError(message, ...payloadSources);
+  if (scamMsg) return scamMsg;
   const minMsg = resolveExpressMinAmountDisplayError(message, ...payloadSources);
   if (minMsg) return minMsg;
   const text = String(message ?? "").trim();

@@ -13,10 +13,15 @@ import {
   createMoneyXTransaction,
   updateMoneyXTransaction,
   fetchMoneyXCommission,
+  clearMoneyXError,
 } from "../slices/moneyXSlice";
 import { useTheme } from "@/context/theme";
 import CustomSelect from "@/components/ui/CustomSelect";
 import { showToast } from "../../../lib/utils/toast";
+import { normalizeExpressApiErrorMessage } from "@/lib/utils/expressMinAmount";
+import {
+  resolveScamFlagDisplayError,
+} from "@/lib/utils/scamFlagError";
 import { scrollAppToTop } from "@/lib/utils/scrollAppToTop";
 import { useBookmarkedAddresses } from "@/features/express/hooks/useBookmarkedAddresses";
 import { BookmarkDropdown } from "@/features/express/components/forms/BookmarkDropdown";
@@ -112,6 +117,7 @@ export default function TransferForm({ onTransfer, initialState, commissionType 
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isUpdatingTransaction, setIsUpdatingTransaction] = useState(false);
   const [apiValidationError, setApiValidationError] = useState<string | null>(null);
+  const [actionError, setActionError] = useState<string | null>(null);
   const [isFirstCardSubmitted, setIsFirstCardSubmitted] = useState(false);
   const [bankAccountAddress, setBankAccountAddress] = useState<string>("");
   const [bankAddressError, setBankAddressError] = useState<string | null>(null);
@@ -933,10 +939,11 @@ export default function TransferForm({ onTransfer, initialState, commissionType 
 
     if (errors.length > 0) {
       setValidationErrors(errors);
-      errors.forEach(error => showToast.error(error));
+      setActionError(errors[0] || null);
       return;
     }
 
+    setActionError(null);
     setIsFirstCardSubmitted(true);
 
     setTimeout(() => {
@@ -972,13 +979,6 @@ export default function TransferForm({ onTransfer, initialState, commissionType 
       {apiValidationError && (
         <div className="mb-4 text-red-500 text-sm font-medium">
           {apiValidationError}
-        </div>
-      )}
-
-      {/* MoneyX API Error Display */}
-      {moneyXError && (
-        <div className="mb-4 text-red-500 text-sm font-medium">
-          {moneyXError}
         </div>
       )}
 
@@ -1184,13 +1184,22 @@ export default function TransferForm({ onTransfer, initialState, commissionType 
 
         {/* Submit Button for First Card */}
         {!isFirstCardSubmitted && (
-          <div className="mt-4 relative">
+          <div className="mt-4 relative flex flex-col gap-3">
+            {(actionError || moneyXError) && (
+              <p className="text-red-500 text-sm font-medium text-center px-1">
+                {normalizeExpressApiErrorMessage(actionError || moneyXError)}
+              </p>
+            )}
             <button
               className={`w-full text-white dark:text-white text-sm sm:text-base font-medium py-3 sm:py-2 rounded-xl sm:rounded-2xl flex items-center justify-center gap-2 transition-colors min-h-[44px] sm:min-h-0 ${isTransferDisabled
                 ? "bg-gray-500 cursor-not-allowed"
                 : "bg-[#1D8751] hover:bg-[#166b3e]"
                 }`}
-              onClick={handleFirstCardSubmit}
+              onClick={() => {
+                setActionError(null);
+                dispatch(clearMoneyXError());
+                handleFirstCardSubmit();
+              }}
               disabled={isTransferDisabled}
             >
               {isSubmitting ? (
@@ -1493,22 +1502,29 @@ export default function TransferForm({ onTransfer, initialState, commissionType 
 
           {/* Final Submit Button */}
           <div className="flex flex-col gap-3 w-full px-2">
+            {(actionError || moneyXError) && (
+              <p className="text-red-500 text-sm font-medium text-center px-1">
+                {normalizeExpressApiErrorMessage(actionError || moneyXError)}
+              </p>
+            )}
             <button
               className={`w-full text-white dark:text-white text-sm sm:text-base font-medium py-3 sm:py-2 rounded-xl sm:rounded-2xl flex items-center justify-center gap-2 transition-colors min-h-[44px] sm:min-h-0 ${!bankAccountAddress.trim() || bankAddressError || !isAddressConfirmed
                 ? "bg-gray-500 cursor-not-allowed"
                 : "bg-[#1D8751] hover:bg-[#166b3e]"
                 }`}
               onClick={async () => {
+                setActionError(null);
+                dispatch(clearMoneyXError());
                 if (!bankAccountAddress.trim()) {
-                  showToast.error("Please enter a bank account address");
+                  setActionError("Please enter a bank account address");
                   return;
                 }
                 if (bankAddressError) {
-                  showToast.error("Please enter a valid bank account address");
+                  setActionError("Please enter a valid bank account address");
                   return;
                 }
                 if (!isAddressConfirmed) {
-                  showToast.error("Please confirm the bank account address");
+                  setActionError("Please confirm the bank account address");
                   return;
                 }
 
@@ -1530,13 +1546,13 @@ export default function TransferForm({ onTransfer, initialState, commissionType 
                       selectedToPaymentDetail?.provider_id ||
                       selectedToPaymentDetail?.providerId;
                     if (!senderProviderId || !receiverProviderId) {
-                      showToast.error("Provider IDs not found in payment methods");
+                      setActionError("Provider IDs not found in payment methods");
                       return;
                     }
                     const recipientName =
                       user?.first_name && user?.last_name
                         ? `${user.first_name} ${user.last_name}`.trim()
-                        : user?.first_name || user?.last_name || "";
+                        : user?.first_name || user?.last_name || user?.email || "User";
                     const createResult = await dispatch(
                       createMoneyXTransaction({
                         amount: payAmount.toFixed(2),
@@ -1547,7 +1563,7 @@ export default function TransferForm({ onTransfer, initialState, commissionType 
                     ).unwrap();
                     transactionId = createResult?.moneyx_transaction_id;
                     if (!transactionId) {
-                      showToast.error("Failed to create transaction");
+                      setActionError("Failed to create transaction");
                       return;
                     }
                   }
@@ -1579,8 +1595,22 @@ export default function TransferForm({ onTransfer, initialState, commissionType 
                   }
                 } catch (error: any) {
                   console.error("Update transaction error:", error);
-                  const errorMessage = error || "An error occurred while updating the transaction.";
-                  showToast.error(errorMessage);
+                  const scamMsg = resolveScamFlagDisplayError(
+                    error,
+                    error?.response?.data,
+                    typeof error === "string" ? error : error?.message
+                  );
+                  if (scamMsg) {
+                    setActionError(scamMsg);
+                    return;
+                  }
+                  setActionError(
+                    normalizeExpressApiErrorMessage(
+                      error || "An error occurred while updating the transaction.",
+                      error?.response?.data,
+                      error
+                    )
+                  );
                 } finally {
                   setIsUpdatingTransaction(false);
                 }
