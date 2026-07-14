@@ -19,8 +19,11 @@ import {
   updateMoneyXTransaction,
   fetchMoneyXCommission,
 } from "@/features/express/home/components/moneyX/slices/moneyXSlice";
+import { clearMoneyXError } from "@/features/moneyX/slices/moneyXSlice";
 import { useTheme } from "@/context/theme";
 import { showToast } from "@/lib/utils/toast";
+import { normalizeExpressApiErrorMessage } from "@/lib/utils/expressMinAmount";
+import { resolveScamFlagDisplayError } from "@/lib/utils/scamFlagError";
 import { scrollAppToTop } from "@/lib/utils/scrollAppToTop";
 import { usePaymentMethodsDisplay } from "@/features/express/hooks/useDataDisplay";
 import { useMoneyXPaymentMethodLists } from "@/features/express/hooks/useMoneyXPaymentMethodLists";
@@ -185,6 +188,7 @@ const MoneyXRates = ({
   const [fromSearchTerm, setFromSearchTerm] = useState("");
   const [toSearchTerm, setToSearchTerm] = useState("");
   const [validationErrors, setValidationErrors] = useState<string[]>([]);
+  const [actionError, setActionError] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isFirstCardSubmitted, setIsFirstCardSubmitted] = useState(false);
   const [bankAccountAddress, setBankAccountAddress] = useState<string>("");
@@ -860,10 +864,11 @@ const MoneyXRates = ({
 
     if (errors.length > 0) {
       setValidationErrors(errors);
-      errors.forEach((error) => showToast.error(error));
+      setActionError(errors[0] || null);
       return;
     }
 
+    setActionError(null);
     setIsSubmitting(true);
 
     try {
@@ -918,10 +923,23 @@ const MoneyXRates = ({
       }, 100);
     } catch (error: any) {
       console.error("Transfer error:", error);
-      const errorMessage =
-        error?.message || error || "An error occurred. Please try again.";
+      const scamMsg = resolveScamFlagDisplayError(
+        error,
+        error?.response?.data,
+        typeof error === "string" ? error : error?.message
+      );
+      if (scamMsg) {
+        setActionError(scamMsg);
+        setValidationErrors([scamMsg]);
+        return;
+      }
+      const errorMessage = normalizeExpressApiErrorMessage(
+        error?.message || error || "An error occurred. Please try again.",
+        error?.response?.data,
+        error
+      );
+      setActionError(errorMessage);
       setValidationErrors([errorMessage]);
-      showToast.error(errorMessage);
     } finally {
       setIsSubmitting(false);
     }
@@ -945,20 +963,20 @@ const MoneyXRates = ({
     }
 
     if (!bankAccountAddress.trim()) {
-      showToast.error("Please enter a bank account address");
+      setActionError("Please enter a bank account address");
       return;
     }
     if (bankAddressError) {
-      showToast.error("Please enter a valid bank account address");
+      setActionError("Please enter a valid bank account address");
       return;
     }
     if (!isAddressConfirmed) {
-      showToast.error("Please confirm the bank account address");
+      setActionError("Please confirm the bank account address");
       return;
     }
 
     if (!moneyXTransactionResult?.moneyx_transaction_id) {
-      showToast.error(
+      setActionError(
         "Transaction not found. Please submit the transfer form first."
       );
       return;
@@ -1018,11 +1036,24 @@ const MoneyXRates = ({
       );
     } catch (error: any) {
       console.error("Update transaction error:", error);
-      const errorMessage =
-        error?.message ||
-        error ||
-        "An error occurred while updating the transaction.";
-      showToast.error(errorMessage);
+      const scamMsg = resolveScamFlagDisplayError(
+        error,
+        error?.response?.data,
+        typeof error === "string" ? error : error?.message
+      );
+      if (scamMsg) {
+        setActionError(scamMsg);
+        return;
+      }
+      setActionError(
+        normalizeExpressApiErrorMessage(
+          error?.message ||
+            error ||
+            "An error occurred while updating the transaction.",
+          error?.response?.data,
+          error
+        )
+      );
     } finally {
       setIsUpdatingTransaction(false);
     }
@@ -1073,24 +1104,6 @@ const MoneyXRates = ({
   return (
     <div className="bg-white dark:bg-[#18181D] p-3 sm:p-4 lg:p-6 rounded-xl sm:rounded-xl lg:rounded-2xl border-[1.5px] border-gray-200 dark:border-[#35353E] shadow-md container mx-auto w-full max-w-5xl">
       <div className="mb-2" />
-
-      {/* Validation Errors */}
-      {validationErrors.length > 0 && (
-        <div className="mb-4">
-          {validationErrors.map((error, index) => (
-            <div key={index} className="text-red-500 text-sm font-medium mb-1">
-              {error}
-            </div>
-          ))}
-        </div>
-      )}
-
-      {/* MoneyX API Error Display */}
-      {moneyXError && (
-        <div className="mb-4 text-red-500 text-sm font-medium">
-          {moneyXError}
-        </div>
-      )}
 
       <div className={`w-full ${isDark ? "text-white" : "text-[#1F2937]"}`}>
         {/* Top Section - You Send: Amount and Bank/Payment Method in one card */}
@@ -1448,14 +1461,37 @@ const MoneyXRates = ({
 
         {/* Exchange Now Button - Only show if first card not submitted */}
         {!isFirstCardSubmitted && (
-          <button
-            onClick={handleExchange}
-            disabled={isSubmitting}
-            className={`w-full py-3 px-4 rounded-xl font-semibold text-white bg-[#1D8751] hover:bg-[#0f8f4d] transition-colors disabled:opacity-50 disabled:cursor-not-allowed ${isSubmitting ? "opacity-50 cursor-not-allowed" : ""
-              }`}
-          >
-            {isSubmitting ? t("rates.processing", "Processing...") : "Submit"}
-          </button>
+          <div className="flex flex-col gap-3">
+            {(actionError || moneyXError || validationErrors.length > 0) && (
+              <div className="text-center px-1">
+                {(actionError || moneyXError) && (
+                  <p className="text-red-500 text-sm font-medium">
+                    {normalizeExpressApiErrorMessage(actionError || moneyXError)}
+                  </p>
+                )}
+                {!actionError &&
+                  !moneyXError &&
+                  validationErrors.map((error, index) => (
+                    <p key={index} className="text-red-500 text-sm font-medium">
+                      {error}
+                    </p>
+                  ))}
+              </div>
+            )}
+            <button
+              onClick={() => {
+                setActionError(null);
+                setValidationErrors([]);
+                dispatch(clearMoneyXError());
+                handleExchange();
+              }}
+              disabled={isSubmitting}
+              className={`w-full py-3 px-4 rounded-xl font-semibold text-white bg-[#1D8751] hover:bg-[#0f8f4d] transition-colors disabled:opacity-50 disabled:cursor-not-allowed ${isSubmitting ? "opacity-50 cursor-not-allowed" : ""
+                }`}
+            >
+              {isSubmitting ? t("rates.processing", "Processing...") : "Submit"}
+            </button>
+          </div>
         )}
 
         {/* Show after first card is submitted: 1- Account details, then 2- Bank Account Address */}
@@ -1760,7 +1796,13 @@ const MoneyXRates = ({
             </div>
 
             {/* Final Submit Button */}
-            <button
+            <div className="flex flex-col gap-3 w-full">
+              {(actionError || moneyXError) && (
+                <p className="text-red-500 text-sm font-medium text-center px-1">
+                  {normalizeExpressApiErrorMessage(actionError || moneyXError)}
+                </p>
+              )}
+              <button
               className={`w-full text-base font-medium py-3 rounded-xl flex items-center justify-center gap-2 transition-colors text-white ${!bankAccountAddress.trim() ||
                 bankAddressError ||
                 !isAddressConfirmed ||
@@ -1768,7 +1810,11 @@ const MoneyXRates = ({
                 ? "bg-gray-500 cursor-not-allowed"
                 : "bg-[#1D8751] hover:bg-[#166b3e]"
                 }`}
-              onClick={handleBankAccountSubmit}
+              onClick={() => {
+                setActionError(null);
+                dispatch(clearMoneyXError());
+                handleBankAccountSubmit();
+              }}
               disabled={
                 !bankAccountAddress.trim() ||
                 !!bankAddressError ||
@@ -1787,6 +1833,7 @@ const MoneyXRates = ({
                 </span>
               )}
             </button>
+            </div>
           </>
         )}
       </div>

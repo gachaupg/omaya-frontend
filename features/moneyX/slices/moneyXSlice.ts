@@ -4,9 +4,16 @@
 import { createSlice, PayloadAction, createAsyncThunk } from "@reduxjs/toolkit";
 import { API_CONFIG } from "@/lib/appConfig";
 import { API_BASE_URL } from "@/config/api";
-import { post, patch, get, AxiosError } from "@/lib/apiClient";
+import { post, patch, get } from "@/lib/apiClient";
 import axios from "axios";
 import { logger } from '@/lib/utils/logger';
+import {
+  normalizeExpressApiErrorMessage,
+} from "@/lib/utils/expressMinAmount";
+import {
+  resolveScamFlagDisplayError,
+  SCAM_FLAG_USER_MESSAGE,
+} from "@/lib/utils/scamFlagError";
 
 import {
   CreateMoneyXTransactionPayload,
@@ -26,33 +33,74 @@ const initialState: ExtendedMoneyXState = {
   error: null,
 };
 
-// Helper to handle API errors
+function getErrorResponseData(error: unknown): unknown {
+  if (!error || typeof error !== "object") return undefined;
+  return (error as { response?: { data?: unknown } }).response?.data;
+}
+
+/** Prefer scam-flag copy; never surface repeated DRF "This field is required." for scam keys. */
 const handleApiError = (error: unknown): string => {
-  if (error instanceof AxiosError) {
-    const data = error.response?.data;
+  const responseData = getErrorResponseData(error);
+
+  // Django DEBUG HTML IntegrityError (MoneyX / exchange scam_flag null)
+  if (
+    typeof responseData === "string" &&
+    (responseData.includes("scam_flag_confirmed") ||
+      (responseData.includes("IntegrityError") &&
+        responseData.includes("moneyx_moneyxtransaction")))
+  ) {
+    return SCAM_FLAG_USER_MESSAGE;
+  }
+
+  const scamMsg = resolveScamFlagDisplayError(error, responseData);
+  if (scamMsg) return scamMsg;
+
+  // Field errors keyed by scam_flag_* often only say "This field is required."
+  if (responseData && typeof responseData === "object" && !Array.isArray(responseData)) {
+    for (const key of Object.keys(responseData as Record<string, unknown>)) {
+      if (/scam[_\s-]?flag/i.test(key)) {
+        return SCAM_FLAG_USER_MESSAGE;
+      }
+    }
+  }
+
+  let message = "An unexpected error occurred";
+  if (responseData !== undefined) {
+    const data = responseData;
     if (data && typeof data === "object") {
       const messages: string[] = [];
-      Object.entries(data).forEach(([key, value]) => {
+      Object.entries(data as Record<string, unknown>).forEach(([key, value]) => {
+        if (/scam[_\s-]?flag/i.test(key)) {
+          messages.push(SCAM_FLAG_USER_MESSAGE);
+          return;
+        }
         if (Array.isArray(value)) {
-          messages.push(...value);
+          messages.push(...value.map(String));
         } else if (typeof value === "string") {
           messages.push(value);
         }
       });
-      if (messages.length > 0) {
-        return messages.join("\n");
+      if (messages.some((m) => m === SCAM_FLAG_USER_MESSAGE)) {
+        return SCAM_FLAG_USER_MESSAGE;
       }
+      if (messages.length > 0) {
+        message = [...new Set(messages)].join("\n");
+      } else {
+        const record = data as Record<string, unknown>;
+        message =
+          String(record.message || record.error || record.details || record.non_field_errors || "") ||
+          (error instanceof Error ? error.message : message) ||
+          message;
+      }
+    } else {
+      message =
+        (typeof data === "string" && data) ||
+        (error instanceof Error ? error.message : message) ||
+        message;
     }
-    return (
-      data?.message ||
-      data?.error ||
-      data?.details ||
-      data?.non_field_errors ||
-      error.message ||
-      "An error occurred"
-    );
+    return normalizeExpressApiErrorMessage(message, data, error);
   }
-  return "An unexpected error occurred";
+  return normalizeExpressApiErrorMessage(message, error);
 };
 
 // Range commission API response (no auth required)

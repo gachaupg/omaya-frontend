@@ -45,6 +45,10 @@ import { useRouter } from "next/navigation";
 import { RootState } from "@/store/rootReducer";
 import Loader from "../../../Common/Loader";
 import { showToast } from "@/lib/utils/toast";
+import {
+  showScamFlagToastIfNeeded,
+  SCAM_FLAG_USER_MESSAGE,
+} from "@/lib/utils/scamFlagError";
 import { toNumber } from "@/lib/finanacial";
 import { fetchAdminPaymentDetails } from "@/features/exchange/slices/paymentSlice";
 import {
@@ -736,15 +740,41 @@ const TradePreview: React.FC<TradePreviewProps> = ({
       });
       setIsSubmitting(false);
     } catch (error: any) {
+      const responseData = error?.response?.data;
       let errorMessage = "";
 
-      if (error.response?.data) {
-        errorMessage =
-          error.response.data.error ||
-          error.response.data.message ||
-          error.response.data;
+      if (responseData != null) {
+        if (typeof responseData === "string") {
+          errorMessage = responseData;
+        } else if (typeof responseData === "object") {
+          const amountField = responseData.amount;
+          const amountText = Array.isArray(amountField)
+            ? amountField.map(String).join(" ")
+            : amountField != null
+              ? String(amountField)
+              : "";
+          errorMessage =
+            (typeof responseData.error === "string" && responseData.error) ||
+            (Array.isArray(responseData.error) &&
+              responseData.error.map(String).join(" ")) ||
+            (typeof responseData.message === "string" && responseData.message) ||
+            amountText ||
+            Object.entries(responseData)
+              .flatMap(([key, value]) => {
+                if (Array.isArray(value)) return value.map((v) => `${key}: ${v}`);
+                if (typeof value === "string") return [`${key}: ${value}`];
+                return [];
+              })
+              .join(" ");
+        }
       } else if (error.message) {
         errorMessage = error.message;
+      }
+
+      if (showScamFlagToastIfNeeded(error, responseData, errorMessage)) {
+        setErrorMessage(SCAM_FLAG_USER_MESSAGE);
+        setIsSubmitting(false);
+        return;
       }
 
       setErrorMessage(errorMessage);

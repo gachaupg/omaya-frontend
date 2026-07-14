@@ -253,14 +253,10 @@ export const Table = forwardRef<TableExportRef, TableProps>(({
     }
 
     // Debug: Log data counts
-    logger.debug('p2p', `Export - Total data prop items: ${data.length}`);
-    logger.debug('p2p', `Export - All data for export items: ${allDataForExport?.length || 0}`);
-    logger.debug('p2p', `Export - Using source data items: ${sourceData.length}`);
-    logger.debug('p2p', `Export - Total pages: ${totalPages}`);
+ 
 
     // Apply date filter to ALL data (not just current page)
     let dataToExport = getFilteredData(sourceData, dateFilter);
-    logger.debug('p2p', `Export - After date filter (${dateFilter}): ${dataToExport.length} items`);
 
     // Apply search filter if search query exists
     const activeSearchQuery = hideToolbar && externalSearchQuery !== undefined ? externalSearchQuery : searchQuery;
