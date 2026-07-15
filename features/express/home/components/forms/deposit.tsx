@@ -4168,14 +4168,7 @@ export default function DepositForm({
 
             {/* Bank/Payment Method Section */}
             <div className="flex-1 min-w-0">
-              <label
-                className={`block text-[15px] mb-2 font-semibold flex items-center gap-2 ${isDark ? "text-[#9CA3AF]" : "text-[#475569]"
-                  }`}
-              >
-                {t("express.paymentMethod", "Payment Method")}
-                <div className="w-2 h-2 bg-[#1D8751] rounded-full animate-pulse"></div>
-              </label>
-              <div className={`text-xs mb-1 ${isDark ? "text-[#788099]" : "text-[#64748B]"
+              <div className={`text-xs mb-1 mt-1 sm:mt-[30px] ${isDark ? "text-[#788099]" : "text-[#64748B]"
                 }`}>
                 {t("express.paymentMethod", "Payment Method")}
               </div>
