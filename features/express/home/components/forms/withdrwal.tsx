@@ -40,6 +40,7 @@ import {
   resolveExpressMinAmountDisplayError,
 } from "@/lib/utils/expressMinAmount";
 import { reportAssetLoadIssue } from "@/lib/utils/assetLoadNotice";
+import { getCleanPaymentProviderLabel } from "@/lib/utils/paymentProviderLabel";
 import { useExpressI18n } from "@/lib/useExpressI18n";
 import { DepositResponse } from "../../../../exchange/types";
 import { SupportedAsset } from "../../../../swap/types";
@@ -5123,20 +5124,16 @@ export default function WithdrawalForm({
                       if (activePublicProviders.length > 0) {
                         // Use public payment methods with logos (available to guests too on home page).
                         paymentMethodOptions = activePublicProviders.map((provider: any) => {
-                          const providerName = provider.provider_name || provider.payment_provider_name || "Unknown";
-                          const methodName =
-                            provider.method_display ||
-                            provider.method ||
-                            provider.method?.method_name ||
-                            provider.method?.method_display ||
-                            provider.method_name ||
-                            null;
-                          const subtitle = methodName ? `${providerName} - ${methodName}` : null;
+                          const rawName =
+                            provider.provider_name ||
+                            provider.payment_provider_name ||
+                            "Unknown";
+                          const providerName =
+                            getCleanPaymentProviderLabel(provider) || rawName;
 
                           return {
-                            value: providerName,
+                            value: rawName,
                             label: providerName,
-                            subtitle: subtitle || undefined,
                             logo: getHighResPaymentLogo(
                               provider.logo || provider.provider_logo || undefined,
                               undefined,
@@ -5191,7 +5188,7 @@ export default function WithdrawalForm({
                           dropdownTitle="Select a payment methods"
                           dropdownOffsetY={-68}
                           dropdownOffsetX={0}
-                          largeDropdownItems={true}
+                          largeDropdownItems={false}
                         />
                       );
                     })()}

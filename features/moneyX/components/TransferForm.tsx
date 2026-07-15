@@ -39,6 +39,7 @@ import {
   prepareMoneyXAmountFieldValue,
   toMoneyXClampedInputString,
 } from "@/lib/utils/moneyXAmountInput";
+import { getCleanPaymentProviderLabel, stripPaymentMethodTypeSuffix } from "@/lib/utils/paymentProviderLabel";
 
 interface TransferFormProps {
   onTransfer?: (transactionData: {
@@ -211,25 +212,19 @@ export default function TransferForm({ onTransfer, initialState, commissionType 
   }, [fromKey, toKey, payAmount, getAmount]);
 
   // Helper function to get provider name from payment method
-  // Removes method suffixes like "- Bank", "- Mobile", "- Crypto", etc.
   const getProviderName = useCallback((payment: any) => {
     if (!payment) return "";
-
-    // Priority order: provider_name (dashboard) > provider (home page) > provider.provider_name > method.method_name (fallback)
-    // Dashboard API has: provider_name: "Equity Bank", method: "Bank"
-    // Home page API has: provider_name: "Equity Bank - Bank", provider: "Equity Bank"
-    let providerName = payment.provider_name || payment.provider || payment.provider?.provider_name || "";
-
-    // Only use method_name as last resort if no provider name exists
-    if (!providerName || providerName.trim() === "") {
-      providerName = payment.method?.method_name || payment.payment_method_name || "";
-    }
-
-    // Remove common method suffixes (case-insensitive)
-    // Matches patterns like "- Bank", "- Mobile", "- Crypto", "- Forex", "- Marchant", "- Money Transfer", etc.
-    providerName = providerName.replace(/\s*-\s*(Bank|Mobile|Crypto|Forex|Marchant|Money\s*Transfer|Merchant)\s*$/i, "").trim();
-
-    return providerName;
+    return (
+      getCleanPaymentProviderLabel(payment) ||
+      stripPaymentMethodTypeSuffix(
+        payment.provider_name ||
+          payment.provider ||
+          payment.provider?.provider_name ||
+          payment.method?.method_name ||
+          payment.payment_method_name ||
+          ""
+      )
+    );
   }, []);
 
   const getPaymentMethodKey = useCallback((payment: any) => {

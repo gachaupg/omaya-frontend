@@ -26,6 +26,7 @@ import {
   PAYMENT_LOGO_SIZE,
 } from "@/features/express/utils/imageHelpers";
 import { parseAllowAutoSend } from "@/features/p2p/utils/paymentAutoSend";
+import { getCleanPaymentProviderLabel } from "@/lib/utils/paymentProviderLabel";
 
 const USDT_ICON_SIZE = 64;
 const RESEND_OTP_COOLDOWN_SECONDS = 60;
@@ -939,10 +940,7 @@ const PaymentMethods = () => {
               )}
               <div className="flex-1 min-w-0">
                 <span className="text-sm font-medium text-gray-900 dark:text-white block truncate">
-                  {p.provider_name}
-                </span>
-                <span className="text-xs text-gray-500 dark:text-[#788099]">
-                  {p.payment_method_type}
+                  {getCleanPaymentProviderLabel(p)}
                 </span>
               </div>
             </button>
@@ -999,10 +997,8 @@ const PaymentMethods = () => {
               />
               <div>
                 <p className="text-base sm:text-lg font-semibold text-gray-900 dark:text-white">
-                  {selectedProvider}
-                </p>
-                <p className="text-xs text-gray-500 dark:text-[#788099]">
-                  {selectedMethod}
+                  {getCleanPaymentProviderLabel({ provider_name: selectedProvider }) ||
+                    selectedProvider}
                 </p>
               </div>
             </div>
