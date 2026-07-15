@@ -25,7 +25,6 @@ import {
 } from "@/features/express/utils/imageHelpers";
 import {
   swapAmountFieldClass,
-  swapAmountTickerClass,
 } from "@/features/swap/components/swapFieldStyles";
 
 const ZERO_AMOUNT_INVALID_MSG =
@@ -109,9 +108,19 @@ const TransactionInfoStep: React.FC<TransactionInfoStepProps> = ({
   const invalidZeroTo = isNonEmptyInvalidZeroSwapAmount(toAmount);
   const invalidZeroBlocksSubmit = invalidZeroFrom || invalidZeroTo;
 
-  const assetSelectTriggerClass = `!px-4 !py-[8px] !min-h-0 text-sm font-medium border rounded-2xl bg-transparent !h-[44px] ${
+  /** Keep amount + asset triggers the same size on home swap. */
+  const homeSwapFieldHeightClass = "!h-[52px] !min-h-[52px] !max-h-[52px]";
+  const assetSelectTriggerClass = `!px-3 !py-0 ${homeSwapFieldHeightClass} !text-sm font-medium border rounded-2xl bg-transparent overflow-hidden flex items-center ${
     isDark ? "text-white border-white/10" : "text-[#1F2937] border-gray-200"
   }`;
+  const amountFieldClass = (active?: boolean) =>
+    swapAmountFieldClass(isDark, {
+      active,
+      extra: `${homeSwapFieldHeightClass} !text-lg !leading-none`,
+    });
+  const amountTickerClass = `${
+    isDark ? "text-white font-normal" : "text-[#111827] font-bold"
+  } text-lg leading-none`;
 
   const getSwapAssetKey = useCallback((asset: SupportedAsset | null) => {
     if (!asset) return "";
@@ -179,7 +188,7 @@ const TransactionInfoStep: React.FC<TransactionInfoStepProps> = ({
             data-swap-card="true"
             data-asset-card="true"
             data-select-card="true"
-            className={`relative flex flex-col sm:flex-row gap-4 rounded-2xl p-3 sm:p-4 overflow-visible ${isDark ? "border border-[#2F2F3A] bg-[#0F0F17]" : "border border-[#E2E8F0] bg-white shadow-sm"
+            className={`relative flex flex-col sm:flex-row gap-4 rounded-2xl p-3 sm:p-4 overflow-hidden ${isDark ? "border border-[#2F2F3A] bg-[#0F0F17]" : "border border-[#E2E8F0] bg-white shadow-sm"
               }`}
           >
             {/* You Send Section */}
@@ -202,10 +211,10 @@ const TransactionInfoStep: React.FC<TransactionInfoStepProps> = ({
                   value={fromAmount}
                   onChange={onFromAmountChange}
                   placeholder={t("swap.enterAmount", "Enter amount")}
-                  className={swapAmountFieldClass(isDark)}
+                  className={amountFieldClass()}
                 />
                 <div className="absolute right-3 top-1/2 transform -translate-y-1/2">
-                  <span className={swapAmountTickerClass(isDark)}>
+                  <span className={amountTickerClass}>
                     {fromAsset
                       ? fromAsset.ticker?.toUpperCase() ||
                       fromAsset.symbol?.toUpperCase() ||
@@ -296,7 +305,7 @@ const TransactionInfoStep: React.FC<TransactionInfoStepProps> = ({
           <div
             data-swap-card="true"
             data-asset-card="true"
-            className={`relative flex flex-col sm:flex-row gap-4 rounded-2xl p-3 sm:p-4 overflow-visible ${isDark ? "border border-[#2F2F3A] bg-[#0F0F17]" : "border border-[#E2E8F0] bg-white shadow-sm"
+            className={`relative flex flex-col sm:flex-row gap-4 rounded-2xl p-3 sm:p-4 overflow-hidden ${isDark ? "border border-[#2F2F3A] bg-[#0F0F17]" : "border border-[#E2E8F0] bg-white shadow-sm"
               }`}
           >
             {/* You Receive Section */}
@@ -319,12 +328,10 @@ const TransactionInfoStep: React.FC<TransactionInfoStepProps> = ({
                   value={toAmount}
                   onChange={onToAmountChange}
                   placeholder={t("swap.enterAmount", "Enter amount")}
-                  className={swapAmountFieldClass(isDark, {
-                    active: activeInputField === "to",
-                  })}
+                  className={amountFieldClass(activeInputField === "to")}
                 />
                 <div className="absolute right-3 top-1/2 transform -translate-y-1/2">
-                  <span className={swapAmountTickerClass(isDark)}>
+                  <span className={amountTickerClass}>
                     {toAsset
                       ? toAsset.ticker?.toUpperCase() ||
                       toAsset.symbol?.toUpperCase() ||

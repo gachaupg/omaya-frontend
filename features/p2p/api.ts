@@ -297,6 +297,7 @@ const normalizeAdminPaymentProviders = (
         payment_provider_id: item?.provider_id ?? null,
         payment_method_type: paymentMethodType || "",
         provider_name: providerName,
+        short_name: item?.short_name ?? "",
         // Logo fields
         logo: item?.logo_url ?? item?.logo ?? item?.provider_logo ?? null,
         logo_url: item?.logo_url ?? null,

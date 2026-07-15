@@ -19,7 +19,7 @@ import {
 import { useTheme } from "@/context/theme";
 import CustomSelect from "@/components/ui/HomeCommonSelect";
 import { showToast } from "@/lib/utils/toast";
-import { getCleanPaymentProviderLabel } from "@/lib/utils/paymentProviderLabel";
+import { getCleanPaymentProviderLabel, getPaymentMethodDisplayTitle, getPaymentMethodSelectLabels } from "@/lib/utils/paymentProviderLabel";
 import { normalizeExpressApiErrorMessage } from "@/lib/utils/expressMinAmount";
 import { resolveScamFlagDisplayError } from "@/lib/utils/scamFlagError";
 import { useExpressI18n } from "@/lib/useExpressI18n";
@@ -40,7 +40,7 @@ import {
   PAYMENT_LOGO_BASE_CLASS,
   PAYMENT_LOGO_SIZE,
 } from "@/features/express/utils/imageHelpers";
-import { swapAmountValueClass } from "@/features/swap/components/swapFieldStyles";
+import { homeCardAmountFieldClass, homeCardSelectTriggerClass } from "@/features/swap/components/swapFieldStyles";
 import {
   clampMoneyXAmountNumber,
   getMoneyXMaxAmountErrorMessage,
@@ -238,9 +238,9 @@ export default function TransferForm({ isHomePage = false, onTransfer, commissio
     setIsFirstCardSubmitted(false);
   }, [fromKey, toKey, payAmount, getAmount]);
 
-  // Normalize provider labels for dropdowns (e.g. remove trailing "- Bank").
+  // Normalize provider labels for dropdowns (prefer short_name, then provider_name).
   const getProviderName = useCallback((payment: any) => {
-    return getCleanPaymentProviderLabel(payment);
+    return getPaymentMethodDisplayTitle(payment) || getCleanPaymentProviderLabel(payment);
   }, []);
 
   // Use a stable unique key so methods with same provider name don't collide in selects.
@@ -702,10 +702,11 @@ export default function TransferForm({ isHomePage = false, onTransfer, commissio
         logoUrl = payment.logo.trim();
       }
 
-      const cleanProviderName = getProviderName(payment);
+      const { label, subtitle } = getPaymentMethodSelectLabels(payment);
       return {
         value: getPaymentMethodKey(payment),
-        label: cleanProviderName,
+        label: label || getProviderName(payment),
+        subtitle,
         logo: getHighResPaymentLogo(logoUrl, undefined, PAYMENT_LOGO_SIZE),
         raw: payment,
       };
@@ -1046,7 +1047,7 @@ export default function TransferForm({ isHomePage = false, onTransfer, commissio
                     handleAmountChange(e.target.value, true);
                   }}
                   placeholder={t("express.enterAmount", "Enter amount")}
-                  className={`w-full rounded-2xl px-4 py-2 pr-16 focus:outline-none border appearance-none bg-transparent ${isDark ? "border-white/10" : "border-gray-200"} ${swapAmountValueClass(isDark)}`}
+                  className={homeCardAmountFieldClass(isDark)}
                 />
               </div>
             </div>
@@ -1074,8 +1075,7 @@ export default function TransferForm({ isHomePage = false, onTransfer, commissio
                   dropdownMaxWidth={460}
                   className="w-full"
                   placeholderClassName="text-white dark:text-white"
-                  triggerClassName={`px-4 py-2 text-sm font-medium border rounded-2xl bg-transparent ${isDark ? "text-white border-white/10" : "text-[#1F2937] border-gray-200"
-                    }`}
+                  triggerClassName={homeCardSelectTriggerClass(isDark)}
                   onChange={(value) => {
                     void handleFromPaymentChange(value);
                   }}
@@ -1150,7 +1150,7 @@ export default function TransferForm({ isHomePage = false, onTransfer, commissio
                     handleAmountChange(e.target.value, false);
                   }}
                   placeholder="Enter amount"
-                  className={`w-full rounded-2xl px-4 py-2 pr-16 focus:outline-none border appearance-none bg-transparent ${isDark ? "border-white/10" : "border-gray-200"} ${swapAmountValueClass(isDark)}`}
+                  className={homeCardAmountFieldClass(isDark)}
                 />
               </div>
             </div>
@@ -1180,8 +1180,7 @@ export default function TransferForm({ isHomePage = false, onTransfer, commissio
                   dropdownMaxWidth={460}
                   className="w-full"
                   placeholderClassName="text-white dark:text-white"
-                  triggerClassName={`px-4 py-2 text-sm font-medium border rounded-2xl bg-transparent ${isDark ? "text-white border-white/10" : "text-[#1F2937] border-gray-200"
-                    }`}
+                  triggerClassName={homeCardSelectTriggerClass(isDark)}
                   onChange={(value) => {
                     void handleToPaymentChange(value);
                   }}

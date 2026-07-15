@@ -39,7 +39,7 @@ import {
   prepareMoneyXAmountFieldValue,
   toMoneyXClampedInputString,
 } from "@/lib/utils/moneyXAmountInput";
-import { getCleanPaymentProviderLabel, stripPaymentMethodTypeSuffix } from "@/lib/utils/paymentProviderLabel";
+import { getCleanPaymentProviderLabel, getPaymentMethodDisplayTitle, getPaymentMethodSelectLabels, stripPaymentMethodTypeSuffix } from "@/lib/utils/paymentProviderLabel";
 
 interface TransferFormProps {
   onTransfer?: (transactionData: {
@@ -215,6 +215,7 @@ export default function TransferForm({ onTransfer, initialState, commissionType 
   const getProviderName = useCallback((payment: any) => {
     if (!payment) return "";
     return (
+      getPaymentMethodDisplayTitle(payment) ||
       getCleanPaymentProviderLabel(payment) ||
       stripPaymentMethodTypeSuffix(
         payment.provider_name ||
@@ -821,10 +822,11 @@ export default function TransferForm({ onTransfer, initialState, commissionType 
         logoUrl = payment.logo.trim();
       }
 
-      const cleanProviderName = getProviderName(payment);
+      const { label, subtitle } = getPaymentMethodSelectLabels(payment);
       return {
         value: getPaymentMethodKey(payment),
-        label: cleanProviderName,
+        label: label || getProviderName(payment),
+        subtitle,
         logo: logoUrl,
       };
     });

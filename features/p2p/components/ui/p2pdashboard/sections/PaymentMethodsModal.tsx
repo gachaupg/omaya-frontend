@@ -25,7 +25,7 @@ import {
   findAutoSendPaymentDetail,
   pickProviderForFilter,
 } from "@/features/p2p/utils/paymentAutoSend";
-import { getCleanPaymentProviderLabel, stripPaymentMethodTypeSuffix } from "@/lib/utils/paymentProviderLabel";
+import { getPaymentMethodDisplayTitle, getPaymentMethodDisplaySubtitle, getPaymentMethodSelectLabels, stripPaymentMethodTypeSuffix } from "@/lib/utils/paymentProviderLabel";
 const extractCryptoNetworkForValidation = (source: string): string => {
   const s = String(source || "").toLowerCase();
   // Return a short network token that `validateAddress()` can normalize.
@@ -284,6 +284,7 @@ const PaymentMethodsModal: React.FC<PaymentMethodsModalProps> = ({
           flattened.push({
             provider_name: provider?.provider_name || provider?.name || provider?.provider || "",
             provider: provider?.provider || provider?.provider_name || provider?.name || "",
+            short_name: provider?.short_name || "",
             payment_method_type: methodType,
             logo: provider?.logo || provider?.provider_logo || provider?.logo_url,
             wallet_address: provider?.payment_details?.[0]?.wallet_address || provider?.wallet_address || null,
@@ -304,6 +305,7 @@ const PaymentMethodsModal: React.FC<PaymentMethodsModalProps> = ({
       flattened.push({
         provider_name: item?.provider_name || item?.name || item?.provider || "",
         provider: item?.provider || item?.provider_name || item?.name || "",
+        short_name: item?.short_name || "",
         payment_method_type: methodType,
         logo: item?.logo || item?.provider_logo || item?.logo_url,
         wallet_address: item?.payment_details?.[0]?.wallet_address || item?.wallet_address || null,
@@ -939,19 +941,26 @@ const PaymentMethodsModal: React.FC<PaymentMethodsModalProps> = ({
                  <CustomSelect
                    options={[
                      { value: "", label: methodTab === "crypto" ? "Select Network" : "Select Provider" },
-                     ...providersForDropdown.map((p: any, index: number) => ({
+                     ...providersForDropdown.map((p: any) => {
+                       const { label, subtitle } = getPaymentMethodSelectLabels(p);
+                       return {
                        value: String(p.provider_name || ""),
                        label:
                          methodTab === "crypto"
                            ? "BNB Smart Chain (BEP20)"
-                           : getCleanPaymentProviderLabel(p) || "Unknown",
+                           : label || "Unknown",
+                       subtitle:
+                         methodTab === "crypto"
+                           ? undefined
+                           : subtitle,
                        logo: getHighResPaymentLogo(
                          p.logo || p.provider_logo || undefined,
                          undefined,
                          PAYMENT_LOGO_SIZE
                        ),
                        disabled: !p.provider_name,
-                     })),
+                     };
+                     }),
                    ].filter((opt: any) => opt.value !== null)}
                    value={provider}
                    onChange={(value) => setProvider(String(value || ""))}
@@ -997,12 +1006,26 @@ const PaymentMethodsModal: React.FC<PaymentMethodsModalProps> = ({
                              <p className="text-sm font-semibold text-gray-900 dark:text-white truncate">
                                {methodTab === "crypto"
                                  ? "BNB Smart Chain (BEP20)"
-                                 : getCleanPaymentProviderLabel(selectedProvider) ||
+                                 : getPaymentMethodDisplayTitle(selectedProvider) ||
                                    stripPaymentMethodTypeSuffix(provider)}
                              </p>
+                             {methodTab !== "crypto" &&
+                               getPaymentMethodDisplaySubtitle(selectedProvider) && (
+                               <p className="text-xs text-[#788099] mt-0.5 truncate">
+                                 {getPaymentMethodDisplaySubtitle(selectedProvider)}
+                               </p>
+                             )}
+                             {methodTab === "crypto" && (
                              <p className="text-xs text-[#788099] mt-0.5">
-                               {methodTab === "crypto" ? "Selected Network" : "Selected Provider"}
+                               Selected Network
                              </p>
+                             )}
+                             {methodTab !== "crypto" &&
+                               !getPaymentMethodDisplaySubtitle(selectedProvider) && (
+                             <p className="text-xs text-[#788099] mt-0.5">
+                               Selected Provider
+                             </p>
+                             )}
                            </div>
                          </>
                        );

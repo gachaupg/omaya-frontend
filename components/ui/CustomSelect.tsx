@@ -104,14 +104,19 @@ const CustomSelect: React.FC<CustomSelectProps> = ({
     width: 0,
   });
 
-  // Filter options based on search term
-  const filteredOptions = options.filter((option) =>
-    option.label.toLowerCase().includes(searchTerm.toLowerCase())
-  );
+  // Filter options based on search term (label + subtitle)
+  const filteredOptions = options.filter((option) => {
+    const q = searchTerm.toLowerCase();
+    return (
+      option.label.toLowerCase().includes(q) ||
+      (option.subtitle || "").toLowerCase().includes(q)
+    );
+  });
 
   // Get the selected option label and logo
   const selectedOption = options.find((option) => option.value === value);
   const displayValue = selectedOption?.label || placeholder;
+  const selectedSubtitle = selectedOption?.subtitle;
   const selectedLogo = selectedOption?.logo;
 
   // Close dropdown when clicking outside
@@ -408,7 +413,7 @@ const CustomSelect: React.FC<CustomSelectProps> = ({
           w-full text-left px-3 sm:px-4 py-2 rounded-2xl border text-sm
           focus:outline-none focus:ring-2 focus:ring-gray-300 dark:focus:ring-[#35353E]/40 focus:border-[#35353E]
           transition-colors duration-200 min-w-0
-          ${sizeMode === "card" ? "h-[48px] flex items-center bg-transparent dark:bg-transparent" : ""}
+          ${sizeMode === "card" ? "min-h-[48px] h-auto flex items-center bg-transparent dark:bg-transparent" : ""}
           ${disabled || loading
             ? "bg-gray-100 dark:bg-gray-800 text-gray-400 dark:text-gray-600 cursor-not-allowed border-gray-300 dark:border-gray-600"
             : sizeMode === "card"
@@ -421,7 +426,7 @@ const CustomSelect: React.FC<CustomSelectProps> = ({
         aria-haspopup="listbox"
         aria-controls={dropdownId}
         role="combobox"
-        title={selectedOption ? displayValue : undefined}
+        title={selectedOption ? [displayValue, selectedSubtitle].filter(Boolean).join(" — ") : undefined}
       >
         <div className="flex items-center justify-between min-w-0 w-full">
           <div className="flex items-center gap-3 min-w-0 flex-1 overflow-hidden">
@@ -441,15 +446,34 @@ const CustomSelect: React.FC<CustomSelectProps> = ({
               </span>
             )}
             {!hideSelectedLabel && (
-              <span
-                className={`truncate min-w-0 ${selectedTextClassName || "text-sm"} ${!selectedOption && !loading
-                    ? placeholderClassName || "text-gray-500 dark:text-gray-400"
-                    : selectedOption ? "font-bold dark:font-normal" : ""
-                  }`}
-                title={selectedOption ? displayValue : undefined}
-              >
-                {loading ? loadingText : displayValue}
-              </span>
+              selectedOption && selectedSubtitle ? (
+                <div className="flex flex-col min-w-0 flex-1 overflow-hidden text-left">
+                  <span
+                    className={`truncate min-w-0 ${selectedTextClassName || "text-base"} font-bold dark:font-normal`}
+                    title={displayValue}
+                  >
+                    {loading ? loadingText : displayValue}
+                  </span>
+                  {!loading && (
+                    <span
+                      className="truncate min-w-0 text-xs text-gray-500 dark:text-gray-400"
+                      title={selectedSubtitle}
+                    >
+                      {selectedSubtitle}
+                    </span>
+                  )}
+                </div>
+              ) : (
+                <span
+                  className={`truncate min-w-0 ${selectedTextClassName || "text-base"} ${!selectedOption && !loading
+                      ? placeholderClassName || "text-gray-500 dark:text-gray-400"
+                      : selectedOption ? "font-bold dark:font-normal" : ""
+                    }`}
+                  title={selectedOption ? displayValue : undefined}
+                >
+                  {loading ? loadingText : displayValue}
+                </span>
+              )
             )}
           </div>
           <svg
@@ -540,7 +564,15 @@ const CustomSelect: React.FC<CustomSelectProps> = ({
                     ${index < filteredOptions.length - 1 ? "border-b border-dotted border-gray-200 dark:border-[#2A2F40]" : ""}
                     ${optionClassName}
                   `}
-                      style={{ minHeight: largeDropdownItems ? "56px" : "32px", marginBottom: "1px" }}
+                      style={{
+                        minHeight: option.subtitle
+                          ? largeDropdownItems
+                            ? "56px"
+                            : "44px"
+                          : largeDropdownItems
+                            ? "56px"
+                            : "36px",
+                      }}
                       role="option"
                       aria-selected={value === option.value}
                     >
@@ -565,9 +597,9 @@ const CustomSelect: React.FC<CustomSelectProps> = ({
                           </span>
                         )}
                         <div className="flex flex-col min-w-0 flex-1">
-                          <span className={`truncate text-left ${optionTextClassName || (largeDropdownItems ? "text-sm font-medium" : "text-sm")}`}>{option.label}</span>
+                          <span className={`truncate text-left ${optionTextClassName || (largeDropdownItems ? "text-base font-medium" : "text-base")}`}>{option.label}</span>
                           {option.subtitle && (
-                            <span className={`truncate text-left text-gray-500 dark:text-gray-400 ${largeDropdownItems ? "text-sm" : "text-xs"}`}>
+                            <span className="truncate text-left text-xs text-gray-500 dark:text-gray-400">
                               {option.subtitle}
                             </span>
                           )}

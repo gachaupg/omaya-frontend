@@ -27,6 +27,10 @@ import {
   assetMatchesSearchTerm,
   compareAssetsForDisplay,
 } from "@/lib/utils/assetSearch";
+import {
+  getPaymentMethodDisplayTitle,
+  getPaymentMethodDisplaySubtitle,
+} from "@/lib/utils/paymentProviderLabel";
 
 
 /**
@@ -745,7 +749,15 @@ export default function ExchangeForm({
     setIsPaymentDropdownOpen(false);
     setPaymentSearchTerm("");
 
-    const providerName = provider.provider_name || provider.method_name || "Payment Method";
+    const providerName =
+      getPaymentMethodDisplayTitle(provider) ||
+      provider.provider_name ||
+      provider.method_name ||
+      "Payment Method";
+    const providerSubtitle =
+      getPaymentMethodDisplaySubtitle(provider) ||
+      provider.provider_name ||
+      "";
     const providerLogo = provider.logo || "/assets/image_7_jijlik.png";
 
     // Update currency display based on current mode
@@ -753,14 +765,14 @@ export default function ExchangeForm({
       // For deposit: payment method -> asset
       setPayCurrency({
         label: providerName,
-        sub: provider.method_display || provider.method_name || "Payment Method",
+        sub: providerSubtitle || undefined,
         icon: providerLogo,
       });
     } else {
       // For withdrawal: asset -> payment method
       setGetCurrency({
         label: providerName,
-        sub: provider.method_display || provider.method_name || "Payment Method",
+        sub: providerSubtitle || undefined,
         icon: providerLogo,
       });
     }
@@ -775,11 +787,15 @@ export default function ExchangeForm({
     if (newMode === "deposit") {
       // For deposit: payment method -> asset
       if (selectedPaymentMethod) {
-        const providerName = selectedPaymentMethod.provider_name || selectedPaymentMethod.method_name || "Payment Method";
+        const providerName =
+          getPaymentMethodDisplayTitle(selectedPaymentMethod) ||
+          selectedPaymentMethod.provider_name ||
+          selectedPaymentMethod.method_name ||
+          "Payment Method";
         const providerLogo = selectedPaymentMethod.logo || "/assets/image_7_jijlik.png";
         setPayCurrency({
           label: providerName,
-          sub: selectedPaymentMethod.method_display || selectedPaymentMethod.method_name || "Payment Method",
+          sub: getPaymentMethodDisplaySubtitle(selectedPaymentMethod) || undefined,
           icon: providerLogo,
         });
       } else {
@@ -804,15 +820,19 @@ export default function ExchangeForm({
       }
 
       if (selectedPaymentMethod) {
-        const providerName = selectedPaymentMethod.provider_name || selectedPaymentMethod.method_name || "Payment Method";
+        const providerName =
+          getPaymentMethodDisplayTitle(selectedPaymentMethod) ||
+          selectedPaymentMethod.provider_name ||
+          selectedPaymentMethod.method_name ||
+          "Payment Method";
         const providerLogo = selectedPaymentMethod.logo || "/assets/image_7_jijlik.png";
         setGetCurrency({
           label: providerName,
-          sub: selectedPaymentMethod.method_display || selectedPaymentMethod.method_name || "Payment Method",
+          sub: getPaymentMethodDisplaySubtitle(selectedPaymentMethod) || undefined,
           icon: providerLogo,
         });
       } else {
-        setGetCurrency(presets.express.pay); // Fallback to default
+        setGetCurrency(presets.express.get); // Fallback to default
       }
     }
   };
@@ -1040,14 +1060,19 @@ export default function ExchangeForm({
                       />
                       <div className="flex-1 min-w-0">
                         <div className="text-[#1F2937] dark:text-[#ffffff] font-normal text-sm flex items-center gap-2 flex-wrap">
-                          <span className="truncate">{provider.provider_name}</span>
+                          <span className="truncate">
+                            {getPaymentMethodDisplayTitle(provider) ||
+                              provider.provider_name}
+                          </span>
                           {isSelected && (
                             <span className="text-[#1D8751] text-sm">✓</span>
                           )}
                         </div>
-                        <div className="text-sm text-gray-500 dark:text-gray-400 truncate">
-                          {provider.provider_name} - {provider.method_display || provider.method_name || "Payment Method"}
-                        </div>
+                        {getPaymentMethodDisplaySubtitle(provider) ? (
+                          <div className="text-xs text-gray-500 dark:text-gray-400 truncate">
+                            {getPaymentMethodDisplaySubtitle(provider)}
+                          </div>
+                        ) : null}
                       </div>
                     </div>
                   </div>
