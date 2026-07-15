@@ -55,6 +55,8 @@ import {
 import { useChangeNowAssetsContext } from "@/features/express/home/context/ChangeNowAssetsProvider";
 import CustomSelect from "@/components/ui/HomeCommonSelect";
 import { AssetWithNetworkIcon } from "@/components/ui/AssetWithNetworkIcon";
+import { SwapAssetOptionDisplay } from "@/features/swap/components/SwapAssetOptionDisplay";
+import { shouldShowAssetNetworkBadge } from "@/lib/utils/networkDisplay";
 import Select from "@/features/p2p/components/Common/Select";
 import {
   buildExpressRedirectPath,
@@ -82,10 +84,9 @@ import {
 import { withTimeout } from "@/features/express/utils/fetchWithTimeout";
 import { stripLeadingZerosFromDecimalInput } from "@/lib/utils/decimalAmountInput";
 import {
-  getCleanPaymentProviderLabel,
-  stripPaymentMethodTypeSuffix,
+  getPaymentMethodSelectLabels,
 } from "@/lib/utils/paymentProviderLabel";
-import { swapAmountValueClass } from "@/features/swap/components/swapFieldStyles";
+import { homeCardAmountFieldClass, homeCardSelectTriggerClass } from "@/features/swap/components/swapFieldStyles";
 import { resolveForexDepositAdminPaymentDetailId } from "@/features/express/utils/forexDepositResolution";
 import {
   ASSET_ICON_BASE_CLASS,
@@ -412,68 +413,6 @@ const getAssetPrimaryLabel = (asset: any): string => {
   return getCleanAssetName(asset);
 };
 
-const escapeRegex = (value: string) =>
-  value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
-
-const getPaymentMethodNameToStrip = (payment: any): string | null => {
-  if (typeof payment?.method_display === "string" && payment.method_display.trim()) {
-    return payment.method_display.trim();
-  }
-  if (typeof payment?.method_name === "string" && payment.method_name.trim()) {
-    return payment.method_name.trim();
-  }
-  if (
-    typeof payment?.payment_method_name === "string" &&
-    payment.payment_method_name.trim()
-  ) {
-    return payment.payment_method_name.trim();
-  }
-  if (
-    typeof payment?.payment_method_type === "string" &&
-    payment.payment_method_type.trim()
-  ) {
-    return payment.payment_method_type.trim();
-  }
-  return null;
-};
-
-const formatPaymentProviderLabel = (payment: any): string => {
-  const fromClean = getCleanPaymentProviderLabel(payment);
-  if (fromClean) return fromClean;
-
-  const providerName =
-    (typeof payment?.provider_name === "string" && payment.provider_name.trim()) ||
-    (typeof payment?.payment_provider_name === "string" &&
-      payment.payment_provider_name.trim()) ||
-    "";
-
-  if (!providerName) {
-    return "Payment Provider";
-  }
-
-  const methodToStrip = getPaymentMethodNameToStrip(payment);
-
-  if (!methodToStrip) {
-    return stripPaymentMethodTypeSuffix(providerName);
-  }
-
-  try {
-    const suffixPattern = new RegExp(
-      `\\s*-\\s*${escapeRegex(methodToStrip)}\\s*$`,
-      "i"
-    );
-    const cleaned = providerName.replace(suffixPattern, "").trim();
-    return cleaned || stripPaymentMethodTypeSuffix(providerName);
-  } catch (error) {
-    console.warn("Failed to format provider label", {
-      providerName,
-      methodToStrip,
-      error,
-    });
-    return stripPaymentMethodTypeSuffix(providerName);
-  }
-};
-
 const UUID_REGEX =
   /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 
@@ -670,6 +609,7 @@ export default function DepositForm({
 
             const flattened = {
               provider_name: provider.provider_name,
+              short_name: provider.short_name || "",
               payment_method:
                 provider.method_display ||
                 provider.method ||
@@ -729,6 +669,7 @@ export default function DepositForm({
               {};
             return {
               provider_name: provider.provider_name || provider.payment_provider_name || provider.provider || "",
+              short_name: provider.short_name || "",
               payment_method: provider.method_display || provider.method || provider.payment_method || "",
               payment_method_type: provider.method || provider.method_display || provider.payment_method_type || "",
               provider_logo: provider.logo || provider.provider_logo || undefined,
@@ -757,6 +698,7 @@ export default function DepositForm({
               {};
             return {
               provider_name: provider.provider_name || provider.payment_provider_name || provider.provider || "",
+              short_name: provider.short_name || "",
               payment_method: provider.method_display || provider.method || provider.payment_method || "",
               payment_method_type: provider.method || provider.method_display || provider.payment_method_type || "",
               provider_logo: provider.logo || provider.provider_logo || undefined,
@@ -4192,15 +4134,13 @@ export default function DepositForm({
                     }
                   }}
                   placeholder={t("express.enterAmount", "Enter amount")}
-                  className={`w-full rounded-2xl px-4 py-2 pr-16 text-lg focus:outline-none border appearance-none bg-transparent h-[44px] ${(isCalculating || isCalculatingReceive) &&
-                    isCalculatingFromPay &&
-                    selectedAsset &&
-                    !isForexAsset(selectedAsset)
-                    ? "border-[#1D8751]"
-                    : isDark
-                      ? "border-white/10"
-                      : "border-gray-200"
-                    } ${swapAmountValueClass(isDark)}`}
+                  className={`${homeCardAmountFieldClass(isDark, {
+                    active:
+                      !!(isCalculating || isCalculatingReceive) &&
+                      isCalculatingFromPay &&
+                      !!selectedAsset &&
+                      !isForexAsset(selectedAsset),
+                  })}`}
                 />
 
 
@@ -4254,12 +4194,13 @@ export default function DepositForm({
 
                      
 
-                      const providerName = formatPaymentProviderLabel(payment);
+                      const { label, subtitle } = getPaymentMethodSelectLabels(payment);
                       const providerKey = getPaymentMethodKey(payment);
 
                       return {
                         value: providerKey,
-                        label: providerName,
+                        label,
+                        subtitle,
                         logo: logoUrl,
                         raw: payment,
                       };
@@ -4278,8 +4219,7 @@ export default function DepositForm({
                   dropdownMaxWidth={460}
                   className="w-full"
                   placeholderClassName="text-white dark:text-white"
-                  triggerClassName={`!px-4 !py-[8px] !min-h-0 text-sm font-medium border rounded-2xl bg-transparent !h-[44px] ${isDark ? "text-white border-white/10" : "text-[#1F2937] border-gray-200"
-                    }`}
+                  triggerClassName={homeCardSelectTriggerClass(isDark)}
                   onChange={(value) => {
                     const selectedPayment = finalPaymentMethods?.find(
                       (payment: any) => getPaymentMethodKey(payment) === value
@@ -4481,20 +4421,19 @@ export default function DepositForm({
                     }
                   }}
                   placeholder={t("express.enterAmount", "Enter amount")}
-                  className={`w-full rounded-2xl px-4 py-2 pr-16 text-lg focus:outline-none border appearance-none bg-transparent h-[44px] ${receiveAmountError &&
-                    (receiveAmountError.includes("Rough estimate") ||
-                      receiveAmountError.includes("Using estimated rate"))
-                    ? "border-[#F79330]"
-                    : receiveAmountError
-                      ? "border-red-500"
-                      : (isCalculating || isCalculatingReceive) &&
-                        selectedAsset &&
-                        !isForexAsset(selectedAsset)
-                        ? "border-[#1D8751]"
-                        : isDark
-                          ? "border-white/10"
-                          : "border-gray-200"
-                    } ${swapAmountValueClass(isDark)}`}
+                  className={`${homeCardAmountFieldClass(isDark, {
+                    active:
+                      !!(isCalculating || isCalculatingReceive) &&
+                      !!selectedAsset &&
+                      !isForexAsset(selectedAsset) &&
+                      !receiveAmountError,
+                    extra: receiveAmountError
+                      ? receiveAmountError.includes("Rough estimate") ||
+                        receiveAmountError.includes("Using estimated rate")
+                        ? "!border-[#F79330]"
+                        : "!border-red-500"
+                      : undefined,
+                  })}`}
                 />
                 {/* Show loading spinner when calculating "You Send" from "You Receive" */}
                 {(isCalculating || isCalculatingReceive) && !isCalculatingFromPay && selectedAsset && !isForexAsset(selectedAsset) && (
@@ -4555,8 +4494,7 @@ export default function DepositForm({
               </div>
               <div className="relative" ref={assetDropdownRef}>
                 <div
-                  className={`w-full rounded-2xl px-4 py-2 text-lg focus:outline-none border flex items-center justify-between gap-3 cursor-pointer bg-transparent h-[44px] ${isDark ? "text-white border-white/10" : "text-[#1F2937] border-gray-200"
-                    }`}
+                  className={`${homeCardSelectTriggerClass(isDark)} justify-between gap-3 cursor-pointer`}
                   onClick={() => {
                     if (!isAssetDropdownOpen) {
                       updateAssetDropdownPosition();
@@ -4570,28 +4508,18 @@ export default function DepositForm({
                         <AssetWithNetworkIcon
                           asset={selectedAsset}
                           size={24}
-                          assetIconSrc={getAssetDropdownIcon(selectedAsset)}
+                          assetIconSrc={getHighResAssetIcon(selectedAsset, 72) || getAssetDropdownIcon(selectedAsset)}
+                          showNetworkBadge={shouldShowAssetNetworkBadge(selectedAsset)}
                           onAssetIconError={(e) => {
-                            console.log(
-                              "Image failed to load for asset:",
-                              selectedAsset
-                            );
                             e.currentTarget.src = ASSET_ICON_FALLBACK_URL;
                           }}
                         />
-                        <div className="flex flex-col">
-                          <div className="flex items-center gap-2">
-                            <span
-                              className={`text-sm ${isDark ? "text-white font-normal" : "text-[#1F2937] font-extrabold"
-                                }`}
-                            >
-                              {getAssetPrimaryLabel(selectedAsset).toUpperCase()}
-                            </span>
-                            <span className="bg-[#1D8751] text-[#ffffff] dark:text-[#ffffff] text-xs font-normal px-2 py-0.5 rounded-full">
-                              {getNetworkDisplayName(getAssetNetwork(selectedAsset))}
-                            </span>
-                          </div>
-                        </div>
+                        <SwapAssetOptionDisplay
+                          asset={selectedAsset}
+                          primaryClassName="text-[#35353e] dark:text-white font-medium text-base"
+                          subtitleClassName="text-[#788099] text-sm truncate"
+                          badgeClassName="bg-[#1D8751] text-[#ffffff] dark:text-[#ffffff] text-xs font-semibold px-2 py-0.5 rounded-full"
+                        />
                       </>
                     ) : (
                       <>

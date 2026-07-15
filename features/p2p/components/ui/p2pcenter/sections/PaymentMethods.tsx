@@ -26,7 +26,7 @@ import {
   PAYMENT_LOGO_SIZE,
 } from "@/features/express/utils/imageHelpers";
 import { parseAllowAutoSend } from "@/features/p2p/utils/paymentAutoSend";
-import { getCleanPaymentProviderLabel } from "@/lib/utils/paymentProviderLabel";
+import { getPaymentMethodDisplayTitle, getPaymentMethodDisplaySubtitle } from "@/lib/utils/paymentProviderLabel";
 
 const USDT_ICON_SIZE = 64;
 const RESEND_OTP_COOLDOWN_SECONDS = 60;
@@ -179,6 +179,7 @@ const PaymentMethods = () => {
       .filter((m) => m && m.provider_name)
       .map((m) => ({
         provider_name: m.provider_name,
+        short_name: (m as any).short_name || "",
         payment_method_type: m.payment_method_type || "Bank",
         logo: m.logo,
         provider_logo: m.provider_logo,
@@ -218,6 +219,7 @@ const PaymentMethods = () => {
     return allProviders.filter(
       (p) =>
         p.provider_name?.toLowerCase().includes(q) ||
+        (p as any).short_name?.toLowerCase().includes(q) ||
         p.payment_method_type?.toLowerCase().includes(q)
     );
   }, [allProviders, providerSearch]);
@@ -940,8 +942,13 @@ const PaymentMethods = () => {
               )}
               <div className="flex-1 min-w-0">
                 <span className="text-sm font-medium text-gray-900 dark:text-white block truncate">
-                  {getCleanPaymentProviderLabel(p)}
+                  {getPaymentMethodDisplayTitle(p) || p.provider_name}
                 </span>
+                {getPaymentMethodDisplaySubtitle(p) ? (
+                  <span className="text-xs text-gray-500 dark:text-[#788099] block truncate">
+                    {getPaymentMethodDisplaySubtitle(p)}
+                  </span>
+                ) : null}
               </div>
             </button>
           ))
@@ -997,9 +1004,19 @@ const PaymentMethods = () => {
               />
               <div>
                 <p className="text-base sm:text-lg font-semibold text-gray-900 dark:text-white">
-                  {getCleanPaymentProviderLabel({ provider_name: selectedProvider }) ||
-                    selectedProvider}
+                  {getPaymentMethodDisplayTitle(
+                    selectedProviderObj || { provider_name: selectedProvider }
+                  ) || selectedProvider}
                 </p>
+                {getPaymentMethodDisplaySubtitle(
+                  selectedProviderObj || { provider_name: selectedProvider }
+                ) ? (
+                  <p className="text-xs text-gray-500 dark:text-[#788099]">
+                    {getPaymentMethodDisplaySubtitle(
+                      selectedProviderObj || { provider_name: selectedProvider }
+                    )}
+                  </p>
+                ) : null}
               </div>
             </div>
             <button

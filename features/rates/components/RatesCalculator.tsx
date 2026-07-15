@@ -65,7 +65,7 @@ import {
 import { useRatesI18n } from "@/lib/useRatesI18n";
 import { FaSearch } from "react-icons/fa";
 import { showToast } from "@/lib/utils/toast";
-import { getCleanPaymentProviderLabel } from "@/lib/utils/paymentProviderLabel";
+import { getPaymentMethodSelectLabels } from "@/lib/utils/paymentProviderLabel";
 import {
   EXPRESS_MAX_AMOUNT_INPUT_DIGITS,
   EXPRESS_WITHDRAWAL_AMOUNT_TOO_BIG_MESSAGE,
@@ -4536,12 +4536,12 @@ const getPaymentRestrictionMessage = (status?: string) =>
                             provider.provider_name ||
                             provider.payment_provider_name ||
                             "Unknown";
-                          const providerName =
-                            getCleanPaymentProviderLabel(provider) || rawName;
+                          const { label, subtitle } = getPaymentMethodSelectLabels(provider);
 
                           return {
                             value: rawName,
-                            label: providerName,
+                            label,
+                            subtitle,
                             logo: provider.logo || provider.provider_logo || undefined,
                           };
                         }).filter((opt: any) => opt.value && opt.value.trim());
@@ -5054,12 +5054,12 @@ const getPaymentRestrictionMessage = (status?: string) =>
                             provider.provider_name ||
                             provider.payment_provider_name ||
                             "Unknown";
-                          const providerName =
-                            getCleanPaymentProviderLabel(provider) || rawName;
+                          const { label, subtitle } = getPaymentMethodSelectLabels(provider);
 
                           return {
                             value: rawName,
-                            label: providerName,
+                            label,
+                            subtitle,
                             logo: provider.logo || provider.provider_logo || undefined,
                           };
                         }).filter((opt: any) => opt.value && opt.value.trim());

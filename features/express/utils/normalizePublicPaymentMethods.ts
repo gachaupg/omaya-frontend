@@ -54,6 +54,7 @@ export function normalizePublicPaymentMethods(payload: unknown): any[] {
               provider?.provider ||
               provider?.name ||
               "",
+            short_name: provider?.short_name || "",
             payment_method:
               provider?.method_display ||
               provider?.method ||
@@ -80,6 +81,7 @@ export function normalizePublicPaymentMethods(payload: unknown): any[] {
         ...item,
         provider_name:
           item?.provider_name || item?.provider || item?.name || "",
+        short_name: item?.short_name || "",
         payment_method:
           item?.method_display ||
           item?.method ||

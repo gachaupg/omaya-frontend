@@ -10,6 +10,8 @@ import {
 } from "@/features/swap/utils/swapAssetIcon";
 import { SwapAssetOptionDisplay } from "@/features/swap/components/SwapAssetOptionDisplay";
 import { swapAssetTriggerClass } from "@/features/swap/components/swapFieldStyles";
+import { AssetWithNetworkIcon } from "@/components/ui/AssetWithNetworkIcon";
+import { shouldShowAssetNetworkBadge } from "@/lib/utils/networkDisplay";
 
 interface AssetDropdownProps {
   assets: SupportedAsset[];
@@ -62,16 +64,18 @@ const AssetDropdown: React.FC<AssetDropdownProps> = ({
       >
         {selectedAsset ? (
           <div className="flex items-center min-w-0 flex-1 gap-3">
-            <img
-              src={resolveSwapAssetIconSrc(selectedAsset)}
-              alt={selectedAsset.name || "Asset"}
-              className="w-6 h-6 rounded-full object-cover shrink-0"
-              onError={(e) => handleSwapAssetIconError(e, selectedAsset)}
+            <AssetWithNetworkIcon
+              asset={selectedAsset}
+              size={24}
+              assetIconSrc={resolveSwapAssetIconSrc(selectedAsset)}
+              showNetworkBadge={shouldShowAssetNetworkBadge(selectedAsset)}
+              onAssetIconError={(e) => handleSwapAssetIconError(e, selectedAsset)}
             />
             <SwapAssetOptionDisplay
               asset={selectedAsset}
-              showSubtitle={false}
-              primaryClassName={`text-sm ${isDark ? "text-white font-normal" : "text-[#1F2937] font-extrabold"}`}
+              primaryClassName="text-[#35353e] dark:text-white font-medium text-base"
+              subtitleClassName="text-[#788099] text-xs truncate"
+              badgeClassName="bg-[#1D8751] text-[#ffffff] dark:text-[#ffffff] text-xs font-semibold px-2 py-0.5 rounded-full"
             />
           </div>
         ) : (

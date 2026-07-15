@@ -40,7 +40,8 @@ import {
   resolveExpressMinAmountDisplayError,
 } from "@/lib/utils/expressMinAmount";
 import { reportAssetLoadIssue } from "@/lib/utils/assetLoadNotice";
-import { getCleanPaymentProviderLabel } from "@/lib/utils/paymentProviderLabel";
+import { getPaymentMethodSelectLabels } from "@/lib/utils/paymentProviderLabel";
+import { normalizePublicPaymentMethods } from "@/features/express/utils/normalizePublicPaymentMethods";
 import { useExpressI18n } from "@/lib/useExpressI18n";
 import { DepositResponse } from "../../../../exchange/types";
 import { SupportedAsset } from "../../../../swap/types";
@@ -64,7 +65,7 @@ import PaymentMethodsModal from "../../../../p2p/components/ui/p2pdashboard/sect
 import InfoModal from "./info";
 import { debugAssetFetching } from "../../../../../lib/utils/debugAssets";
 import { stripLeadingZerosFromDecimalInput } from "@/lib/utils/decimalAmountInput";
-import { swapAmountValueClass } from "@/features/swap/components/swapFieldStyles";
+import { homeCardAmountFieldClass, homeCardSelectTriggerClass } from "@/features/swap/components/swapFieldStyles";
 import {
   useAssetsDisplay,
   usePaymentMethodsDisplay,
@@ -72,6 +73,8 @@ import {
 import { useChangeNowAssetsContext } from "@/features/express/home/context/ChangeNowAssetsProvider";
 import CustomSelect from "@/components/ui/HomeCommonSelect";
 import { AssetWithNetworkIcon } from "@/components/ui/AssetWithNetworkIcon";
+import { SwapAssetOptionDisplay } from "@/features/swap/components/SwapAssetOptionDisplay";
+import { shouldShowAssetNetworkBadge } from "@/lib/utils/networkDisplay";
 import ForexWithdrawal from "./ForexWithdrawal";
 import { useTheme } from "@/context/theme";
 import {
@@ -497,16 +500,7 @@ export default function WithdrawalForm({
   const [directPublicPaymentMethods, setDirectPublicPaymentMethods] = useState<any>(null);
   const activePublicPaymentMethods = directPublicPaymentMethods || publicPaymentMethods;
   const activePublicProviders = useMemo(() => {
-    if (Array.isArray(activePublicPaymentMethods?.data?.providers)) {
-      return activePublicPaymentMethods.data.providers;
-    }
-    if (Array.isArray(activePublicPaymentMethods?.data)) {
-      return activePublicPaymentMethods.data;
-    }
-    if (Array.isArray(activePublicPaymentMethods)) {
-      return activePublicPaymentMethods;
-    }
-    return [];
+    return normalizePublicPaymentMethods(activePublicPaymentMethods);
   }, [activePublicPaymentMethods]);
 
   const { assets, loading: assetsLoading } = useSelector(
@@ -4698,16 +4692,12 @@ export default function WithdrawalForm({
                           ? "Calculating..."
                           : "Enter amount"
                       }
-                      className={`w-full rounded-2xl px-4 py-2 pr-16 focus:outline-none border appearance-none bg-transparent ${
-                        isCalculating || isCalculatingReceive
-                          ? "border-[#1D8751]"
-                          : isDark
-                            ? "border-white/10"
-                            : "border-gray-200"
-                      } ${swapAmountValueClass(isDark)}`}
+                      className={homeCardAmountFieldClass(isDark, {
+                        active: !!(isCalculating || isCalculatingReceive),
+                      })}
                     />
                     <div className="absolute right-4 top-1/2 transform -translate-y-1/2">
-                      <span className={`${isDark ? "text-white" : "text-[#1F2937]"} text-sm font-medium`}>
+                      <span className={`${isDark ? "text-white" : "text-[#1F2937]"} text-base font-medium`}>
                         {selectedAsset
                           ? (
                             selectedAsset.ticker ||
@@ -4752,8 +4742,7 @@ export default function WithdrawalForm({
                   </div>
                   <div className="relative" ref={assetDropdownRef}>
                     <div
-                      className={`w-full rounded-2xl px-4 py-2 text-lg focus:outline-none border flex items-center justify-between cursor-pointer bg-transparent ${isDark ? "text-white border-white/10" : "text-[#1F2937] border-gray-200"
-                        }`}
+                      className={`${homeCardSelectTriggerClass(isDark)} justify-between cursor-pointer`}
                       onClick={() => {
                         if (!isAssetDropdownOpen) {
                           updateAssetDropdownPosition();
@@ -4767,31 +4756,18 @@ export default function WithdrawalForm({
                             <AssetWithNetworkIcon
                               asset={selectedAsset}
                               size={24}
-                              assetIconSrc={getAssetDropdownIcon(selectedAsset)}
+                              assetIconSrc={getHighResAssetIcon(selectedAsset, 72) || getAssetDropdownIcon(selectedAsset)}
+                              showNetworkBadge={shouldShowAssetNetworkBadge(selectedAsset)}
                               onAssetIconError={(e) => {
-                                console.log(
-                                  "Image failed to load for asset:",
-                                  selectedAsset
-                                );
                                 e.currentTarget.src = ASSET_ICON_FALLBACK_URL;
                               }}
                             />
-                            <div className="flex flex-col">
-                              <div className="flex items-center gap-2">
-                                <span className={`text-sm ${isDark ? "text-white font-normal" : "text-[#1F2937] font-extrabold"
-                                  }`}>
-                                  {(
-                                    selectedAsset.ticker ||
-                                    selectedAsset.symbol ||
-                                    selectedAsset.name ||
-                                    "Unknown"
-                                  ).toUpperCase()}
-                                </span>
-                                <span className="bg-[#1D8751] text-[#ffffff] dark:text-[#ffffff] text-xs font-normal px-2 py-0.5 rounded-full">
-                                  {getNetworkDisplayName(selectedAsset.network)}
-                                </span>
-                              </div>
-                            </div>
+                            <SwapAssetOptionDisplay
+                              asset={selectedAsset}
+                              primaryClassName="text-[#35353e] dark:text-white font-medium text-base"
+                              subtitleClassName="text-[#788099] text-sm truncate"
+                              badgeClassName="bg-[#1D8751] text-[#ffffff] dark:text-[#ffffff] text-xs font-semibold px-2 py-0.5 rounded-full"
+                            />
                           </>
                         ) : (
                           <>
@@ -5073,16 +5049,12 @@ export default function WithdrawalForm({
                           ? "Calculating..."
                           : "Enter amount"
                       }
-                      className={`w-full rounded-2xl px-4 py-2 pr-16 focus:outline-none border appearance-none bg-transparent ${
-                        isCalculating || isCalculatingReceive
-                          ? "border-[#1D8751]"
-                          : isDark
-                            ? "border-white/10"
-                            : "border-gray-200"
-                      } ${swapAmountValueClass(isDark)}`}
+                      className={homeCardAmountFieldClass(isDark, {
+                        active: !!(isCalculating || isCalculatingReceive),
+                      })}
                     />
                     <div className="absolute right-4 top-1/2 transform -translate-y-1/2">
-                      <span className={`${isDark ? "text-white" : "text-[#1F2937]"} text-sm font-medium`}>
+                      <span className={`${isDark ? "text-white" : "text-[#1F2937]"} text-base font-medium`}>
                         USD
                       </span>
                     </div>
@@ -5111,29 +5083,24 @@ export default function WithdrawalForm({
                   <div className="relative z-0">
                     {(() => {
                       // Use public payment methods if available (they have logos)
-                      let paymentMethodOptions: Array<{ value: string; label: string; logo?: string }> = [];
-                      const activePublicPaymentMethods = directPublicPaymentMethods || publicPaymentMethods;
-                      const activePublicProviders = Array.isArray(activePublicPaymentMethods?.data?.providers)
-                        ? activePublicPaymentMethods.data.providers
-                        : Array.isArray(activePublicPaymentMethods?.data)
-                          ? activePublicPaymentMethods.data
-                          : Array.isArray(activePublicPaymentMethods)
-                            ? activePublicPaymentMethods
-                            : [];
+                      let paymentMethodOptions: Array<{ value: string; label: string; subtitle?: string; logo?: string }> = [];
+                      const activePublicProvidersForSelect = normalizePublicPaymentMethods(
+                        directPublicPaymentMethods || publicPaymentMethods
+                      );
 
-                      if (activePublicProviders.length > 0) {
+                      if (activePublicProvidersForSelect.length > 0) {
                         // Use public payment methods with logos (available to guests too on home page).
-                        paymentMethodOptions = activePublicProviders.map((provider: any) => {
+                        paymentMethodOptions = activePublicProvidersForSelect.map((provider: any) => {
                           const rawName =
                             provider.provider_name ||
                             provider.payment_provider_name ||
                             "Unknown";
-                          const providerName =
-                            getCleanPaymentProviderLabel(provider) || rawName;
+                          const { label, subtitle } = getPaymentMethodSelectLabels(provider);
 
                           return {
                             value: rawName,
-                            label: providerName,
+                            label,
+                            subtitle,
                             logo: getHighResPaymentLogo(
                               provider.logo || provider.provider_logo || undefined,
                               undefined,
@@ -5155,11 +5122,10 @@ export default function WithdrawalForm({
                           dropdownMinWidth={460}
                           dropdownMaxWidth={460}
                           className="w-full"
-                          triggerClassName={`px-4 py-2 text-sm font-medium border rounded-2xl bg-transparent ${isDark ? "text-white border-white/10" : "text-[#1F2937] border-gray-200"
-                            }`}
+                          triggerClassName={homeCardSelectTriggerClass(isDark)}
                           placeholderClassName="text-white dark:text-white"
                           onChange={(value) => {
-                            const selectedProvider = activePublicProviders.find(
+                            const selectedProvider = activePublicProvidersForSelect.find(
                               (provider: any) =>
                                 (provider.provider_name || provider.payment_provider_name) === value
                             );

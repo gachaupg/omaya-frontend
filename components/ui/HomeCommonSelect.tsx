@@ -106,15 +106,20 @@ const CustomSelect: React.FC<CustomSelectProps> = ({
   const resolvedLogoClassName =
     logoClassName ?? "rounded object-cover flex-shrink-0";
 
-  // Filter options based on search term - search both label and value
-  const filteredOptions = options.filter((option) =>
-    option.label.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    option.value.toLowerCase().includes(searchTerm.toLowerCase())
-  );
+  // Filter options based on search term (label, subtitle, value)
+  const filteredOptions = options.filter((option) => {
+    const q = searchTerm.toLowerCase();
+    return (
+      option.label.toLowerCase().includes(q) ||
+      option.value.toLowerCase().includes(q) ||
+      (option.subtitle || "").toLowerCase().includes(q)
+    );
+  });
 
   // Get the selected option label and logo
   const selectedOption = options.find((option) => option.value === value);
   const displayValue = selectedOption?.label || placeholder;
+  const selectedSubtitle = selectedOption?.subtitle;
   const selectedLogo = selectedOption?.logo;
 
   // Close dropdown when clicking outside
@@ -476,16 +481,35 @@ const CustomSelect: React.FC<CustomSelectProps> = ({
               </span>
             )}
             {!hideSelectedLabel && (
-              <span
-                className={`truncate min-w-0 text-sm ${
-                  !selectedOption && !loading
-                    ? placeholderClassName || "text-gray-500 dark:text-gray-400"
-                    : selectedOption ? "font-bold dark:font-normal" : ""
-                }`}
-                title={selectedOption ? displayValue : undefined}
-              >
-                {loading ? loadingText : displayValue}
-              </span>
+              selectedOption && selectedSubtitle ? (
+                <div className="flex flex-col min-w-0 flex-1 overflow-hidden text-left leading-tight">
+                  <span
+                    className={`truncate min-w-0 text-base font-bold dark:font-normal`}
+                    title={displayValue}
+                  >
+                    {loading ? loadingText : displayValue}
+                  </span>
+                  {!loading && (
+                    <span
+                      className="truncate min-w-0 text-xs text-gray-500 dark:text-gray-400"
+                      title={selectedSubtitle}
+                    >
+                      {selectedSubtitle}
+                    </span>
+                  )}
+                </div>
+              ) : (
+                <span
+                  className={`truncate min-w-0 text-base ${
+                    !selectedOption && !loading
+                      ? placeholderClassName || "text-gray-500 dark:text-gray-400"
+                      : selectedOption ? "font-bold dark:font-normal" : ""
+                  }`}
+                  title={selectedOption ? displayValue : undefined}
+                >
+                  {loading ? loadingText : displayValue}
+                </span>
+              )
             )}
           </div>
           <svg
@@ -613,11 +637,11 @@ const CustomSelect: React.FC<CustomSelectProps> = ({
                       )}
                       {option.subtitle ? (
                         <div className="flex-1 min-w-0">
-                          <div className={`text-[#1F2937] dark:text-[#ffffff] truncate ${largeDropdownItems ? "font-medium text-sm" : "font-normal text-sm"}`}>{option.label}</div>
+                          <div className={`text-[#1F2937] dark:text-[#ffffff] truncate ${largeDropdownItems ? "font-medium text-base" : "font-normal text-base"}`}>{option.label}</div>
                           <div className="text-gray-500 dark:text-gray-400 truncate text-xs">{option.subtitle}</div>
                         </div>
                       ) : (
-                        <span className={`truncate min-w-0 flex-1 text-left ${largeDropdownItems ? "text-sm font-medium" : "text-sm"}`}>{option.label}</span>
+                        <span className={`truncate min-w-0 flex-1 text-left ${largeDropdownItems ? "text-base font-medium" : "text-base"}`}>{option.label}</span>
                       )}
                     </div>
                   </button>

@@ -1,6 +1,7 @@
 import React, { useState, useMemo, useEffect } from "react";
 import CustomSelect from "@/components/ui/CustomSelect";
 import { AdminPaymentMethod } from "@/features/p2p/types/paymentMethods";
+import { getPaymentMethodSelectLabels } from "@/lib/utils/paymentProviderLabel";
 import { FaTimes } from "react-icons/fa";
 
 export interface UserPaymentDetail {
@@ -67,14 +68,16 @@ const UserPaymentSelector: React.FC<UserPaymentSelectorProps> = ({
   // Memoized options for providers - show all providers
   const providerOptions = useMemo(() => {
     const seen = new Set<string>();
-    const options: Array<{ value: string; label: string; logo?: string }> = [];
+  const options: Array<{ value: string; label: string; subtitle?: string; logo?: string }> = [];
 
     adminMethods.forEach((m) => {
       if (m.provider_name && !seen.has(m.provider_name)) {
         seen.add(m.provider_name);
+        const { label, subtitle } = getPaymentMethodSelectLabels(m);
         options.push({
           value: m.provider_name,
-          label: m.provider_name,
+          label,
+          subtitle,
           logo: m.logo_url || m.logo || undefined,
         });
       }
@@ -84,9 +87,14 @@ const UserPaymentSelector: React.FC<UserPaymentSelectorProps> = ({
       if (d.payment_provider_name && !seen.has(d.payment_provider_name)) {
         seen.add(d.payment_provider_name);
         const logoUrl = d.logo_url || d.logo || d.provider_logo || undefined;
+        const { label, subtitle } = getPaymentMethodSelectLabels({
+          provider_name: d.payment_provider_name,
+          short_name: (d as any).short_name,
+        });
         options.push({
           value: d.payment_provider_name,
-          label: d.payment_provider_name,
+          label,
+          subtitle,
           logo: logoUrl,
         });
       }
