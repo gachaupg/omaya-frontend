@@ -218,7 +218,7 @@ export default function ForexDeposit() {
                   <option value="" className="bg-white dark:bg-[#1D1D23] text-[#35353e] dark:text-[#ffffff]">Select admin bank account</option>
                   {adminBankAccounts.map((account: any) => (
                     <option key={account.id} value={account.admin_payment_detail_id} className="bg-white dark:bg-[#1D1D23] text-[#35353e] dark:text-[#ffffff]">
-                      {account.payment_method_type} - {account.provider_name}
+                      {account.provider_name}
                       {account.account_number && ` (${account.account_number})`}
                       {account.mobile_number && ` (${account.mobile_number})`}
                     </option>
@@ -238,7 +238,7 @@ export default function ForexDeposit() {
                     .map((account: any) => (
                       <div key={account.id}>
                         <div className="text-[#35353e] dark:text-[#D1D2D4] font-medium mb-2 text-sm">
-                          {account.payment_method_type} - {account.provider_name}
+                          {account.provider_name}
                         </div>
                         {account.account_number && (
                           <div className="text-[#788099] text-xs mb-1">

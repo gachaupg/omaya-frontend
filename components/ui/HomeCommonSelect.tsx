@@ -576,7 +576,7 @@ const CustomSelect: React.FC<CustomSelectProps> = ({
                     w-full text-left transition-colors duration-150
                     hover:bg-blue-50 dark:hover:bg-blue-900/20
                     focus:outline-none focus:bg-blue-50 dark:focus:bg-blue-900/20
-                    ${largeDropdownItems ? "px-4 py-3 sm:py-4" : "px-3 sm:px-4 py-2 sm:py-2.5"}
+                    ${largeDropdownItems ? "px-3 py-2.5" : "px-3 py-2.5"}
                     text-sm
                     ${isSelected
                       ? "bg-blue-100 dark:bg-blue-900/30 text-blue-900 dark:text-blue-100 font-medium"
@@ -588,11 +588,11 @@ const CustomSelect: React.FC<CustomSelectProps> = ({
                     }
                     ${optionClassName}
                   `}
-                    style={{ minHeight: largeDropdownItems ? "56px" : "44px", marginBottom: "2px" }}
+                    style={{ minHeight: largeDropdownItems ? "46px" : "44px" }}
                     role="option"
                     aria-selected={value === option.value}
                   >
-                    <div className={`flex items-center min-w-0 w-full ${largeDropdownItems ? "gap-3 sm:gap-4" : "gap-2 sm:gap-3"}`}>
+                    <div className={`flex items-center min-w-0 w-full gap-2.5`}>
                       {option.logo && (
                         <span
                           className="rounded-full overflow-hidden flex-shrink-0"

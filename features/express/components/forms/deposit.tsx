@@ -23,6 +23,7 @@ import {
 } from "../../../swap/slices/swapSlice";
 
 import { showToast } from "../../../../lib/utils/toast";
+import { getCleanPaymentProviderLabel } from "@/lib/utils/paymentProviderLabel";
 import {
   applyExpressAmountSubmitError,
   enforceExpressAmountDigitLimit,
@@ -4123,6 +4124,7 @@ export default function DepositForm({
 
                         const methodKey = getPaymentMethodKey(payment);
                         const providerLabel =
+                          getCleanPaymentProviderLabel(payment) ||
                           payment?.provider_name ||
                           payment?.payment_provider_name ||
                           payment?.provider ||

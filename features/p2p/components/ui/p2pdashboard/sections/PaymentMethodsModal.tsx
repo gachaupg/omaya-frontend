@@ -25,7 +25,7 @@ import {
   findAutoSendPaymentDetail,
   pickProviderForFilter,
 } from "@/features/p2p/utils/paymentAutoSend";
-
+import { getCleanPaymentProviderLabel, stripPaymentMethodTypeSuffix } from "@/lib/utils/paymentProviderLabel";
 const extractCryptoNetworkForValidation = (source: string): string => {
   const s = String(source || "").toLowerCase();
   // Return a short network token that `validateAddress()` can normalize.
@@ -944,8 +944,7 @@ const PaymentMethodsModal: React.FC<PaymentMethodsModalProps> = ({
                        label:
                          methodTab === "crypto"
                            ? "BNB Smart Chain (BEP20)"
-                           : String(p.provider_name || "Unknown"),
-                       subtitle: String(p.payment_method_type || p.method_display || p.method || "").trim() || undefined,
+                           : getCleanPaymentProviderLabel(p) || "Unknown",
                        logo: getHighResPaymentLogo(
                          p.logo || p.provider_logo || undefined,
                          undefined,
@@ -996,7 +995,10 @@ const PaymentMethodsModal: React.FC<PaymentMethodsModalProps> = ({
                           />
                            <div className="min-w-0">
                              <p className="text-sm font-semibold text-gray-900 dark:text-white truncate">
-                               {methodTab === "crypto" ? "BNB Smart Chain (BEP20)" : provider}
+                               {methodTab === "crypto"
+                                 ? "BNB Smart Chain (BEP20)"
+                                 : getCleanPaymentProviderLabel(selectedProvider) ||
+                                   stripPaymentMethodTypeSuffix(provider)}
                              </p>
                              <p className="text-xs text-[#788099] mt-0.5">
                                {methodTab === "crypto" ? "Selected Network" : "Selected Provider"}

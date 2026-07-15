@@ -19,6 +19,7 @@ import {
 import { useTheme } from "@/context/theme";
 import CustomSelect from "@/components/ui/HomeCommonSelect";
 import { showToast } from "@/lib/utils/toast";
+import { getCleanPaymentProviderLabel } from "@/lib/utils/paymentProviderLabel";
 import { normalizeExpressApiErrorMessage } from "@/lib/utils/expressMinAmount";
 import { resolveScamFlagDisplayError } from "@/lib/utils/scamFlagError";
 import { useExpressI18n } from "@/lib/useExpressI18n";
@@ -239,20 +240,7 @@ export default function TransferForm({ isHomePage = false, onTransfer, commissio
 
   // Normalize provider labels for dropdowns (e.g. remove trailing "- Bank").
   const getProviderName = useCallback((payment: any) => {
-    let providerName =
-      payment?.provider_name ||
-      payment?.provider?.provider_name ||
-      payment?.provider ||
-      payment?.name ||
-      "";
-    providerName = String(providerName || "");
-    providerName = providerName
-      .replace(
-        /\s*-\s*(Bank|Mobile|Crypto|Forex|Marchant|Money\s*Transfer|Merchant)\s*$/i,
-        ""
-      )
-      .trim();
-    return providerName;
+    return getCleanPaymentProviderLabel(payment);
   }, []);
 
   // Use a stable unique key so methods with same provider name don't collide in selects.

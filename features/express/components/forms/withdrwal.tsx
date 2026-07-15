@@ -25,6 +25,7 @@ import {
 } from "../../../swap/slices/swapSlice";
 import { validateWalletAddress } from "@/lib/addressValidaion";
 import { showToast } from "@/lib/utils/toast";
+import { getCleanPaymentProviderLabel } from "@/lib/utils/paymentProviderLabel";
 import {
   enforceExpressAmountDigitLimit,
   EXPRESS_AMOUNT_DIGIT_LIMIT_MESSAGE,
@@ -4897,20 +4898,15 @@ export default function WithdrawalForm({
       if (activePublicProviders.length > 0) {
                         // Use public payment methods with logos
                         paymentMethodOptions = activePublicProviders.map((provider: any) => {
-                          const providerName = provider.provider_name || provider.payment_provider_name || "Unknown";
-          const methodName =
-            provider.method?.method_name ||
-            provider.method?.method_display ||
-            provider.method_display ||
-            provider.method_name ||
-            provider.method ||
-            null;
-                          const subtitle = methodName ? `${providerName} - ${methodName}` : null;
+                          const providerName =
+                            getCleanPaymentProviderLabel(provider) ||
+                            provider.provider_name ||
+                            provider.payment_provider_name ||
+                            "Unknown";
 
                           return {
-                            value: providerName,
+                            value: provider.provider_name || provider.payment_provider_name || providerName,
                             label: providerName,
-                            subtitle: subtitle || undefined,
                             logo: provider.logo || provider.provider_logo || undefined,
                           };
                         }).filter((opt: any) => opt.value && opt.value.trim());

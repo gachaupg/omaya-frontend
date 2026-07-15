@@ -81,6 +81,10 @@ import {
 } from "@/features/express/api";
 import { withTimeout } from "@/features/express/utils/fetchWithTimeout";
 import { stripLeadingZerosFromDecimalInput } from "@/lib/utils/decimalAmountInput";
+import {
+  getCleanPaymentProviderLabel,
+  stripPaymentMethodTypeSuffix,
+} from "@/lib/utils/paymentProviderLabel";
 import { swapAmountValueClass } from "@/features/swap/components/swapFieldStyles";
 import { resolveForexDepositAdminPaymentDetailId } from "@/features/express/utils/forexDepositResolution";
 import {
@@ -434,6 +438,9 @@ const getPaymentMethodNameToStrip = (payment: any): string | null => {
 };
 
 const formatPaymentProviderLabel = (payment: any): string => {
+  const fromClean = getCleanPaymentProviderLabel(payment);
+  if (fromClean) return fromClean;
+
   const providerName =
     (typeof payment?.provider_name === "string" && payment.provider_name.trim()) ||
     (typeof payment?.payment_provider_name === "string" &&
@@ -447,7 +454,7 @@ const formatPaymentProviderLabel = (payment: any): string => {
   const methodToStrip = getPaymentMethodNameToStrip(payment);
 
   if (!methodToStrip) {
-    return providerName;
+    return stripPaymentMethodTypeSuffix(providerName);
   }
 
   try {
@@ -456,14 +463,14 @@ const formatPaymentProviderLabel = (payment: any): string => {
       "i"
     );
     const cleaned = providerName.replace(suffixPattern, "").trim();
-    return cleaned || providerName;
+    return cleaned || stripPaymentMethodTypeSuffix(providerName);
   } catch (error) {
     console.warn("Failed to format provider label", {
       providerName,
       methodToStrip,
       error,
     });
-    return providerName;
+    return stripPaymentMethodTypeSuffix(providerName);
   }
 };
 
@@ -4248,14 +4255,11 @@ export default function DepositForm({
                      
 
                       const providerName = formatPaymentProviderLabel(payment);
-                      const methodName = getPaymentMethodNameToStrip(payment);
-                      const subtitle = methodName ? `${providerName} - ${methodName}` : null;
                       const providerKey = getPaymentMethodKey(payment);
 
                       return {
                         value: providerKey,
                         label: providerName,
-                        subtitle: subtitle || undefined,
                         logo: logoUrl,
                         raw: payment,
                       };
@@ -4312,7 +4316,7 @@ export default function DepositForm({
                   dropdownTitle="Select a payment methods"
                   dropdownOffsetY={-68}
                   dropdownOffsetX={0}
-                  largeDropdownItems={true}
+                  largeDropdownItems={false}
                 />
               </div>
               {adminMethodsError && <p className="text-red-500 text-sm mt-1">{adminMethodsError}</p>}

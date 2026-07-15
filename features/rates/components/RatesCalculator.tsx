@@ -65,6 +65,7 @@ import {
 import { useRatesI18n } from "@/lib/useRatesI18n";
 import { FaSearch } from "react-icons/fa";
 import { showToast } from "@/lib/utils/toast";
+import { getCleanPaymentProviderLabel } from "@/lib/utils/paymentProviderLabel";
 import {
   EXPRESS_MAX_AMOUNT_INPUT_DIGITS,
   EXPRESS_WITHDRAWAL_AMOUNT_TOO_BIG_MESSAGE,
@@ -4531,13 +4532,15 @@ const getPaymentRestrictionMessage = (status?: string) =>
 
                       if (sortedPublicPaymentProviders.length > 0) {
                         paymentMethodOptions = sortedPublicPaymentProviders.map((provider: any) => {
-                          const providerName =
+                          const rawName =
                             provider.provider_name ||
                             provider.payment_provider_name ||
                             "Unknown";
+                          const providerName =
+                            getCleanPaymentProviderLabel(provider) || rawName;
 
                           return {
-                            value: providerName,
+                            value: rawName,
                             label: providerName,
                             logo: provider.logo || provider.provider_logo || undefined,
                           };
@@ -5047,13 +5050,15 @@ const getPaymentRestrictionMessage = (status?: string) =>
                       let paymentMethodOptions: Array<{ value: string; label: string; subtitle?: string; logo?: string }> = [];
                       if (sortedPublicPaymentProviders.length > 0) {
                         paymentMethodOptions = sortedPublicPaymentProviders.map((provider: any) => {
-                          const providerName =
+                          const rawName =
                             provider.provider_name ||
                             provider.payment_provider_name ||
                             "Unknown";
+                          const providerName =
+                            getCleanPaymentProviderLabel(provider) || rawName;
 
                           return {
-                            value: providerName,
+                            value: rawName,
                             label: providerName,
                             logo: provider.logo || provider.provider_logo || undefined,
                           };
