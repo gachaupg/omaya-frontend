@@ -666,7 +666,7 @@ const FinalSell: React.FC<FinalSellProps> = ({ orderData }) => {
               </div>
               <div className="text-xs text-gray-500 dark:text-[#788099]">
                 {singleOrder?.user_total_buy_orders || 120} Orders |{" "}
-                {singleOrder?.completion_rate || "99.20"}% Completion
+                {Number(singleOrder?.completion_rate ?? 99.2).toFixed(2)}% Completion
               </div>
               Rating: 99% | Commission: {singleOrder?.commission_rate || "0.5"}
             </div>

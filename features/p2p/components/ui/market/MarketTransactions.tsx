@@ -482,7 +482,8 @@ const MarketTransactions = memo(({ activeTab }: { activeTab: string }) => {
           orders:
             order.user_total_buy_orders || order.user_total_sell_orders || 0,
           advertiser_photo: order.advertiser_photo || "",
-          completion: `${(order.completion_rate || 0) * 100}%`,
+          // completion_rate is already a percentage value from the API (e.g. 15.64), not a fraction.
+          completion: `${Number(order.completion_rate || 0).toFixed(2)}%`,
           exchange_rate: `${(parseFloat(order.exchange_rate || 0) * 100).toFixed(0)}`,
           completion_time: formatDurationForDisplay(
             order.completion_time || "00:00:00"
