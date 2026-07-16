@@ -27,6 +27,17 @@ import {
 } from "@/features/p2p/utils/paymentAutoSend";
 import { getPaymentMethodDisplayTitle, getPaymentMethodDisplaySubtitle, getPaymentMethodSelectLabels, stripPaymentMethodTypeSuffix } from "@/lib/utils/paymentProviderLabel";
 import { normalizePublicPaymentMethods } from "@/features/express/utils/normalizePublicPaymentMethods";
+/** Match express deposit/withdraw defaults: prefer Salaam Somali Bank when available. */
+const isSalaamProvider = (provider: any): boolean =>
+  /salaam/i.test(
+    String(
+      provider?.provider_name || provider?.provider || provider?.short_name || ""
+    )
+  );
+
+const pickSalaamFirst = <T extends Record<string, any>>(list: T[]): T | undefined =>
+  list.find(isSalaamProvider) ?? list[0];
+
 const extractCryptoNetworkForValidation = (source: string): string => {
   const s = String(source || "").toLowerCase();
   // Return a short network token that `validateAddress()` can normalize.
@@ -150,7 +161,7 @@ const PaymentMethodsModal: React.FC<PaymentMethodsModalProps> = ({
   const onAddSuccessRef = useRef(onAddSuccess);
   const postSuccessHandledRef = useRef(false);
   const onAddSuccessInFlightRef = useRef(false);
-  const prevOpenRef = useRef(false);
+  const hasInitializedForOpenRef = useRef(false);
 
   onCloseRef.current = onClose;
   onAddRef.current = onAdd;
@@ -205,13 +216,21 @@ const PaymentMethodsModal: React.FC<PaymentMethodsModalProps> = ({
   }, [resendCooldown]);
 
      // Reset form only when the modal opens (not on every user/account dep change while open).
+   // Note: `open` can already be `true` on the very first render (parents that mount this
+   // modal with a fixed `open={true}` prop, e.g. deep-linked "?openAddModal=1" after a page
+   // reload). In that case `isClient` is still `false` on that first run, so we must wait for
+   // `isClient` to flip true and only then treat it as "just opened" — otherwise this effect
+   // never actually fetches data / resets the form and the dropdowns stay permanently empty.
    useEffect(() => {
-     const justOpened = open && !prevOpenRef.current;
-     prevOpenRef.current = open;
+     if (!open) {
+       hasInitializedForOpenRef.current = false;
+       return;
+     }
 
-     if (!open || !isClient) return;
+     if (!isClient) return;
 
-     if (!justOpened) return;
+     if (hasInitializedForOpenRef.current) return;
+     hasInitializedForOpenRef.current = true;
 
      try {
        dispatch(fetchPublicPaymentMethods() as any);
@@ -371,9 +390,10 @@ const PaymentMethodsModal: React.FC<PaymentMethodsModalProps> = ({
   }, [open, providerToPrefill, publicMethodsLoading]);
 
   // Auto-select first provider for the active tab when modal opens.
+  // Prefer Salaam Somali Bank when available (matches express deposit/withdraw defaults).
   useEffect(() => {
     if (!open || providerToPrefill || publicMethodsLoading || provider) return;
-    const first = providers[0];
+    const first = pickSalaamFirst(providers);
     if (!first) return;
     const methodType = String(first.payment_method_type || "");
     if (methodType) {
@@ -857,9 +877,11 @@ const PaymentMethodsModal: React.FC<PaymentMethodsModalProps> = ({
                          );
                          setProvider(String(firstForTab?.provider_name || firstForTab?.provider || ""));
                        } else {
-                         const firstForTab = processedProviders.find((p: any) =>
+                         const matchingForTab = processedProviders.filter((p: any) =>
                            isMethodInTab(String(p?.payment_method_type || ""), nextTab)
                          );
+                         // Prefer Salaam Somali Bank when available (matches express deposit/withdraw defaults).
+                         const firstForTab = pickSalaamFirst(matchingForTab);
                          setMethod(firstForTab?.payment_method_type || "");
                          setProvider(String(firstForTab?.provider_name || firstForTab?.provider || ""));
                        }
