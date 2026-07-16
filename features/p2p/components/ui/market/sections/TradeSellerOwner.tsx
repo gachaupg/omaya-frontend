@@ -477,7 +477,7 @@ const FinalSell: React.FC<FinalSellProps> = ({ orderData }) => {
                 <div className="text-[10px] sm:text-xs text-gray-500 dark:text-[#788099] mt-0.5 sm:mt-0">
                   <span className="whitespace-nowrap">{singleOrder?.user_total_buy_orders || 120} Orders</span>{" "}
                   <span className="hidden sm:inline">|</span>{" "}
-                  <span className="whitespace-nowrap">{singleOrder?.completion_rate || "99.20"}% Completion</span>
+                  <span className="whitespace-nowrap">{Number(singleOrder?.completion_rate ?? 99.2).toFixed(2)}% Completion</span>
                 </div>
                 <div className="text-[10px] sm:text-xs text-[#1D8751] mt-0.5 sm:mt-0">
                   <span className="whitespace-nowrap">Rating: 99%</span>{" "}

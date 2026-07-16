@@ -43,7 +43,8 @@ export function mapOrderToMarketRow(order: unknown): MarketRow | null {
       Number(raw.user_total_buy_orders || raw.user_total_sell_orders || 0) ||
       0,
     advertiser_photo: String(raw.advertiser_photo || ""),
-    completion: `${(parseFloat(String(raw.completion_rate || 0)) || 0) * 100}%`,
+    // completion_rate is already a percentage value from the API (e.g. 15.64), not a fraction.
+    completion: `${(parseFloat(String(raw.completion_rate || 0)) || 0).toFixed(2)}%`,
     exchange_rate: `${(parseFloat(String(raw.exchange_rate || 0)) * 100).toFixed(0)}`,
     completion_time: formatDurationForDisplay(
       String(raw.completion_time || "00:00:00")

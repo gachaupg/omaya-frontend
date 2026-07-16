@@ -596,8 +596,6 @@ export const Table = forwardRef<TableExportRef, TableProps>(({
       </div>
     );
   }
-
-
   return (
     <>
       <div className="mt-1">

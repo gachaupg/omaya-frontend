@@ -633,7 +633,7 @@ function FinalBuy({ orderData }: FinalBuyProps) {
               <div>
                 <div className="text-sm text-gray-500 dark:text-[#788099]">
                   {singleOrder?.user_total_buy_orders || 120} Orders |{" "}
-                  {singleOrder?.completion_rate || "99.20"}% Completion
+                  {Number(singleOrder?.completion_rate ?? 99.2).toFixed(2)}% Completion
                 </div>
                 <div className="text-sm text-[#1D8751]">
                   Rating: 99% | Rate: {commissionFromUrl || singleOrder?.commission_rate}
