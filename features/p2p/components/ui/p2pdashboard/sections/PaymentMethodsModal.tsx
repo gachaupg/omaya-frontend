@@ -26,6 +26,7 @@ import {
   pickProviderForFilter,
 } from "@/features/p2p/utils/paymentAutoSend";
 import { getPaymentMethodDisplayTitle, getPaymentMethodDisplaySubtitle, getPaymentMethodSelectLabels, stripPaymentMethodTypeSuffix } from "@/lib/utils/paymentProviderLabel";
+import { normalizePublicPaymentMethods } from "@/features/express/utils/normalizePublicPaymentMethods";
 const extractCryptoNetworkForValidation = (source: string): string => {
   const s = String(source || "").toLowerCase();
   // Return a short network token that `validateAddress()` can normalize.
@@ -246,75 +247,26 @@ const PaymentMethodsModal: React.FC<PaymentMethodsModalProps> = ({
     }
   }, [autoSendPreviouslyEnabled, allowAutoSend]);
 
-  // Process public payment methods to extract method types and providers
+  // Process public payment methods to extract method types and providers.
+  // Uses the same normalizer as home deposit/withdraw/MoneyX so this modal
+  // stays in sync with the actual public payment-methods API shape.
   const processedProviders = React.useMemo(() => {
-    if (!publicPaymentMethods) return [];
-
-    const payload = publicPaymentMethods as any;
-    const data = payload?.data || payload;
-    const listCandidates = [
-      data?.providers,
-      data?.payment_providers,
-      data?.payment_methods,
-      data?.results,
-      payload?.providers,
-      payload?.payment_providers,
-      payload?.payment_methods,
-      payload?.results,
-      Array.isArray(data) ? data : null,
-      Array.isArray(payload) ? payload : null,
-    ].filter(Array.isArray) as any[][];
-
-    const sourceList = listCandidates.find((list) => list.length > 0) || [];
-    const flattened: any[] = [];
-
-    sourceList.forEach((item: any) => {
-      // Shape A: method container with nested providers
-      if (Array.isArray(item?.providers)) {
-        const methodType =
-          item?.method_name ||
-          item?.method_display ||
-          item?.payment_method_type ||
-          item?.method?.method_name ||
-          item?.method?.method_display ||
-          item?.method ||
-          "Bank";
-
-        item.providers.forEach((provider: any) => {
-          flattened.push({
-            provider_name: provider?.provider_name || provider?.name || provider?.provider || "",
-            provider: provider?.provider || provider?.provider_name || provider?.name || "",
-            short_name: provider?.short_name || "",
-            payment_method_type: methodType,
-            logo: provider?.logo || provider?.provider_logo || provider?.logo_url,
-            wallet_address: provider?.payment_details?.[0]?.wallet_address || provider?.wallet_address || null,
-          });
-        });
-        return;
-      }
-
-      // Shape B: provider item already flat / semi-flat
-      const methodType =
-        item?.payment_method_type ||
-        item?.payment_method_name ||
-        item?.method?.method_name ||
-        item?.method?.method_display ||
-        item?.method ||
-        "Bank";
-
-      flattened.push({
+    const normalized = normalizePublicPaymentMethods(publicPaymentMethods);
+    return normalized
+      .map((item: any) => ({
+        ...item,
         provider_name: item?.provider_name || item?.name || item?.provider || "",
         provider: item?.provider || item?.provider_name || item?.name || "",
         short_name: item?.short_name || "",
-        payment_method_type: methodType,
+        payment_method_type:
+          item?.payment_method_type || item?.payment_method || "Bank",
         logo: item?.logo || item?.provider_logo || item?.logo_url,
-        wallet_address: item?.payment_details?.[0]?.wallet_address || item?.wallet_address || null,
-      });
-    });
-
-    return flattened.filter(
-      (p: any) => Boolean((p?.provider_name || "").trim())
-    );
+        wallet_address:
+          item?.payment_details?.[0]?.wallet_address ||
+          item?.wallet_address ||
+          null,
+      }))
+      .filter((p: any) => Boolean((p?.provider_name || "").trim()));
   }, [publicPaymentMethods]);
 
   const methodTypes = Array.from(
@@ -953,11 +905,14 @@ const PaymentMethodsModal: React.FC<PaymentMethodsModalProps> = ({
                          methodTab === "crypto"
                            ? undefined
                            : subtitle,
-                       logo: getHighResPaymentLogo(
-                         p.logo || p.provider_logo || undefined,
-                         undefined,
-                         PAYMENT_LOGO_SIZE
-                       ),
+                       logo:
+                         methodTab === "crypto"
+                           ? getHighResAssetIcon({ ticker: "usdt" }, PAYMENT_LOGO_SIZE)
+                           : getHighResPaymentLogo(
+                               p.logo || p.provider_logo || undefined,
+                               undefined,
+                               PAYMENT_LOGO_SIZE
+                             ),
                        disabled: !p.provider_name,
                      };
                      }),
@@ -991,11 +946,15 @@ const PaymentMethodsModal: React.FC<PaymentMethodsModalProps> = ({
                        return (
                          <>
                           <img
-                            src={getHighResPaymentLogo(
-                              selectedProvider?.logo,
-                              undefined,
-                              selectedProviderLogoSize
-                            )}
+                            src={
+                              methodTab === "crypto"
+                                ? getHighResAssetIcon({ ticker: "usdt" }, selectedProviderLogoSize)
+                                : getHighResPaymentLogo(
+                                    selectedProvider?.logo,
+                                    undefined,
+                                    selectedProviderLogoSize
+                                  )
+                            }
                             alt={`${provider} logo`}
                             className="w-8 h-8 flex-shrink-0 rounded-full object-cover"
                             onError={(e) => {
