@@ -25,7 +25,7 @@ import {
   findAutoSendPaymentDetail,
   pickProviderForFilter,
 } from "@/features/p2p/utils/paymentAutoSend";
-import { getPaymentMethodDisplayTitle, getPaymentMethodDisplaySubtitle, getPaymentMethodSelectLabels, stripPaymentMethodTypeSuffix } from "@/lib/utils/paymentProviderLabel";
+import { getPaymentMethodDisplayTitle, getPaymentMethodDisplaySubtitle, getPaymentMethodSelectLabels, getCleanPaymentProviderLabel, stripPaymentMethodTypeSuffix } from "@/lib/utils/paymentProviderLabel";
 import { normalizePublicPaymentMethods } from "@/features/express/utils/normalizePublicPaymentMethods";
 /** Match express deposit/withdraw defaults: prefer Salaam Somali Bank when available. */
 const isSalaamProvider = (provider: any): boolean =>
@@ -37,6 +37,88 @@ const isSalaamProvider = (provider: any): boolean =>
 
 const pickSalaamFirst = <T extends Record<string, any>>(list: T[]): T | undefined =>
   list.find(isSalaamProvider) ?? list[0];
+
+const CRYPTO_BEP20_NETWORK_LABEL = "BNB Smart Chain (BEP20)";
+
+/** Collapse providers that share the same display name + method (API may return duplicate rows). */
+const dedupeProvidersByDisplayKey = (list: any[]): any[] => {
+  const seen = new Map<string, any>();
+  for (const p of list) {
+    const label =
+      getCleanPaymentProviderLabel(p) ||
+      String(p?.provider_name || p?.provider || "").trim();
+    const method = String(
+      p?.payment_method_type || p?.payment_method || ""
+    )
+      .trim()
+      .toLowerCase();
+    const key = `${label.toLowerCase()}::${method}`;
+    if (!label || seen.has(key)) continue;
+    seen.set(key, p);
+  }
+  return Array.from(seen.values());
+};
+
+const pickCryptoNetworkProvider = (list: any[]): any | null => {
+  const crypto = list.filter((p) => {
+    const method = String(p?.payment_method_type || p?.payment_method || "").toLowerCase();
+    return method.includes("crypto");
+  });
+  if (crypto.length === 0) return null;
+
+  const bep20 = crypto.find((p) => {
+    const blob = [
+      p?.provider_name,
+      p?.provider,
+      p?.payment_method_type,
+      p?.payment_method,
+      p?.payment_method_name,
+    ]
+      .filter(Boolean)
+      .join(" ")
+      .toLowerCase();
+    return /bep20|bsc|bnb smart chain|binance smart chain/.test(blob);
+  });
+
+  return bep20 ?? crypto[0];
+};
+
+const MOBILE_MONEY_KEYWORDS = [
+  "mobile",
+  "mpesa",
+  "m-pesa",
+  "mtn",
+  "airtel",
+  "safaricom",
+  "vodafone",
+  "telesom",
+  "hormuud",
+  "golis",
+  "evc",
+  "zaad",
+  "sahal",
+  "edahab",
+  "e-dahab",
+  "marchant",
+  "merchant",
+];
+
+const isMobilePaymentProvider = (payment: any): boolean => {
+  if (!payment) return false;
+  const fields = [
+    payment?.provider_name,
+    payment?.provider,
+    payment?.payment_method,
+    payment?.payment_method_type,
+    payment?.payment_method_name,
+    payment?.method,
+    payment?.method_display,
+  ]
+    .filter(Boolean)
+    .join(" ")
+    .toLowerCase();
+  return MOBILE_MONEY_KEYWORDS.some((keyword) => fields.includes(keyword));
+};
 
 const extractCryptoNetworkForValidation = (source: string): string => {
   const s = String(source || "").toLowerCase();
@@ -286,6 +368,7 @@ const PaymentMethodsModal: React.FC<PaymentMethodsModalProps> = ({
           null,
       }))
       .filter((p: any) => Boolean((p?.provider_name || "").trim()));
+    return dedupeProvidersByDisplayKey(mapped);
   }, [publicPaymentMethods]);
 
   const methodTypes = Array.from(
@@ -346,26 +429,34 @@ const PaymentMethodsModal: React.FC<PaymentMethodsModalProps> = ({
     return pickProviderForFilter(processedProviders, filterByProviderName);
   }, [filterByProviderName, processedProviders]);
 
-  /** Matched provider first in dropdown, then the rest */
+  /** Matched provider first in dropdown, then the rest (deduped). */
   const providersForDropdown = React.useMemo(() => {
-    if (!providerToPrefill || providers.length <= 1) return providers;
+    const base =
+      methodTab === "crypto"
+        ? (() => {
+            const primary = pickCryptoNetworkProvider(processedProviders);
+            return primary ? [primary] : [];
+          })()
+        : dedupeProvidersByDisplayKey(providers);
+
+    if (!providerToPrefill || base.length <= 1) return base;
     const prefillName = String(
       providerToPrefill.provider_name || providerToPrefill.provider || ""
     ).trim();
-    if (!prefillName) return providers;
-    const matchIndex = providers.findIndex(
+    if (!prefillName) return base;
+    const matchIndex = base.findIndex(
       (p: any) =>
         String(p.provider_name || "").trim() === prefillName ||
         String(p.provider || "").trim() === prefillName
     );
-    if (matchIndex <= 0) return providers;
-    const matched = providers[matchIndex];
+    if (matchIndex <= 0) return base;
+    const matched = base[matchIndex];
     return [
       matched,
-      ...providers.slice(0, matchIndex),
-      ...providers.slice(matchIndex + 1),
+      ...base.slice(0, matchIndex),
+      ...base.slice(matchIndex + 1),
     ];
-  }, [providers, providerToPrefill]);
+  }, [providers, providerToPrefill, methodTab, processedProviders]);
   const maskedUserEmail = React.useMemo(
     () => maskEmailForOtp(String(user?.email || "")),
     [user?.email]
@@ -414,8 +505,21 @@ const PaymentMethodsModal: React.FC<PaymentMethodsModalProps> = ({
   // Use the selected tab as source of truth (method string may lag/omit "crypto").
   const isCryptoMethod = methodTab === "crypto" || normalizedMethod.includes("crypto");
   const isForexMethod = normalizedMethod.includes("forex");
+
+  const selectedBankProvider = React.useMemo(() => {
+    if (methodTab === "forex" || methodTab === "crypto" || !provider) return null;
+    return (
+      providers.find((p: any) => p.provider_name === provider) ??
+      providers.find((p: any) => p.provider === provider) ??
+      null
+    );
+  }, [methodTab, provider, providers]);
+
   const isMobileMethod =
-    normalizedMethod.includes("mobile") || normalizedMethod.includes("money") || normalizedMethod.includes("mpesa");
+    isMobilePaymentProvider(selectedBankProvider) ||
+    normalizedMethod.includes("mobile") ||
+    normalizedMethod.includes("money") ||
+    normalizedMethod.includes("mpesa");
   // Treat tab as the source of truth for the account field type:
   // - Crypto tab => wallet_address
   // - Bank tab => account_number / mobile number
@@ -880,6 +984,18 @@ const PaymentMethodsModal: React.FC<PaymentMethodsModalProps> = ({
                          const matchingForTab = processedProviders.filter((p: any) =>
                            isMethodInTab(String(p?.payment_method_type || ""), nextTab)
                          );
+                         if (nextTab === "crypto") {
+                           const cryptoProvider = pickCryptoNetworkProvider(processedProviders);
+                           setMethod(cryptoProvider?.payment_method_type || "Crypto Wallet");
+                           setProvider(
+                             String(
+                               cryptoProvider?.provider_name ||
+                                 cryptoProvider?.provider ||
+                                 ""
+                             )
+                           );
+                           return;
+                         }
                          // Prefer Salaam Somali Bank when available (matches express deposit/withdraw defaults).
                          const firstForTab = pickSalaamFirst(matchingForTab);
                          setMethod(firstForTab?.payment_method_type || "");
@@ -911,26 +1027,32 @@ const PaymentMethodsModal: React.FC<PaymentMethodsModalProps> = ({
                <label className="block text-gray-900 dark:text-white text-sm mb-2">
                 {methodTab === "crypto" ? "Network" : "Provider"}
                </label>
+               {methodTab === "crypto" ? (
+                 <div className="flex items-center gap-3 w-full p-3 rounded-[14px] bg-white dark:bg-[var(--card-color)] border border-[#E3E6F0] dark:border-[#35353E]">
+                   <img
+                     src={getHighResAssetIcon({ ticker: "usdt" }, PAYMENT_LOGO_SIZE)}
+                     alt="USDT"
+                     className="w-8 h-8 flex-shrink-0 rounded-full object-cover"
+                     onError={(e) => {
+                       e.currentTarget.src = "/images/tether.svg";
+                     }}
+                   />
+                   <span className="text-sm font-medium text-gray-900 dark:text-white">
+                     {CRYPTO_BEP20_NETWORK_LABEL}
+                   </span>
+                 </div>
+               ) : (
                <div className="relative">
                  <CustomSelect
                    options={[
-                     { value: "", label: methodTab === "crypto" ? "Select Network" : "Select Provider" },
+                     { value: "", label: "Select Provider" },
                      ...providersForDropdown.map((p: any) => {
                        const { label, subtitle } = getPaymentMethodSelectLabels(p);
                        return {
                        value: String(p.provider_name || ""),
-                       label:
-                         methodTab === "crypto"
-                           ? "BNB Smart Chain (BEP20)"
-                           : label || "Unknown",
-                       subtitle:
-                         methodTab === "crypto"
-                           ? undefined
-                           : subtitle,
-                       logo:
-                         methodTab === "crypto"
-                           ? getHighResAssetIcon({ ticker: "usdt" }, PAYMENT_LOGO_SIZE)
-                           : getHighResPaymentLogo(
+                       label: label || "Unknown",
+                       subtitle,
+                       logo: getHighResPaymentLogo(
                                p.logo || p.provider_logo || undefined,
                                undefined,
                                PAYMENT_LOGO_SIZE
@@ -940,13 +1062,22 @@ const PaymentMethodsModal: React.FC<PaymentMethodsModalProps> = ({
                      }),
                    ].filter((opt: any) => opt.value !== null)}
                    value={provider}
-                   onChange={(value) => setProvider(String(value || ""))}
+                   onChange={(value) => {
+                     const nextProvider = String(value || "");
+                     setProvider(nextProvider);
+                     const selected = providers.find(
+                       (p: any) => p.provider_name === nextProvider
+                     );
+                     if (selected?.payment_method_type) {
+                       setMethod(String(selected.payment_method_type));
+                     }
+                   }}
                    disabled={publicMethodsLoading || providers.length === 0}
                    searchable={true}
-                   emptyText={methodTab === "crypto" ? "No networks found" : "No providers found"}
+                   emptyText="No providers found"
                    loading={publicMethodsLoading}
-                   loadingText={methodTab === "crypto" ? "Loading networks..." : "Loading providers..."}
-                   dropdownTitle={methodTab === "crypto" ? "Select Network" : "Select Provider"}
+                   loadingText="Loading providers..."
+                   dropdownTitle="Select Provider"
                    sizeMode="card"
                    logoSize={PAYMENT_LOGO_SIZE}
                    logoClassName="rounded-full object-cover"
@@ -955,28 +1086,23 @@ const PaymentMethodsModal: React.FC<PaymentMethodsModalProps> = ({
                    largeDropdownItems={true}
                  />
                </div>
+               )}
                
-               {/* Provider Preview with Logo */}
-              {provider && (
+               {/* Provider Preview with Logo — bank/mobile only (crypto uses fixed network above) */}
+              {provider && methodTab !== "crypto" && (
                  <div className="mt-2 p-3 rounded-2xl bg-[#F8FAFC] dark:bg-[#171C2A] border border-[#E3E6F0] dark:border-[#2A2F40]">
                    <div className="flex items-center gap-3">
                      {(() => {
-                       const selectedProvider = providers.find(
-                         (p: any) => p.provider_name === provider
-                       );
+                       const selectedProvider = selectedBankProvider;
                        const selectedProviderLogoSize = 32;
                        return (
                          <>
                           <img
-                            src={
-                              methodTab === "crypto"
-                                ? getHighResAssetIcon({ ticker: "usdt" }, selectedProviderLogoSize)
-                                : getHighResPaymentLogo(
+                            src={getHighResPaymentLogo(
                                     selectedProvider?.logo,
                                     undefined,
                                     selectedProviderLogoSize
-                                  )
-                            }
+                                  )}
                             alt={`${provider} logo`}
                             className="w-8 h-8 flex-shrink-0 rounded-full object-cover"
                             onError={(e) => {
@@ -985,24 +1111,15 @@ const PaymentMethodsModal: React.FC<PaymentMethodsModalProps> = ({
                           />
                            <div className="min-w-0">
                              <p className="text-sm font-semibold text-gray-900 dark:text-white truncate">
-                               {methodTab === "crypto"
-                                 ? "BNB Smart Chain (BEP20)"
-                                 : getPaymentMethodDisplayTitle(selectedProvider) ||
+                               {getPaymentMethodDisplayTitle(selectedProvider) ||
                                    stripPaymentMethodTypeSuffix(provider)}
                              </p>
-                             {methodTab !== "crypto" &&
-                               getPaymentMethodDisplaySubtitle(selectedProvider) && (
+                             {getPaymentMethodDisplaySubtitle(selectedProvider) && (
                                <p className="text-xs text-[#788099] mt-0.5 truncate">
                                  {getPaymentMethodDisplaySubtitle(selectedProvider)}
                                </p>
                              )}
-                             {methodTab === "crypto" && (
-                             <p className="text-xs text-[#788099] mt-0.5">
-                               Selected Network
-                             </p>
-                             )}
-                             {methodTab !== "crypto" &&
-                               !getPaymentMethodDisplaySubtitle(selectedProvider) && (
+                             {!getPaymentMethodDisplaySubtitle(selectedProvider) && (
                              <p className="text-xs text-[#788099] mt-0.5">
                                Selected Provider
                              </p>
