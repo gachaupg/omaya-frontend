@@ -1,8 +1,8 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
-import { getPublicPaymentMethods } from "@/features/p2p/api";
-import { normalizePublicPaymentMethods } from "@/features/express/utils/normalizePublicPaymentMethods";
+import { getMoneyXPaymentProviders } from "@/features/moneyX/api";
+import { normalizeMoneyXPaymentProviders } from "@/features/moneyX/utils/normalizeMoneyXPaymentProviders";
 import {
   getMoneyXProviderId,
   matchMoneyXMethodById,
@@ -12,19 +12,16 @@ import {
 export type MoneyXPaymentFlow = "deposit" | "withdrawal";
 
 /**
- * Money X only — mirrors mobile `money_x_page.dart`:
- * - `_allPaymentMethods`: full unscoped cache
- * - `_fromPaymentMethods`: full list OR scoped when To changes
- * - `_toPaymentMethods`: scoped by From provider id
+ * Money X payment provider lists:
+ * - Initial load: GET /api/moneyx/payment-providers/ (sender dropdown)
+ * - After sender selected: GET /api/moneyx/payment-providers/?sender_provider_id=<uuid> (receiver dropdown)
  */
 export function useMoneyXPaymentMethodLists({
-  flow = "deposit",
+  flow: _flow = "deposit",
 }: { flow?: MoneyXPaymentFlow } = {}) {
   const allFromMethodsRef = useRef<any[]>([]);
   const lastToFetchForFromRef = useRef<string | null>(null);
-  const lastFromFetchForToRef = useRef<string | null>(null);
   const toFetchSeq = useRef(0);
-  const fromScopedFetchSeq = useRef(0);
 
   const [fromMethods, setFromMethods] = useState<any[]>([]);
   const [toMethods, setToMethods] = useState<any[]>([]);
@@ -39,10 +36,10 @@ export function useMoneyXPaymentMethodLists({
     setFromLoading(true);
     setFromError(null);
 
-    getPublicPaymentMethods()
+    getMoneyXPaymentProviders()
       .then((data) => {
         if (cancelled) return;
-        const normalized = normalizePublicPaymentMethods(data);
+        const normalized = normalizeMoneyXPaymentProviders(data);
         allFromMethodsRef.current = normalized;
         setFromMethods(normalized);
         setAllFromReady(true);
@@ -63,11 +60,10 @@ export function useMoneyXPaymentMethodLists({
   }, []);
 
   const restoreFromFullList = useCallback(() => {
-    lastFromFetchForToRef.current = null;
     setFromMethods(allFromMethodsRef.current);
   }, []);
 
-  /** To list: ?flow=deposit&selected_provider_id=<fromProviderId> */
+  /** Receiver list: ?sender_provider_id=<fromProviderId> */
   const refreshToForFrom = useCallback(
     async (
       fromPayment: any | null,
@@ -90,13 +86,10 @@ export function useMoneyXPaymentMethodLists({
       setToError(null);
 
       try {
-        const data = await getPublicPaymentMethods({
-          flow,
-          selected_provider_id: fromId,
-        });
+        const data = await getMoneyXPaymentProviders(fromId);
         if (seq !== toFetchSeq.current) return currentToPayment;
 
-        const scoped = normalizePublicPaymentMethods(data);
+        const scoped = normalizeMoneyXPaymentProviders(data);
         lastToFetchForFromRef.current = fromId;
 
         const previousToId = getMoneyXProviderId(currentToPayment);
@@ -117,56 +110,28 @@ export function useMoneyXPaymentMethodLists({
         if (seq === toFetchSeq.current) setToLoading(false);
       }
     },
-    [flow]
+    []
   );
 
-  /** From list when To changes: ?flow=deposit&selected_provider_id=<toProviderId> */
+  /** Sender list stays the full unscoped list; only reconcile selection locally. */
   const refreshFromForTo = useCallback(
     async (
       toPayment: any | null,
       currentFromPayment: any | null,
-      options?: { force?: boolean }
+      _options?: { force?: boolean }
     ): Promise<any | null> => {
       const toId = getMoneyXProviderId(toPayment);
       if (!toId) return currentFromPayment;
 
-      const force = options?.force ?? false;
-      if (!force && toId === lastFromFetchForToRef.current) {
-        return currentFromPayment;
+      const previousFromId = getMoneyXProviderId(currentFromPayment);
+      let matchedFrom = matchMoneyXMethodById(fromMethods, previousFromId);
+      if (matchedFrom && getMoneyXProviderId(matchedFrom) === toId) {
+        matchedFrom = null;
       }
-
-      const seq = ++fromScopedFetchSeq.current;
-      setFromLoading(true);
-      setFromError(null);
-
-      try {
-        const data = await getPublicPaymentMethods({
-          flow,
-          selected_provider_id: toId,
-        });
-        if (seq !== fromScopedFetchSeq.current) return currentFromPayment;
-
-        const scoped = normalizePublicPaymentMethods(data);
-        lastFromFetchForToRef.current = toId;
-
-        const previousFromId = getMoneyXProviderId(currentFromPayment);
-        let matchedFrom = matchMoneyXMethodById(scoped, previousFromId);
-        if (matchedFrom && getMoneyXProviderId(matchedFrom) === toId) {
-          matchedFrom = null;
-        }
-        matchedFrom ??= pickOtherMoneyXMethod(scoped, toId);
-
-        setFromMethods(scoped);
-        return matchedFrom;
-      } catch (err: any) {
-        if (seq !== fromScopedFetchSeq.current) return currentFromPayment;
-        setFromError(err?.message || "Failed to load payment methods");
-        return currentFromPayment;
-      } finally {
-        if (seq === fromScopedFetchSeq.current) setFromLoading(false);
-      }
+      matchedFrom ??= pickOtherMoneyXMethod(fromMethods, toId);
+      return matchedFrom;
     },
-    [flow]
+    [fromMethods]
   );
 
   const matchFromInAll = useCallback((fromPayment: any | null) => {

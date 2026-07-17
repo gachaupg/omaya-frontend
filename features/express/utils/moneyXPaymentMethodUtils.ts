@@ -1,9 +1,9 @@
 export function getMoneyXProviderId(method: any): string | null {
   if (!method) return null;
-  const providerId = String(method?.provider_id ?? method?.providerId ?? "").trim();
-  if (providerId) return providerId;
-  const id = String(method?.id ?? "").trim();
-  return id || null;
+  const providerId = String(
+    method?.provider_id ?? method?.providerId ?? method?.id ?? ""
+  ).trim();
+  return providerId || null;
 }
 
 export function matchMoneyXMethodById(

@@ -16,10 +16,10 @@ import {
 } from "@/features/p2p/slices/paymentMethodsSlice";
 import {
   createMoneyXTransaction,
-  updateMoneyXTransaction,
   fetchMoneyXCommission,
 } from "@/features/express/home/components/moneyX/slices/moneyXSlice";
 import { clearMoneyXError } from "@/features/moneyX/slices/moneyXSlice";
+import { buildMoneyXTransactionPayload } from "@/features/moneyX/utils/buildMoneyXTransactionPayload";
 import { useTheme } from "@/context/theme";
 import { showToast } from "@/lib/utils/toast";
 import { normalizeExpressApiErrorMessage } from "@/lib/utils/expressMinAmount";
@@ -195,8 +195,6 @@ const MoneyXRates = ({
   const [bankAddressError, setBankAddressError] = useState<string | null>(null);
   const [isAddressConfirmed, setIsAddressConfirmed] = useState(false);
   const [isUpdatingTransaction, setIsUpdatingTransaction] = useState(false);
-  const [moneyXTransactionResult, setMoneyXTransactionResult] =
-    useState<any>(null);
   const [showExchanging, setShowExchanging] = useState(false);
   const [transactionData, setTransactionData] = useState<any>(null);
   const [apiCommission, setApiCommission] = useState<number | null>(null);
@@ -869,80 +867,17 @@ const MoneyXRates = ({
     }
 
     setActionError(null);
-    setIsSubmitting(true);
+    setIsFirstCardSubmitted(true);
 
-    try {
-      // Extract provider IDs from selected payment methods
-      const senderProviderId =
-        selectedFromPaymentDetail?.id ||
-        selectedFromPaymentDetail?.provider_id ||
-        selectedFromPaymentDetail?.providerId;
-
-      const receiverProviderId =
-        selectedToPaymentDetail?.id ||
-        selectedToPaymentDetail?.provider_id ||
-        selectedToPaymentDetail?.providerId;
-
-      if (!senderProviderId || !receiverProviderId) {
-        throw new Error("Provider IDs not found in payment methods");
+    // Scroll to the bank account address section
+    setTimeout(() => {
+      if (paymentDetailsRef.current) {
+        paymentDetailsRef.current.scrollIntoView({
+          behavior: "smooth",
+          block: "start",
+        });
       }
-
-      const recipientName =
-        (user as any)?.full_name ||
-        [((user as any)?.first_name || "").trim(), ((user as any)?.last_name || "").trim()]
-          .filter(Boolean)
-          .join(" ")
-          .trim() ||
-        (user as any)?.name ||
-        (user as any)?.username ||
-        (user as any)?.email ||
-        "Unknown User";
-
-      // Create MoneyX transaction
-      const result = await dispatch(
-        createMoneyXTransaction({
-          amount: payAmount.toFixed(2),
-          sender_provider: senderProviderId,
-          receiver_provider: receiverProviderId,
-          recipient_name: recipientName,
-        })
-      ).unwrap();
-
-      // Store the transaction result
-      setMoneyXTransactionResult(result);
-      setIsFirstCardSubmitted(true);
-
-      // Scroll to the bank account address section
-      setTimeout(() => {
-        if (paymentDetailsRef.current) {
-          paymentDetailsRef.current.scrollIntoView({
-            behavior: "smooth",
-            block: "start",
-          });
-        }
-      }, 100);
-    } catch (error: any) {
-      console.error("Transfer error:", error);
-      const scamMsg = resolveScamFlagDisplayError(
-        error,
-        error?.response?.data,
-        typeof error === "string" ? error : error?.message
-      );
-      if (scamMsg) {
-        setActionError(scamMsg);
-        setValidationErrors([scamMsg]);
-        return;
-      }
-      const errorMessage = normalizeExpressApiErrorMessage(
-        error?.message || error || "An error occurred. Please try again.",
-        error?.response?.data,
-        error
-      );
-      setActionError(errorMessage);
-      setValidationErrors([errorMessage]);
-    } finally {
-      setIsSubmitting(false);
-    }
+    }, 100);
   };
 
   // Handle bank account address update and proceed to exchanging
@@ -975,25 +910,29 @@ const MoneyXRates = ({
       return;
     }
 
-    if (!moneyXTransactionResult?.moneyx_transaction_id) {
-      setActionError(
-        "Transaction not found. Please submit the transfer form first."
-      );
-      return;
-    }
-
     setIsUpdatingTransaction(true);
 
     try {
-      // Update MoneyX transaction with account number
-      const result = await dispatch(
-        updateMoneyXTransaction({
-          transactionId: moneyXTransactionResult.moneyx_transaction_id,
-          payload: {
-            recipient_account_number: bankAccountAddress.trim(),
-          },
-        })
-      ).unwrap();
+      const recipientName =
+        (user as any)?.full_name ||
+        [((user as any)?.first_name || "").trim(), ((user as any)?.last_name || "").trim()]
+          .filter(Boolean)
+          .join(" ")
+          .trim() ||
+        (user as any)?.name ||
+        (user as any)?.username ||
+        (user as any)?.email ||
+        "Unknown User";
+
+      const payload = buildMoneyXTransactionPayload({
+        amount: payAmount,
+        senderProvider: selectedFromPaymentDetail,
+        receiverProvider: selectedToPaymentDetail,
+        recipientName,
+        recipientAccountNumber: bankAccountAddress,
+      });
+
+      const result = await dispatch(createMoneyXTransaction(payload)).unwrap();
 
       showToast.success("Transaction is successful", "Account updated successfully.");
 
@@ -1088,7 +1027,6 @@ const MoneyXRates = ({
             setShowExchanging(false);
             setTransactionData(null);
             setIsFirstCardSubmitted(false);
-            setMoneyXTransactionResult(null);
             setBankAccountAddress("");
             setIsAddressConfirmed(false);
             // Clear localStorage when going back
