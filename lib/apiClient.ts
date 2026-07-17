@@ -69,6 +69,7 @@ const ENDPOINT_SPECIFIC_CONFIG: Record<string, Partial<ApiClientConfig>> = {
   "/api/changenow/create/": { timeout: 30000, retries: 0 },
   // MoneyX create - no retries (IntegrityError / validation must surface once)
   "/api/moneyx/transactions/": { timeout: 30000, retries: 0 },
+  "/api/moneyx/payment-providers/": { timeout: 15000, retries: 1 },
   // User payment details – avoid hanging when API is slow; allow navigation
   "/payments/user-payment-details": { timeout: 15000, retries: 1 },
   // Swap/asset selection – fail fast so user can click elsewhere

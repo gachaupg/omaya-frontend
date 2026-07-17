@@ -10,12 +10,12 @@ import {
 } from "@/features/p2p/slices/paymentMethodsSlice";
 import {
   createMoneyXTransaction,
-  updateMoneyXTransaction,
 } from "../slices/moneyXSlice";
 import {
   fetchMoneyXCommission,
   clearMoneyXError,
 } from "@/features/moneyX/slices/moneyXSlice";
+import { buildMoneyXTransactionPayload } from "@/features/moneyX/utils/buildMoneyXTransactionPayload";
 import { useTheme } from "@/context/theme";
 import CustomSelect from "@/components/ui/HomeCommonSelect";
 import { showToast } from "@/lib/utils/toast";
@@ -1680,51 +1680,21 @@ export default function TransferForm({ isHomePage = false, onTransfer, commissio
                 setIsUpdatingTransaction(true);
 
                 try {
-                  // Always create a fresh transaction for a new submit flow.
-                  // Do not reuse stale Redux transaction IDs from previous runs.
-                  let transactionId: string | undefined;
+                  const recipientName =
+                    user?.first_name && user?.last_name
+                      ? `${user.first_name} ${user.last_name}`.trim()
+                      : user?.first_name || user?.last_name || "";
 
-                  // Create transaction on last submit if not already created (post happens here, not on first button)
-                  if (!transactionId) {
-                    const senderProviderId =
-                      selectedFromPaymentDetail?.id ||
-                      selectedFromPaymentDetail?.provider_id ||
-                      selectedFromPaymentDetail?.providerId;
-                    const receiverProviderId =
-                      selectedToPaymentDetail?.id ||
-                      selectedToPaymentDetail?.provider_id ||
-                      selectedToPaymentDetail?.providerId;
-                    if (!senderProviderId || !receiverProviderId) {
-                      setActionError("Provider IDs not found in payment methods");
-                      return;
-                    }
-                    const recipientName =
-                      user?.first_name && user?.last_name
-                        ? `${user.first_name} ${user.last_name}`.trim()
-                        : user?.first_name || user?.last_name || "";
-                    const createResult = await dispatch(
-                      createMoneyXTransaction({
-                        amount: payAmount.toFixed(2),
-                        sender_provider: senderProviderId,
-                        receiver_provider: receiverProviderId,
-                        recipient_name: recipientName || "User",
-                      })
-                    ).unwrap();
-                    transactionId = createResult?.moneyx_transaction_id;
-                    if (!transactionId) {
-                      setActionError("Failed to create transaction");
-                      return;
-                    }
-                  }
+                  const payload = buildMoneyXTransactionPayload({
+                    amount: payAmount,
+                    senderProvider: selectedFromPaymentDetail,
+                    receiverProvider: selectedToPaymentDetail,
+                    recipientName: recipientName || "User",
+                    recipientAccountNumber: bankAccountAddress,
+                  });
 
-                  // Update MoneyX transaction with account number
                   const result = await dispatch(
-                    updateMoneyXTransaction({
-                      transactionId,
-                      payload: {
-                        recipient_account_number: bankAccountAddress.trim(),
-                      },
-                    })
+                    createMoneyXTransaction(payload)
                   ).unwrap();
 
                   showToast.success("Transaction is successful", "Account updated successfully.");

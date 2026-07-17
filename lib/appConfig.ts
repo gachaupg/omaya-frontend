@@ -257,6 +257,7 @@ export const API_CONFIG = {
     },
   },
   MONEYX: {
+    PAYMENT_PROVIDERS: "/api/moneyx/payment-providers/",
     TRANSACTIONS: "/api/moneyx/transactions/",
     UPDATE_TRANSACTION: (transactionId: string) => `/api/moneyx/transactions/${transactionId}/`,
     BANK_PAYMENT_INFO: (provider: string) =>
