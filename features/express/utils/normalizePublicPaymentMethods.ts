@@ -105,17 +105,28 @@ export function normalizePublicPaymentMethods(payload: unknown): any[] {
 
   const activeMethods = flattenedMethods.filter(isActivePayment);
 
+  const dedupeKey = (payment: any) => {
+    const name = String(
+      payment?.provider_name || payment?.provider || payment?.name || ""
+    )
+      .trim()
+      .toLowerCase();
+    const method = String(
+      payment?.method_display ||
+        payment?.method ||
+        payment?.payment_method ||
+        payment?.payment_method_type ||
+        ""
+    )
+      .trim()
+      .toLowerCase();
+    if (name) return `${name}::${method}`;
+    return String(
+      payment?.id ?? payment?.provider_id ?? payment?.providerId ?? ""
+    );
+  };
+
   return Array.from(
-    new Map(
-      activeMethods.map((payment: any) => [
-        String(
-          payment?.id ??
-            payment?.provider_id ??
-            payment?.providerId ??
-            `${payment?.provider_name || ""}::${payment?.method_display || payment?.method || payment?.payment_method || payment?.payment_method_type || ""}`
-        ),
-        payment,
-      ])
-    ).values()
+    new Map(activeMethods.map((payment: any) => [dedupeKey(payment), payment])).values()
   );
 }
