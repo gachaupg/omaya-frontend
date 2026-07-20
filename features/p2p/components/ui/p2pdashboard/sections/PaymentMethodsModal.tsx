@@ -353,7 +353,7 @@ const PaymentMethodsModal: React.FC<PaymentMethodsModalProps> = ({
   // stays in sync with the actual public payment-methods API shape.
   const processedProviders = React.useMemo(() => {
     const normalized = normalizePublicPaymentMethods(publicPaymentMethods);
-    return normalized
+    const mapped = normalized
       .map((item: any) => ({
         ...item,
         provider_name: item?.provider_name || item?.name || item?.provider || "",
