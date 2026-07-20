@@ -27,6 +27,10 @@ import {
 } from "@/features/p2p/utils/paymentAutoSend";
 import { getPaymentMethodDisplayTitle, getPaymentMethodDisplaySubtitle, getPaymentMethodSelectLabels, getCleanPaymentProviderLabel, stripPaymentMethodTypeSuffix } from "@/lib/utils/paymentProviderLabel";
 import { normalizePublicPaymentMethods } from "@/features/express/utils/normalizePublicPaymentMethods";
+import {
+  coercePaymentMethodText,
+  isMoneyXMobilePaymentMethod,
+} from "@/features/express/utils/moneyXPaymentMethodUtils";
 /** Match express deposit/withdraw defaults: prefer Salaam Somali Bank when available. */
 const isSalaamProvider = (provider: any): boolean =>
   /salaam/i.test(
@@ -74,6 +78,7 @@ const pickCryptoNetworkProvider = (list: any[]): any | null => {
       p?.payment_method,
       p?.payment_method_name,
     ]
+      .map(coercePaymentMethodText)
       .filter(Boolean)
       .join(" ")
       .toLowerCase();
@@ -83,42 +88,8 @@ const pickCryptoNetworkProvider = (list: any[]): any | null => {
   return bep20 ?? crypto[0];
 };
 
-const MOBILE_MONEY_KEYWORDS = [
-  "mobile",
-  "mpesa",
-  "m-pesa",
-  "mtn",
-  "airtel",
-  "safaricom",
-  "vodafone",
-  "telesom",
-  "hormuud",
-  "golis",
-  "evc",
-  "zaad",
-  "sahal",
-  "edahab",
-  "e-dahab",
-  "marchant",
-  "merchant",
-];
-
-const isMobilePaymentProvider = (payment: any): boolean => {
-  if (!payment) return false;
-  const fields = [
-    payment?.provider_name,
-    payment?.provider,
-    payment?.payment_method,
-    payment?.payment_method_type,
-    payment?.payment_method_name,
-    payment?.method,
-    payment?.method_display,
-  ]
-    .filter(Boolean)
-    .join(" ")
-    .toLowerCase();
-  return MOBILE_MONEY_KEYWORDS.some((keyword) => fields.includes(keyword));
-};
+const isMobilePaymentProvider = (payment: any): boolean =>
+  isMoneyXMobilePaymentMethod(payment);
 
 const extractCryptoNetworkForValidation = (source: string): string => {
   const s = String(source || "").toLowerCase();

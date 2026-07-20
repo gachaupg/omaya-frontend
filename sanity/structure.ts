@@ -1,4 +1,3 @@
-// https://www.sanity.io/docs/structure-builder-cheat-sheet
 // structure.ts
 export const structure = (S: any) =>
   S.list()
