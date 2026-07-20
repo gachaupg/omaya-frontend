@@ -147,6 +147,3 @@ Aaran Plaza, Taleh, Hodan District, Mogadishu, Somalia
 - Compliance and AML/KYC enquiries: **compliance@omaya.io**
 - General and support: **support@omaya.io**
 
----
-
-*This public AML/KYC Policy is a summary of OMAYA's internal AML/CFT Policies and Procedures and should be read consistently with that internal program. It should be reviewed by OMAYA's MLRO and by qualified legal counsel before publication, kept aligned with the internal policy whenever that policy is updated, and the verification tiers, limits, and reporting thresholds referred to here should match OMAYA's actual operational and regulatory requirements.*

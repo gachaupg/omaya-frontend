@@ -23,6 +23,7 @@ export interface PaymentMethod {
 export interface PaymentProvider {
   provider_id: string;
   provider_name: string;
+  short_name?: string;
   logo: string;
   payment_details: PaymentDetail[];
 }
@@ -66,6 +67,7 @@ export interface AdminPaymentMethod {
   id: string;
   payment_method_type: string;
   provider_name: string;
+  short_name?: string;
   logo?: string;
   logo_url?: string | null;
   provider_logo?: string | null;

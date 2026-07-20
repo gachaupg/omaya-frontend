@@ -4,9 +4,12 @@
 
 export interface CreateMoneyXTransactionPayload {
   amount: string;
+  currency: string;
   sender_provider: string;
   receiver_provider: string;
   recipient_name: string;
+  recipient_account_number: string;
+  recipient_bank_code?: string;
 }
 
 export interface UpdateMoneyXTransactionPayload {

@@ -25,6 +25,8 @@ import {
 } from "../../../swap/slices/swapSlice";
 import { validateWalletAddress } from "@/lib/addressValidaion";
 import { showToast } from "@/lib/utils/toast";
+import { getPaymentMethodSelectLabels } from "@/lib/utils/paymentProviderLabel";
+import { normalizePublicPaymentMethods } from "@/features/express/utils/normalizePublicPaymentMethods";
 import {
   enforceExpressAmountDigitLimit,
   EXPRESS_AMOUNT_DIGIT_LIMIT_MESSAGE,
@@ -497,19 +499,9 @@ export default function WithdrawalForm({
   const [directPublicPaymentMethods, setDirectPublicPaymentMethods] = useState<any>(null);
   const activePublicPaymentMethods = directPublicPaymentMethods || publicPaymentMethods;
   const activePublicProviders = useMemo(() => {
-    if (!activePublicPaymentMethods) return [];
-    // Shape A: { data: { providers: [...] } }
-    if (Array.isArray(activePublicPaymentMethods?.data?.providers)) {
-      return activePublicPaymentMethods.data.providers;
-    }
-    // Shape B: { data: [...] }
-    if (Array.isArray(activePublicPaymentMethods?.data)) {
-      return activePublicPaymentMethods.data;
-    }
-    // Shape C: [...]
-    if (Array.isArray(activePublicPaymentMethods)) {
-      return activePublicPaymentMethods;
-    }
+    // Same public payment-methods API/normalizer as home (includes short_name)
+    const normalized = normalizePublicPaymentMethods(activePublicPaymentMethods);
+    if (normalized.length > 0) return normalized;
     return [];
   }, [activePublicPaymentMethods]);
 
@@ -4893,24 +4885,16 @@ export default function WithdrawalForm({
                   <div className="relative z-0">
                     {(() => {
                       // Use public payment methods if available (they have logos)
-                      let paymentMethodOptions: Array<{ value: string; label: string; logo?: string }> = [];
+                      let paymentMethodOptions: Array<{ value: string; label: string; subtitle?: string; logo?: string }> = [];
       if (activePublicProviders.length > 0) {
                         // Use public payment methods with logos
                         paymentMethodOptions = activePublicProviders.map((provider: any) => {
-                          const providerName = provider.provider_name || provider.payment_provider_name || "Unknown";
-          const methodName =
-            provider.method?.method_name ||
-            provider.method?.method_display ||
-            provider.method_display ||
-            provider.method_name ||
-            provider.method ||
-            null;
-                          const subtitle = methodName ? `${providerName} - ${methodName}` : null;
+                          const { label, subtitle } = getPaymentMethodSelectLabels(provider);
 
                           return {
-                            value: providerName,
-                            label: providerName,
-                            subtitle: subtitle || undefined,
+                            value: provider.provider_name || provider.payment_provider_name || label,
+                            label,
+                            subtitle,
                             logo: provider.logo || provider.provider_logo || undefined,
                           };
                         }).filter((opt: any) => opt.value && opt.value.trim());

@@ -633,7 +633,7 @@ function FinalBuy({ orderData }: FinalBuyProps) {
               <div>
                 <div className="text-sm text-gray-500 dark:text-[#788099]">
                   {singleOrder?.user_total_buy_orders || 120} Orders |{" "}
-                  {singleOrder?.completion_rate || "99.20"}% Completion
+                  {Number(singleOrder?.completion_rate ?? 99.2).toFixed(2)}% Completion
                 </div>
                 <div className="text-sm text-[#1D8751]">
                   Rating: 99% | Rate: {commissionFromUrl || singleOrder?.commission_rate}
@@ -886,9 +886,9 @@ function FinalBuy({ orderData }: FinalBuyProps) {
                         </span>
                       </div>
                     )}
-                    <div className="flex flex-col md:flex-row gap-4 mt-4">
+                    <div className="mt-4 flex flex-row items-stretch gap-2 sm:gap-4">
                       <button
-                        className={`w-full md:w-auto flex-1 py-2 rounded-2xl border-2 border-[#E8EFF5] dark:border-[#3C3C47] text-lg transition-colors ${confirmOrder?.status === "half-matched" || cancelLoading
+                        className={`flex-[2] min-w-0 sm:flex-1 flex items-center justify-center text-center px-3 sm:px-4 py-2.5 sm:py-2 rounded-2xl border-2 border-[#E8EFF5] dark:border-[#3C3C47] text-xs sm:text-lg leading-tight transition-colors ${confirmOrder?.status === "half-matched" || cancelLoading
                           ? "bg-white dark:bg-[var(--card-color)] text-gray-400 dark:text-[#888] cursor-not-allowed opacity-60"
                           : "bg-transparent text-gray-600 dark:text-[#788099] hover:bg-gray-100 dark:hover:bg-[#35353E] cursor-pointer"
                           }`}
@@ -900,7 +900,7 @@ function FinalBuy({ orderData }: FinalBuyProps) {
                         {cancelLoading ? "Cancelling..." : "Cancel Transaction"}
                       </button>
                       <button
-                        className={`w-full md:w-auto flex-1 py-2 rounded-2xl text-lg  ${confirmOrder?.status === "half-matched" || !buyerMayMarkMoneySent
+                        className={`flex-[3] min-w-0 sm:flex-1 flex items-center justify-center text-center px-3 sm:px-4 py-2.5 sm:py-2 rounded-2xl text-xs sm:text-lg leading-tight ${confirmOrder?.status === "half-matched" || !buyerMayMarkMoneySent
                           ? "bg-white dark:bg-[var(--card-color)] text-gray-400 dark:text-[#888]"
                           : "bg-[#1D8751] text-white hover:bg-[#167a45] transition-colors"
                           } ${(() => {
@@ -1180,7 +1180,7 @@ function FinalBuy({ orderData }: FinalBuyProps) {
                     rows={3}
                   />
                 </div>
-                <div className="flex flex-col sm:flex-row gap-2 sm:gap-3">
+                <div className="flex flex-row gap-2 sm:gap-3">
                   <button
                     type="button"
                     onClick={() => { setShowFeedbackModal(false); setFeedbackRating(null); setFeedbackComment(""); }}

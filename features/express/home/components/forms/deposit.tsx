@@ -55,6 +55,8 @@ import {
 import { useChangeNowAssetsContext } from "@/features/express/home/context/ChangeNowAssetsProvider";
 import CustomSelect from "@/components/ui/HomeCommonSelect";
 import { AssetWithNetworkIcon } from "@/components/ui/AssetWithNetworkIcon";
+import { SwapAssetOptionDisplay } from "@/features/swap/components/SwapAssetOptionDisplay";
+import { shouldShowAssetNetworkBadge } from "@/lib/utils/networkDisplay";
 import Select from "@/features/p2p/components/Common/Select";
 import {
   buildExpressRedirectPath,
@@ -81,7 +83,10 @@ import {
 } from "@/features/express/api";
 import { withTimeout } from "@/features/express/utils/fetchWithTimeout";
 import { stripLeadingZerosFromDecimalInput } from "@/lib/utils/decimalAmountInput";
-import { swapAmountValueClass } from "@/features/swap/components/swapFieldStyles";
+import {
+  getPaymentMethodSelectLabels,
+} from "@/lib/utils/paymentProviderLabel";
+import { homeCardAmountFieldClass, homeCardSelectTriggerClass } from "@/features/swap/components/swapFieldStyles";
 import { resolveForexDepositAdminPaymentDetailId } from "@/features/express/utils/forexDepositResolution";
 import {
   ASSET_ICON_BASE_CLASS,
@@ -184,19 +189,21 @@ const extractSubmitErrorMessage = (error: any, fallback: string): string => {
     responseData?.detail ||
     responseData?.details;
   const cleanedDirect = clean(direct);
-  if (cleanedDirect) return cleanedDirect;
+  if (cleanedDirect) {
+    return normalizeExpressApiErrorMessage(cleanedDirect, responseData, error);
+  }
 
   if (typeof error === "string") {
     const cleaned = clean(error);
-    if (cleaned) return cleaned;
+    if (cleaned) return normalizeExpressApiErrorMessage(cleaned, error);
   }
 
   if (error?.message) {
     const cleaned = clean(error.message);
-    if (cleaned) return cleaned;
+    if (cleaned) return normalizeExpressApiErrorMessage(cleaned, responseData, error);
   }
 
-  return fallback;
+  return normalizeExpressApiErrorMessage(fallback, responseData, error);
 };
 
 const handleExpressEstimateAmountFieldErrors = (
@@ -406,65 +413,6 @@ const getAssetPrimaryLabel = (asset: any): string => {
   return getCleanAssetName(asset);
 };
 
-const escapeRegex = (value: string) =>
-  value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
-
-const getPaymentMethodNameToStrip = (payment: any): string | null => {
-  if (typeof payment?.method_display === "string" && payment.method_display.trim()) {
-    return payment.method_display.trim();
-  }
-  if (typeof payment?.method_name === "string" && payment.method_name.trim()) {
-    return payment.method_name.trim();
-  }
-  if (
-    typeof payment?.payment_method_name === "string" &&
-    payment.payment_method_name.trim()
-  ) {
-    return payment.payment_method_name.trim();
-  }
-  if (
-    typeof payment?.payment_method_type === "string" &&
-    payment.payment_method_type.trim()
-  ) {
-    return payment.payment_method_type.trim();
-  }
-  return null;
-};
-
-const formatPaymentProviderLabel = (payment: any): string => {
-  const providerName =
-    (typeof payment?.provider_name === "string" && payment.provider_name.trim()) ||
-    (typeof payment?.payment_provider_name === "string" &&
-      payment.payment_provider_name.trim()) ||
-    "";
-
-  if (!providerName) {
-    return "Payment Provider";
-  }
-
-  const methodToStrip = getPaymentMethodNameToStrip(payment);
-
-  if (!methodToStrip) {
-    return providerName;
-  }
-
-  try {
-    const suffixPattern = new RegExp(
-      `\\s*-\\s*${escapeRegex(methodToStrip)}\\s*$`,
-      "i"
-    );
-    const cleaned = providerName.replace(suffixPattern, "").trim();
-    return cleaned || providerName;
-  } catch (error) {
-    console.warn("Failed to format provider label", {
-      providerName,
-      methodToStrip,
-      error,
-    });
-    return providerName;
-  }
-};
-
 const UUID_REGEX =
   /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i;
 
@@ -661,6 +609,7 @@ export default function DepositForm({
 
             const flattened = {
               provider_name: provider.provider_name,
+              short_name: provider.short_name || "",
               payment_method:
                 provider.method_display ||
                 provider.method ||
@@ -720,6 +669,7 @@ export default function DepositForm({
               {};
             return {
               provider_name: provider.provider_name || provider.payment_provider_name || provider.provider || "",
+              short_name: provider.short_name || "",
               payment_method: provider.method_display || provider.method || provider.payment_method || "",
               payment_method_type: provider.method || provider.method_display || provider.payment_method_type || "",
               provider_logo: provider.logo || provider.provider_logo || undefined,
@@ -748,6 +698,7 @@ export default function DepositForm({
               {};
             return {
               provider_name: provider.provider_name || provider.payment_provider_name || provider.provider || "",
+              short_name: provider.short_name || "",
               payment_method: provider.method_display || provider.method || provider.payment_method || "",
               payment_method_type: provider.method || provider.method_display || provider.payment_method_type || "",
               provider_logo: provider.logo || provider.provider_logo || undefined,
@@ -2684,8 +2635,9 @@ export default function DepositForm({
 
     const viewportWidth = typeof window !== "undefined" ? window.innerWidth : 0;
     const minMargin = 16;
-    const minWidth = 460;
-    const maxWidth = 460;
+    const isMobileViewport = viewportWidth < 640;
+    const minWidth = isMobileViewport ? 0 : 460;
+    const maxWidth = isMobileViewport ? viewportWidth - minMargin * 2 : 460;
 
     // Find the card that contains the asset dropdown trigger
     const assetDropdownElement = assetDropdownRef.current;
@@ -2720,6 +2672,25 @@ export default function DepositForm({
       const cardRect = currentCard.getBoundingClientRect();
       const dropdownRect = assetDropdownElement.getBoundingClientRect();
 
+      if (isMobileViewport) {
+        let width = Math.min(cardRect.width, viewportWidth - minMargin * 2);
+        let left = cardRect.left;
+
+        if (left < minMargin) {
+          left = minMargin;
+        }
+        if (left + width > viewportWidth - minMargin) {
+          width = Math.max(0, viewportWidth - minMargin * 2);
+          left = minMargin;
+        }
+
+        dropdownStyle = {
+          position: "fixed",
+          top: cardRect.top,
+          left,
+          width,
+        };
+      } else {
       // Check if this is "You Send" section (has data-select-card) or "You Receive" section
       const isYouSend = currentCard.hasAttribute('data-select-card');
 
@@ -2759,13 +2730,14 @@ export default function DepositForm({
         left,
         width: desiredWidth,
       };
+      }
     }
 
     return createPortal(
       (
         <div
           ref={assetDropdownContentRef}
-          className="bg-white dark:bg-[#1D1D23] border border-gray-300 dark:border-accent rounded-2xl shadow-xl z-9999 max-h-[70vh] sm:max-h-[60vh] overflow-hidden flex flex-col"
+          className="bg-white dark:bg-[#1D1D23] border border-gray-300 dark:border-accent rounded-2xl shadow-xl z-9999 max-h-[85vh] sm:max-h-[70vh] overflow-hidden flex flex-col"
           style={dropdownStyle}
         >
           {/* Dropdown Title */}
@@ -3401,6 +3373,12 @@ export default function DepositForm({
           errorMessage = "Your wallet address doesn't match the asset requested";
         }
 
+        errorMessage = normalizeExpressApiErrorMessage(
+          errorMessage,
+          error?.response?.data,
+          error
+        );
+
         if (
           !applyExpressAmountSubmitError(
             error,
@@ -3954,6 +3932,12 @@ export default function DepositForm({
         errorMessage = "Your wallet address doesn't match the asset requested";
       }
 
+      errorMessage = normalizeExpressApiErrorMessage(
+        errorMessage,
+        error?.response?.data,
+        error
+      );
+
       if (
         !applyExpressAmountSubmitError(
           error,
@@ -4150,15 +4134,13 @@ export default function DepositForm({
                     }
                   }}
                   placeholder={t("express.enterAmount", "Enter amount")}
-                  className={`w-full rounded-2xl px-4 py-2 pr-16 text-lg focus:outline-none border appearance-none bg-transparent h-[44px] ${(isCalculating || isCalculatingReceive) &&
-                    isCalculatingFromPay &&
-                    selectedAsset &&
-                    !isForexAsset(selectedAsset)
-                    ? "border-[#1D8751]"
-                    : isDark
-                      ? "border-white/10"
-                      : "border-gray-200"
-                    } ${swapAmountValueClass(isDark)}`}
+                  className={`${homeCardAmountFieldClass(isDark, {
+                    active:
+                      !!(isCalculating || isCalculatingReceive) &&
+                      isCalculatingFromPay &&
+                      !!selectedAsset &&
+                      !isForexAsset(selectedAsset),
+                  })}`}
                 />
 
 
@@ -4186,14 +4168,7 @@ export default function DepositForm({
 
             {/* Bank/Payment Method Section */}
             <div className="flex-1 min-w-0">
-              <label
-                className={`block text-[15px] mb-2 font-semibold flex items-center gap-2 ${isDark ? "text-[#9CA3AF]" : "text-[#475569]"
-                  }`}
-              >
-                {t("express.paymentMethod", "Payment Method")}
-                <div className="w-2 h-2 bg-[#1D8751] rounded-full animate-pulse"></div>
-              </label>
-              <div className={`text-xs mb-1 ${isDark ? "text-[#788099]" : "text-[#64748B]"
+              <div className={`text-xs mb-1 mt-1 sm:mt-[30px] ${isDark ? "text-[#788099]" : "text-[#64748B]"
                 }`}>
                 {t("express.paymentMethod", "Payment Method")}
               </div>
@@ -4212,15 +4187,13 @@ export default function DepositForm({
 
                      
 
-                      const providerName = formatPaymentProviderLabel(payment);
-                      const methodName = getPaymentMethodNameToStrip(payment);
-                      const subtitle = methodName ? `${providerName} - ${methodName}` : null;
+                      const { label, subtitle } = getPaymentMethodSelectLabels(payment);
                       const providerKey = getPaymentMethodKey(payment);
 
                       return {
                         value: providerKey,
-                        label: providerName,
-                        subtitle: subtitle || undefined,
+                        label,
+                        subtitle,
                         logo: logoUrl,
                         raw: payment,
                       };
@@ -4239,8 +4212,7 @@ export default function DepositForm({
                   dropdownMaxWidth={460}
                   className="w-full"
                   placeholderClassName="text-white dark:text-white"
-                  triggerClassName={`!px-4 !py-[8px] !min-h-0 text-sm font-medium border rounded-2xl bg-transparent !h-[44px] ${isDark ? "text-white border-white/10" : "text-[#1F2937] border-gray-200"
-                    }`}
+                  triggerClassName={homeCardSelectTriggerClass(isDark)}
                   onChange={(value) => {
                     const selectedPayment = finalPaymentMethods?.find(
                       (payment: any) => getPaymentMethodKey(payment) === value
@@ -4277,7 +4249,7 @@ export default function DepositForm({
                   dropdownTitle="Select a payment methods"
                   dropdownOffsetY={-68}
                   dropdownOffsetX={0}
-                  largeDropdownItems={true}
+                  largeDropdownItems={false}
                 />
               </div>
               {adminMethodsError && <p className="text-red-500 text-sm mt-1">{adminMethodsError}</p>}
@@ -4442,20 +4414,19 @@ export default function DepositForm({
                     }
                   }}
                   placeholder={t("express.enterAmount", "Enter amount")}
-                  className={`w-full rounded-2xl px-4 py-2 pr-16 text-lg focus:outline-none border appearance-none bg-transparent h-[44px] ${receiveAmountError &&
-                    (receiveAmountError.includes("Rough estimate") ||
-                      receiveAmountError.includes("Using estimated rate"))
-                    ? "border-[#F79330]"
-                    : receiveAmountError
-                      ? "border-red-500"
-                      : (isCalculating || isCalculatingReceive) &&
-                        selectedAsset &&
-                        !isForexAsset(selectedAsset)
-                        ? "border-[#1D8751]"
-                        : isDark
-                          ? "border-white/10"
-                          : "border-gray-200"
-                    } ${swapAmountValueClass(isDark)}`}
+                  className={`${homeCardAmountFieldClass(isDark, {
+                    active:
+                      !!(isCalculating || isCalculatingReceive) &&
+                      !!selectedAsset &&
+                      !isForexAsset(selectedAsset) &&
+                      !receiveAmountError,
+                    extra: receiveAmountError
+                      ? receiveAmountError.includes("Rough estimate") ||
+                        receiveAmountError.includes("Using estimated rate")
+                        ? "!border-[#F79330]"
+                        : "!border-red-500"
+                      : undefined,
+                  })}`}
                 />
                 {/* Show loading spinner when calculating "You Send" from "You Receive" */}
                 {(isCalculating || isCalculatingReceive) && !isCalculatingFromPay && selectedAsset && !isForexAsset(selectedAsset) && (
@@ -4516,8 +4487,7 @@ export default function DepositForm({
               </div>
               <div className="relative" ref={assetDropdownRef}>
                 <div
-                  className={`w-full rounded-2xl px-4 py-2 text-lg focus:outline-none border flex items-center justify-between gap-3 cursor-pointer bg-transparent h-[44px] ${isDark ? "text-white border-white/10" : "text-[#1F2937] border-gray-200"
-                    }`}
+                  className={`${homeCardSelectTriggerClass(isDark)} justify-between gap-3 cursor-pointer`}
                   onClick={() => {
                     if (!isAssetDropdownOpen) {
                       updateAssetDropdownPosition();
@@ -4531,28 +4501,18 @@ export default function DepositForm({
                         <AssetWithNetworkIcon
                           asset={selectedAsset}
                           size={24}
-                          assetIconSrc={getAssetDropdownIcon(selectedAsset)}
+                          assetIconSrc={getHighResAssetIcon(selectedAsset, 72) || getAssetDropdownIcon(selectedAsset)}
+                          showNetworkBadge={shouldShowAssetNetworkBadge(selectedAsset)}
                           onAssetIconError={(e) => {
-                            console.log(
-                              "Image failed to load for asset:",
-                              selectedAsset
-                            );
                             e.currentTarget.src = ASSET_ICON_FALLBACK_URL;
                           }}
                         />
-                        <div className="flex flex-col">
-                          <div className="flex items-center gap-2">
-                            <span
-                              className={`text-sm ${isDark ? "text-white font-normal" : "text-[#1F2937] font-extrabold"
-                                }`}
-                            >
-                              {getAssetPrimaryLabel(selectedAsset).toUpperCase()}
-                            </span>
-                            <span className="bg-[#1D8751] text-[#ffffff] dark:text-[#ffffff] text-xs font-normal px-2 py-0.5 rounded-full">
-                              {getNetworkDisplayName(getAssetNetwork(selectedAsset))}
-                            </span>
-                          </div>
-                        </div>
+                        <SwapAssetOptionDisplay
+                          asset={selectedAsset}
+                          primaryClassName="text-[#35353e] dark:text-white font-medium text-base"
+                          subtitleClassName="text-[#788099] text-sm truncate"
+                          badgeClassName="bg-[#1D8751] text-[#ffffff] dark:text-[#ffffff] text-xs font-semibold px-2 py-0.5 rounded-full"
+                        />
                       </>
                     ) : (
                       <>

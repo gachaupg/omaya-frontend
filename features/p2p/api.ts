@@ -297,6 +297,7 @@ const normalizeAdminPaymentProviders = (
         payment_provider_id: item?.provider_id ?? null,
         payment_method_type: paymentMethodType || "",
         provider_name: providerName,
+        short_name: item?.short_name ?? "",
         // Logo fields
         logo: item?.logo_url ?? item?.logo ?? item?.provider_logo ?? null,
         logo_url: item?.logo_url ?? null,
@@ -333,33 +334,32 @@ export const getAdminPaymentDetails = async (): Promise<AdminPaymentMethod[]> =>
   });
 };
 
-export const getPublicPaymentMethods = async (): Promise<P2PResponse> => {
-  console.log("🌐 API: Calling getPublicPaymentMethods...");
+export type PublicPaymentMethodsQuery = {
+  flow?: "deposit" | "withdrawal";
+  selected_provider_id?: string;
+};
+
+export const getPublicPaymentMethods = async (
+  params?: PublicPaymentMethodsQuery
+): Promise<P2PResponse> => {
+  console.log("🌐 API: Calling getPublicPaymentMethods...", params);
   return withRetry(async () => {
-    const directUrl = "https://dev.backend.omaya.io/payments/public/payment-methods/";
+    const searchParams = new URLSearchParams();
+    if (params?.flow) searchParams.set("flow", params.flow);
+    if (params?.selected_provider_id) {
+      searchParams.set("selected_provider_id", params.selected_provider_id);
+    }
+    const qs = searchParams.toString();
+    const path = `${API_CONFIG.P2P.PUBLIC_PAYMENT_METHODS}${qs ? `?${qs}` : ""}`;
 
     try {
-      const directResponse = await fetch(directUrl, {
-        method: "GET",
-        headers: {
-          Accept: "application/json",
-        },
-      });
-
-      if (directResponse.ok) {
-        const directData = (await directResponse.json()) as P2PResponse;
-        console.log("🌐 API: Public payment methods response (direct):", directData);
-        return directData;
-      }
+      const directResponse = await get<P2PResponse>(path);
+      console.log("🌐 API: Public payment methods response:", directResponse.data);
+      return directResponse.data;
     } catch (directError) {
-      console.warn("⚠️ API: Direct public payment methods request failed, falling back:", directError);
+      console.warn("⚠️ API: Public payment methods request failed:", directError);
+      throw directError;
     }
-
-    const fallbackResponse = await get<P2PResponse>(
-      API_CONFIG.P2P.PUBLIC_PAYMENT_METHODS
-    );
-    console.log("🌐 API: Public payment methods response (fallback):", fallbackResponse.data);
-    return fallbackResponse.data;
   });
 };
 
@@ -442,16 +442,19 @@ export const getAllP2POrders = async (
   });
 };
 
-/** Fetch P2P market orders from /trading_engine/p2p/all-orders/?page=N - buy_orders and sell_orders with results */
+/** Fetch P2P market orders from /trading_engine/p2p/all-orders/?page=N - public, no auth required. */
 export const getAllP2PBuyandSell = async (
   page: number = 1
 ): Promise<P2PMyOrders> => {
   return withRetry(async () => {
     const url = `${API_CONFIG.P2P.ALL_ORDERS}?page=${page}`;
-    const response = await get<P2PMyOrders>(url);
+    const response = await get<P2PMyOrders>(url, { skipAuth: true });
     return response.data;
   });
 };
+
+/** Alias for home card — same public endpoint, no token. */
+export const getAllP2PBuyandSellPublic = getAllP2PBuyandSell;
 
 export const getMyP2POrders = async (
   page: number = 1

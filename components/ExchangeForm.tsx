@@ -20,12 +20,17 @@ import { FaSearch } from "react-icons/fa";
 import Express from "@/features/express/home/express/express";
 import SwapWidget from "@/features/express/home/swap copy/components/SwapWidget";
 import MoneyX from "@/features/express/home/components/moneyX/components/MoneyX";
+import { HomeP2P } from "@/features/express/home/components/p2p";
 import { MoneyXLabel } from "@/components/ui/MoneyXLabel";
 import FrozenAccountModal from "@/components/ui/FrozenAccountModal";
 import {
   assetMatchesSearchTerm,
   compareAssetsForDisplay,
 } from "@/lib/utils/assetSearch";
+import {
+  getPaymentMethodDisplayTitle,
+  getPaymentMethodDisplaySubtitle,
+} from "@/lib/utils/paymentProviderLabel";
 
 
 /**
@@ -39,7 +44,7 @@ import {
  *   - Express Excahnge.svg / Express Excahnge-light.svg
  */
 
-type Tab = "express" | "moneyx" | "swap";
+type Tab = "express" | "moneyx" | "p2p" | "swap";
 type Mode = "deposit" | "withdrawal";
 const RETURNING_FROM_LEGAL_KEY = "omaya_returning_from_legal";
 const MONEYX_LEGAL_RETURN_STATE_KEY = "omaya_moneyx_legal_return_state";
@@ -542,6 +547,10 @@ export default function ExchangeForm({
       pay: { label: "BTC", sub: "Bitcoin", icon: "/images/Bitcoin.svg" },
       get: { label: "ETH", sub: "Ethereum", icon: "/images/eth.svg" },
     },
+    p2p: {
+      pay: { label: "USDT", sub: "Tether US", icon: "/images/tether.svg" },
+      get: { label: "USD", icon: "/images/salam.svg" },
+    },
   };
 
   const [payCurrency, setPayCurrency] = useState<Currency>(presets.express.pay);
@@ -740,7 +749,15 @@ export default function ExchangeForm({
     setIsPaymentDropdownOpen(false);
     setPaymentSearchTerm("");
 
-    const providerName = provider.provider_name || provider.method_name || "Payment Method";
+    const providerName =
+      getPaymentMethodDisplayTitle(provider) ||
+      provider.provider_name ||
+      provider.method_name ||
+      "Payment Method";
+    const providerSubtitle =
+      getPaymentMethodDisplaySubtitle(provider) ||
+      provider.provider_name ||
+      "";
     const providerLogo = provider.logo || "/assets/image_7_jijlik.png";
 
     // Update currency display based on current mode
@@ -748,14 +765,14 @@ export default function ExchangeForm({
       // For deposit: payment method -> asset
       setPayCurrency({
         label: providerName,
-        sub: provider.method_display || provider.method_name || "Payment Method",
+        sub: providerSubtitle || undefined,
         icon: providerLogo,
       });
     } else {
       // For withdrawal: asset -> payment method
       setGetCurrency({
         label: providerName,
-        sub: provider.method_display || provider.method_name || "Payment Method",
+        sub: providerSubtitle || undefined,
         icon: providerLogo,
       });
     }
@@ -770,11 +787,15 @@ export default function ExchangeForm({
     if (newMode === "deposit") {
       // For deposit: payment method -> asset
       if (selectedPaymentMethod) {
-        const providerName = selectedPaymentMethod.provider_name || selectedPaymentMethod.method_name || "Payment Method";
+        const providerName =
+          getPaymentMethodDisplayTitle(selectedPaymentMethod) ||
+          selectedPaymentMethod.provider_name ||
+          selectedPaymentMethod.method_name ||
+          "Payment Method";
         const providerLogo = selectedPaymentMethod.logo || "/assets/image_7_jijlik.png";
         setPayCurrency({
           label: providerName,
-          sub: selectedPaymentMethod.method_display || selectedPaymentMethod.method_name || "Payment Method",
+          sub: getPaymentMethodDisplaySubtitle(selectedPaymentMethod) || undefined,
           icon: providerLogo,
         });
       } else {
@@ -799,15 +820,19 @@ export default function ExchangeForm({
       }
 
       if (selectedPaymentMethod) {
-        const providerName = selectedPaymentMethod.provider_name || selectedPaymentMethod.method_name || "Payment Method";
+        const providerName =
+          getPaymentMethodDisplayTitle(selectedPaymentMethod) ||
+          selectedPaymentMethod.provider_name ||
+          selectedPaymentMethod.method_name ||
+          "Payment Method";
         const providerLogo = selectedPaymentMethod.logo || "/assets/image_7_jijlik.png";
         setGetCurrency({
           label: providerName,
-          sub: selectedPaymentMethod.method_display || selectedPaymentMethod.method_name || "Payment Method",
+          sub: getPaymentMethodDisplaySubtitle(selectedPaymentMethod) || undefined,
           icon: providerLogo,
         });
       } else {
-        setGetCurrency(presets.express.pay); // Fallback to default
+        setGetCurrency(presets.express.get); // Fallback to default
       }
     }
   };
@@ -1035,14 +1060,19 @@ export default function ExchangeForm({
                       />
                       <div className="flex-1 min-w-0">
                         <div className="text-[#1F2937] dark:text-[#ffffff] font-normal text-sm flex items-center gap-2 flex-wrap">
-                          <span className="truncate">{provider.provider_name}</span>
+                          <span className="truncate">
+                            {getPaymentMethodDisplayTitle(provider) ||
+                              provider.provider_name}
+                          </span>
                           {isSelected && (
                             <span className="text-[#1D8751] text-sm">✓</span>
                           )}
                         </div>
-                        <div className="text-sm text-gray-500 dark:text-gray-400 truncate">
-                          {provider.provider_name} - {provider.method_display || provider.method_name || "Payment Method"}
-                        </div>
+                        {getPaymentMethodDisplaySubtitle(provider) ? (
+                          <div className="text-xs text-gray-500 dark:text-gray-400 truncate">
+                            {getPaymentMethodDisplaySubtitle(provider)}
+                          </div>
+                        ) : null}
                       </div>
                     </div>
                   </div>
@@ -1068,24 +1098,107 @@ export default function ExchangeForm({
   const TabButton: React.FC<{
     id: Tab;
     label: string;
-    variant: "express" | "moneyx" | "swap";
-    position?: "first" | "middle" | "last";
-  }> = ({ id, label, variant, position = "middle" }) => {
+    variant: "express" | "moneyx" | "p2p" | "swap";
+    position?: "first" | "second" | "third" | "last";
+  }> = ({ id, label, variant, position = "second" }) => {
     const isActive = activeTab === id;
-    const [isSmallScreen, setIsSmallScreen] = useState(false);
 
-    useEffect(() => {
-      const checkScreenSize = () => {
-        setIsSmallScreen(window.innerWidth < 640);
+    const ariaLabel =
+      variant === "express"
+        ? t("marketing.exchange.tabs.express", "Express Exchange")
+        : variant === "moneyx"
+          ? "MoneyX"
+          : variant === "p2p"
+            ? t("marketing.exchange.tabs.p2p", "P2P Trading")
+            : label || t("marketing.exchange.tabs.swap", "Swap");
+
+    const homeTabIcons: Record<Tab, string> = {
+      express: "/assets/Vector_2_xauedx.png",
+      moneyx: "/assets/uil_exchange_1_okxkvb.png",
+      swap: "/assets/Group_164002_fgt2kf.png",
+      p2p: "/assets/users-profiles-left_e2oejc.png",
+    };
+
+    if (isHomePage) {
+      const textColorClass = isActive
+        ? isDark
+          ? "text-white"
+          : "text-[#727272]"
+        : "text-[#727272]";
+
+      const renderHomeLabel = () => {
+        if (variant === "express") {
+          return (
+            <span className="flex flex-row items-center justify-center gap-0.5">
+              <span className={`${textColorClass} text-xs sm:text-sm font-bold uppercase`}>E</span>
+              <img
+                src={isActive && isDark ? "/images/Group_5_gkxzdz.png" : "/images/Group_9_momvgo.png"}
+                className="h-[11px] mt-1.5 sm:h-[12px] md:h-[13px] w-auto"
+                alt=""
+                aria-hidden
+              />
+            </span>
+          );
+        }
+
+        if (variant === "moneyx") {
+          return (
+            <MoneyXLabel
+              moneyClassName={`${textColorClass} text-xs sm:text-sm font-bold`}
+              xClassName="h-[11px] mt-1.5 sm:h-[12px] md:h-[13px] w-auto"
+              active={isActive}
+            />
+          );
+        }
+
+        return (
+          <span className={`${textColorClass} text-xs sm:text-sm font-bold capitalize`}>
+            {label}
+          </span>
+        );
       };
-      checkScreenSize();
-      window.addEventListener("resize", checkScreenSize);
-      return () => window.removeEventListener("resize", checkScreenSize);
-    }, []);
+
+      return (
+        <button
+          type="button"
+          onClick={() => handleTabClick(id)}
+          aria-pressed={isActive}
+          aria-label={ariaLabel}
+          className={`relative flex flex-1 min-w-0 h-full items-center justify-center gap-1.5 sm:gap-2 px-2 sm:px-3 transition-colors duration-200 focus:outline-none focus-visible:ring-2 focus-visible:ring-[#1D8751] focus-visible:ring-offset-2 focus-visible:ring-offset-transparent ${
+            isActive
+              ? isDark
+                ? "bg-[#23232B] z-10"
+                : "bg-white z-10"
+              : "bg-transparent z-0"
+          }`}
+        >
+          {isActive && (
+            <span
+              className="absolute inset-x-0 top-0 h-[3px] bg-[#1D8751]"
+              aria-hidden="true"
+            />
+          )}
+          <img
+            src={homeTabIcons[id]}
+            alt=""
+            aria-hidden
+            className="h-4 w-4 sm:h-5 sm:w-5 shrink-0 object-contain"
+          />
+          {renderHomeLabel()}
+        </button>
+      );
+    }
+
+    const tabOrder: Tab[] = ["express", "moneyx", "swap", "p2p"];
+    const tabIndex = tabOrder.indexOf(id);
+    const leftNeighbor = tabIndex > 0 ? tabOrder[tabIndex - 1] : null;
+    const rightNeighbor =
+      tabIndex < tabOrder.length - 1 ? tabOrder[tabIndex + 1] : null;
 
     // Determine if neighbors are active to know where to apply slanting
-    const leftNeighborActive = (position === "middle" && activeTab === "express") || (position === "last" && activeTab === "moneyx");
-    const rightNeighborActive = (position === "first" && activeTab === "moneyx") || (position === "middle" && activeTab === "swap");
+    const leftNeighborActive = leftNeighbor === activeTab;
+    const rightNeighborActive = rightNeighbor === activeTab;
+    const isInnerTab = position === "second" || position === "third";
 
     // Only apply slanting when:
     // 1. This tab is active (slants where it meets inactive neighbors)
@@ -1118,8 +1231,8 @@ export default function ExchangeForm({
       } else {
         clipPath = undefined;
       }
-    } else {
-      // Middle tab (MoneyX): slanted on both sides only where it meets active neighbors
+    } else if (isInnerTab) {
+      // Inner tabs (MoneyX, P2P): slanted on both sides only where they meet active neighbors
       const slantRight = isActive || rightNeighborActive;
       const slantLeft = isActive || leftNeighborActive;
 
@@ -1150,8 +1263,8 @@ export default function ExchangeForm({
     const shouldHideBorders = position === "first" && activeTab === "moneyx";
 
     const buttonClasses = [
-      "relative flex w-full items-center justify-center overflow-hidden transition-all duration-200",
-      "px-3.5 sm:px-4.5 md:px-5.5 lg:px-6.5 xl:px-7 py-2.5 sm:py-3 md:py-3.5 lg:py-4 min-h-[48px] sm:min-h-[50px] md:min-h-[54px] lg:min-h-[58px]",
+      "relative flex w-full h-full items-center justify-center overflow-hidden transition-all duration-200",
+      "px-3.5 sm:px-4.5 md:px-5.5 lg:px-6.5 xl:px-7 py-2.5 sm:py-3 md:py-3.5 lg:py-4",
       isActive
         ? "bg-transparent"
         : isDark
@@ -1178,13 +1291,6 @@ export default function ExchangeForm({
       "text-xs sm:text-sm md:text-base lg:text-[1.05rem] transition-colors whitespace-nowrap",
       textColorClass
     ].join(" ");
-
-    const ariaLabel =
-      variant === "express"
-        ? t("marketing.exchange.tabs.express", "Express Exchange")
-        : variant === "moneyx"
-          ? "MoneyX"
-          : label || t("marketing.exchange.tabs.swap", "Swap");
 
     // Icon Sources
     // Express / Exchange Icons (from Sidebar)
@@ -1221,7 +1327,7 @@ export default function ExchangeForm({
       return label?.trim() ? <span className={textColorClass}>{label}</span> : null;
     };
 
-    const flexGrowValue = variant === "express" || variant === "swap" ? 2 : 1.6;
+    const flexGrowValue = 1;
 
     // Determine which edges have slants (for border drawing)
     const hasSlantRightTop = clipPath && clipPath.includes("92% 0"); // Right edge slants top-right (Express active)
@@ -1243,12 +1349,12 @@ export default function ExchangeForm({
         }
         return '0';
       } else if (position === "last") {
-        // Swap tab: curve at bottom-left meeting point (where it meets MoneyX)
+        // Swap tab: curve at bottom-left meeting point (where it meets inner tab)
         if (hasSlantLeft) {
           return '0 0 0 12px'; // Bottom-left corner curved
         }
         return '0';
-      } else {
+      } else if (isInnerTab) {
         // MoneyX tab: curve at both meeting points
         if (hasSlantLeft && hasSlantRight) {
           return '0 12px 12px 0'; // Top-right and bottom-left corners curved
@@ -1259,6 +1365,7 @@ export default function ExchangeForm({
         }
         return '0';
       }
+      return '0';
     };
 
     return (
@@ -1267,7 +1374,7 @@ export default function ExchangeForm({
         onClick={() => handleTabClick(id)}
         aria-pressed={isActive}
         aria-label={ariaLabel}
-        className={`group flex-1 px-0 rounded-none focus:outline-none focus-visible:ring-2 focus-visible:ring-[#1D8751] focus-visible:ring-offset-2 focus-visible:ring-offset-transparent relative overflow-visible`}
+        className={`group flex-1 h-full px-0 rounded-none focus:outline-none focus-visible:ring-2 focus-visible:ring-[#1D8751] focus-visible:ring-offset-2 focus-visible:ring-offset-transparent relative overflow-visible ${isActive ? "z-10" : "z-0"}`}
         style={{
           clipPath,
           flexGrow: flexGrowValue,
@@ -1481,29 +1588,41 @@ export default function ExchangeForm({
   const renderTabs = () => {
     const borderColor = isDark ? "#2f323b" : "#6B7280";
 
-    // Tab layout math (flexGrow: Express=2, MoneyX=1.6, Swap=2 => total=5.6)
-    // Express width = 2/5.6 = 35.714%
-    // MoneyX width  = 1.6/5.6 = 28.571%
-    // Swap starts at 64.285%
-    // Slants used in clipPaths:
-    // - Right slant uses 92% at top (or 92% at bottom depending on state)
-    // - Left slant uses 8% at bottom for the "upward" cut
-    const P_EXPRESS = "35.714%";
-    const P_SWAP_START = "64.285%";
-    const P_MONEYX_W = "28.571%";
-    const P_MONEYX_LEFT_BOTTOM_INSET = "2.286%"; // 8% of MoneyX width (0.08 * 28.571)
-    const P_EXPRESS_RIGHT_BOTTOM_INSET = "32.857%"; // 92% of Express width (0.92 * 35.714)
-    const P_MONEYX_RIGHT_TOP_CUT = "62%"; // Express start + (92% of MoneyX width) = 35.714 + 26.285 ≈ 62
-    // Swap width = 100% - 64.285% = 35.715%, 8% of Swap width = 2.857%
-    const P_SWAP_LEFT_BOTTOM_INSET = "2.857%"; // 8% of Swap width (0.08 * 35.715)
-    const P_SWAP_BOTTOM_END = "67.142%"; // Swap start + 8% of Swap width = 64.285 + 2.857
+    if (isHomePage) {
+      return (
+        <div className="relative flex w-full items-stretch overflow-hidden mt-0 mb-0 rounded-t-2xl shrink-0 h-[48px] sm:h-[50px] md:h-[54px] lg:h-[58px] border border-b-0 border-gray-200 dark:border-[#35353E] bg-gray-100 dark:bg-[#0A0A0F]">
+          <TabButton
+            id="express"
+            variant="express"
+            position="first"
+            label={t("marketing.exchange.tabs.express", "Express")}
+          />
+          <TabButton
+            id="moneyx"
+            variant="moneyx"
+            position="second"
+            label="MoneyX"
+          />
+          <TabButton
+            id="swap"
+            variant="swap"
+            position="third"
+            label={t("marketing.exchange.tabs.swap", "Swap")}
+          />
+          <TabButton
+            id="p2p"
+            variant="p2p"
+            position="last"
+            label={t("marketing.exchange.tabs.p2p", "P2P")}
+          />
+        </div>
+      );
+    }
 
     return (
       <div
-        className="relative flex w-full overflow-hidden mt-0 mb-0 rounded-t-2xl bg-gray-300 dark:bg-[#18181D] gap-0 border border-b-0 dark:border-accent border-gray-400"
+        className="relative flex w-full items-stretch overflow-hidden mt-0 mb-0 rounded-t-2xl bg-gray-300 dark:bg-[#18181D] gap-0 border border-b-0 dark:border-accent border-gray-400 h-[48px] sm:h-[50px] md:h-[54px] lg:h-[58px] shrink-0"
       >
-        {/* Uniform OUTER border that DOES NOT touch the active tab area (segmented). */}
-        {/* Left / Right borders (hide the side border next to the active outer tab) */}
         {activeTab !== "express" && (
           <div
             className="pointer-events-none absolute left-0 top-0 bottom-0 z-30"
@@ -1511,15 +1630,13 @@ export default function ExchangeForm({
             aria-hidden="true"
           />
         )}
-        {activeTab !== "swap" && (
+        {activeTab !== "p2p" && (
           <div
             className="pointer-events-none absolute right-0 top-0 bottom-0 z-30"
             style={{ borderColor }}
             aria-hidden="true"
           />
         )}
-
-        {/* Rounded top corners (hide the corner border next to the active tab) */}
         {activeTab !== "express" && (
           <div
             className="pointer-events-none absolute top-0 left-0 h-10 w-10 sm:w-12 z-30"
@@ -1527,44 +1644,10 @@ export default function ExchangeForm({
             aria-hidden="true"
           />
         )}
-        {activeTab !== "swap" && (
+        {activeTab !== "p2p" && (
           <div
             className="pointer-events-none absolute top-0 right-0 h-10 w-10 sm:w-12 z-30"
             style={{ borderColor }}
-            aria-hidden="true"
-          />
-        )}
-
-        {/* Top border segments (skip the active tab width) */}
-        {activeTab === "express" && (
-          <div
-            className="pointer-events-none absolute top-0 z-30"
-            // Express active => MoneyX inactive has a LEFT slant at the BOTTOM only, so TOP join is straight.
-            style={{ borderColor, left: P_EXPRESS, right: 0 }}
-            aria-hidden="true"
-          />
-        )}
-        {activeTab === "moneyx" && (
-          <>
-            <div
-              className="pointer-events-none absolute top-0 left-0  z-30"
-              // MoneyX active => Express top border extends until it meets the start of slanting part (full Express width)
-              style={{ borderColor, width: P_EXPRESS }}
-              aria-hidden="true"
-            />
-            <div
-              className="pointer-events-none absolute top-0 z-30"
-              // MoneyX active => Swap inactive join is straight at the TOP.
-              style={{ borderColor, left: P_SWAP_START, right: 0 }}
-              aria-hidden="true"
-            />
-          </>
-        )}
-        {activeTab === "swap" && (
-          <div
-            className="pointer-events-none absolute top-0 left-0 z-30"
-            // Swap active => MoneyX inactive has a RIGHT slant at the TOP (92%), so stop before the slant point.
-            style={{ borderColor, width: P_MONEYX_RIGHT_TOP_CUT }}
             aria-hidden="true"
           />
         )}
@@ -1577,168 +1660,74 @@ export default function ExchangeForm({
         <TabButton
           id="moneyx"
           variant="moneyx"
-          position="middle"
+          position="second"
           label="MoneyX"
         />
         <TabButton
           id="swap"
           variant="swap"
-          position="last"
+          position="third"
           label={t("marketing.exchange.tabs.swap", "Swap")}
         />
+        <TabButton
+          id="p2p"
+          variant="p2p"
+          position="last"
+          label={t("marketing.exchange.tabs.p2p", "P2P")}
+        />
 
-        {/* Bottom border segments (skip the active tab width) */}
-        {activeTab === "express" && (
-          <div
-            className="pointer-events-none absolute bottom-0 h-[2px] z-30"
-            // Express active => MoneyX inactive LEFT edge is inset by 8% at the BOTTOM.
-            style={{
-              backgroundColor: borderColor,
-              left: `calc(${P_EXPRESS} + ${P_MONEYX_LEFT_BOTTOM_INSET})`,
-              right: 0,
-            }}
-            aria-hidden="true"
-          />
-        )}
-        {activeTab === "moneyx" && (
-          <>
-            <div
-              className="pointer-events-none absolute bottom-0 left-0 h-[2px] z-30"
-              // MoneyX active => Express inactive RIGHT edge is inset by 92% at the BOTTOM.
-              // Border stops at the slant point (92% of Express width)
-              style={{ backgroundColor: borderColor, width: P_EXPRESS_RIGHT_BOTTOM_INSET }}
-              aria-hidden="true"
-            />
-            <div
-              className="pointer-events-none absolute bottom-0 h-[2px] z-30"
-              // MoneyX active => Swap inactive LEFT edge slant starts at 8% from Swap's left edge.
-              // Border starts at Swap start + 8% of Swap width, ends at right edge
-              style={{
-                backgroundColor: borderColor,
-                left: P_SWAP_BOTTOM_END,
-                right: 0,
-              }}
-              aria-hidden="true"
-            />
-          </>
-        )}
-        {activeTab === "swap" && (
-          <div
-            className="pointer-events-none absolute bottom-0 left-0 h-[2px] z-30"
-            // Swap active => MoneyX inactive RIGHT edge reaches 100% at the BOTTOM (slant goes to full width).
-            style={{ backgroundColor: borderColor, width: P_SWAP_START }}
-            aria-hidden="true"
-          />
-        )}
       </div>
     );
   };
 
-  // If Swap Crypto tab is active, render SwapWidget with tab controls
-  if (activeTab === "swap") {
-    return (
-      <div
-        className={`w-full mx-auto bg-background dark:bg-[#18181D]
-        rounded-2xl ${isHomePage
-            ? "max-w-full sm:max-w-lg md:max-w-xl lg:max-w-2xl xl:max-w-3xl 2xl:max-w-4xl"
-            : "max-w-none"
-          }`}>
-        {renderTabs()}
-        <div
-          className="pt-5 sm:pt-5 px-3 sm:px-4 md:px-5 py-3 border-l border-r border-b border-border dark:border-accent rounded-b-2xl"
-          onSubmitCapture={(e) => {
-            if (!isFrozenUser) return;
-            e.preventDefault();
-            e.stopPropagation();
-            setShowFrozenModal(true);
-          }}
-          onClickCapture={(e) => {
-            if (!isFrozenUser) return;
-            const target = e.target as HTMLElement | null;
-            const button = target?.closest?.("button");
-            if (!button || (button as HTMLButtonElement).disabled) return;
-            e.preventDefault();
-            e.stopPropagation();
-            setShowFrozenModal(true);
-          }}
-        >
-          <SwapWidget usePublicApi={isHomePage} />
-        </div>
-        <FrozenAccountModal
-          isOpen={showFrozenModal}
-          onClose={() => setShowFrozenModal(false)}
-        />
-      </div>
-    );
-  }
+  const homeCardShellClass = `w-full mx-auto bg-background dark:bg-[#18181D] rounded-2xl ${
+    isHomePage
+      ? "max-w-full sm:max-w-lg md:max-w-xl lg:max-w-2xl xl:max-w-3xl 2xl:max-w-4xl flex flex-col"
+      : "max-w-none"
+  }`;
 
-  // If Money X tab is active, render MoneyX component
-  if (activeTab === "moneyx") {
-    return (
-      <div
-        className={`w-full mx-auto bg-background dark:bg-[#18181D] 
-        rounded-2xl ${isHomePage
-            ? "max-w-full sm:max-w-lg md:max-w-xl lg:max-w-2xl xl:max-w-3xl 2xl:max-w-4xl"
-            : "max-w-none"
-          }`}>
-        {renderTabs()}
-        <div
-          className="pt-2 sm:pt-3 px-3 sm:px-4 md:px-5 py-3 border-l border-r border-b border-border dark:border-accent rounded-b-2xl"
-          onSubmitCapture={(e) => {
-            if (!isFrozenUser) return;
-            e.preventDefault();
-            e.stopPropagation();
-            setShowFrozenModal(true);
-          }}
-          onClickCapture={(e) => {
-            if (!isFrozenUser) return;
-            const target = e.target as HTMLElement | null;
-            const button = target?.closest?.("button");
-            if (!button || (button as HTMLButtonElement).disabled) return;
-            e.preventDefault();
-            e.stopPropagation();
-            setShowFrozenModal(true);
-          }}
-        >
+  const frozenGuardProps = {
+    onSubmitCapture: (e: React.FormEvent) => {
+      if (!isFrozenUser) return;
+      e.preventDefault();
+      e.stopPropagation();
+      setShowFrozenModal(true);
+    },
+    onClickCapture: (e: React.MouseEvent) => {
+      if (!isFrozenUser) return;
+      const target = e.target as HTMLElement | null;
+      const button = target?.closest?.("button");
+      if (!button || (button as HTMLButtonElement).disabled) return;
+      e.preventDefault();
+      e.stopPropagation();
+      setShowFrozenModal(true);
+    },
+  };
+
+  const tabContentPanelClass = `-mt-px pt-2 sm:pt-3 px-3 sm:px-4 md:px-5 ${
+    isHomePage ? "pb-2 sm:pb-3 overflow-visible" : "py-3"
+  } border-l border-r border-b border-border dark:border-accent rounded-b-2xl`;
+
+  const renderActiveTabContent = () => {
+    switch (activeTab) {
+      case "swap":
+        return <SwapWidget usePublicApi={isHomePage} />;
+      case "p2p":
+        return <HomeP2P isHomePage={isHomePage} />;
+      case "moneyx":
+        return (
           <MoneyX isHomePage={isHomePage} commissionType="deposit" />
-        </div>
-        <FrozenAccountModal
-          isOpen={showFrozenModal}
-          onClose={() => setShowFrozenModal(false)}
-        />
-      </div>
-    );
-  }
+        );
+      default:
+        return <Express isHomePage={isHomePage} />;
+    }
+  };
 
-  // Default: Express Exchange tab
   return (
-    <div
-      className={`w-full mx-auto bg-background dark:bg-[#18181D] 
-      rounded-2xl ${isHomePage
-          ? "max-w-full sm:max-w-lg md:max-w-xl lg:max-w-2xl xl:max-w-3xl 2xl:max-w-4xl"
-          : "max-w-none"
-        }`}>
+    <div className={homeCardShellClass}>
       {renderTabs()}
-      {/* Express Exchange Content */}
-      <div
-        className="pt-2 sm:pt-3 px-3 sm:px-4 md:px-5 py-3 border-l border-r border-b border-border dark:border-accent rounded-b-2xl"
-        onSubmitCapture={(e) => {
-          if (!isFrozenUser) return;
-          e.preventDefault();
-          e.stopPropagation();
-          setShowFrozenModal(true);
-        }}
-        onClickCapture={(e) => {
-          if (!isFrozenUser) return;
-          const target = e.target as HTMLElement | null;
-          const button = target?.closest?.("button");
-          if (!button || (button as HTMLButtonElement).disabled) return;
-          e.preventDefault();
-          e.stopPropagation();
-          setShowFrozenModal(true);
-        }}
-      >
-        <Express isHomePage={isHomePage} />
+      <div className={tabContentPanelClass} {...frozenGuardProps}>
+        {renderActiveTabContent()}
       </div>
       <FrozenAccountModal
         isOpen={showFrozenModal}

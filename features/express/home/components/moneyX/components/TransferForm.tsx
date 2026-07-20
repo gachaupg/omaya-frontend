@@ -6,23 +6,34 @@ import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { AppDispatch } from "@/store";
 import {
-  fetchPublicPaymentMethods,
   fetchUserPaymentDetails,
 } from "@/features/p2p/slices/paymentMethodsSlice";
 import {
   createMoneyXTransaction,
-  updateMoneyXTransaction,
 } from "../slices/moneyXSlice";
-import { fetchMoneyXCommission } from "@/features/moneyX/slices/moneyXSlice";
+import {
+  fetchMoneyXCommission,
+  clearMoneyXError,
+} from "@/features/moneyX/slices/moneyXSlice";
+import { buildMoneyXTransactionPayload } from "@/features/moneyX/utils/buildMoneyXTransactionPayload";
 import { useTheme } from "@/context/theme";
 import CustomSelect from "@/components/ui/HomeCommonSelect";
 import { showToast } from "@/lib/utils/toast";
+import { getCleanPaymentProviderLabel, getPaymentMethodDisplayTitle, getPaymentMethodSelectLabels } from "@/lib/utils/paymentProviderLabel";
+import { normalizeExpressApiErrorMessage } from "@/lib/utils/expressMinAmount";
+import { resolveScamFlagDisplayError } from "@/lib/utils/scamFlagError";
 import { useExpressI18n } from "@/lib/useExpressI18n";
 import { useBookmarkedAddresses } from "@/features/express/hooks/useBookmarkedAddresses";
 import { BookmarkDropdown } from "@/features/express/components/forms/BookmarkDropdown";
 import PaymentMethodsModal from "@/features/p2p/components/ui/p2pdashboard/sections/PaymentMethodsModal";
 import ProviderPaymentDetailsCard from "@/components/ui/ProviderPaymentDetailsCard";
 import { usePaymentMethodsDisplay } from "@/features/express/hooks/useDataDisplay";
+import { useMoneyXPaymentMethodLists } from "@/features/express/hooks/useMoneyXPaymentMethodLists";
+import { pickDefaultMoneyXFromMethod } from "@/features/express/utils/defaultMoneyXFromProvider";
+import {
+  matchMoneyXMethodById,
+  isMoneyXBankPaymentMethod,
+} from "@/features/express/utils/moneyXPaymentMethodUtils";
 import { setAuthRedirectPath, buildMoneyXRedirectPath, setMoneyXPrefillState } from "@/lib/utils/authRedirect";
 import { openKYCModal, checkKYCStatus } from "@/features/auth/slices/authSlice";
 import {
@@ -30,7 +41,7 @@ import {
   PAYMENT_LOGO_BASE_CLASS,
   PAYMENT_LOGO_SIZE,
 } from "@/features/express/utils/imageHelpers";
-import { swapAmountValueClass } from "@/features/swap/components/swapFieldStyles";
+import { homeCardAmountFieldClass, homeCardSelectTriggerClass } from "@/features/swap/components/swapFieldStyles";
 import {
   clampMoneyXAmountNumber,
   getMoneyXMaxAmountErrorMessage,
@@ -63,9 +74,6 @@ export default function TransferForm({ isHomePage = false, onTransfer, commissio
   const { isDark } = useTheme();
 
   const {
-    publicPaymentMethods,
-    publicMethodsLoading,
-    publicMethodsError,
     userPaymentDetails,
   } = useSelector((state: any) => state.paymentMethods);
 
@@ -78,152 +86,39 @@ export default function TransferForm({ isHomePage = false, onTransfer, commissio
   const { isAuthenticated, user } = useSelector((state: any) => state.auth);
   const requiresLoginRedirect = isHomePage && !isAuthenticated;
 
-  // Use state to hold payment methods - will trigger re-render when updated
-  const [stablePaymentMethods, setStablePaymentMethods] = useState<any[]>([]);
-  const [directPublicPaymentMethods, setDirectPublicPaymentMethods] = useState<any>(null);
+  const [selectedFromPaymentDetail, setSelectedFromPaymentDetail] = useState<any>(null);
+  const [selectedToPaymentDetail, setSelectedToPaymentDetail] = useState<any>(null);
 
-  // Always use public payment methods for MoneyX rates/payment selection.
-  const paymentMethodsData = directPublicPaymentMethods || publicPaymentMethods;
-  const paymentMethodsLoading = publicMethodsLoading;
-  const paymentMethodsError = publicMethodsError;
+  const {
+    fromMethods: fromPaymentMethods,
+    toMethods: toPaymentMethods,
+    allFromReady,
+    fromLoading,
+    toLoading,
+    fromError: paymentMethodsError,
+    toError: toPaymentMethodsError,
+    isLoading: paymentMethodsLoading,
+    restoreFromFullList,
+    refreshToForFrom,
+    refreshFromForTo,
+    allFromMethods,
+    getProviderId,
+  } = useMoneyXPaymentMethodLists({
+    flow: commissionType,
+  });
 
   const paymentMethodsDisplay = usePaymentMethodsDisplay(
-    paymentMethodsData,
-    paymentMethodsLoading,
+    fromPaymentMethods,
+    fromLoading,
     paymentMethodsError
   );
 
-  // Fetch payment methods on mount
+  // Fetch user payment details on mount when authenticated
   useEffect(() => {
-    dispatch(fetchPublicPaymentMethods());
     if (isAuthenticated) {
       dispatch(fetchUserPaymentDetails());
     }
   }, [dispatch, isAuthenticated]);
-
-  // Public payment methods are served by the cached Redux thunk dispatched above.
-  // No separate raw fetch needed — the thunk deduplicates concurrent calls and
-  // caches the result for 5 minutes.
-
-  // Process payment methods from public API only.
-  useEffect(() => {
-    const payload = (directPublicPaymentMethods || publicPaymentMethods) as any;
-    const data = payload?.data || payload;
-    const sourceLists = [
-      data?.providers,
-      data?.payment_providers,
-      data?.payment_methods,
-      data?.results,
-      payload?.providers,
-      payload?.payment_providers,
-      payload?.payment_methods,
-      payload?.results,
-      Array.isArray(data) ? data : null,
-      Array.isArray(payload) ? payload : null,
-    ].filter(Array.isArray) as any[][];
-
-    const flattenedMethods: any[] = [];
-    sourceLists.forEach((list) => list.forEach((item: any) => {
-      if (Array.isArray(item?.providers)) {
-        const methodType =
-          item?.method_name ||
-          item?.method_display ||
-          item?.payment_method_type ||
-          item?.method?.method_name ||
-          item?.method?.method_display ||
-          item?.method ||
-          "";
-        item.providers.forEach((provider: any) => {
-          flattenedMethods.push({
-            ...provider,
-            provider_name:
-              provider?.provider_name ||
-              provider?.provider ||
-              provider?.name ||
-              "",
-            payment_method:
-              provider?.method_display ||
-              provider?.method ||
-              provider?.payment_method ||
-              provider?.payment_method_type ||
-              methodType ||
-              "",
-            payment_method_type:
-              provider?.method ||
-              provider?.payment_method_type ||
-              methodType ||
-              "",
-            logo:
-              provider?.logo || provider?.provider_logo || provider?.logo_url,
-            provider_logo:
-              provider?.provider_logo || provider?.logo || provider?.logo_url,
-            is_active:
-              provider?.is_active ?? item?.is_active ?? true,
-          });
-        });
-        return;
-      }
-
-      flattenedMethods.push({
-        ...item,
-        provider_name:
-          item?.provider_name || item?.provider || item?.name || "",
-        payment_method:
-          item?.method_display ||
-          item?.method ||
-          item?.payment_method ||
-          item?.payment_method_type ||
-          item?.method?.method_display ||
-          item?.method?.method_name ||
-          item?.method_name ||
-          "",
-        payment_method_type:
-          item?.method ||
-          item?.payment_method_type ||
-          item?.method?.method_name ||
-          item?.method_name ||
-          "",
-        logo: item?.logo || item?.provider_logo || item?.logo_url,
-        provider_logo: item?.provider_logo || item?.logo || item?.logo_url,
-      });
-    }));
-
-    const activeMethods = flattenedMethods
-        .filter((payment: any) => {
-          if (!String(payment?.provider_name || "").trim()) return false;
-          if (payment.is_active === undefined || payment.is_active === null)
-            return true;
-          return (
-            payment.is_active === true ||
-            payment.is_active === "true" ||
-            payment.is_active === 1 ||
-            payment.is_active === "1"
-          );
-        });
-
-    const deduped = Array.from(
-      new Map(
-        activeMethods.map((payment: any) => [String(
-          payment?.id ??
-          payment?.provider_id ??
-          payment?.providerId ??
-          `${payment?.provider_name || ""}::${payment?.method_display || payment?.method || payment?.payment_method || payment?.payment_method_type || ""}`
-        ), payment])
-      ).values()
-    );
-
-    setStablePaymentMethods(deduped);
-  }, [directPublicPaymentMethods, publicPaymentMethods]);
-
-  // Use stable state - React will properly render this
-  const effectivePaymentMethods = stablePaymentMethods;
-
-  const finalPaymentMethods = useMemo(
-    () => effectivePaymentMethods,
-    [effectivePaymentMethods]
-  );
-
-  // Form state - matching deposit form structure
   const [payAmount, setPayAmount] = useState(100);
   const [payAmountInput, setPayAmountInput] = useState("100");
   const [getAmount, setGetAmount] = useState(98);
@@ -231,8 +126,6 @@ export default function TransferForm({ isHomePage = false, onTransfer, commissio
   const [isCalculatingFromPay, setIsCalculatingFromPay] = useState(true);
   const [fromPaymentMethod, setFromPaymentMethod] = useState<string>("");
   const [toPaymentMethod, setToPaymentMethod] = useState<string>("");
-  const [selectedFromPaymentDetail, setSelectedFromPaymentDetail] = useState<any>(null);
-  const [selectedToPaymentDetail, setSelectedToPaymentDetail] = useState<any>(null);
   const [bookmarkOpen, setBookmarkOpen] = useState(false);
   const [showAddPaymentModal, setShowAddPaymentModal] = useState(false);
   const bookmarkAnchorRef = useRef<HTMLSpanElement>(null);
@@ -240,6 +133,7 @@ export default function TransferForm({ isHomePage = false, onTransfer, commissio
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isUpdatingTransaction, setIsUpdatingTransaction] = useState(false);
   const [apiValidationError, setApiValidationError] = useState<string | null>(null);
+  const [actionError, setActionError] = useState<string | null>(null);
   const [isFirstCardSubmitted, setIsFirstCardSubmitted] = useState(false);
   const [bankAccountAddress, setBankAccountAddress] = useState<string>("");
   const [bankAddressError, setBankAddressError] = useState<string | null>(null);
@@ -345,22 +239,9 @@ export default function TransferForm({ isHomePage = false, onTransfer, commissio
     setIsFirstCardSubmitted(false);
   }, [fromKey, toKey, payAmount, getAmount]);
 
-  // Normalize provider labels for dropdowns (e.g. remove trailing "- Bank").
+  // Normalize provider labels for dropdowns (prefer short_name, then provider_name).
   const getProviderName = useCallback((payment: any) => {
-    let providerName =
-      payment?.provider_name ||
-      payment?.provider?.provider_name ||
-      payment?.provider ||
-      payment?.name ||
-      "";
-    providerName = String(providerName || "");
-    providerName = providerName
-      .replace(
-        /\s*-\s*(Bank|Mobile|Crypto|Forex|Marchant|Money\s*Transfer|Merchant)\s*$/i,
-        ""
-      )
-      .trim();
-    return providerName;
+    return getPaymentMethodDisplayTitle(payment) || getCleanPaymentProviderLabel(payment);
   }, []);
 
   // Use a stable unique key so methods with same provider name don't collide in selects.
@@ -385,6 +266,113 @@ export default function TransferForm({ isHomePage = false, onTransfer, commissio
       ? `${String(idPart)}`
       : `${provider}::${String(method).trim().toLowerCase()}`;
   }, [getProviderName]);
+
+  const moneyXInitializedRef = useRef(false);
+
+  const handleFromPaymentChange = useCallback(
+    async (value: string) => {
+      const selectedPayment =
+        fromPaymentMethods?.find(
+          (payment: any) => getPaymentMethodKey(payment) === value
+        ) ?? null;
+
+      restoreFromFullList();
+      const fromId = getProviderId(selectedPayment);
+      const matchedFrom =
+        matchMoneyXMethodById(allFromMethods, fromId) ??
+        matchMoneyXMethodById(fromPaymentMethods, fromId) ??
+        selectedPayment;
+
+      if (!matchedFrom) return;
+
+      const fromKey = getPaymentMethodKey(matchedFrom);
+      setFromPaymentMethod(fromKey);
+      setSelectedFromPaymentDetail(matchedFrom);
+      setValidationErrors([]);
+
+      const matchedTo = await refreshToForFrom(matchedFrom, selectedToPaymentDetail, {
+        force: true,
+      });
+      if (matchedTo) {
+        setToPaymentMethod(getPaymentMethodKey(matchedTo));
+        setSelectedToPaymentDetail(matchedTo);
+      }
+    },
+    [
+      allFromMethods,
+      fromPaymentMethods,
+      selectedToPaymentDetail,
+      getPaymentMethodKey,
+      getProviderId,
+      restoreFromFullList,
+      refreshToForFrom,
+    ]
+  );
+
+  const handleToPaymentChange = useCallback(
+    async (value: string) => {
+      const selectedPayment =
+        toPaymentMethods?.find(
+          (payment: any) => getPaymentMethodKey(payment) === value
+        ) ?? null;
+
+      if (!selectedPayment) return;
+
+      setToPaymentMethod(value);
+      setSelectedToPaymentDetail(selectedPayment);
+      setValidationErrors([]);
+
+      const matchedFrom = await refreshFromForTo(
+        selectedPayment,
+        selectedFromPaymentDetail,
+        { force: true }
+      );
+      if (matchedFrom) {
+        setFromPaymentMethod(getPaymentMethodKey(matchedFrom));
+        setSelectedFromPaymentDetail(matchedFrom);
+      }
+    },
+    [
+      toPaymentMethods,
+      selectedFromPaymentDetail,
+      getPaymentMethodKey,
+      refreshFromForTo,
+    ]
+  );
+
+  const handleSwapPaymentMethods = useCallback(async () => {
+    const newToDetail = selectedFromPaymentDetail;
+    const newFromId = getProviderId(selectedToPaymentDetail);
+    const newFromDetail =
+      matchMoneyXMethodById(allFromMethods, newFromId) ?? selectedToPaymentDetail;
+
+    restoreFromFullList();
+
+    if (newFromDetail) {
+      setFromPaymentMethod(getPaymentMethodKey(newFromDetail));
+      setSelectedFromPaymentDetail(newFromDetail);
+    }
+    if (newToDetail) {
+      setToPaymentMethod(getPaymentMethodKey(newToDetail));
+      setSelectedToPaymentDetail(newToDetail);
+    }
+
+    const matchedTo = await refreshToForFrom(newFromDetail, newToDetail, {
+      force: true,
+    });
+    if (matchedTo) {
+      setToPaymentMethod(getPaymentMethodKey(matchedTo));
+      setSelectedToPaymentDetail(matchedTo);
+    }
+  }, [
+    allFromMethods,
+    selectedFromPaymentDetail,
+    selectedToPaymentDetail,
+    getPaymentMethodKey,
+    getProviderId,
+    restoreFromFullList,
+    refreshToForFrom,
+  ]);
 
   const currentBankAsset = selectedToPaymentDetail ? getProviderName(selectedToPaymentDetail) : "";
   const {
@@ -451,23 +439,8 @@ export default function TransferForm({ isHomePage = false, onTransfer, commissio
 
   // Helper function to check if a payment method is a bank
   const isBankMethod = useCallback((method: any) => {
-    if (!method) return false;
-    const providerName = getProviderName(method).toLowerCase();
-    const baseMethod = (method?.method || "").toLowerCase();
-    const baseMethodDisplay = (method?.method_display || "").toLowerCase();
-    const paymentMethod = (method?.payment_method || "").toLowerCase();
-    const paymentMethodType = (method?.payment_method_type || "").toLowerCase();
-    const provider = (method?.provider || "").toLowerCase();
-
-    return (
-      providerName.includes("bank") ||
-      baseMethod.includes("bank") ||
-      baseMethodDisplay.includes("bank") ||
-      paymentMethod.includes("bank") ||
-      paymentMethodType.includes("bank") ||
-      provider.includes("bank")
-    );
-  }, [getProviderName]);
+    return isMoneyXBankPaymentMethod(method);
+  }, []);
 
   // Restore state from localStorage after login (only for home page)
   const hasRestoredState = useRef(false);
@@ -540,7 +513,7 @@ export default function TransferForm({ isHomePage = false, onTransfer, commissio
 
   // Restore payment methods after they're loaded
   useEffect(() => {
-    if (!isHomePage || !isAuthenticated || !Array.isArray(finalPaymentMethods) || finalPaymentMethods.length === 0) {
+    if (!isHomePage || !isAuthenticated || !Array.isArray(fromPaymentMethods) || fromPaymentMethods.length === 0) {
       return;
     }
 
@@ -570,7 +543,7 @@ export default function TransferForm({ isHomePage = false, onTransfer, commissio
             console.log("Trying to match from payment detail:", fromDetail);
 
             // Try multiple matching strategies
-            matchedFromMethod = finalPaymentMethods.find(
+            matchedFromMethod = fromPaymentMethods.find(
               (m: any) => {
                 const providerName = getProviderName(m);
                 return (
@@ -590,7 +563,7 @@ export default function TransferForm({ isHomePage = false, onTransfer, commissio
 
         // If no match by ID, try by name
         if (!matchedFromMethod) {
-          matchedFromMethod = finalPaymentMethods.find(
+          matchedFromMethod = fromPaymentMethods.find(
             (m: any) => getProviderName(m) === restoreFrom
           );
         }
@@ -604,8 +577,8 @@ export default function TransferForm({ isHomePage = false, onTransfer, commissio
         }
       }
 
-      // Restore "to" payment method
-      if (restoreTo) {
+      // Restore "to" payment method (filtered list for selected from provider)
+      if (restoreTo && toPaymentMethods.length > 0) {
         const savedToDetail = localStorage.getItem("moneyx_restore_to_detail");
 
         if (savedToDetail) {
@@ -613,8 +586,7 @@ export default function TransferForm({ isHomePage = false, onTransfer, commissio
             const toDetail = JSON.parse(savedToDetail);
             console.log("Trying to match to payment detail:", toDetail);
 
-            // Try multiple matching strategies
-            matchedToMethod = finalPaymentMethods.find(
+            matchedToMethod = toPaymentMethods.find(
               (m: any) => {
                 const providerName = getProviderName(m);
                 return (
@@ -623,7 +595,8 @@ export default function TransferForm({ isHomePage = false, onTransfer, commissio
                   (m.providerId && m.providerId === toDetail.providerId) ||
                   (providerName === restoreTo) ||
                   (providerName === toDetail.provider_name) ||
-                  (m.provider_name === toDetail.provider_name)
+                  (m.provider_name === toDetail.provider_name) ||
+                  getPaymentMethodKey(m) === restoreTo
                 );
               }
             );
@@ -632,10 +605,9 @@ export default function TransferForm({ isHomePage = false, onTransfer, commissio
           }
         }
 
-        // If no match by ID, try by name
         if (!matchedToMethod) {
-          matchedToMethod = finalPaymentMethods.find(
-            (m: any) => getProviderName(m) === restoreTo
+          matchedToMethod = toPaymentMethods.find(
+            (m: any) => getProviderName(m) === restoreTo || getPaymentMethodKey(m) === restoreTo
           );
         }
 
@@ -663,94 +635,82 @@ export default function TransferForm({ isHomePage = false, onTransfer, commissio
         localStorage.removeItem("moneyx_restore_to_detail");
       }
     }
-  }, [finalPaymentMethods, isHomePage, isAuthenticated, getProviderName, getPaymentMethodKey]);
+  }, [fromPaymentMethods, toPaymentMethods, isHomePage, isAuthenticated, getProviderName, getPaymentMethodKey, refreshToForFrom]);
 
-  // Keep selected methods valid against live API list, but never auto-select.
+  // Initial default: Salaam From + scoped To (mobile parity)
   useEffect(() => {
-    if (!Array.isArray(finalPaymentMethods) || finalPaymentMethods.length === 0) {
-      if (fromPaymentMethod) {
-        setFromPaymentMethod("");
-        setSelectedFromPaymentDetail(null);
-      }
-      if (toPaymentMethod) {
-        setToPaymentMethod("");
-        setSelectedToPaymentDetail(null);
-      }
-      return;
-    }
+    if (!allFromReady || fromPaymentMethods.length === 0) return;
+    if (moneyXInitializedRef.current) return;
 
-    if (
-      fromPaymentMethod &&
-      !finalPaymentMethods.some((m: any) => getPaymentMethodKey(m) === fromPaymentMethod)
-    ) {
-      setFromPaymentMethod("");
-      setSelectedFromPaymentDetail(null);
-    }
-
-    if (
-      toPaymentMethod &&
-      !finalPaymentMethods.some((m: any) => getPaymentMethodKey(m) === toPaymentMethod)
-    ) {
-      setToPaymentMethod("");
-      setSelectedToPaymentDetail(null);
-    }
-  }, [finalPaymentMethods, fromPaymentMethod, toPaymentMethod, getPaymentMethodKey]);
-
-  // Home MoneyX default selection: first for "from", second distinct for "to".
-  useEffect(() => {
-    if (!Array.isArray(finalPaymentMethods) || finalPaymentMethods.length === 0) return;
     const isRestoring =
       typeof window !== "undefined" &&
-      (localStorage.getItem("moneyx_restore_from") || localStorage.getItem("moneyx_restore_to"));
+      (localStorage.getItem("moneyx_restore_from") ||
+        localStorage.getItem("moneyx_restore_to"));
     if (isRestoring) return;
+    if (fromPaymentMethod) return;
 
-    const first = finalPaymentMethods[0];
-    const firstKey = getPaymentMethodKey(first);
-    if (!firstKey) return;
+    moneyXInitializedRef.current = true;
+    const defaultFrom = pickDefaultMoneyXFromMethod(fromPaymentMethods);
+    if (!defaultFrom) return;
 
-    const second =
-      finalPaymentMethods.find((m: any) => getPaymentMethodKey(m) && getPaymentMethodKey(m) !== firstKey) ||
-      finalPaymentMethods[1] ||
-      first;
-    const secondKey = getPaymentMethodKey(second);
+    const fromKey = getPaymentMethodKey(defaultFrom);
+    setFromPaymentMethod(fromKey);
+    setSelectedFromPaymentDetail(defaultFrom);
 
-    if (!fromPaymentMethod) {
-      setFromPaymentMethod(firstKey);
-      setSelectedFromPaymentDetail(first);
-    }
-    if (!toPaymentMethod && secondKey) {
-      setToPaymentMethod(secondKey);
-      setSelectedToPaymentDetail(second);
-    }
-  }, [finalPaymentMethods, fromPaymentMethod, toPaymentMethod, getPaymentMethodKey]);
+    void refreshToForFrom(defaultFrom, null, { force: true }).then((matchedTo) => {
+      if (!matchedTo) return;
+      setToPaymentMethod(getPaymentMethodKey(matchedTo));
+      setSelectedToPaymentDetail(matchedTo);
+    });
+  }, [
+    allFromReady,
+    fromPaymentMethods,
+    fromPaymentMethod,
+    getPaymentMethodKey,
+    refreshToForFrom,
+  ]);
 
-  // Prepare options for CustomSelect
-  const paymentMethodOptions = finalPaymentMethods.map((payment: any) => {
-    let logoUrl: string | undefined = undefined;
+  const buildPaymentMethodOptions = useCallback((methods: any[]) => {
+    return methods.map((payment: any) => {
+      let logoUrl: string | undefined = undefined;
 
-    if (
-      payment.provider_logo &&
-      typeof payment.provider_logo === "string" &&
-      payment.provider_logo.trim()
-    ) {
-      logoUrl = payment.provider_logo.trim();
-    } else if (
-      payment.logo &&
-      typeof payment.logo === "string" &&
-      payment.logo.trim()
-    ) {
-      logoUrl = payment.logo.trim();
-    }
+      if (
+        payment.provider_logo &&
+        typeof payment.provider_logo === "string" &&
+        payment.provider_logo.trim()
+      ) {
+        logoUrl = payment.provider_logo.trim();
+      } else if (
+        payment.logo &&
+        typeof payment.logo === "string" &&
+        payment.logo.trim()
+      ) {
+        logoUrl = payment.logo.trim();
+      }
 
-    const cleanProviderName = getProviderName(payment);
-    return {
-      value: getPaymentMethodKey(payment),
-      // Show provider name only; do not append method suffixes like "- Bank".
-      label: cleanProviderName,
-      logo: getHighResPaymentLogo(logoUrl, undefined, PAYMENT_LOGO_SIZE),
-      raw: payment,
-    };
-  });
+      const { label, subtitle } = getPaymentMethodSelectLabels(payment);
+      return {
+        value: getPaymentMethodKey(payment),
+        label: label || getProviderName(payment),
+        subtitle,
+        logo: getHighResPaymentLogo(logoUrl, undefined, PAYMENT_LOGO_SIZE),
+        raw: payment,
+      };
+    });
+  }, [getProviderName, getPaymentMethodKey]);
+
+  const fromPaymentMethodOptions = useMemo(
+    () => buildPaymentMethodOptions(fromPaymentMethods),
+    [fromPaymentMethods, buildPaymentMethodOptions]
+  );
+
+  const toPaymentMethodOptions = useMemo(
+    () =>
+      buildPaymentMethodOptions(
+        toPaymentMethods.length > 0 ? toPaymentMethods : fromPaymentMethods
+      ),
+    [toPaymentMethods, fromPaymentMethods, buildPaymentMethodOptions]
+  );
 
   // Calculate receive/send using commission percentage from API (receive = send - send*rate/100)
   const handleAmountChange = (value: string, isFromPay: boolean) => {
@@ -848,9 +808,11 @@ export default function TransferForm({ isHomePage = false, onTransfer, commissio
 
     if (errors.length > 0) {
       setValidationErrors(errors);
-      errors.forEach(error => showToast.error(error));
+      setActionError(errors[0] || null);
       return;
     }
+
+    setActionError(null);
 
     // Check if user is verified (KYC check) - verify with API
     if (isAuthenticated && user) {
@@ -1040,13 +1002,6 @@ export default function TransferForm({ isHomePage = false, onTransfer, commissio
         </div>
       )}
 
-      {/* MoneyX API Error Display */}
-      {moneyXError && (
-        <div className="mb-4 text-red-500 text-sm font-medium">
-          {moneyXError}
-        </div>
-      )}
-
 
       <div className={`w-full ${isDark ? "text-white" : "text-[#1F2937]"}`}>
         {/* Top Section - Amount and From Payment Method in one card */}
@@ -1078,7 +1033,7 @@ export default function TransferForm({ isHomePage = false, onTransfer, commissio
                     handleAmountChange(e.target.value, true);
                   }}
                   placeholder={t("express.enterAmount", "Enter amount")}
-                  className={`w-full rounded-2xl px-4 py-2 pr-16 focus:outline-none border appearance-none bg-transparent ${isDark ? "border-white/10" : "border-gray-200"} ${swapAmountValueClass(isDark)}`}
+                  className={homeCardAmountFieldClass(isDark)}
                 />
               </div>
             </div>
@@ -1097,7 +1052,7 @@ export default function TransferForm({ isHomePage = false, onTransfer, commissio
               </div>
               <div className="relative">
                 <CustomSelect
-                  options={paymentMethodOptions}
+                  options={fromPaymentMethodOptions}
                   value={fromPaymentMethod}
                   logoSize={PAYMENT_LOGO_SIZE}
                   logoClassName={`${PAYMENT_LOGO_BASE_CLASS} rounded-full`}
@@ -1106,23 +1061,17 @@ export default function TransferForm({ isHomePage = false, onTransfer, commissio
                   dropdownMaxWidth={460}
                   className="w-full"
                   placeholderClassName="text-white dark:text-white"
-                  triggerClassName={`px-4 py-2 text-sm font-medium border rounded-2xl bg-transparent ${isDark ? "text-white border-white/10" : "text-[#1F2937] border-gray-200"
-                    }`}
+                  triggerClassName={homeCardSelectTriggerClass(isDark)}
                   onChange={(value) => {
-                    const selectedPayment = finalPaymentMethods?.find(
-                      (payment: any) => getPaymentMethodKey(payment) === value
-                    );
-                    setFromPaymentMethod(value);
-                    setSelectedFromPaymentDetail(selectedPayment || null);
-                    setValidationErrors([]);
+                    void handleFromPaymentChange(value);
                   }}
                   placeholder={
-                    paymentMethodsDisplay.isLoading && finalPaymentMethods.length === 0
+                    paymentMethodsDisplay.isLoading && fromPaymentMethods.length === 0
                       ? "Loading payment methods..."
                       : "Select From Payment Method"
                   }
-                  disabled={paymentMethodsDisplay.isLoading && finalPaymentMethods.length === 0}
-                  loading={paymentMethodsDisplay.isLoading && finalPaymentMethods.length === 0}
+                  disabled={paymentMethodsDisplay.isLoading && fromPaymentMethods.length === 0}
+                  loading={paymentMethodsDisplay.isLoading && fromPaymentMethods.length === 0}
                   loadingText="Loading payment methods..."
                   emptyText="No payment methods available"
                   searchable={true}
@@ -1142,13 +1091,7 @@ export default function TransferForm({ isHomePage = false, onTransfer, commissio
             <button
               className="w-14 h-14 rounded-full flex items-center justify-center transition-all duration-200 shadow-lg hover:scale-105"
               onClick={() => {
-                // Swap from and to payment methods
-                const tempFrom = fromPaymentMethod;
-                const tempFromDetail = selectedFromPaymentDetail;
-                setFromPaymentMethod(toPaymentMethod);
-                setSelectedFromPaymentDetail(selectedToPaymentDetail);
-                setToPaymentMethod(tempFrom);
-                setSelectedToPaymentDetail(tempFromDetail);
+                void handleSwapPaymentMethods();
               }}
             >
               {/* Light mode image */}
@@ -1193,7 +1136,7 @@ export default function TransferForm({ isHomePage = false, onTransfer, commissio
                     handleAmountChange(e.target.value, false);
                   }}
                   placeholder="Enter amount"
-                  className={`w-full rounded-2xl px-4 py-2 pr-16 focus:outline-none border appearance-none bg-transparent ${isDark ? "border-white/10" : "border-gray-200"} ${swapAmountValueClass(isDark)}`}
+                  className={homeCardAmountFieldClass(isDark)}
                 />
               </div>
             </div>
@@ -1212,7 +1155,7 @@ export default function TransferForm({ isHomePage = false, onTransfer, commissio
               </div>
               <div className="relative">
                 <CustomSelect
-                  options={paymentMethodOptions.filter(
+                  options={toPaymentMethodOptions.filter(
                     (opt) => opt.value !== fromPaymentMethod
                   )}
                   value={toPaymentMethod}
@@ -1223,23 +1166,17 @@ export default function TransferForm({ isHomePage = false, onTransfer, commissio
                   dropdownMaxWidth={460}
                   className="w-full"
                   placeholderClassName="text-white dark:text-white"
-                  triggerClassName={`px-4 py-2 text-sm font-medium border rounded-2xl bg-transparent ${isDark ? "text-white border-white/10" : "text-[#1F2937] border-gray-200"
-                    }`}
+                  triggerClassName={homeCardSelectTriggerClass(isDark)}
                   onChange={(value) => {
-                    const selectedPayment = finalPaymentMethods?.find(
-                      (payment: any) => getPaymentMethodKey(payment) === value
-                    );
-                    setToPaymentMethod(value);
-                    setSelectedToPaymentDetail(selectedPayment || null);
-                    setValidationErrors([]);
+                    void handleToPaymentChange(value);
                   }}
                   placeholder={
-                    paymentMethodsDisplay.isLoading && finalPaymentMethods.length === 0
+                    toLoading || (fromLoading && fromPaymentMethods.length === 0)
                       ? "Loading payment methods..."
                       : "Select To Payment Method"
                   }
-                  disabled={paymentMethodsDisplay.isLoading && finalPaymentMethods.length === 0}
-                  loading={paymentMethodsDisplay.isLoading && finalPaymentMethods.length === 0}
+                  disabled={toLoading || !selectedFromPaymentDetail}
+                  loading={toLoading}
                   loadingText="Loading payment methods..."
                   emptyText="No payment methods available"
                   searchable={true}
@@ -1248,8 +1185,8 @@ export default function TransferForm({ isHomePage = false, onTransfer, commissio
                   dropdownOffsetX={0}
                 />
               </div>
-              {paymentMethodsError && (
-                <p className="text-red-500 text-sm mt-1">{paymentMethodsError}</p>
+              {(paymentMethodsError || toPaymentMethodsError) && (
+                <p className="text-red-500 text-sm mt-1">{paymentMethodsError || toPaymentMethodsError}</p>
               )}
             </div>
           </div>
@@ -1290,14 +1227,23 @@ export default function TransferForm({ isHomePage = false, onTransfer, commissio
 
         {/* Submit Button for First Card */}
         {!isFirstCardSubmitted && (
-          <div className="relative">
+          <div className="relative flex flex-col gap-3">
+            {(actionError || moneyXError) && (
+              <p className="text-red-500 text-sm font-medium text-center px-1">
+                {normalizeExpressApiErrorMessage(actionError || moneyXError)}
+              </p>
+            )}
             <button
               type="button"
               className={`w-full text-base font-medium py-1.5 rounded-full flex items-center justify-center gap-2 transition-colors text-white ${isTransferDisabled
                   ? "bg-gray-500 cursor-not-allowed"
                   : "bg-[#1D8751] hover:bg-[#1D8751]/80"
                 }`}
-              onClick={handleFirstCardSubmit}
+              onClick={() => {
+                setActionError(null);
+                dispatch(clearMoneyXError());
+                handleFirstCardSubmit();
+              }}
               disabled={!!isTransferDisabled}
             >
               {isSubmitting ? (
@@ -1647,26 +1593,33 @@ export default function TransferForm({ isHomePage = false, onTransfer, commissio
 
           {/* Final Submit Button */}
           <div className="flex flex-col gap-3 w-full px-2">
+            {(actionError || moneyXError) && (
+              <p className="text-red-500 text-sm font-medium text-center px-1">
+                {normalizeExpressApiErrorMessage(actionError || moneyXError)}
+              </p>
+            )}
             <button
               className={`w-full text-base font-medium py-1.5 rounded-full flex items-center justify-center gap-2 transition-colors text-white ${!bankAccountAddress.trim() || bankAddressError || !isAddressConfirmed || !isTermsAccepted
                   ? "bg-gray-500 cursor-not-allowed"
                   : "bg-[#1D8751] hover:bg-[#1D8751]/80"
                 }`}
               onClick={async () => {
+                setActionError(null);
+                dispatch(clearMoneyXError());
                 if (!bankAccountAddress.trim()) {
-                  showToast.error("Please enter a bank account address");
+                  setActionError("Please enter a bank account address");
                   return;
                 }
                 if (bankAddressError) {
-                  showToast.error("Please enter a valid bank account address");
+                  setActionError("Please enter a valid bank account address");
                   return;
                 }
                 if (!isAddressConfirmed) {
-                  showToast.error("Please confirm the bank account address");
+                  setActionError("Please confirm the bank account address");
                   return;
                 }
                 if (!isTermsAccepted) {
-                  showToast.error("Please accept the Terms of Use to continue");
+                  setActionError("Please accept the Terms of Use to continue");
                   return;
                 }
 
@@ -1713,51 +1666,21 @@ export default function TransferForm({ isHomePage = false, onTransfer, commissio
                 setIsUpdatingTransaction(true);
 
                 try {
-                  // Always create a fresh transaction for a new submit flow.
-                  // Do not reuse stale Redux transaction IDs from previous runs.
-                  let transactionId: string | undefined;
+                  const recipientName =
+                    user?.first_name && user?.last_name
+                      ? `${user.first_name} ${user.last_name}`.trim()
+                      : user?.first_name || user?.last_name || "";
 
-                  // Create transaction on last submit if not already created (post happens here, not on first button)
-                  if (!transactionId) {
-                    const senderProviderId =
-                      selectedFromPaymentDetail?.id ||
-                      selectedFromPaymentDetail?.provider_id ||
-                      selectedFromPaymentDetail?.providerId;
-                    const receiverProviderId =
-                      selectedToPaymentDetail?.id ||
-                      selectedToPaymentDetail?.provider_id ||
-                      selectedToPaymentDetail?.providerId;
-                    if (!senderProviderId || !receiverProviderId) {
-                      showToast.error("Provider IDs not found in payment methods");
-                      return;
-                    }
-                    const recipientName =
-                      user?.first_name && user?.last_name
-                        ? `${user.first_name} ${user.last_name}`.trim()
-                        : user?.first_name || user?.last_name || "";
-                    const createResult = await dispatch(
-                      createMoneyXTransaction({
-                        amount: payAmount.toFixed(2),
-                        sender_provider: senderProviderId,
-                        receiver_provider: receiverProviderId,
-                        recipient_name: recipientName || "User",
-                      })
-                    ).unwrap();
-                    transactionId = createResult?.moneyx_transaction_id;
-                    if (!transactionId) {
-                      showToast.error("Failed to create transaction");
-                      return;
-                    }
-                  }
+                  const payload = buildMoneyXTransactionPayload({
+                    amount: payAmount,
+                    senderProvider: selectedFromPaymentDetail,
+                    receiverProvider: selectedToPaymentDetail,
+                    recipientName: recipientName || "User",
+                    recipientAccountNumber: bankAccountAddress,
+                  });
 
-                  // Update MoneyX transaction with account number
                   const result = await dispatch(
-                    updateMoneyXTransaction({
-                      transactionId,
-                      payload: {
-                        recipient_account_number: bankAccountAddress.trim(),
-                      },
-                    })
+                    createMoneyXTransaction(payload)
                   ).unwrap();
 
                   showToast.success("Transaction is successful", "Account updated successfully.");
@@ -1775,8 +1698,22 @@ export default function TransferForm({ isHomePage = false, onTransfer, commissio
                   }
                 } catch (error: any) {
                   console.error("Update transaction error:", error);
-                  const errorMessage = error || "An error occurred while updating the transaction.";
-                  showToast.error(errorMessage);
+                  const scamMsg = resolveScamFlagDisplayError(
+                    error,
+                    error?.response?.data,
+                    typeof error === "string" ? error : error?.message
+                  );
+                  if (scamMsg) {
+                    setActionError(scamMsg);
+                    return;
+                  }
+                  setActionError(
+                    normalizeExpressApiErrorMessage(
+                      error || "An error occurred while updating the transaction.",
+                      error?.response?.data,
+                      error
+                    )
+                  );
                 } finally {
                   setIsUpdatingTransaction(false);
                 }

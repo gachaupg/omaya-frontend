@@ -38,5 +38,8 @@
   "transactions.noTransactionsFound": "Ma jiro wax macaamil ganacsi oo P2P ah oo la helay",
   "transactions.noTransactionsMessage": "Hadda ma jiraan wax macaamil ganacsi oo P2P ah oo la soo bandhigo. Fadlan dib u hubi mar dambe ama isku day inaad hagaajiso filtarradaada.",
   "transactions.noWithdrawalDepositFound": "Lacag bixinta/Dhigashada P2P lama helin",
-  "transactions.noWithdrawalDepositMessage": "Hadda ma jiraan wax macaamil ganacsi oo lacag bixinta/dhigashada P2P ah oo la soo bandhigo. Fadlan dib u hubi mar dambe ama isku day inaad hagaajiso filtarradaada."
+  "transactions.noWithdrawalDepositMessage": "Hadda ma jiraan wax macaamil ganacsi oo lacag bixinta/dhigashada P2P ah oo la soo bandhigo. Fadlan dib u hubi mar dambe ama isku day inaad hagaajiso filtarradaada.",
+  "tradeLink.expiredTitle": "Ganacsigaagu wuu dhacay",
+  "tradeLink.expiredMessage": "Sahami suuqa P2P.",
+  "tradeLink.close": "Xir"
 }

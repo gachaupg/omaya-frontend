@@ -477,7 +477,7 @@ const FinalSell: React.FC<FinalSellProps> = ({ orderData }) => {
                 <div className="text-[10px] sm:text-xs text-gray-500 dark:text-[#788099] mt-0.5 sm:mt-0">
                   <span className="whitespace-nowrap">{singleOrder?.user_total_buy_orders || 120} Orders</span>{" "}
                   <span className="hidden sm:inline">|</span>{" "}
-                  <span className="whitespace-nowrap">{singleOrder?.completion_rate || "99.20"}% Completion</span>
+                  <span className="whitespace-nowrap">{Number(singleOrder?.completion_rate ?? 99.2).toFixed(2)}% Completion</span>
                 </div>
                 <div className="text-[10px] sm:text-xs text-[#1D8751] mt-0.5 sm:mt-0">
                   <span className="whitespace-nowrap">Rating: 99%</span>{" "}
@@ -757,9 +757,9 @@ const FinalSell: React.FC<FinalSellProps> = ({ orderData }) => {
                         </span>
                       </div>
                     )}
-                    <div className="flex flex-col md:flex-row gap-4 mt-4">
+                    <div className="mt-4 flex flex-row items-stretch gap-2 sm:gap-4">
                       <button
-                        className={`w-full md:w-auto flex-1 py-2 rounded-2xl border-2 border-gray-200 dark:border-[#3C3C47] text-lg  ${confirmOrder?.status === "half-matched"
+                        className={`flex-[2] min-w-0 sm:flex-1 flex items-center justify-center text-center px-3 sm:px-4 py-2.5 sm:py-2 rounded-2xl border-2 border-gray-200 dark:border-[#3C3C47] text-xs sm:text-lg leading-tight ${confirmOrder?.status === "half-matched"
                           ? "bg-gray-100 dark:bg-[var(--card-color)] text-gray-400 dark:text-[#888]"
                           : "bg-transparent text-gray-600 dark:text-[#788099]"
                           }`}
@@ -771,7 +771,7 @@ const FinalSell: React.FC<FinalSellProps> = ({ orderData }) => {
                         {cancelLoading ? "Cancelling..." : "Cancel Transaction"}
                       </button>
                       <button
-                        className={`w-full md:w-auto flex-1 py-2 rounded-2xl text-lg  ${confirmOrder?.status === "half-matched" || !buyerMayMarkMoneySent
+                        className={`flex-[3] min-w-0 sm:flex-1 flex items-center justify-center text-center px-3 sm:px-4 py-2.5 sm:py-2 rounded-2xl text-xs sm:text-lg leading-tight ${confirmOrder?.status === "half-matched" || !buyerMayMarkMoneySent
                           ? "bg-gray-100 dark:bg-[var(--card-color)] text-gray-400 dark:text-[#888]"
                           : "bg-[#1D8751] text-white hover:bg-[#167a45] transition-colors"
                           } ${(() => {

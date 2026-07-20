@@ -12,19 +12,26 @@ import { useRouter } from "next/navigation";
 import { AppDispatch } from "@/store";
 import { RootState } from "@/store/rootReducer";
 import {
-  fetchPublicPaymentMethods,
-  fetchAdminPaymentMethods,
   fetchUserPaymentDetails,
 } from "@/features/p2p/slices/paymentMethodsSlice";
 import {
   createMoneyXTransaction,
-  updateMoneyXTransaction,
   fetchMoneyXCommission,
 } from "@/features/express/home/components/moneyX/slices/moneyXSlice";
+import { clearMoneyXError } from "@/features/moneyX/slices/moneyXSlice";
+import { buildMoneyXTransactionPayload } from "@/features/moneyX/utils/buildMoneyXTransactionPayload";
 import { useTheme } from "@/context/theme";
 import { showToast } from "@/lib/utils/toast";
+import { normalizeExpressApiErrorMessage } from "@/lib/utils/expressMinAmount";
+import { resolveScamFlagDisplayError } from "@/lib/utils/scamFlagError";
 import { scrollAppToTop } from "@/lib/utils/scrollAppToTop";
 import { usePaymentMethodsDisplay } from "@/features/express/hooks/useDataDisplay";
+import { useMoneyXPaymentMethodLists } from "@/features/express/hooks/useMoneyXPaymentMethodLists";
+import { pickDefaultMoneyXFromMethod } from "@/features/express/utils/defaultMoneyXFromProvider";
+import {
+  matchMoneyXMethodById,
+  isMoneyXBankPaymentMethod,
+} from "@/features/express/utils/moneyXPaymentMethodUtils";
 import { setAuthRedirectPath } from "@/lib/utils/authRedirect";
 import { ExpressLegalTermsLinks } from "@/features/express/components/legal/ExpressLegalTermsLinks";
 import { FiChevronDown, FiInfo } from "react-icons/fi";
@@ -96,12 +103,6 @@ const MoneyXRates = ({
   const { user } = useSelector((state: RootState) => state.auth);
 
   const {
-    adminMethods,
-    loading: adminMethodsLoading,
-    error: adminMethodsError,
-    publicPaymentMethods,
-    publicMethodsLoading,
-    publicMethodsError,
     userPaymentDetails,
   } = useSelector((state: RootState) => state.paymentMethods);
 
@@ -112,110 +113,6 @@ const MoneyXRates = ({
   } = useSelector((state: RootState) => state.moneyX);
 
   const { isAuthenticated } = useSelector((state: RootState) => state.auth);
-
-  // Use state to hold payment methods
-  const [stablePaymentMethods, setStablePaymentMethods] = useState<any[]>([]);
-
-  // Use public payment methods for rates calculator
-  const paymentMethodsData = publicPaymentMethods;
-  const paymentMethodsLoading = publicMethodsLoading;
-  const paymentMethodsError = publicMethodsError;
-
-  const paymentMethodsDisplay = usePaymentMethodsDisplay(
-    paymentMethodsData,
-    paymentMethodsLoading,
-    paymentMethodsError
-  );
-
-  // Fetch payment methods on mount
-  useEffect(() => {
-    dispatch(fetchPublicPaymentMethods());
-  }, [dispatch]);
-
-  // Process payment methods
-  useEffect(() => {
-    let processedMethods: any[] = [];
-    if (publicPaymentMethods) {
-      // Check if it's an array first
-      if (Array.isArray(publicPaymentMethods)) {
-        processedMethods = publicPaymentMethods;
-      }
-      // Check if it has a data property with providers
-      else if (
-        publicPaymentMethods &&
-        typeof publicPaymentMethods === "object" &&
-        "data" in publicPaymentMethods
-      ) {
-        const data = (publicPaymentMethods as any).data;
-        if (data) {
-          if (Array.isArray(data.providers)) {
-            processedMethods = data.providers;
-          } else if (Array.isArray(data.payment_methods)) {
-            processedMethods = data.payment_methods;
-          }
-        }
-      }
-    }
-
-    if (processedMethods.length > 0) {
-      const activeMethods = processedMethods
-        .filter((payment: any) => {
-          if (!String(payment?.provider_name || payment?.provider?.provider_name || "").trim()) {
-            return false;
-          }
-          if (payment.is_active === undefined || payment.is_active === null)
-            return true;
-          return (
-            payment.is_active === true ||
-            payment.is_active === "true" ||
-            payment.is_active === 1 ||
-            payment.is_active === "1"
-          );
-        })
-        .map((payment: any) => {
-          const resolvedLogo = resolvePaymentMethodLogo(payment);
-          return {
-            ...payment,
-            logo: resolvedLogo || payment.logo || payment.provider_logo || undefined,
-            provider_logo:
-              resolvedLogo || payment.provider_logo || payment.logo || undefined,
-            provider_name:
-              payment.provider_name ||
-              payment.provider?.provider_name ||
-              payment.method?.method_name ||
-              payment.payment_method_name,
-          };
-        });
-
-      const deduped = Array.from(
-        new Map(
-          activeMethods.map((payment: any) => [
-            String(
-              payment?.id ??
-                payment?.provider_id ??
-                payment?.providerId ??
-                `${payment?.provider_name || ""}::${
-                  payment?.method_display ||
-                  payment?.method ||
-                  payment?.payment_method ||
-                  payment?.payment_method_type ||
-                  ""
-                }`
-            ),
-            payment,
-          ])
-        ).values()
-      );
-
-      setStablePaymentMethods(deduped);
-      return;
-    }
-    setStablePaymentMethods([]);
-  }, [publicPaymentMethods]);
-
-  const effectivePaymentMethods = stablePaymentMethods;
-
-  const finalPaymentMethods = effectivePaymentMethods;
 
   // Form state
   const [payAmount, setPayAmount] = useState(100);
@@ -228,19 +125,79 @@ const MoneyXRates = ({
     useState<any>(null);
   const [selectedToPaymentDetail, setSelectedToPaymentDetail] =
     useState<any>(null);
+
+  const {
+    fromMethods: rawFromMethods,
+    toMethods: rawToMethods,
+    allFromReady,
+    fromLoading,
+    toLoading,
+    fromError: paymentMethodsError,
+    toError: toPaymentMethodsError,
+    restoreFromFullList,
+    refreshToForFrom,
+    refreshFromForTo,
+    allFromMethods,
+    getProviderId,
+  } = useMoneyXPaymentMethodLists({
+    flow: commissionType,
+  });
+
+  const enrichPaymentMethod = useCallback((payment: any) => {
+    const resolvedLogo = resolvePaymentMethodLogo(payment);
+    return {
+      ...payment,
+      logo: resolvedLogo || payment.logo || payment.provider_logo || undefined,
+      provider_logo:
+        resolvedLogo || payment.provider_logo || payment.logo || undefined,
+      provider_name:
+        payment.provider_name ||
+        payment.provider?.provider_name ||
+        payment.method?.method_name ||
+        payment.payment_method_name,
+    };
+  }, []);
+
+  const fromPaymentMethods = useMemo(
+    () => rawFromMethods.map(enrichPaymentMethod),
+    [rawFromMethods, enrichPaymentMethod]
+  );
+
+  const toPaymentMethods = useMemo(
+    () => rawToMethods.map(enrichPaymentMethod),
+    [rawToMethods, enrichPaymentMethod]
+  );
+
+  const effectiveToPaymentMethods = useMemo(
+    () => (toPaymentMethods.length > 0 ? toPaymentMethods : fromPaymentMethods),
+    [toPaymentMethods, fromPaymentMethods]
+  );
+
+  const moneyXInitializedRef = useRef(false);
+
+  const paymentMethodsDisplay = usePaymentMethodsDisplay(
+    fromPaymentMethods,
+    fromLoading,
+    paymentMethodsError
+  );
+
+  useEffect(() => {
+    if (isAuthenticated) {
+      dispatch(fetchUserPaymentDetails());
+    }
+  }, [dispatch, isAuthenticated]);
   const [isFromDropdownOpen, setIsFromDropdownOpen] = useState(false);
   const [isToDropdownOpen, setIsToDropdownOpen] = useState(false);
   const [fromSearchTerm, setFromSearchTerm] = useState("");
   const [toSearchTerm, setToSearchTerm] = useState("");
   const [validationErrors, setValidationErrors] = useState<string[]>([]);
+  const [actionError, setActionError] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isFirstCardSubmitted, setIsFirstCardSubmitted] = useState(false);
   const [bankAccountAddress, setBankAccountAddress] = useState<string>("");
   const [bankAddressError, setBankAddressError] = useState<string | null>(null);
   const [isAddressConfirmed, setIsAddressConfirmed] = useState(false);
   const [isUpdatingTransaction, setIsUpdatingTransaction] = useState(false);
-  const [moneyXTransactionResult, setMoneyXTransactionResult] =
-    useState<any>(null);
   const [showExchanging, setShowExchanging] = useState(false);
   const [transactionData, setTransactionData] = useState<any>(null);
   const [apiCommission, setApiCommission] = useState<number | null>(null);
@@ -476,26 +433,140 @@ const MoneyXRates = ({
     return providerName;
   }, []);
 
-  // Auto-selected or restored rows: keep detail object in sync with the canonical API list so logos show.
-  useEffect(() => {
-    if (!Array.isArray(finalPaymentMethods) || finalPaymentMethods.length === 0)
-      return;
-    if (!fromPaymentMethod) return;
-    const match = finalPaymentMethods.find(
-      (m: any) => getProviderName(m) === fromPaymentMethod
-    );
-    if (match) setSelectedFromPaymentDetail(match);
-  }, [finalPaymentMethods, fromPaymentMethod, getProviderName]);
+  const handleFromPaymentChange = useCallback(
+    async (method: any) => {
+      restoreFromFullList();
+      const fromId = getProviderId(method);
+      const matchedFrom =
+        matchMoneyXMethodById(allFromMethods, fromId) ??
+        matchMoneyXMethodById(fromPaymentMethods, fromId) ??
+        method;
+
+      const providerName = getProviderName(matchedFrom);
+      if (!providerName) return;
+
+      setFromPaymentMethod(providerName);
+      setSelectedFromPaymentDetail(matchedFrom);
+
+      const matchedTo = await refreshToForFrom(matchedFrom, selectedToPaymentDetail, {
+        force: true,
+      });
+      if (matchedTo) {
+        setToPaymentMethod(getProviderName(matchedTo));
+        setSelectedToPaymentDetail(matchedTo);
+      }
+    },
+    [
+      allFromMethods,
+      fromPaymentMethods,
+      selectedToPaymentDetail,
+      getProviderName,
+      getProviderId,
+      restoreFromFullList,
+      refreshToForFrom,
+    ]
+  );
+
+  const handleToPaymentChange = useCallback(
+    async (method: any) => {
+      const providerName = getProviderName(method);
+      if (!providerName) return;
+
+      setToPaymentMethod(providerName);
+      setSelectedToPaymentDetail(method);
+
+      const matchedFrom = await refreshFromForTo(
+        method,
+        selectedFromPaymentDetail,
+        { force: true }
+      );
+      if (matchedFrom) {
+        setFromPaymentMethod(getProviderName(matchedFrom));
+        setSelectedFromPaymentDetail(matchedFrom);
+      }
+    },
+    [
+      selectedFromPaymentDetail,
+      getProviderName,
+      refreshFromForTo,
+    ]
+  );
+
+  const handleSwapPaymentMethods = useCallback(async () => {
+    const newToDetail = selectedFromPaymentDetail;
+    const newFromId = getProviderId(selectedToPaymentDetail);
+    const newFromDetail =
+      matchMoneyXMethodById(allFromMethods, newFromId) ?? selectedToPaymentDetail;
+
+    restoreFromFullList();
+
+    if (newFromDetail) {
+      setFromPaymentMethod(getProviderName(newFromDetail));
+      setSelectedFromPaymentDetail(newFromDetail);
+    }
+    if (newToDetail) {
+      setToPaymentMethod(getProviderName(newToDetail));
+      setSelectedToPaymentDetail(newToDetail);
+    }
+
+    const matchedTo = await refreshToForFrom(newFromDetail, newToDetail, {
+      force: true,
+    });
+    if (matchedTo) {
+      setToPaymentMethod(getProviderName(matchedTo));
+      setSelectedToPaymentDetail(matchedTo);
+    }
+  }, [
+    allFromMethods,
+    selectedFromPaymentDetail,
+    selectedToPaymentDetail,
+    getProviderName,
+    getProviderId,
+    restoreFromFullList,
+    refreshToForFrom,
+  ]);
 
   useEffect(() => {
-    if (!Array.isArray(finalPaymentMethods) || finalPaymentMethods.length === 0)
+    if (!allFromReady || fromPaymentMethods.length === 0) return;
+    if (moneyXInitializedRef.current) return;
+    if (!isStateHydrated) return;
+
+    moneyXInitializedRef.current = true;
+
+    if (fromPaymentMethod) {
+      const fromDetail =
+        selectedFromPaymentDetail ??
+        fromPaymentMethods.find(
+          (m: any) => getProviderName(m) === fromPaymentMethod
+        );
+      if (fromDetail) {
+        void refreshToForFrom(fromDetail, selectedToPaymentDetail, {
+          force: true,
+        }).then((matchedTo) => {
+          if (matchedTo) {
+            setToPaymentMethod(getProviderName(matchedTo));
+            setSelectedToPaymentDetail(matchedTo);
+          }
+        });
+      }
       return;
-    if (!toPaymentMethod) return;
-    const match = finalPaymentMethods.find(
-      (m: any) => getProviderName(m) === toPaymentMethod
-    );
-    if (match) setSelectedToPaymentDetail(match);
-  }, [finalPaymentMethods, toPaymentMethod, getProviderName]);
+    }
+
+    const defaultFrom = pickDefaultMoneyXFromMethod(fromPaymentMethods);
+    if (!defaultFrom) return;
+
+    void handleFromPaymentChange(defaultFrom);
+  }, [
+    allFromReady,
+    fromPaymentMethods,
+    fromPaymentMethod,
+    selectedFromPaymentDetail,
+    selectedToPaymentDetail,
+    isStateHydrated,
+    getProviderName,
+    handleFromPaymentChange,
+    refreshToForFrom,
+  ]);
 
   const currentBankAsset = selectedToPaymentDetail
     ? getProviderName(selectedToPaymentDetail)
@@ -572,124 +643,9 @@ const MoneyXRates = ({
     : "";
 
   // Helper function to check if a payment method is a bank
-  const isBankMethod = useCallback(
-    (method: any) => {
-      if (!method) return false;
-      const providerName = getProviderName(method).toLowerCase();
-      const paymentMethod = (method?.payment_method || "").toLowerCase();
-      const paymentMethodType = (
-        method?.payment_method_type || ""
-      ).toLowerCase();
-      const provider = (method?.provider || "").toLowerCase();
-
-      return (
-        providerName.includes("bank") ||
-        paymentMethod.includes("bank") ||
-        paymentMethodType.includes("bank") ||
-        provider.includes("bank")
-      );
-    },
-    [getProviderName]
-  );
-
-  // Auto-select first bank for "from" when payment methods are loaded
-  useEffect(() => {
-    if (
-      !Array.isArray(finalPaymentMethods) ||
-      finalPaymentMethods.length === 0
-    ) {
-      return;
-    }
-
-    // Check if current selection still exists in the latest list
-    const currentExists = fromPaymentMethod
-      ? finalPaymentMethods.some(
-        (m: any) => getProviderName(m) === fromPaymentMethod
-      )
-      : false;
-
-    // If nothing selected OR the current selection no longer exists, (re)auto-select
-    if (!fromPaymentMethod || !currentExists) {
-      const bankMethods = finalPaymentMethods.filter(isBankMethod);
-
-      // If banks exist, pick the first bank; otherwise pick the very first method
-      const methodToSelect =
-        bankMethods.length > 0 ? bankMethods[0] : finalPaymentMethods[0];
-
-      const providerName = getProviderName(methodToSelect);
-      if (providerName) {
-        setFromPaymentMethod(providerName);
-        setSelectedFromPaymentDetail(methodToSelect);
-      }
-    }
-  }, [finalPaymentMethods, fromPaymentMethod, isBankMethod, getProviderName]);
-
-  // Auto-select second payment method for "to"
-  useEffect(() => {
-    // Only run if we have payment methods, "from" is selected, and "to" is not selected
-    if (
-      !Array.isArray(finalPaymentMethods) ||
-      finalPaymentMethods.length === 0
-    ) {
-      return;
-    }
-
-    if (
-      finalPaymentMethods.length > 1 &&
-      fromPaymentMethod &&
-      !toPaymentMethod
-    ) {
-      // Filter for banks first
-      const bankMethods = finalPaymentMethods.filter(isBankMethod);
-
-      // Select the second bank (index 1) if it exists, otherwise select the second method overall
-      let methodToSelect;
-      if (bankMethods.length > 1) {
-        // Select the second bank in the array (index 1)
-        methodToSelect = bankMethods[1];
-      } else if (bankMethods.length === 1 && finalPaymentMethods.length > 1) {
-        // If only one bank exists, select the second method overall (index 1) if it's different from "from"
-        if (
-          finalPaymentMethods[1] &&
-          getProviderName(finalPaymentMethods[1]) !== fromPaymentMethod
-        ) {
-          methodToSelect = finalPaymentMethods[1];
-        } else {
-          // Find first method that's different from "from"
-          methodToSelect = finalPaymentMethods.find(
-            (method) => getProviderName(method) !== fromPaymentMethod
-          );
-        }
-      } else {
-        // No banks or only one method, select the second method (index 1) if it's different from "from"
-        if (
-          finalPaymentMethods[1] &&
-          getProviderName(finalPaymentMethods[1]) !== fromPaymentMethod
-        ) {
-          methodToSelect = finalPaymentMethods[1];
-        } else {
-          // Find first method that's different from "from"
-          methodToSelect = finalPaymentMethods.find(
-            (method) => getProviderName(method) !== fromPaymentMethod
-          );
-        }
-      }
-
-      if (methodToSelect) {
-        const providerName = getProviderName(methodToSelect);
-        if (providerName) {
-          setToPaymentMethod(providerName);
-          setSelectedToPaymentDetail(methodToSelect);
-        }
-      }
-    }
-  }, [
-    finalPaymentMethods,
-    fromPaymentMethod,
-    toPaymentMethod,
-    isBankMethod,
-    getProviderName,
-  ]);
+  const isBankMethod = useCallback((method: any) => {
+    return isMoneyXBankPaymentMethod(method);
+  }, []);
 
   // Calculate amounts using commission percentage (receive = send - send*rate/100)
   const handleAmountChange = (value: string, isFromPay: boolean) => {
@@ -763,12 +719,12 @@ const MoneyXRates = ({
     : `$${commissionRate.toFixed(2)}`;
 
   // Filter payment methods based on search
-  const filteredFromMethods = finalPaymentMethods.filter((method: any) => {
+  const filteredFromMethods = fromPaymentMethods.filter((method: any) => {
     const providerName = getProviderName(method).toLowerCase();
     return providerName.includes(fromSearchTerm.toLowerCase());
   });
 
-  const filteredToMethods = finalPaymentMethods.filter((method: any) => {
+  const filteredToMethods = effectiveToPaymentMethods.filter((method: any) => {
     const providerName = getProviderName(method).toLowerCase();
     return providerName.includes(toSearchTerm.toLowerCase());
   });
@@ -893,71 +849,22 @@ const MoneyXRates = ({
 
     if (errors.length > 0) {
       setValidationErrors(errors);
-      errors.forEach((error) => showToast.error(error));
+      setActionError(errors[0] || null);
       return;
     }
 
-    setIsSubmitting(true);
+    setActionError(null);
+    setIsFirstCardSubmitted(true);
 
-    try {
-      // Extract provider IDs from selected payment methods
-      const senderProviderId =
-        selectedFromPaymentDetail?.id ||
-        selectedFromPaymentDetail?.provider_id ||
-        selectedFromPaymentDetail?.providerId;
-
-      const receiverProviderId =
-        selectedToPaymentDetail?.id ||
-        selectedToPaymentDetail?.provider_id ||
-        selectedToPaymentDetail?.providerId;
-
-      if (!senderProviderId || !receiverProviderId) {
-        throw new Error("Provider IDs not found in payment methods");
+    // Scroll to the bank account address section
+    setTimeout(() => {
+      if (paymentDetailsRef.current) {
+        paymentDetailsRef.current.scrollIntoView({
+          behavior: "smooth",
+          block: "start",
+        });
       }
-
-      const recipientName =
-        (user as any)?.full_name ||
-        [((user as any)?.first_name || "").trim(), ((user as any)?.last_name || "").trim()]
-          .filter(Boolean)
-          .join(" ")
-          .trim() ||
-        (user as any)?.name ||
-        (user as any)?.username ||
-        (user as any)?.email ||
-        "Unknown User";
-
-      // Create MoneyX transaction
-      const result = await dispatch(
-        createMoneyXTransaction({
-          amount: payAmount.toFixed(2),
-          sender_provider: senderProviderId,
-          receiver_provider: receiverProviderId,
-          recipient_name: recipientName,
-        })
-      ).unwrap();
-
-      // Store the transaction result
-      setMoneyXTransactionResult(result);
-      setIsFirstCardSubmitted(true);
-
-      // Scroll to the bank account address section
-      setTimeout(() => {
-        if (paymentDetailsRef.current) {
-          paymentDetailsRef.current.scrollIntoView({
-            behavior: "smooth",
-            block: "start",
-          });
-        }
-      }, 100);
-    } catch (error: any) {
-      console.error("Transfer error:", error);
-      const errorMessage =
-        error?.message || error || "An error occurred. Please try again.";
-      setValidationErrors([errorMessage]);
-      showToast.error(errorMessage);
-    } finally {
-      setIsSubmitting(false);
-    }
+    }, 100);
   };
 
   // Handle bank account address update and proceed to exchanging
@@ -978,37 +885,41 @@ const MoneyXRates = ({
     }
 
     if (!bankAccountAddress.trim()) {
-      showToast.error("Please enter a bank account address");
+      setActionError("Please enter a bank account address");
       return;
     }
     if (bankAddressError) {
-      showToast.error("Please enter a valid bank account address");
+      setActionError("Please enter a valid bank account address");
       return;
     }
     if (!isAddressConfirmed) {
-      showToast.error("Please confirm the bank account address");
-      return;
-    }
-
-    if (!moneyXTransactionResult?.moneyx_transaction_id) {
-      showToast.error(
-        "Transaction not found. Please submit the transfer form first."
-      );
+      setActionError("Please confirm the bank account address");
       return;
     }
 
     setIsUpdatingTransaction(true);
 
     try {
-      // Update MoneyX transaction with account number
-      const result = await dispatch(
-        updateMoneyXTransaction({
-          transactionId: moneyXTransactionResult.moneyx_transaction_id,
-          payload: {
-            recipient_account_number: bankAccountAddress.trim(),
-          },
-        })
-      ).unwrap();
+      const recipientName =
+        (user as any)?.full_name ||
+        [((user as any)?.first_name || "").trim(), ((user as any)?.last_name || "").trim()]
+          .filter(Boolean)
+          .join(" ")
+          .trim() ||
+        (user as any)?.name ||
+        (user as any)?.username ||
+        (user as any)?.email ||
+        "Unknown User";
+
+      const payload = buildMoneyXTransactionPayload({
+        amount: payAmount,
+        senderProvider: selectedFromPaymentDetail,
+        receiverProvider: selectedToPaymentDetail,
+        recipientName,
+        recipientAccountNumber: bankAccountAddress,
+      });
+
+      const result = await dispatch(createMoneyXTransaction(payload)).unwrap();
 
       showToast.success("Transaction is successful", "Account updated successfully.");
 
@@ -1051,11 +962,24 @@ const MoneyXRates = ({
       );
     } catch (error: any) {
       console.error("Update transaction error:", error);
-      const errorMessage =
-        error?.message ||
-        error ||
-        "An error occurred while updating the transaction.";
-      showToast.error(errorMessage);
+      const scamMsg = resolveScamFlagDisplayError(
+        error,
+        error?.response?.data,
+        typeof error === "string" ? error : error?.message
+      );
+      if (scamMsg) {
+        setActionError(scamMsg);
+        return;
+      }
+      setActionError(
+        normalizeExpressApiErrorMessage(
+          error?.message ||
+            error ||
+            "An error occurred while updating the transaction.",
+          error?.response?.data,
+          error
+        )
+      );
     } finally {
       setIsUpdatingTransaction(false);
     }
@@ -1090,7 +1014,6 @@ const MoneyXRates = ({
             setShowExchanging(false);
             setTransactionData(null);
             setIsFirstCardSubmitted(false);
-            setMoneyXTransactionResult(null);
             setBankAccountAddress("");
             setIsAddressConfirmed(false);
             // Clear localStorage when going back
@@ -1106,24 +1029,6 @@ const MoneyXRates = ({
   return (
     <div className="bg-white dark:bg-[#18181D] p-3 sm:p-4 lg:p-6 rounded-xl sm:rounded-xl lg:rounded-2xl border-[1.5px] border-gray-200 dark:border-[#35353E] shadow-md container mx-auto w-full max-w-5xl">
       <div className="mb-2" />
-
-      {/* Validation Errors */}
-      {validationErrors.length > 0 && (
-        <div className="mb-4">
-          {validationErrors.map((error, index) => (
-            <div key={index} className="text-red-500 text-sm font-medium mb-1">
-              {error}
-            </div>
-          ))}
-        </div>
-      )}
-
-      {/* MoneyX API Error Display */}
-      {moneyXError && (
-        <div className="mb-4 text-red-500 text-sm font-medium">
-          {moneyXError}
-        </div>
-      )}
 
       <div className={`w-full ${isDark ? "text-white" : "text-[#1F2937]"}`}>
         {/* Top Section - You Send: Amount and Bank/Payment Method in one card */}
@@ -1216,11 +1121,9 @@ const MoneyXRates = ({
                             key={index}
                             type="button"
                             onClick={() => {
-                              const providerName = getProviderName(method);
-                              setFromPaymentMethod(providerName);
-                              setSelectedFromPaymentDetail(method);
                               setIsFromDropdownOpen(false);
                               setFromSearchTerm("");
+                              void handleFromPaymentChange(method);
                             }}
                             className={`w-full px-3 py-2 rounded-lg flex items-center gap-3 hover:bg-opacity-50 ${isDark ? "hover:bg-[#2F2F3A]" : "hover:bg-gray-100"
                               }`}
@@ -1256,15 +1159,7 @@ const MoneyXRates = ({
             <button
               type="button"
               onClick={() => {
-                // Swap the payment methods
-                const tempPaymentMethod = fromPaymentMethod;
-                const tempPaymentDetail = selectedFromPaymentDetail;
-
-                setFromPaymentMethod(toPaymentMethod);
-                setSelectedFromPaymentDetail(selectedToPaymentDetail);
-
-                setToPaymentMethod(tempPaymentMethod);
-                setSelectedToPaymentDetail(tempPaymentDetail);
+                void handleSwapPaymentMethods();
               }}
               className="flex items-center justify-center p-0 bg-transparent border-none shadow-none"
             >
@@ -1370,11 +1265,9 @@ const MoneyXRates = ({
                             key={index}
                             type="button"
                             onClick={() => {
-                              const providerName = getProviderName(method);
-                              setToPaymentMethod(providerName);
-                              setSelectedToPaymentDetail(method);
                               setIsToDropdownOpen(false);
                               setToSearchTerm("");
+                              void handleToPaymentChange(method);
                             }}
                             className={`w-full px-3 py-2 rounded-lg flex items-center gap-3 hover:bg-opacity-50 ${isDark ? "hover:bg-[#2F2F3A]" : "hover:bg-gray-100"
                               }`}
@@ -1493,14 +1386,37 @@ const MoneyXRates = ({
 
         {/* Exchange Now Button - Only show if first card not submitted */}
         {!isFirstCardSubmitted && (
-          <button
-            onClick={handleExchange}
-            disabled={isSubmitting}
-            className={`w-full py-3 px-4 rounded-xl font-semibold text-white bg-[#1D8751] hover:bg-[#0f8f4d] transition-colors disabled:opacity-50 disabled:cursor-not-allowed ${isSubmitting ? "opacity-50 cursor-not-allowed" : ""
-              }`}
-          >
-            {isSubmitting ? t("rates.processing", "Processing...") : "Submit"}
-          </button>
+          <div className="flex flex-col gap-3">
+            {(actionError || moneyXError || validationErrors.length > 0) && (
+              <div className="text-center px-1">
+                {(actionError || moneyXError) && (
+                  <p className="text-red-500 text-sm font-medium">
+                    {normalizeExpressApiErrorMessage(actionError || moneyXError)}
+                  </p>
+                )}
+                {!actionError &&
+                  !moneyXError &&
+                  validationErrors.map((error, index) => (
+                    <p key={index} className="text-red-500 text-sm font-medium">
+                      {error}
+                    </p>
+                  ))}
+              </div>
+            )}
+            <button
+              onClick={() => {
+                setActionError(null);
+                setValidationErrors([]);
+                dispatch(clearMoneyXError());
+                handleExchange();
+              }}
+              disabled={isSubmitting}
+              className={`w-full py-3 px-4 rounded-xl font-semibold text-white bg-[#1D8751] hover:bg-[#0f8f4d] transition-colors disabled:opacity-50 disabled:cursor-not-allowed ${isSubmitting ? "opacity-50 cursor-not-allowed" : ""
+                }`}
+            >
+              {isSubmitting ? t("rates.processing", "Processing...") : "Submit"}
+            </button>
+          </div>
         )}
 
         {/* Show after first card is submitted: 1- Account details, then 2- Bank Account Address */}
@@ -1805,7 +1721,13 @@ const MoneyXRates = ({
             </div>
 
             {/* Final Submit Button */}
-            <button
+            <div className="flex flex-col gap-3 w-full">
+              {(actionError || moneyXError) && (
+                <p className="text-red-500 text-sm font-medium text-center px-1">
+                  {normalizeExpressApiErrorMessage(actionError || moneyXError)}
+                </p>
+              )}
+              <button
               className={`w-full text-base font-medium py-3 rounded-xl flex items-center justify-center gap-2 transition-colors text-white ${!bankAccountAddress.trim() ||
                 bankAddressError ||
                 !isAddressConfirmed ||
@@ -1813,7 +1735,11 @@ const MoneyXRates = ({
                 ? "bg-gray-500 cursor-not-allowed"
                 : "bg-[#1D8751] hover:bg-[#166b3e]"
                 }`}
-              onClick={handleBankAccountSubmit}
+              onClick={() => {
+                setActionError(null);
+                dispatch(clearMoneyXError());
+                handleBankAccountSubmit();
+              }}
               disabled={
                 !bankAccountAddress.trim() ||
                 !!bankAddressError ||
@@ -1832,6 +1758,7 @@ const MoneyXRates = ({
                 </span>
               )}
             </button>
+            </div>
           </>
         )}
       </div>

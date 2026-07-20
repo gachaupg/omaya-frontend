@@ -1,11 +1,9 @@
-import React, { useRef, useEffect, useState } from "react";
-import { createPortal } from "react-dom";
-import AssetDropdown from "./AssetDropdown";
+import React, { useMemo, useCallback } from "react";
 import EstimatedPriceDisplay from "./EstimatedPriceDisplay";
 import { SupportedAsset, SwapEstimate } from "../types";
 import { useTheme } from "@/context/theme";
 import SuccessPage from "./success";
-import { FaSearch } from "react-icons/fa";
+import CustomSelect from "@/components/ui/HomeCommonSelect";
 import {
   isNonEmptyInvalidZeroSwapAmount,
   isPositiveSwapAmount,
@@ -15,19 +13,18 @@ import {
   SWAP_SAME_COIN_MESSAGE,
 } from "@/lib/utils/swapAssetValidation";
 import { useSwapI18n } from "@/lib/useSwapI18n";
+import { resolveSwapAssetIconSrc } from "@/features/swap/utils/swapAssetIcon";
+import { sortAssetsForDisplay } from "@/lib/utils/assetSearch";
 import {
-  handleSwapAssetIconError,
-  resolveSwapAssetIconSrc,
-} from "@/features/swap/utils/swapAssetIcon";
+  formatAssetSubtitle,
+  getAssetPrimaryLabel,
+} from "@/lib/utils/networkDisplay";
 import {
-  assetMatchesSearchTerm,
-  sortAssetsForDisplay,
-} from "@/lib/utils/assetSearch";
-import { ExpressAssetSelectorTrigger } from "@/features/express/components/ExpressAssetSelectorTrigger";
-import { SwapAssetOptionDisplay } from "@/features/swap/components/SwapAssetOptionDisplay";
+  PAYMENT_LOGO_BASE_CLASS,
+  PAYMENT_LOGO_SIZE,
+} from "@/features/express/utils/imageHelpers";
 import {
   swapAmountFieldClass,
-  swapAmountTickerClass,
 } from "@/features/swap/components/swapFieldStyles";
 
 const ZERO_AMOUNT_INVALID_MSG =
@@ -76,18 +73,18 @@ const TransactionInfoStep: React.FC<TransactionInfoStepProps> = ({
   estimateLoading,
   estimateError,
   localSwapError,
-  isFromAssetOpen,
-  isToAssetOpen,
-  searchTerm,
-  toSearchTerm,
+  isFromAssetOpen: _isFromAssetOpen,
+  isToAssetOpen: _isToAssetOpen,
+  searchTerm: _searchTerm,
+  toSearchTerm: _toSearchTerm,
   onFromAssetSelect,
   onToAssetSelect,
   onFromAmountChange,
   onToAmountChange,
-  onFromAssetToggle,
-  onToAssetToggle,
-  onSearchTermChange,
-  onToSearchTermChange,
+  onFromAssetToggle: _onFromAssetToggle,
+  onToAssetToggle: _onToAssetToggle,
+  onSearchTermChange: _onSearchTermChange,
+  onToSearchTermChange: _onToSearchTermChange,
   onSubmit,
   swapLoading,
   hideContinueButton,
@@ -111,283 +108,75 @@ const TransactionInfoStep: React.FC<TransactionInfoStepProps> = ({
   const invalidZeroTo = isNonEmptyInvalidZeroSwapAmount(toAmount);
   const invalidZeroBlocksSubmit = invalidZeroFrom || invalidZeroTo;
 
-  const fromAssetDropdownRef = useRef<HTMLDivElement>(null);
-  const fromAssetDropdownContentRef = useRef<HTMLDivElement | null>(null);
-  const toAssetDropdownRef = useRef<HTMLDivElement>(null);
-  const toAssetDropdownContentRef = useRef<HTMLDivElement | null>(null);
-  const [isComponentMounted, setIsComponentMounted] = useState(false);
+  /** Keep amount + asset triggers the same size on home swap. */
+  const homeSwapFieldHeightClass = "!h-[52px] !min-h-[52px] !max-h-[52px]";
+  const assetSelectTriggerClass = `!px-3 !py-0 ${homeSwapFieldHeightClass} !text-sm font-medium border rounded-2xl bg-transparent overflow-hidden flex items-center ${
+    isDark ? "text-white border-white/10" : "text-[#1F2937] border-gray-200"
+  }`;
+  const amountFieldClass = (active?: boolean) =>
+    swapAmountFieldClass(isDark, {
+      active,
+      extra: `${homeSwapFieldHeightClass} !text-lg !leading-none`,
+    });
+  const amountTickerClass = `${
+    isDark ? "text-white font-normal" : "text-[#111827] font-bold"
+  } text-lg leading-none`;
 
-  useEffect(() => {
-    setIsComponentMounted(true);
+  const getSwapAssetKey = useCallback((asset: SupportedAsset | null) => {
+    if (!asset) return "";
+    const ticker = (asset.ticker || asset.symbol || "").toLowerCase();
+    const network = (asset.network || "").toLowerCase();
+    return network ? `${ticker}::${network}` : ticker;
   }, []);
 
-  // Close dropdowns when clicking outside
-  useEffect(() => {
-    const handleClickOutside = (event: MouseEvent) => {
-      const target = event.target as Node;
-
-      // Check if click is outside from asset dropdown
-      if (
-        isFromAssetOpen &&
-        fromAssetDropdownRef.current &&
-        !fromAssetDropdownRef.current.contains(target) &&
-        (!fromAssetDropdownContentRef.current ||
-          !fromAssetDropdownContentRef.current.contains(target))
-      ) {
-        onFromAssetToggle();
+  const buildAssetOptions = useCallback(
+    (excludeAsset: SupportedAsset | null) => {
+      let list = supportedAssets;
+      if (excludeAsset) {
+        list = list.filter((option) => !isSameSwapAssetPair(option, excludeAsset));
       }
+      return sortAssetsForDisplay(list, "").map((asset) => {
+        const subtitle = formatAssetSubtitle(asset);
+        return {
+          value: getSwapAssetKey(asset),
+          label: getAssetPrimaryLabel(asset),
+          subtitle: subtitle || undefined,
+          logo: resolveSwapAssetIconSrc(asset),
+        };
+      });
+    },
+    [supportedAssets, getSwapAssetKey]
+  );
 
-      // Check if click is outside to asset dropdown
-      if (
-        isToAssetOpen &&
-        toAssetDropdownRef.current &&
-        !toAssetDropdownRef.current.contains(target) &&
-        (!toAssetDropdownContentRef.current ||
-          !toAssetDropdownContentRef.current.contains(target))
-      ) {
-        onToAssetToggle();
-      }
-    };
+  const fromAssetOptions = useMemo(
+    () => buildAssetOptions(toAsset),
+    [buildAssetOptions, toAsset]
+  );
 
-    if (isFromAssetOpen || isToAssetOpen) {
-      document.addEventListener("mousedown", handleClickOutside);
-    }
+  const toAssetOptions = useMemo(
+    () => buildAssetOptions(fromAsset),
+    [buildAssetOptions, fromAsset]
+  );
 
-    return () => {
-      document.removeEventListener("mousedown", handleClickOutside);
-    };
-  }, [isFromAssetOpen, isToAssetOpen, onFromAssetToggle, onToAssetToggle]);
-
-  // Close dropdowns when scrolling the page, but NOT when scrolling inside the dropdown lists
-  useEffect(() => {
-    const handleScroll = (event: Event) => {
-      const target = event.target;
-      const elementTarget =
-        target instanceof Element ? target : null;
-      const isPageScrollTarget =
-        target === document ||
-        target === document.documentElement ||
-        target === document.body;
-
-      // If the scroll originated from inside an asset dropdown, ignore it
-      if (
-        elementTarget &&
-        elementTarget.closest("[data-asset-dropdown='true']")
-      ) {
-        return;
-      }
-      // Only close on whole-page scroll.
-      if (!isPageScrollTarget) {
-        return;
-      }
-
-      if (isFromAssetOpen) {
-        onFromAssetToggle();
-      }
-      if (isToAssetOpen) {
-        onToAssetToggle();
-      }
-    };
-
-    if (isFromAssetOpen || isToAssetOpen) {
-      window.addEventListener("scroll", handleScroll, true);
-      document.addEventListener("scroll", handleScroll, true);
-    }
-
-    return () => {
-      window.removeEventListener("scroll", handleScroll, true);
-      document.removeEventListener("scroll", handleScroll, true);
-    };
-  }, [isFromAssetOpen, isToAssetOpen, onFromAssetToggle, onToAssetToggle]);
-
-  const updateDropdownPosition = (isFrom: boolean): React.CSSProperties => {
-    if (typeof window === "undefined") {
-      return {
-        position: "fixed",
-        top: "50%",
-        left: "50%",
-        transform: "translate(-50%, -50%)",
-        width: 320,
-      };
-    }
-
-    const viewportWidth = window.innerWidth || 0;
-    const isMobile = viewportWidth < 640;
-
-    // On mobile: render as a centered modal overlay
-    if (isMobile) {
-      return {
-        position: "fixed",
-        top: "10vh",
-        left: "50%",
-        transform: "translateX(-50%)",
-        width: Math.min(viewportWidth - 32, 380),
-        maxHeight: "80vh",
-      };
-    }
-
-    const minMargin = 16;
-    const minWidth = 280;
-    const maxWidth = 400;
-
-    const triggerEl = isFrom ? fromAssetDropdownRef.current : toAssetDropdownRef.current;
-
-    if (!triggerEl) {
-      return {
-        position: "fixed",
-        top: 200,
-        left: (viewportWidth - minWidth) / 2,
-        width: minWidth,
-      };
-    }
-
-    const triggerRect = triggerEl.getBoundingClientRect();
-    const desiredWidth = Math.min(maxWidth, Math.max(minWidth, triggerRect.width));
-
-    // Find the parent card container to start the dropdown from its top
-    const cardEl = triggerEl.closest("[data-swap-card='true']") as HTMLElement | null;
-    const cardRect = cardEl?.getBoundingClientRect();
-
-    // Start from the top of the card container (like MoneyX/Exchange dropdowns)
-    let top = cardRect ? cardRect.top : triggerRect.top;
-    let left = triggerRect.left;
-
-    // Clamp so it doesn't overflow the right edge
-    if (left + desiredWidth > viewportWidth - minMargin) {
-      left = viewportWidth - desiredWidth - minMargin;
-    }
-    // Clamp so it doesn't overflow the left edge
-    if (left < minMargin) {
-      left = minMargin;
-    }
-
-    return {
-      position: "fixed",
-      top,
-      left,
-      width: desiredWidth,
-      maxHeight: "60vh",
-    };
-  };
-
-  const renderAssetDropdown = (
-    asset: SupportedAsset | null,
-    isOpen: boolean,
-    toggle: () => void,
-    onSelect: (asset: SupportedAsset) => void,
-    searchValue: string,
-    onSearchChange: (value: string) => void,
-    isFrom: boolean
-  ) => {
-    if (!isComponentMounted || !isOpen) {
-      return null;
-    }
-
-    const dropdownStyle = updateDropdownPosition(isFrom);
-    let filteredAssets = supportedAssets.filter((asset: SupportedAsset) =>
-      assetMatchesSearchTerm(asset, searchValue)
-    );
-    if (isFrom && toAsset) {
-      filteredAssets = filteredAssets.filter(
-        (option) => !isSameSwapAssetPair(option, toAsset)
+  const handleFromAssetChange = useCallback(
+    (value: string) => {
+      const selected = supportedAssets.find(
+        (asset) => getSwapAssetKey(asset) === value
       );
-    } else if (!isFrom && fromAsset) {
-      filteredAssets = filteredAssets.filter(
-        (option) => !isSameSwapAssetPair(fromAsset, option)
+      if (selected) onFromAssetSelect(selected);
+    },
+    [supportedAssets, getSwapAssetKey, onFromAssetSelect]
+  );
+
+  const handleToAssetChange = useCallback(
+    (value: string) => {
+      const selected = supportedAssets.find(
+        (asset) => getSwapAssetKey(asset) === value
       );
-    }
-    filteredAssets = sortAssetsForDisplay(filteredAssets, searchValue);
-
-    const isMobile = typeof window !== "undefined" && window.innerWidth < 640;
-
-    return createPortal(
-      (
-        <>
-          {/* Backdrop for mobile - closes dropdown on tap outside */}
-          {isMobile && (
-            <div
-              className="fixed inset-0 bg-black/50 z-[9998]"
-              onClick={toggle}
-              aria-hidden="true"
-            />
-          )}
-          <div
-            ref={isFrom ? fromAssetDropdownContentRef : toAssetDropdownContentRef}
-            data-asset-dropdown="true"
-            className="bg-white dark:bg-[#1D1D23] border border-gray-300 dark:border-[#35353E] rounded-2xl shadow-xl z-[9999] max-h-[70vh] sm:max-h-[60vh] overflow-hidden flex flex-col"
-            style={dropdownStyle}
-          >
-          {/* Dropdown Title */}
-          <div className="flex items-center justify-between px-4 py-3 border-b border-gray-200 dark:border-gray-600 shrink-0">
-            <h3 className="text-base font-semibold text-gray-900 dark:text-white">Currency {isFrom ? "from" : "to"}</h3>
-            <button
-              onClick={toggle}
-              className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 transition-colors"
-              aria-label="Close"
-            >
-              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-              </svg>
-            </button>
-          </div>
-
-          {/* Search Input */}
-          <div className="p-2 border-b border-gray-200 dark:border-gray-600 shrink-0">
-            <div className="relative">
-              <FaSearch className="absolute left-3 top-1/2 transform -translate-y-1/2 text-[#7e7e8f] w-4 h-4" />
-              <input
-                type="text"
-                placeholder="Type a currency"
-                value={searchValue}
-                onChange={(e) => onSearchChange(e.target.value)}
-                className="w-full text-gray-900 dark:text-white dark:bg-gray-800 bg-gray-50 rounded-lg px-10 py-1.5 sm:py-2 text-xs sm:text-sm focus:outline-none border border-gray-300 dark:border-gray-600 placeholder-gray-500 dark:placeholder-gray-400"
-              />
-            </div>
-          </div>
-
-          {/* Asset List */}
-          <div className="overflow-y-auto p-1 flex-1 min-h-0">
-            {filteredAssets.length === 0 ? (
-              <div className="p-4 text-center text-sm text-gray-500 dark:text-gray-400">
-                {searchValue ? "No assets found" : "No assets available"}
-              </div>
-            ) : (
-              filteredAssets.map((assetItem: SupportedAsset, index) => (
-                <div
-                  key={`${assetItem.ticker}-${assetItem.network}-${index}`}
-                  className="flex items-center gap-3 p-3 sm:p-4 text-black dark:text-white hover:bg-blue-50 dark:hover:bg-blue-900/20 cursor-pointer border-b border-gray-200 dark:border-gray-600 last:border-b-0 transition-colors duration-150"
-                  onClick={() => {
-                    onSelect(assetItem);
-                    toggle();
-                  }}
-                >
-                  <img
-                    src={resolveSwapAssetIconSrc(assetItem)}
-                    alt={assetItem.name || "Asset"}
-                    className="w-6 h-6 rounded-full object-cover"
-                    onError={(e) => handleSwapAssetIconError(e, assetItem)}
-                  />
-                  <div className="flex-1 min-w-0">
-                    <SwapAssetOptionDisplay
-                      asset={assetItem}
-                      primaryClassName={`text-sm ${isDark ? "text-white font-semibold" : "text-[#1F2937] font-semibold"}`}
-                      subtitleClassName="text-[10px] leading-tight text-gray-500 dark:text-gray-400 truncate"
-                    />
-                  </div>
-                  {asset?.ticker === assetItem.ticker &&
-                    asset?.network === assetItem.network && (
-                      <div className="w-2 h-2 bg-[#1D8751] rounded-full"></div>
-                    )}
-                </div>
-              ))
-            )}
-          </div>
-        </div>
-        </>
-      ),
-      document.body
-    );
-  };
+      if (selected) onToAssetSelect(selected);
+    },
+    [supportedAssets, getSwapAssetKey, onToAssetSelect]
+  );
 
   return (
     <div className="w-full flex flex-col mt-0 overflow-x-hidden">
@@ -397,6 +186,8 @@ const TransactionInfoStep: React.FC<TransactionInfoStepProps> = ({
           {/* Top Card Container */}
           <div
             data-swap-card="true"
+            data-asset-card="true"
+            data-select-card="true"
             className={`relative flex flex-col sm:flex-row gap-4 rounded-2xl p-3 sm:p-4 overflow-hidden ${isDark ? "border border-[#2F2F3A] bg-[#0F0F17]" : "border border-[#E2E8F0] bg-white shadow-sm"
               }`}
           >
@@ -420,10 +211,10 @@ const TransactionInfoStep: React.FC<TransactionInfoStepProps> = ({
                   value={fromAmount}
                   onChange={onFromAmountChange}
                   placeholder={t("swap.enterAmount", "Enter amount")}
-                  className={swapAmountFieldClass(isDark)}
+                  className={amountFieldClass()}
                 />
                 <div className="absolute right-3 top-1/2 transform -translate-y-1/2">
-                  <span className={swapAmountTickerClass(isDark)}>
+                  <span className={amountTickerClass}>
                     {fromAsset
                       ? fromAsset.ticker?.toUpperCase() ||
                       fromAsset.symbol?.toUpperCase() ||
@@ -451,27 +242,39 @@ const TransactionInfoStep: React.FC<TransactionInfoStepProps> = ({
 
             {/* You Get Section */}
             <div className="flex-1 min-w-0">
-              <div className={`text-xs mb-1 mt-[30px] ${isDark ? "text-[#788099]" : "text-[#64748B]"
+              <div className={`text-xs mb-1 mt-0 sm:mt-[30px] ${isDark ? "text-[#788099]" : "text-[#64748B]"
                 }`}>
                 {t("swap.asset", "Asset")}
               </div>
-              <div className="relative" ref={fromAssetDropdownRef}>
-                <ExpressAssetSelectorTrigger
-                  isDark={isDark}
-                  isOpen={isFromAssetOpen}
-                  onClick={onFromAssetToggle}
-                  asset={fromAsset}
-                  iconSrc={resolveSwapAssetIconSrc(fromAsset)}
-                  onIconError={(e) => handleSwapAssetIconError(e, fromAsset)}
+              <div className="relative w-full">
+                <CustomSelect
+                  options={fromAssetOptions}
+                  value={getSwapAssetKey(fromAsset)}
+                  logoSize={PAYMENT_LOGO_SIZE}
+                  logoClassName={`${PAYMENT_LOGO_BASE_CLASS} rounded-full`}
+                  sizeMode="card"
+                  dropdownMatchTriggerWidth={true}
+                  dropdownMinWidth={460}
+                  dropdownMaxWidth={460}
+                  className="w-full"
+                  placeholderClassName="text-white dark:text-white"
+                  triggerClassName={assetSelectTriggerClass}
+                  onChange={handleFromAssetChange}
                   placeholder={
                     supportedAssets.length === 0
                       ? t("swap.loading", "Loading...")
                       : t("swap.selectAsset", "Select Asset")
                   }
+                  disabled={supportedAssets.length === 0}
+                  loading={supportedAssets.length === 0}
+                  loadingText={t("swap.loading", "Loading...")}
+                  emptyText={t("swap.noAssets", "No assets available")}
+                  searchable={true}
+                  dropdownTitle="Currency from"
+                  dropdownOffsetY={-68}
+                  dropdownOffsetX={0}
+                  largeDropdownItems={true}
                 />
-
-                {/* Asset Dropdown */}
-                {renderAssetDropdown(fromAsset, isFromAssetOpen, onFromAssetToggle, onFromAssetSelect, searchTerm, onSearchTermChange, true)}
               </div>
             </div>
           </div>
@@ -501,6 +304,7 @@ const TransactionInfoStep: React.FC<TransactionInfoStepProps> = ({
         <div className="relative mb-3">
           <div
             data-swap-card="true"
+            data-asset-card="true"
             className={`relative flex flex-col sm:flex-row gap-4 rounded-2xl p-3 sm:p-4 overflow-hidden ${isDark ? "border border-[#2F2F3A] bg-[#0F0F17]" : "border border-[#E2E8F0] bg-white shadow-sm"
               }`}
           >
@@ -524,12 +328,10 @@ const TransactionInfoStep: React.FC<TransactionInfoStepProps> = ({
                   value={toAmount}
                   onChange={onToAmountChange}
                   placeholder={t("swap.enterAmount", "Enter amount")}
-                  className={swapAmountFieldClass(isDark, {
-                    active: activeInputField === "to",
-                  })}
+                  className={amountFieldClass(activeInputField === "to")}
                 />
                 <div className="absolute right-3 top-1/2 transform -translate-y-1/2">
-                  <span className={swapAmountTickerClass(isDark)}>
+                  <span className={amountTickerClass}>
                     {toAsset
                       ? toAsset.ticker?.toUpperCase() ||
                       toAsset.symbol?.toUpperCase() ||
@@ -562,27 +364,39 @@ const TransactionInfoStep: React.FC<TransactionInfoStepProps> = ({
 
             {/* Asset Section */}
             <div className="flex-1 min-w-0">
-              <div className={`text-xs mb-1 mt-[30px] ${isDark ? "text-[#788099]" : "text-[#64748B]"
+              <div className={`text-xs mb-1 mt-0 sm:mt-[30px] ${isDark ? "text-[#788099]" : "text-[#64748B]"
                 }`}>
                 Asset
               </div>
-              <div className="relative" ref={toAssetDropdownRef}>
-                <ExpressAssetSelectorTrigger
-                  isDark={isDark}
-                  isOpen={isToAssetOpen}
-                  onClick={onToAssetToggle}
-                  asset={toAsset}
-                  iconSrc={resolveSwapAssetIconSrc(toAsset)}
-                  onIconError={(e) => handleSwapAssetIconError(e, toAsset)}
+              <div className="relative w-full">
+                <CustomSelect
+                  options={toAssetOptions}
+                  value={getSwapAssetKey(toAsset)}
+                  logoSize={PAYMENT_LOGO_SIZE}
+                  logoClassName={`${PAYMENT_LOGO_BASE_CLASS} rounded-full`}
+                  sizeMode="card"
+                  dropdownMatchTriggerWidth={true}
+                  dropdownMinWidth={460}
+                  dropdownMaxWidth={460}
+                  className="w-full"
+                  placeholderClassName="text-white dark:text-white"
+                  triggerClassName={assetSelectTriggerClass}
+                  onChange={handleToAssetChange}
                   placeholder={
                     supportedAssets.length === 0
                       ? t("swap.loading", "Loading...")
                       : t("swap.selectAsset", "Select Asset")
                   }
+                  disabled={supportedAssets.length === 0}
+                  loading={supportedAssets.length === 0}
+                  loadingText={t("swap.loading", "Loading...")}
+                  emptyText={t("swap.noAssets", "No assets available")}
+                  searchable={true}
+                  dropdownTitle="Currency to"
+                  dropdownOffsetY={-68}
+                  dropdownOffsetX={0}
+                  largeDropdownItems={true}
                 />
-
-                {/* Asset Dropdown */}
-                {renderAssetDropdown(toAsset, isToAssetOpen, onToAssetToggle, onToAssetSelect, toSearchTerm, onToSearchTermChange, false)}
               </div>
             </div>
           </div>

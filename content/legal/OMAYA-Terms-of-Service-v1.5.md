@@ -441,6 +441,3 @@ Aaran Plaza, Taleh, Hodan District, Mogadishu, Somalia
 - Legal: legal@omaya.io
 - Compliance: compliance@omaya.io
 
----
-
-*These Terms of Service should be reviewed by qualified legal counsel familiar with the laws of Somalia and the jurisdictions in which OMAYA's customers are located before publication. The custody, safeguarding, tax-reporting, and dispute-resolution provisions in particular should be confirmed against OMAYA's actual operating model and licence.*

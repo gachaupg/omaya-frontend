@@ -442,7 +442,7 @@ export default function MarketingPage() {
         </div>
 
         <div className="w-full max-w-[1600px] mx-auto px-2 sm:px-4 lg:px-8 xl:px-10 relative z-10 mt-0 lg:mt-0 pt-10 sm:pt-4 lg:pt-5">
-          <div className="grid grid-cols-1 lg:grid-cols-2 items-start lg:items-center gap-y-4 md:gap-y-3 md:gap-x-6 lg:gap-x-8 xl:gap-x-10">
+          <div className="grid grid-cols-1 lg:grid-cols-2 items-start gap-y-4 md:gap-y-3 md:gap-x-6 lg:gap-x-8 xl:gap-x-10">
             <div className="space-y-2 md:space-y-2 pl-0 md:pl-4 lg:pl-5 text-center lg:text-left">
               {/* Green pill banner */}
               <div className="inline-flex mt-3 items-center justify-center md:justify-start mt-4 sm:mt-0">
@@ -538,7 +538,7 @@ export default function MarketingPage() {
                 </div>
               </div> */}
             </div>
-            <div className="flex justify-center w-full mt-0">
+            <div className="flex justify-center w-full mt-2 sm:mt-3">
               <div className="w-full max-w-full sm:max-w-lg md:max-w-xl lg:max-w-2xl xl:max-w-3xl 2xl:max-w-4xl">
                 <ExchangeForm isHomePage={true} />
               </div>
@@ -832,97 +832,45 @@ export default function MarketingPage() {
       </div>
 
       {/* Safe & Reliable Section */}
-      <div className="w-full bg-white dark:bg-[var(--bg-color)] pt-8 pb-8 sm:pb-16 overflow-hidden isolate marketing-mobile-safe">
+      <div className="w-full bg-white dark:bg-[var(--bg-color)] pt-8 pb-8 sm:pb-16 max-sm:overflow-visible sm:overflow-hidden marketing-about-section marketing-mobile-no-blur">
         <div className="container mx-auto max-w-6xl 2xl:max-w-screen-2xl px-4">
           {/* Outer card with border that fades downward (no rounded top edge) */}
           <div className="relative rounded-b-3xl">
             {/* Content wrapper without visible border */}
             <div className="rounded-b-3xl">
               {/* Inner content card (flat top, rounded bottom) */}
-              <div className="relative bg-gray-50 dark:bg-(--card-color) rounded-b-3xl p-5 sm:p-6 md:p-8 shadow-sm overflow-hidden">
-                {/* green glow bg — filter blur causes horizontal line artifacts on some mobile GPUs */}
-                <div
-                  className="absolute pointer-events-none z-1 hidden sm:block bg-[#1D8751] blur-3xl w-90 h-70 bottom-30 right-40 opacity-20"
-                  aria-hidden
-                />
-                {/* Bottom fade overlays — desktop only; on mobile they bleed into the next section and cause stripe glitches */}
-                <div
-                  className="absolute inset-x-0 bottom-0 h-3/4 rounded-b-3xl pointer-events-none dark:hidden hidden sm:block"
-                  style={{
-                    background: 'linear-gradient(to top, rgb(255, 255, 255) 0%, rgba(255, 255, 255, 0.95) 25%, rgba(255, 255, 255, 0.8) 50%, rgba(255, 255, 255, 0.5) 75%, transparent 100%)',
-                  }}
-                ></div>
-                <div
-                  className="absolute inset-x-0 bottom-0 h-3/4 rounded-b-3xl pointer-events-none hidden sm:dark:block"
-                  style={{
-                    background: 'linear-gradient(to top, rgb(10, 10, 15) 0%, rgba(10, 10, 15, 0.95) 25%, rgba(10, 10, 15, 0.8) 50%, rgba(10, 10, 15, 0.5) 75%, transparent 100%)',
-                  }}
-                ></div>
-                <div
-                  className="absolute inset-x-0 bottom-0 h-1/2 rounded-b-3xl pointer-events-none z-0 dark:hidden hidden sm:block"
-                  style={{
-                    background: 'linear-gradient(to top, rgb(255, 255, 255) 0%, transparent 100%)',
-                  }}
-                ></div>
-                <div
-                  className="absolute inset-x-0 bottom-0 h-1/2 rounded-b-3xl pointer-events-none hidden sm:dark:block z-0"
-                  style={{
-                    background: 'linear-gradient(to top, rgb(10, 10, 15) 0%, transparent 100%)',
-                  }}
-                ></div>
-                <div className="relative z-10 grid grid-cols-1 lg:grid-cols-2 gap-8 lg:gap-12 items-center">
-                  {/* Left Section - Image */}
-                  <div className="relative">
-                    <div className="relative w-full overflow-hidden rounded-t-[1.5rem] md:rounded-t-[2rem] rounded-b-lg">
-                      <Image
-                        src="/assets/omaya-office-about.png"
-                        alt="Safe & Reliable Cryptocurrency Exchange Platform"
-                        width={800}
-                        height={600}
-                        className="w-full h-auto object-cover rounded-t-[1.5rem] md:rounded-t-[2rem] rounded-b-lg"
-                        unoptimized
-                      />
-                    </div>
-
-                    {/* Badge - Since 2019 (positioned slightly below top edge) */}
-                    <div className="absolute -top-6 right-4 md:-top-6 md:right-8 bg-[#1D8751] rounded-full px-3 md:px-4 py-1 md:py-1.5 z-20 shadow-md">
-                      <span className="text-white text-xs font-medium">Since 2019</span>
-                    </div>
-
-                    {/* Badge - 10K+ Users (inside image card, raised above bottom edge) */}
-                    <div className="absolute bottom-2 left-4 md:bottom-3 md:left-8 bg-[#1D8751] rounded-full px-3 md:px-4 py-1 md:py-1.5 z-20 shadow-md">
-                      <span className="text-white text-xs font-medium">10K+ Users</span>
-                    </div>
-                  </div>
-
-                  {/* Right Section - Text and Feature Cards */}
-                  <div className="space-y-6">
+              <div className="relative bg-gray-50 dark:bg-(--card-color) rounded-b-3xl p-5 sm:p-6 md:p-8 shadow-sm max-sm:overflow-visible sm:overflow-hidden">
+                <div className="relative z-10 grid grid-cols-1 lg:grid-cols-2 gap-8 lg:gap-12 items-center max-sm:gap-6">
+                  {/* Left Section - Text */}
+                  <div className="relative order-2 lg:order-1">
+                    <div
+                      className="pointer-events-none absolute -left-6 -bottom-6 hidden sm:block bg-[#1D8751] blur-3xl w-72 h-56 opacity-15"
+                      aria-hidden
+                    />
+                    <div className="relative z-10 space-y-6">
                     {/* ABOUT OMAYA Header */}
                     <div className="bg-[#1D8751]/15 border border-[#1D8751]/25 rounded-3xl px-4 py-2 inline-block">
                       <div className="text-[#1D8751] text-sm font-medium uppercase tracking-wide">
-                        ABOUT OMAYA
+                        {t("marketing.about.label", "ABOUT US")}
                       </div>
                     </div>
 
                     {/* Title */}
                     <h2 className="text-3xl md:text-4xl 2xl:text-5xl font-semibold text-gray-900 dark:text-white">
-                      <span className="text-[#1D8751]">Safe & Reliable</span>{" "}
-                      <span className="text-gray-900 dark:text-white">Cryptocurrency Exchange Platform</span>
+                      <span className="text-[#1D8751]">
+                        {t("marketing.about.titleHighlight", "Built for East Africa")}
+                      </span>{" "}
+                      <span className="text-gray-900 dark:text-white">
+                        {t("marketing.about.titleRest", "Crypto & Forex in One Platform")}
+                      </span>
                     </h2>
 
                     {/* Descriptive Text */}
-                    <p className="text-[#788099] text-sm md:text-base leading-relaxed">
-                      Established in 2019, OMAYA.io is a leading digital asset and cryptocurrency trading platform in Somalia,
-                      licensed by the{" "}
-                      <span className="text-[#1D8751] font-semibold">Central Bank of Somalia</span>.
-                      With a team deeply rooted in East Africa, OMAYA.io is built to serve the region&apos;s unique financial
-                      landscape by delivering secure, compliant, and localized trading and exchange solutions.
-                      <br />
-                      At OMAYA.io, we go beyond transactions. We are committed to empowering our users through education,
-                      transparency, and access to expert insights that support informed financial decision-making. Backed by
-                      deep regional market knowledge, we provide reliable, responsive, and secure services tailored to the
-                      evolving needs of individuals, traders, and businesses across emerging markets.
-                    </p>
+                    <div className="space-y-4 text-[#788099] text-sm md:text-base leading-relaxed">
+                      <p>{t("marketing.about.body1", "OMAYA is a fintech platform built for East Africa, bringing Crypto and Forex into a single platform.")}</p>
+                      <p>{t("marketing.about.body2", "The country's mobile money services such as — EVC Plus, Zaad, SAHAL, and e-Dahab — have always run in isolation; OMAYA connects them, so people can move money across providers and currencies without switching apps.")}</p>
+                      <p>{t("marketing.about.body3", "Headquartered in Mogadishu, OMAYA is building financial infrastructure that runs reliably.")}</p>
+                    </div>
 
                     {/* Feature Boxes - Responsive Grid */}
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 mt-3">
@@ -954,7 +902,7 @@ export default function MarketingPage() {
                       ].map((feature, index) => (
                         <div
                           key={index}
-                          className="flex items-start gap-3 bg-gray-50 dark:bg-[#1A1A1F] rounded-xl p-3 sm:p-4 border border-gray-200 dark:border-[#2A2A35]"
+                          className="about-feature-card flex items-start gap-3 bg-gray-50 dark:bg-[#1A1A1F] rounded-xl p-3 sm:p-4 border border-gray-200 dark:border-[#2A2A35]"
                         >
                           <div className={`w-9 h-9 sm:w-10 sm:h-10 ${feature.bgColor} rounded-lg flex items-center justify-center shrink-0`}>
                             <feature.icon className="w-5 h-5 sm:w-6 sm:h-6 text-white" />
@@ -981,12 +929,48 @@ export default function MarketingPage() {
                       ].map((item, index) => (
                         <div
                           key={index}
-                          className="border border-[#1D8751]/25 bg-[#1D8751]/15 rounded-full px-4 py-2 flex items-center gap-2"
+                          className="about-tag-pill border border-[#1D8751]/25 bg-[#1D8751]/15 rounded-full px-4 py-2 flex items-center gap-2"
                         >
                           <item.icon className="w-4 h-4 text-[#1D8751]" />
                           <span className="text-[#1D8751] text-xs font-medium">{item.label}</span>
                         </div>
                       ))}
+                    </div>
+                    </div>
+                  </div>
+
+                  {/* Right Section - Image */}
+                  <div className="relative order-1 lg:order-2 max-sm:mb-2">
+                    <div className="relative w-full overflow-hidden rounded-t-[1.5rem] md:rounded-t-[2rem] rounded-b-lg bg-gray-100 dark:bg-[#14141A] ring-1 ring-black/5 dark:ring-white/10">
+                      <Image
+                        src="/assets/omaya-office-about.png"
+                        alt={t("marketing.about.imageAlt", "OMAYA corporate office in Mogadishu")}
+                        width={1400}
+                        height={1050}
+                        quality={90}
+                        sizes="(max-width: 640px) 100vw, (max-width: 1024px) 100vw, 560px"
+                        loading="lazy"
+                        className="w-full h-auto object-cover object-center rounded-t-[1.5rem] md:rounded-t-[2rem] rounded-b-lg sm:contrast-[1.05] sm:saturate-[1.08]"
+                      />
+                    </div>
+
+                    <div className="mt-3 flex flex-wrap gap-2 sm:hidden">
+                      <span className="bg-[#1D8751] rounded-full px-3 py-1.5 text-white text-xs font-medium">
+                        {t("marketing.about.badgeHq", "Mogadishu HQ")}
+                      </span>
+                      <span className="bg-[#1D8751] rounded-full px-3 py-1.5 text-white text-xs font-medium">
+                        10K+ Users
+                      </span>
+                    </div>
+
+                    <div className="absolute -top-6 right-4 md:-top-6 md:right-8 bg-[#1D8751] rounded-full px-3 md:px-4 py-1 md:py-1.5 z-20 shadow-md hidden sm:inline-flex">
+                      <span className="text-white text-xs font-medium">
+                        {t("marketing.about.badgeHq", "Mogadishu HQ")}
+                      </span>
+                    </div>
+
+                    <div className="absolute bottom-2 left-4 md:bottom-3 md:left-8 bg-[#1D8751] rounded-full px-3 md:px-4 py-1 md:py-1.5 z-20 shadow-md hidden sm:inline-flex">
+                      <span className="text-white text-xs font-medium">10K+ Users</span>
                     </div>
                   </div>
                 </div>
@@ -997,7 +981,7 @@ export default function MarketingPage() {
       </div>
 
       {/* Easy Onboarding Section — no decorative layers on mobile (they paint in the gap between stacked cards and cause GPU static) */}
-      <div className="w-full pt-4 md:pt-6 pb-16 md:pb-24 relative overflow-hidden isolate marketing-mobile-safe marketing-mobile-no-blur">
+      <div className="w-full pt-4 md:pt-6 pb-16 md:pb-24 relative max-sm:overflow-visible sm:overflow-hidden marketing-mobile-no-blur">
         <div
           className="pointer-events-none absolute inset-0 z-0 bg-white dark:bg-[var(--bg-color)]"
           aria-hidden
@@ -1034,7 +1018,7 @@ export default function MarketingPage() {
 
           {/* Steps Cards — margin spacing on mobile (flex gap + GPU layers causes stripe artifacts) */}
           <div className="w-full max-w-6xl mx-auto">
-            <div className="flex flex-col max-sm:gap-0 sm:grid sm:grid-cols-2 lg:grid-cols-4 sm:gap-6 lg:gap-4">
+            <div className="flex flex-col max-sm:gap-0 sm:grid sm:grid-cols-2 lg:grid-cols-4 sm:items-stretch sm:gap-6 lg:gap-4">
               {[
                 {
                   number: 1,
@@ -1091,9 +1075,9 @@ export default function MarketingPage() {
               ].map((step, index) => (
                 <div
                   key={step.number}
-                  className={`relative w-full marketing-step-card max-sm:mb-8 ${index === 3 ? "max-sm:mb-0" : ""}`}
+                  className={`relative flex h-full w-full flex-col marketing-step-card max-sm:mb-8 ${index === 3 ? "max-sm:mb-0" : ""}`}
                 >
-                  <div className="relative w-full bg-white dark:bg-[#141419] sm:dark:bg-white/5 rounded-3xl p-6 pt-2 border border-[#1D8751]/80 sm:border-2 max-sm:shadow-none sm:shadow-lg flex flex-col items-center text-center">
+                  <div className="relative flex h-full w-full flex-1 flex-col items-center text-center bg-white dark:bg-[#141419] sm:dark:bg-white/5 rounded-3xl p-6 pt-2 border border-[#1D8751]/80 sm:border-2 max-sm:shadow-none sm:shadow-lg">
                     <div className="absolute top-4 right-4 w-10 h-10 rounded-full bg-[#1D8751]/20 border border-[#1D8751]/30 flex items-center justify-center">
                       <span className="text-[#1D8751] text-base font-bold">{step.number}</span>
                     </div>
@@ -1112,12 +1096,12 @@ export default function MarketingPage() {
                     </div>
 
                     {/* Title */}
-                    <h3 className="text-gray-900 dark:text-white font-bold text-xl mb-3">
+                    <h3 className="mb-3 text-xl font-bold text-gray-900 dark:text-white min-h-[3.5rem] flex items-center justify-center">
                       {step.title}
                     </h3>
 
                     {/* Description */}
-                    <p className="text-gray-700 dark:text-[#788099] text-sm mb-4 grow px-2">
+                    <p className="mb-4 min-h-[4.5rem] grow px-2 text-sm text-gray-700 dark:text-[#788099]">
                       {step.description}
                     </p>
 
@@ -1177,7 +1161,7 @@ export default function MarketingPage() {
   w-full bg-white dark:bg-linear-to-t from-[#0A0A0F] to-[#18181D]
   py-16 sm:py-20 lg:py-28
   px-4 sm:px-6 md:px-10 lg:px-20 xl:px-28
-  relative overflow-hidden
+  relative overflow-hidden marketing-mobile-no-blur
 ">
         {/* Subtle floating particles — hidden on mobile (animated layers + blur cause compositor artifacts) */}
         <div className="hidden sm:block absolute inset-0 pointer-events-none" aria-hidden>
@@ -1219,11 +1203,10 @@ export default function MarketingPage() {
     ">
             {/* Left Side - Phone */}
             <div className="relative flex justify-center order-2 lg:order-1">
-              {/* Green Glow */}
-              <div className="absolute inset-0 flex items-center justify-center">
+              {/* Green Glow — desktop only (blur breaks mobile GPU compositing) */}
+              <div className="absolute inset-0 hidden sm:flex items-center justify-center pointer-events-none" aria-hidden>
                 <div className="relative w-[320px] h-[320px] sm:w-[420px] sm:h-[420px] lg:w-[650px] lg:h-[650px]">
                   <div className="absolute inset-0 bg-[#1D8751]/30 rounded-full blur-3xl"></div>
-                  {/* <div className="absolute inset-0 bg-gradient-to-br from-[#13B562]/20 via-[#1D8751]/15 to-transparent rounded-full blur-2xl"></div> */}
                 </div>
               </div>
 
@@ -1238,7 +1221,7 @@ export default function MarketingPage() {
                   className="
               w-[220px] sm:w-[240px] md:w-[260px] lg:w-[280px]
               h-auto
-            drop-shadow-[8px_14px_28px_rgba(0,0,0,0.45)]
+            max-sm:drop-shadow-none sm:drop-shadow-[8px_14px_28px_rgba(0,0,0,0.45)]
 
             "
                 />

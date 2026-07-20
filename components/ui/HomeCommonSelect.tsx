@@ -106,15 +106,20 @@ const CustomSelect: React.FC<CustomSelectProps> = ({
   const resolvedLogoClassName =
     logoClassName ?? "rounded object-cover flex-shrink-0";
 
-  // Filter options based on search term - search both label and value
-  const filteredOptions = options.filter((option) =>
-    option.label.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    option.value.toLowerCase().includes(searchTerm.toLowerCase())
-  );
+  // Filter options based on search term (label, subtitle, value)
+  const filteredOptions = options.filter((option) => {
+    const q = searchTerm.toLowerCase();
+    return (
+      String(option.label || "").toLowerCase().includes(q) ||
+      String(option.value || "").toLowerCase().includes(q) ||
+      String(option.subtitle || "").toLowerCase().includes(q)
+    );
+  });
 
   // Get the selected option label and logo
   const selectedOption = options.find((option) => option.value === value);
   const displayValue = selectedOption?.label || placeholder;
+  const selectedSubtitle = selectedOption?.subtitle;
   const selectedLogo = selectedOption?.logo;
 
   // Close dropdown when clicking outside
@@ -143,7 +148,8 @@ const CustomSelect: React.FC<CustomSelectProps> = ({
     const viewportWidth = window.innerWidth || 0;
     const viewportHeight = window.innerHeight || 0;
     const minMargin = 16;
-    const minWidth = dropdownMinWidth ?? 280;
+    const isMobileViewport = viewportWidth < 640;
+    const minWidth = isMobileViewport ? 0 : (dropdownMinWidth ?? 280);
     const maxWidth = dropdownMaxWidth ?? 450;
     
     // Get trigger button position - get fresh values
@@ -163,6 +169,26 @@ const CustomSelect: React.FC<CustomSelectProps> = ({
     
     if (targetCard) {
       const cardRect = targetCard.getBoundingClientRect();
+
+      if (isMobileViewport) {
+        let width = Math.min(cardRect.width, viewportWidth - minMargin * 2);
+        let left = cardRect.left;
+
+        if (left < minMargin) {
+          left = minMargin;
+        }
+        if (left + width > viewportWidth - minMargin) {
+          width = Math.max(0, viewportWidth - minMargin * 2);
+          left = minMargin;
+        }
+
+        setDropdownStyles({
+          top: cardRect.top,
+          left,
+          width,
+        });
+        return;
+      }
 
       // Width strategy:
       // - When dropdownMatchTriggerWidth=true, match the Asset dropdown behavior:
@@ -455,16 +481,35 @@ const CustomSelect: React.FC<CustomSelectProps> = ({
               </span>
             )}
             {!hideSelectedLabel && (
-              <span
-                className={`truncate min-w-0 text-sm ${
-                  !selectedOption && !loading
-                    ? placeholderClassName || "text-gray-500 dark:text-gray-400"
-                    : selectedOption ? "font-bold dark:font-normal" : ""
-                }`}
-                title={selectedOption ? displayValue : undefined}
-              >
-                {loading ? loadingText : displayValue}
-              </span>
+              selectedOption && selectedSubtitle ? (
+                <div className="flex flex-col min-w-0 flex-1 overflow-hidden text-left leading-tight">
+                  <span
+                    className={`truncate min-w-0 text-base font-bold dark:font-normal`}
+                    title={displayValue}
+                  >
+                    {loading ? loadingText : displayValue}
+                  </span>
+                  {!loading && (
+                    <span
+                      className="truncate min-w-0 text-xs text-gray-500 dark:text-gray-400"
+                      title={selectedSubtitle}
+                    >
+                      {selectedSubtitle}
+                    </span>
+                  )}
+                </div>
+              ) : (
+                <span
+                  className={`truncate min-w-0 text-base ${
+                    !selectedOption && !loading
+                      ? placeholderClassName || "text-gray-500 dark:text-gray-400"
+                      : selectedOption ? "font-bold dark:font-normal" : ""
+                  }`}
+                  title={selectedOption ? displayValue : undefined}
+                >
+                  {loading ? loadingText : displayValue}
+                </span>
+              )
             )}
           </div>
           <svg
@@ -493,7 +538,7 @@ const CustomSelect: React.FC<CustomSelectProps> = ({
           <div
             id={dropdownId}
             ref={dropdownContentRef}
-            className="z-[99999] bg-white dark:bg-[#1D1D23] border border-gray-300 dark:border-[#35353E] rounded-2xl shadow-xl overflow-hidden"
+            className="z-[99999] bg-white dark:bg-[#1D1D23] border border-gray-300 dark:border-[#35353E] rounded-2xl shadow-xl overflow-hidden max-h-[85vh] sm:max-h-[70vh]"
             role="listbox"
             style={{
               position: "fixed",
@@ -501,7 +546,6 @@ const CustomSelect: React.FC<CustomSelectProps> = ({
               left: `${Math.max(0, dropdownStyles.left)}px`,
               width: `${dropdownStyles.width || 200}px`,
               minWidth: `${dropdownStyles.width || 200}px`,
-              maxHeight: '70vh',
               zIndex: 99999,
             }}
           >
@@ -536,10 +580,7 @@ const CustomSelect: React.FC<CustomSelectProps> = ({
 
             {/* Options List */}
             <div 
-              className="overflow-y-auto p-1"
-              style={{ 
-                maxHeight: 'calc(70vh - 120px)'
-              }}
+              className="overflow-y-auto p-1 max-h-[calc(85vh-120px)] sm:max-h-[calc(70vh-120px)]"
             >
               {filteredOptions.length === 0 ? (
                 <div className="px-4 py-3 text-sm text-gray-500 dark:text-gray-400 text-center">
@@ -559,7 +600,7 @@ const CustomSelect: React.FC<CustomSelectProps> = ({
                     w-full text-left transition-colors duration-150
                     hover:bg-blue-50 dark:hover:bg-blue-900/20
                     focus:outline-none focus:bg-blue-50 dark:focus:bg-blue-900/20
-                    ${largeDropdownItems ? "px-4 py-3 sm:py-4" : "px-3 sm:px-4 py-2 sm:py-2.5"}
+                    ${largeDropdownItems ? "px-3 py-2.5" : "px-3 py-2.5"}
                     text-sm
                     ${isSelected
                       ? "bg-blue-100 dark:bg-blue-900/30 text-blue-900 dark:text-blue-100 font-medium"
@@ -571,11 +612,11 @@ const CustomSelect: React.FC<CustomSelectProps> = ({
                     }
                     ${optionClassName}
                   `}
-                    style={{ minHeight: largeDropdownItems ? "56px" : "44px", marginBottom: "2px" }}
+                    style={{ minHeight: largeDropdownItems ? "46px" : "44px" }}
                     role="option"
                     aria-selected={value === option.value}
                   >
-                    <div className={`flex items-center min-w-0 w-full ${largeDropdownItems ? "gap-3 sm:gap-4" : "gap-2 sm:gap-3"}`}>
+                    <div className={`flex items-center min-w-0 w-full gap-2.5`}>
                       {option.logo && (
                         <span
                           className="rounded-full overflow-hidden flex-shrink-0"
@@ -596,11 +637,11 @@ const CustomSelect: React.FC<CustomSelectProps> = ({
                       )}
                       {option.subtitle ? (
                         <div className="flex-1 min-w-0">
-                          <div className={`text-[#1F2937] dark:text-[#ffffff] truncate ${largeDropdownItems ? "font-medium text-sm" : "font-normal text-sm"}`}>{option.label}</div>
+                          <div className={`text-[#1F2937] dark:text-[#ffffff] truncate ${largeDropdownItems ? "font-medium text-base" : "font-normal text-base"}`}>{option.label}</div>
                           <div className="text-gray-500 dark:text-gray-400 truncate text-xs">{option.subtitle}</div>
                         </div>
                       ) : (
-                        <span className={`truncate min-w-0 flex-1 text-left ${largeDropdownItems ? "text-sm font-medium" : "text-sm"}`}>{option.label}</span>
+                        <span className={`truncate min-w-0 flex-1 text-left ${largeDropdownItems ? "text-base font-medium" : "text-base"}`}>{option.label}</span>
                       )}
                     </div>
                   </button>

@@ -108,6 +108,3 @@ Aaran Plaza, Taleh, Hodan District, Mogadishu, Somalia
 
 - General and support: **support@omaya.io**
 
----
-
-*This Risk Disclosure Statement should be reviewed by qualified legal counsel before publication.*
