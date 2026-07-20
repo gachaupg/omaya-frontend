@@ -50,6 +50,8 @@ import {
   resolveThreadIdFromGroup,
 } from "@/features/p2p/utils/chatThreadIds";
 import { resolveGroupedChatSenderDisplayName } from "@/features/p2p/utils/chatMessageDisplay";
+import { ChevronRight, Camera, Mic } from "lucide-react";
+import { PresenceIndicator } from "@/features/p2p/components/ui/market/sections/UserStatusBadge";
 
 interface ConversationItemProps {
   group: any;
@@ -59,7 +61,18 @@ interface ConversationItemProps {
   isActive: boolean;
   unreadCount: number;
   onSelect: () => void;
+  currentUserId?: number | null;
+  currentUserEmail?: string | null;
 }
+
+const formatConversationListDate = (timestamp: string) => {
+  const date = new Date(timestamp);
+  if (Number.isNaN(date.getTime())) return "";
+  const month = String(date.getMonth() + 1).padStart(2, "0");
+  const day = String(date.getDate()).padStart(2, "0");
+  const year = String(date.getFullYear()).slice(-2);
+  return `${month}/${day}/${year}`;
+};
 
 const ConversationItem: React.FC<ConversationItemProps> = ({
   displayName,
@@ -69,6 +82,8 @@ const ConversationItem: React.FC<ConversationItemProps> = ({
   unreadCount,
   onSelect,
   group,
+  currentUserId,
+  currentUserEmail,
 }) => {
   const [imageError, setImageError] = useState(false);
   const [imageLoaded, setImageLoaded] = useState(false);
@@ -80,31 +95,85 @@ const ConversationItem: React.FC<ConversationItemProps> = ({
     return name.charAt(0).toUpperCase();
   };
 
-  const formatTimestamp = (timestamp: string) => {
-    const date = new Date(timestamp);
-    const now = new Date();
-    const diffInMinutes = Math.floor(
-      (now.getTime() - date.getTime()) / (1000 * 60)
-    );
+  const isLatestFromMe = Boolean(
+    latestMessage &&
+      ((currentUserId &&
+        latestMessage.sender_id &&
+        latestMessage.sender_id === currentUserId) ||
+        (currentUserEmail &&
+          latestMessage.sender_email &&
+          String(latestMessage.sender_email).trim().toLowerCase() ===
+            String(currentUserEmail).trim().toLowerCase()))
+  );
 
-    if (diffInMinutes < 1) return "Just now";
-    if (diffInMinutes < 60) return `${diffInMinutes}m ago`;
-    const diffInHours = Math.floor(diffInMinutes / 60);
-    if (diffInHours < 24) return `${diffInHours}h ago`;
-    const diffInDays = Math.floor(diffInHours / 24);
-    return `${diffInDays}d ago`;
+  const peerIsOnline =
+    group?.peer_online === true ||
+    group?.advertiser_online === true ||
+    group?.is_online === true;
+
+  const renderLatestPreview = () => {
+    if (!latestMessage) {
+      return <span>No messages yet</span>;
+    }
+
+    const imgs = coalesceMessageImages(latestMessage);
+    const firstImg = imgs.length ? resolveMessageImageUrl(imgs[0]) : "";
+    const audioItems = normalizeAudioList(latestMessage);
+    const hasAudios = audioItems.length > 0;
+    const text = String(latestMessage.content ?? latestMessage.message ?? "").trim();
+    const sentTicks = isLatestFromMe ? (
+      <span className="text-[#60A5FA] flex-shrink-0 text-[11px] leading-none" aria-hidden>
+        ✓✓
+      </span>
+    ) : null;
+
+    if (firstImg) {
+      return (
+        <>
+          {sentTicks}
+          <Camera className="h-3.5 w-3.5 flex-shrink-0 text-[#1D8751]" aria-hidden />
+          <span className="truncate">Photo</span>
+        </>
+      );
+    }
+
+    if (hasAudios) {
+      const duration = audioItems[0]?.duration;
+      return (
+        <>
+          {sentTicks}
+          <Mic className="h-3.5 w-3.5 flex-shrink-0 text-[#1D8751]" aria-hidden />
+          <span className="truncate">
+            {typeof duration === "number" && duration > 0
+              ? formatRecordingDuration(duration)
+              : "Voice message"}
+          </span>
+        </>
+      );
+    }
+
+    if (text) {
+      return (
+        <>
+          {sentTicks}
+          <span className="truncate">{text}</span>
+        </>
+      );
+    }
+
+    return <span>No messages yet</span>;
   };
 
   return (
     <div
-      className={`group relative w-full flex items-start gap-3 rounded-xl px-3 py-3 text-left transition-colors ${isActive
-        ? "bg-gray-100 dark:bg-[#111827] border border-[#1D8751]"
+      className={`group relative w-full flex items-center gap-3 rounded-2xl px-3 py-3 text-left transition-colors ${isActive
+        ? "bg-[#1D8751]/10 dark:bg-[#1D8751]/15 border border-[#1D8751]/40"
         : "bg-transparent hover:bg-gray-50 dark:hover:bg-[#111827]/60 border border-transparent"
         }`}
     >
-      <button onClick={onSelect} className="absolute inset-0" aria-label="Open conversation" />
-      <div className="flex-shrink-0">
-        <div className="w-9 h-9 rounded-full bg-[#1D8751] flex items-center justify-center text-xs font-bold text-white overflow-hidden relative">
+      <button onClick={onSelect} className="absolute inset-0 z-0" aria-label="Open conversation" />
+      <div className="relative flex-shrink-0 z-[1]">
+        <div className="w-11 h-11 rounded-full bg-[#1D8751] flex items-center justify-center text-xs font-bold text-white overflow-hidden relative">
           {photoUrl && !imageError ? (
             <>
               {!imageLoaded && (
@@ -129,59 +198,43 @@ const ConversationItem: React.FC<ConversationItemProps> = ({
             </span>
           )}
         </div>
+        {peerIsOnline && (
+          <PresenceIndicator
+            isOnline
+            className="border-white dark:border-[#15161D]"
+          />
+        )}
       </div>
-      <div className="flex-1 min-w-0">
-        <div className="flex items-center justify-between mb-1">
-          <span className="text-xs sm:text-sm font-semibold text-gray-900 dark:text-white truncate">
-            {displayName}
-          </span>
-          <span className="text-[10px] text-gray-500 dark:text-[#9CA3AF] ml-2 flex-shrink-0">
-            {latestMessage?.timestamp
-              ? formatTimestamp(latestMessage.timestamp)
-              : ""}
-          </span>
-        </div>
-        <div className="text-[11px] text-gray-600 dark:text-[#9CA3AF] truncate flex items-center gap-1.5 min-w-0">
-          {(() => {
-            if (!latestMessage) {
-              return <span>No messages yet</span>;
-            }
-            const imgs = coalesceMessageImages(latestMessage);
-            const firstImg = imgs.length ? resolveMessageImageUrl(imgs[0]) : "";
-            const hasRenderableImg = !!firstImg;
-            const hasAudios =
-              (Array.isArray(latestMessage?.audios) && latestMessage.audios.length > 0) ||
-              !!(latestMessage?.audio_url || latestMessage?.audio);
-            const text = String(latestMessage.content ?? latestMessage.message ?? "").trim();
-            if (firstImg) {
-              return (
-                <>
-                  <img
-                    src={firstImg}
-                    alt=""
-                    className="h-5 w-5 rounded object-cover flex-shrink-0 border border-gray-200 dark:border-gray-600"
-                  />
-                  {!shouldHideBodyTextForMediaPlaceholder(text, hasRenderableImg, hasAudios) && (
-                    <span className="truncate">{text}</span>
-                  )}
-                </>
-              );
-            }
-            if (hasAudios) {
-              return <span className="truncate">Voice message</span>;
-            }
-            if (text) return <span className="truncate">{text}</span>;
-            return <span>No messages yet</span>;
-          })()}
+      <div className="flex-1 min-w-0 z-[1]">
+        <div className="flex items-start gap-2 min-w-0">
+          <div className="flex-1 min-w-0">
+            <span className="block text-sm font-semibold text-gray-900 dark:text-white truncate">
+              {displayName}
+            </span>
+            <div className="mt-1 text-xs text-gray-600 dark:text-[#9CA3AF] truncate flex items-center gap-1.5 min-w-0 pr-1">
+              {renderLatestPreview()}
+            </div>
+          </div>
+          <div className="flex flex-col items-end gap-1.5 flex-shrink-0 pt-0.5">
+            <div className="flex items-center gap-1">
+              <span className="text-[11px] text-gray-500 dark:text-[#9CA3AF] whitespace-nowrap">
+                {latestMessage?.timestamp
+                  ? formatConversationListDate(latestMessage.timestamp)
+                  : ""}
+              </span>
+              <ChevronRight
+                className="h-4 w-4 text-gray-400 dark:text-[#6B7280] flex-shrink-0"
+                aria-hidden
+              />
+            </div>
+            {unreadCount > 0 && (
+              <span className="inline-flex items-center justify-center min-w-[20px] h-5 px-1 rounded-full bg-[#1D8751] text-[10px] font-semibold text-white">
+                {unreadCount > 99 ? "99+" : unreadCount}
+              </span>
+            )}
+          </div>
         </div>
       </div>
-      {unreadCount > 0 && (
-        <div className="flex-shrink-0 ml-2">
-          <span className="inline-flex items-center justify-center min-w-[18px] h-[18px] rounded-full bg-[#1D8751] text-[10px] font-semibold text-white">
-            {unreadCount}
-          </span>
-        </div>
-      )}
     </div>
   );
 };
@@ -2268,6 +2321,8 @@ export const Chats: React.FC = () => {
                   latestMessage={latestMessage}
                   isActive={isActive}
                   unreadCount={unreadCount}
+                  currentUserId={user?.id}
+                  currentUserEmail={user?.email}
                   onSelect={() => {
                     const latest =
                       liveGroupedUsers.find(
