@@ -8,7 +8,11 @@ import {
   fetchUserPaymentDetails,
 } from "@/features/p2p/slices/paymentMethodsSlice";
 import { useMoneyXPaymentMethodLists } from "@/features/express/hooks/useMoneyXPaymentMethodLists";
-import { matchMoneyXMethodById } from "@/features/express/utils/moneyXPaymentMethodUtils";
+import {
+  matchMoneyXMethodById,
+  isMoneyXMobilePaymentMethod,
+  coercePaymentMethodText,
+} from "@/features/express/utils/moneyXPaymentMethodUtils";
 import {
   createMoneyXTransaction,
   fetchMoneyXCommission,
@@ -238,13 +242,12 @@ export default function TransferForm({ onTransfer, initialState, commissionType 
       "";
     const provider = getProviderName(payment);
     const method =
-      payment?.method_display ||
-      payment?.method ||
-      payment?.payment_method ||
-      payment?.payment_method_type ||
-      payment?.method?.method_display ||
-      payment?.method?.method_name ||
-      "";
+      coercePaymentMethodText(payment?.method_display) ||
+      coercePaymentMethodText(payment?.method) ||
+      coercePaymentMethodText(payment?.payment_method) ||
+      coercePaymentMethodText(payment?.payment_method_type) ||
+      coercePaymentMethodText(payment?.method?.method_display) ||
+      coercePaymentMethodText(payment?.method?.method_name);
     return idPart
       ? `${String(idPart)}`
       : `${provider}::${String(method).trim().toLowerCase()}`;
@@ -471,24 +474,8 @@ export default function TransferForm({ onTransfer, initialState, commissionType 
 
   // Helper function to check if a payment method is mobile money
   const isMobileMethod = useCallback((method: any) => {
-    if (!method) return false;
-    const providerName = getProviderName(method).toLowerCase();
-    const paymentMethod = (method?.payment_method || "").toLowerCase();
-    const paymentMethodType = (method?.payment_method_type || "").toLowerCase();
-    const provider = (method?.provider || "").toLowerCase();
-    const methodType = (method?.method || "").toLowerCase();
-
-    // Common mobile money keywords
-    const mobileKeywords = ['mobile', 'mpesa', 'm-pesa', 'mtn', 'airtel', 'safaricom', 'vodafone', 'telesom', 'hormuud', 'golis', 'evc', 'zaad', 'sahal'];
-
-    return mobileKeywords.some(keyword =>
-      providerName.includes(keyword) ||
-      paymentMethod.includes(keyword) ||
-      paymentMethodType.includes(keyword) ||
-      provider.includes(keyword) ||
-      methodType.includes(keyword)
-    );
-  }, [getProviderName]);
+    return isMoneyXMobilePaymentMethod(method);
+  }, []);
 
   // Restore state from localStorage after login (when navigating from home page)
   const hasRestoredState = useRef(false);
@@ -1287,9 +1274,7 @@ export default function TransferForm({ onTransfer, initialState, commissionType 
                   setBankAddressError(null);
                 }}
                 placeholder={
-                  selectedToPaymentDetail?.payment_method?.toLowerCase().includes('mobile') ||
-                    selectedToPaymentDetail?.payment_method_type?.toLowerCase().includes('mobile') ||
-                    selectedToPaymentDetail?.method?.toLowerCase().includes('mobile')
+                  isMobileMethod(selectedToPaymentDetail)
                     ? `Enter your ${getProviderName(selectedToPaymentDetail)} Number`
                     : `Enter your ${getProviderName(selectedToPaymentDetail)} Account Number`
                 }

@@ -108,8 +108,8 @@ const CustomSelect: React.FC<CustomSelectProps> = ({
   const filteredOptions = options.filter((option) => {
     const q = searchTerm.toLowerCase();
     return (
-      option.label.toLowerCase().includes(q) ||
-      (option.subtitle || "").toLowerCase().includes(q)
+      String(option.label || "").toLowerCase().includes(q) ||
+      String(option.subtitle || "").toLowerCase().includes(q)
     );
   });
 

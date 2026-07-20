@@ -32,6 +32,7 @@ import { useMoneyXPaymentMethodLists } from "@/features/express/hooks/useMoneyXP
 import { pickDefaultMoneyXFromMethod } from "@/features/express/utils/defaultMoneyXFromProvider";
 import {
   matchMoneyXMethodById,
+  isMoneyXBankPaymentMethod,
 } from "@/features/express/utils/moneyXPaymentMethodUtils";
 import { setAuthRedirectPath, buildMoneyXRedirectPath, setMoneyXPrefillState } from "@/lib/utils/authRedirect";
 import { openKYCModal, checkKYCStatus } from "@/features/auth/slices/authSlice";
@@ -438,23 +439,8 @@ export default function TransferForm({ isHomePage = false, onTransfer, commissio
 
   // Helper function to check if a payment method is a bank
   const isBankMethod = useCallback((method: any) => {
-    if (!method) return false;
-    const providerName = getProviderName(method).toLowerCase();
-    const baseMethod = (method?.method || "").toLowerCase();
-    const baseMethodDisplay = (method?.method_display || "").toLowerCase();
-    const paymentMethod = (method?.payment_method || "").toLowerCase();
-    const paymentMethodType = (method?.payment_method_type || "").toLowerCase();
-    const provider = (method?.provider || "").toLowerCase();
-
-    return (
-      providerName.includes("bank") ||
-      baseMethod.includes("bank") ||
-      baseMethodDisplay.includes("bank") ||
-      paymentMethod.includes("bank") ||
-      paymentMethodType.includes("bank") ||
-      provider.includes("bank")
-    );
-  }, [getProviderName]);
+    return isMoneyXBankPaymentMethod(method);
+  }, []);
 
   // Restore state from localStorage after login (only for home page)
   const hasRestoredState = useRef(false);

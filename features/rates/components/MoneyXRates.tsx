@@ -28,7 +28,10 @@ import { scrollAppToTop } from "@/lib/utils/scrollAppToTop";
 import { usePaymentMethodsDisplay } from "@/features/express/hooks/useDataDisplay";
 import { useMoneyXPaymentMethodLists } from "@/features/express/hooks/useMoneyXPaymentMethodLists";
 import { pickDefaultMoneyXFromMethod } from "@/features/express/utils/defaultMoneyXFromProvider";
-import { matchMoneyXMethodById } from "@/features/express/utils/moneyXPaymentMethodUtils";
+import {
+  matchMoneyXMethodById,
+  isMoneyXBankPaymentMethod,
+} from "@/features/express/utils/moneyXPaymentMethodUtils";
 import { setAuthRedirectPath } from "@/lib/utils/authRedirect";
 import { ExpressLegalTermsLinks } from "@/features/express/components/legal/ExpressLegalTermsLinks";
 import { FiChevronDown, FiInfo } from "react-icons/fi";
@@ -640,25 +643,9 @@ const MoneyXRates = ({
     : "";
 
   // Helper function to check if a payment method is a bank
-  const isBankMethod = useCallback(
-    (method: any) => {
-      if (!method) return false;
-      const providerName = getProviderName(method).toLowerCase();
-      const paymentMethod = (method?.payment_method || "").toLowerCase();
-      const paymentMethodType = (
-        method?.payment_method_type || ""
-      ).toLowerCase();
-      const provider = (method?.provider || "").toLowerCase();
-
-      return (
-        providerName.includes("bank") ||
-        paymentMethod.includes("bank") ||
-        paymentMethodType.includes("bank") ||
-        provider.includes("bank")
-      );
-    },
-    [getProviderName]
-  );
+  const isBankMethod = useCallback((method: any) => {
+    return isMoneyXBankPaymentMethod(method);
+  }, []);
 
   // Calculate amounts using commission percentage (receive = send - send*rate/100)
   const handleAmountChange = (value: string, isFromPay: boolean) => {
