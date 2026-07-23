@@ -25,9 +25,7 @@ import {
 } from "./utils/deviceInfo";
 
 if (!API_BASE_URL) {
-  throw new Error(
-    "VITE_BASE_URL (or NEXT_PUBLIC_API_URL) is not defined in environment variables"
-  );
+  throw new Error("VITE_BASE_URL is not defined in environment variables");
 }
 
 interface ApiClientConfig {
