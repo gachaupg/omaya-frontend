@@ -3,18 +3,12 @@ import type { NextConfig } from "next";
 
 // Validate critical env vars at build time (production only)
 if (process.env.NODE_ENV === 'production') {
-  const hasApiUrl =
-    process.env.VITE_BASE_URL ||
-    process.env.NEXT_PUBLIC_API_URL ||
-    process.env.NEXT_PUBLIC_BASE_URL;
   const requiredEnv = [
+    'VITE_BASE_URL',
     'NEXT_PUBLIC_GOOGLE_CLIENT_ID',
     'NEXT_PUBLIC_APP_URL',
   ];
   const missing = requiredEnv.filter((k) => !process.env[k] || process.env[k] === '');
-  if (!hasApiUrl) {
-    missing.push('VITE_BASE_URL (or NEXT_PUBLIC_API_URL)');
-  }
   if (missing.length) {
     // Missing env at build time — rely on runtime configuration.
   }
@@ -59,8 +53,6 @@ const nextConfig: NextConfig = {
     
     // API Configuration
     VITE_BASE_URL: process.env.VITE_BASE_URL,
-    NEXT_PUBLIC_API_URL:
-      process.env.NEXT_PUBLIC_API_URL || process.env.VITE_BASE_URL,
     NEXT_PUBLIC_APP_URL: process.env.NEXT_PUBLIC_APP_URL,
     
     // Facebook OAuth

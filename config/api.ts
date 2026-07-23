@@ -1,10 +1,6 @@
-/** Resolve API origin from env only (no hardcoded fallback). */
+/** Resolve API origin from VITE_BASE_URL only (no fallback). */
 export function getApiBaseUrlFromEnv(): string {
-  const raw =
-    process.env.VITE_BASE_URL ||
-    process.env.NEXT_PUBLIC_API_URL ||
-    process.env.NEXT_PUBLIC_BASE_URL ||
-    "";
+  const raw = process.env.VITE_BASE_URL || "";
   return String(raw).trim().replace(/\/+$/, "");
 }
 

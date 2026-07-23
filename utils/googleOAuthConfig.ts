@@ -25,7 +25,8 @@ export interface GoogleOAuthResponse {
 }
 
 // Environment Configuration (runtime-aware)
-const { NEXT_PUBLIC_API_URL: API_URL, NEXT_PUBLIC_APP_URL: FRONTEND_URL } = getRuntimeConfigSync();
+const { VITE_BASE_URL: API_URL, NEXT_PUBLIC_APP_URL: FRONTEND_URL } =
+  getRuntimeConfigSync();
 
 // API Endpoints Configuration
 export const GOOGLE_API_ENDPOINTS = {
