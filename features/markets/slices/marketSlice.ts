@@ -235,16 +235,11 @@ export const setupMarketDebugFunctions = () => {
           "https://api.coingecko.com/api/v3/coins/bitcoin/market_chart?vs_currency=usd&days=1&interval=hourly"
         );
         const data = await response.json();
-        console.log("Public API test result:", data);
-        return data;
+                return data;
       } catch (error) {
-        console.error("Public API test failed:", error);
-      }
+              }
     };
-    console.log(
-      "Debug functions available: window.debugChartAPI, window.debugDetailsAPI, window.testPublicAPI"
-    );
-  }
+      }
 };
 
 // Export reducer

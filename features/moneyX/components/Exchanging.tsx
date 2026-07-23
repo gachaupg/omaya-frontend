@@ -113,8 +113,7 @@ export default function Exchanging({ transactionData, onBackToTransfer }: Exchan
           return JSON.parse(stored);
         }
       } catch (error) {
-        console.error("Error loading transaction data from localStorage:", error);
-      }
+              }
     }
     return null;
   });
@@ -373,8 +372,7 @@ export default function Exchanging({ transactionData, onBackToTransfer }: Exchan
             return;
           }
         } catch (error) {
-          console.error("Error parsing stored transaction data:", error);
-        }
+                  }
       }
 
       // If no persisted data found, create a basic transaction data object
@@ -400,8 +398,7 @@ export default function Exchanging({ transactionData, onBackToTransfer }: Exchan
             const parsed = JSON.parse(stored);
             setPersistedTransactionData(parsed);
           } catch (error) {
-            console.error("Error parsing stored transaction data:", error);
-            localStorage.removeItem("moneyx_transaction_data");
+                        localStorage.removeItem("moneyx_transaction_data");
           }
         }
       }
@@ -915,10 +912,8 @@ export default function Exchanging({ transactionData, onBackToTransfer }: Exchan
       },
       onError: (error) => {
         if (finalWebsocketUrl) {
-          console.warn(`URL: ${finalWebsocketUrl}`);
-        } else {
-          console.warn("No WebSocket URL provided");
-        }
+                  } else {
+                  }
 
         setConnectionAttempts((prev) => prev + 1);
 

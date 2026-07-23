@@ -221,7 +221,6 @@ function Cash({ sharedFeesError }: CashProps) {
   // Handle errors - show toast with better error message
   useEffect(() => {
     if (error) {
-      console.error("Cash withdrawal error:", error)
       // Extract meaningful error message
       let errorMessage = "Failed to submit withdrawal";
       if (typeof error === "string") {

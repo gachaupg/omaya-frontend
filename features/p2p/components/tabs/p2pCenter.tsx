@@ -29,8 +29,7 @@ class ErrorBoundary extends React.Component<
   }
 
   componentDidCatch(error: Error, errorInfo: React.ErrorInfo) {
-    console.error("P2PCenter Error:", error, errorInfo);
-    this.setState({ error });
+        this.setState({ error });
   }
 
   render() {
@@ -169,8 +168,7 @@ const P2PCenter: React.FC = () => {
                     };
                   } catch (e) {
                     // If any error occurs, return safe defaults
-                    console.warn('Error processing payment detail in transformedTrades:', e, detail);
-                    return {
+                                        return {
                       bank: "",
                       logo: "/assets/salam_vizvxy.svg",
                     };
@@ -181,8 +179,7 @@ const P2PCenter: React.FC = () => {
             };
           } catch (error) {
             // If transformation fails for a single trade, return a safe default
-            console.warn('Error transforming trade:', error, trade);
-            return {
+                        return {
               ...trade,
               commission_rate: '0%',
               payment: [],
@@ -192,8 +189,7 @@ const P2PCenter: React.FC = () => {
         });
     } catch (error) {
       // If entire transformation fails, return empty array
-      console.error('Error transforming trades:', error);
-      return [];
+            return [];
     }
   }, [orders]);
 
@@ -322,8 +318,7 @@ const P2PCenter: React.FC = () => {
                     };
                   } catch (e) {
                     // If any error occurs, return safe defaults
-                    console.warn('Error processing payment detail:', e, detail);
-                    return {
+                                        return {
                       bank: '',
                       logo: "/assets/image_7_dqkxkj.png",
                     };
@@ -336,8 +331,7 @@ const P2PCenter: React.FC = () => {
             };
           } catch (error) {
             // If transformation fails for a single order, return a safe default
-            console.warn('Error transforming my order:', error, trade);
-            return {
+                        return {
               ...trade,
               assetSymbol: trade?.currency || '',
               assetImage: "/images/tether.svg",
@@ -353,8 +347,7 @@ const P2PCenter: React.FC = () => {
       return transformed;
     } catch (error) {
       // If entire transformation fails, return empty array
-      console.error('Error transforming my orders:', error);
-      return [];
+            return [];
     }
   }, [myOrders]);
 

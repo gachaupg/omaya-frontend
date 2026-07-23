@@ -30,8 +30,7 @@ export const useTokenRefresh = () => {
       }
       return true;
     } catch (error) {
-      console.error("Token refresh failed:", error);
-      dispatch(logout());
+            dispatch(logout());
       return false;
     }
   }, [isAuthenticated, tokens, dispatch]);
@@ -45,14 +44,14 @@ export const useTokenRefresh = () => {
     }
 
     // Check immediately on mount
-    proactiveTokenRefresh().catch(console.error);
+    proactiveTokenRefresh().catch(() => {});
 
     // Set up periodic checks (every 5 minutes - increased from 2 to reduce conflicts with interceptor)
     // The mutex will handle coordination if both mechanisms trigger simultaneously
     const interval = setInterval(
       () => {
         if (isAuthenticated && tokens?.access) {
-          proactiveTokenRefresh().catch(console.error);
+          proactiveTokenRefresh().catch(() => {});
         }
       },
       5 * 60 * 1000

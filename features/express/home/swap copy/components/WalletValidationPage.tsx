@@ -134,8 +134,7 @@ const WalletValidationPage: React.FC<WalletValidationPageProps> = ({
         }
       }
     } catch (err) {
-      console.error("Failed to paste from clipboard:", err);
-      setValidationError("Failed to paste from clipboard");
+            setValidationError("Failed to paste from clipboard");
     }
   };
 

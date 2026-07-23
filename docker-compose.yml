@@ -12,9 +12,10 @@ services:
         - NEXT_PUBLIC_FACEBOOK_APP_ID=${NEXT_PUBLIC_FACEBOOK_APP_ID:-}
         - NEXT_PUBLIC_FACEBOOK_REDIRECT_URI=${NEXT_PUBLIC_FACEBOOK_REDIRECT_URI:-}
         
-        # API Configuration
-        - NEXT_PUBLIC_API_URL=${NEXT_PUBLIC_API_URL:-https://dev.backend.omaya.io}
-        - NEXT_PUBLIC_APP_URL=${NEXT_PUBLIC_APP_URL:-https://dev.omaya.io}
+        # API Configuration (from .env / host environment)
+        - VITE_BASE_URL=${VITE_BASE_URL:-}
+        - NEXT_PUBLIC_API_URL=${NEXT_PUBLIC_API_URL:-}
+        - NEXT_PUBLIC_APP_URL=${NEXT_PUBLIC_APP_URL:-}
         
         # Sanity Configuration
         - NEXT_PUBLIC_SANITY_PROJECT_ID=${NEXT_PUBLIC_SANITY_PROJECT_ID:-}
@@ -42,9 +43,10 @@ services:
       - NEXT_PUBLIC_FACEBOOK_APP_ID=${NEXT_PUBLIC_FACEBOOK_APP_ID:-}
       - NEXT_PUBLIC_FACEBOOK_REDIRECT_URI=${NEXT_PUBLIC_FACEBOOK_REDIRECT_URI:-}
       
-      # API Configuration
-      - NEXT_PUBLIC_API_URL=${NEXT_PUBLIC_API_URL:-https://dev.backend.omaya.io}
-      - NEXT_PUBLIC_APP_URL=${NEXT_PUBLIC_APP_URL:-https://dev.omaya.io}
+      # API Configuration (from .env / host environment)
+      - VITE_BASE_URL=${VITE_BASE_URL:-}
+      - NEXT_PUBLIC_API_URL=${NEXT_PUBLIC_API_URL:-}
+      - NEXT_PUBLIC_APP_URL=${NEXT_PUBLIC_APP_URL:-}
       
       # Sanity Configuration
       - NEXT_PUBLIC_SANITY_PROJECT_ID=${NEXT_PUBLIC_SANITY_PROJECT_ID:-}

@@ -557,17 +557,7 @@ export default function DepositForm({
 
   // Update payment methods state ONLY when payment data changes (not when asset changes)
   useEffect(() => {
-    console.log("🔍 DepositForm Payment Methods Debug:", {
-      isHomePage,
-      paymentMethodsData,
-      publicPaymentMethods,
-      adminMethods,
-      hasProviders: !!publicPaymentMethods?.data?.providers,
-      providersLength: publicPaymentMethods?.data?.providers?.length || 0,
-      paymentMethodsDataLength: Array.isArray(paymentMethodsData) ? paymentMethodsData.length : 0
-    });
-
-    // Check if we have payment methods data (support all known public API shapes)
+        // Check if we have payment methods data (support all known public API shapes)
     const hasHomePublicData =
       (Array.isArray(publicPaymentMethods?.data?.providers) && publicPaymentMethods.data.providers.length > 0) ||
       (Array.isArray(publicPaymentMethods?.data) && publicPaymentMethods.data.length > 0) ||
@@ -586,16 +576,7 @@ export default function DepositForm({
         // Check for new structure: data.providers (direct providers array)
         if (Array.isArray(publicPaymentMethods?.data?.providers)) {
           const providers = publicPaymentMethods.data.providers;
-          console.log("🔍 Processing providers from API:", {
-            providersCount: providers.length,
-            firstProvider: providers[0] ? {
-              provider_name: providers[0].provider_name,
-              logo: providers[0].logo,
-              method: providers[0].method
-            } : null
-          });
-
-          // Flatten providers directly (new structure)
+                    // Flatten providers directly (new structure)
           flattenedMethods = providers.map((provider: any) => {
             // Support both payment_details and admin_payment_details payload shapes
             const firstPaymentDetail =
@@ -651,14 +632,7 @@ export default function DepositForm({
               provider_id: provider.provider_id,
             };
 
-            console.log("🔍 Flattened provider:", {
-              provider_name: flattened.provider_name,
-              provider_logo: flattened.provider_logo,
-              logo: flattened.logo,
-              hasLogo: !!(flattened.provider_logo || flattened.logo)
-            });
-
-            return flattened;
+                        return flattened;
           });
         } else if (Array.isArray(publicPaymentMethods?.data)) {
           const providers = publicPaymentMethods.data;
@@ -721,13 +695,7 @@ export default function DepositForm({
         } else {
           // Fallback to old structure: data.payment_methods -> providers
           const methods = publicPaymentMethods?.data?.payment_methods || publicPaymentMethods || [];
-          console.log("🔍 Public payment methods structure:", {
-            publicPaymentMethods,
-            methods,
-            methodsLength: Array.isArray(methods) ? methods.length : 0
-          });
-
-          // Flatten the nested structure: payment_methods -> providers
+                    // Flatten the nested structure: payment_methods -> providers
           if (Array.isArray(methods)) {
             methods.forEach((method: any) => {
               if (method.providers && Array.isArray(method.providers) && method.providers.length > 0) {
@@ -760,33 +728,10 @@ export default function DepositForm({
           }
         }
 
-        console.log("🔍 Flattened payment methods:", {
-          flattenedMethods,
-          flattenedLength: flattenedMethods.length,
-          // Log first provider for debugging
-          firstProvider: flattenedMethods.length > 0 ? {
-            provider_name: flattenedMethods[0].provider_name,
-            provider_logo: flattenedMethods[0].provider_logo,
-            logo: flattenedMethods[0].logo,
-            payment_method: flattenedMethods[0].payment_method,
-          } : null
-        });
-
-        activeMethods = flattenedMethods;
+                activeMethods = flattenedMethods;
       } else {
         // For admin payment methods, use the existing logic
-        console.log("🔍 Processing admin payment methods:", {
-          paymentMethodsData,
-          paymentMethodsDataLength: Array.isArray(paymentMethodsData) ? paymentMethodsData.length : 0,
-          firstPayment: Array.isArray(paymentMethodsData) && paymentMethodsData.length > 0 ? {
-            provider_name: paymentMethodsData[0].provider_name,
-            provider_logo: paymentMethodsData[0].provider_logo,
-            logo: paymentMethodsData[0].logo,
-            admin_payment_detail_id: paymentMethodsData[0].admin_payment_detail_id
-          } : null
-        });
-
-        activeMethods = paymentMethodsData.filter((payment: any) => {
+                activeMethods = paymentMethodsData.filter((payment: any) => {
           if (payment.is_active === undefined || payment.is_active === null) return true;
           return payment.is_active === true || payment.is_active === 'true' || payment.is_active === 1 || payment.is_active === '1';
         }).map((payment: any) => {
@@ -800,28 +745,9 @@ export default function DepositForm({
         });
       }
 
-      console.log("🔍 Active methods after filtering:", {
-        activeMethods,
-        activeMethodsLength: activeMethods.length
-      });
-
-      console.log("🔍 Setting stable payment methods:", {
-        count: activeMethods.length,
-        firstMethod: activeMethods[0] ? {
-          provider_name: activeMethods[0].provider_name,
-          provider_logo: activeMethods[0].provider_logo,
-          logo: activeMethods[0].logo
-        } : null
-      });
-      setStablePaymentMethods(activeMethods);
+                  setStablePaymentMethods(activeMethods);
     } else {
-      console.log("🔍 No payment methods data available", {
-        isHomePage,
-        hasPublicPaymentMethods: !!publicPaymentMethods,
-        hasPaymentMethodsData: !!paymentMethodsData,
-        publicPaymentMethodsStructure: publicPaymentMethods
-      });
-      setStablePaymentMethods([]);
+            setStablePaymentMethods([]);
     }
   }, [paymentMethodsData, isHomePage, publicPaymentMethods]); // Update when payment data changes
 
@@ -1350,15 +1276,12 @@ export default function DepositForm({
       return;
     }
 
-    console.log("Fetching public payment methods for home page");
-    dispatch(fetchPublicPaymentMethods())
+        dispatch(fetchPublicPaymentMethods())
       .unwrap()
       .then((result) => {
-        console.log("Public payment methods fetched successfully:", result);
-      })
+              })
       .catch((error: unknown) => {
-        console.error("Failed to fetch public payment methods:", error);
-      });
+              });
   }, [dispatch, isHomePage]);
 
   useEffect(() => {
@@ -2034,17 +1957,9 @@ export default function DepositForm({
           })
           .catch((actionOrError: any) => {
             if (cancelled) return;
-            console.log("[EXPRESS HOME DEPOSIT] ESTIMATE CATCH", { actionOrError });
-            // Thunk rejects with action { payload: { message, response_data } }; normalize to payload
+                        // Thunk rejects with action { payload: { message, response_data } }; normalize to payload
             const error = actionOrError?.payload ?? actionOrError;
-            console.log("[EXPRESS HOME DEPOSIT] PARSED ERROR BEFORE MESSAGE", {
-              message: error?.message,
-              rawError: error,
-              response_data: (error as any)?.response_data,
-            });
-            console.error("Failed to fetch swap estimate:", actionOrError);
-
-            // IMMEDIATELY clear all loading states so user never stays on "Calculating..."
+                                    // IMMEDIATELY clear all loading states so user never stays on "Calculating..."
             setIsCalculating(false);
             setIsCalculatingReceive(false);
             setEstimateLoading(false);
@@ -2428,8 +2343,7 @@ export default function DepositForm({
         setIsCalculating(false);
         setIsCalculatingReceive(false);
         setEstimateLoading(false);
-        console.log("Safety timeout: Cleared all loading states");
-      }
+              }
     }, 10000); // 10 second safety timeout (reduced from 15s)
 
     return () => clearTimeout(safetyTimeout);
@@ -3596,8 +3510,7 @@ export default function DepositForm({
         router.push(`/dashboard/express-exchange?transactionId=${finalResponse.transaction_id}`);
       }
     } catch (error: any) {
-      console.error("Failed to update deposit address:", error);
-      let errorMessage = "Failed to process request";
+            let errorMessage = "Failed to process request";
 
       if (error.response?.data) {
         const responseData = error.response.data;
@@ -4220,18 +4133,7 @@ export default function DepositForm({
 
                     // Debug logging when payment method is selected
                     if (selectedPayment) {
-                      console.log("🔍 Selected Payment Method:", {
-                        isHomePage,
-                        provider_name: selectedPayment.provider_name,
-                        provider_logo: selectedPayment.provider_logo,
-                        logo: selectedPayment.logo,
-                        account_name: selectedPayment.account_name,
-                        account_number: selectedPayment.account_number,
-                        hasLogo: !!(selectedPayment.provider_logo || selectedPayment.logo),
-                        admin_payment_detail_id: selectedPayment.admin_payment_detail_id,
-                        fullPayment: selectedPayment
-                      });
-                    }
+                                          }
 
                     setPayBank(String(value || "").trim());
                     setSelectedPaymentDetail(selectedPayment || null);
@@ -4905,9 +4807,7 @@ export default function DepositForm({
                     admin_payment_detail_id: adminPaymentDetailId,
                   };
 
-                  console.log("🚀 Forex Deposit Payload:", forexPayload);
-
-                  const result = await dispatch(createForexExchangeThunk(forexPayload)).unwrap();
+                                    const result = await dispatch(createForexExchangeThunk(forexPayload)).unwrap();
 
                   // Store exchange data in localStorage to avoid immediate refetch
                   localStorage.setItem('currentForexExchange', JSON.stringify(result));
@@ -4917,8 +4817,7 @@ export default function DepositForm({
                   // Navigate to forex status page using correct field name
                   router.push(`/dashboard/express-exchange/forex-status?transactionId=${result.forex_transaction_id}`);
                 } catch (error: any) {
-                  console.error("Failed to create forex exchange:", error);
-                  showToast.error(error || "Failed to create forex exchange");
+                                    showToast.error(error || "Failed to create forex exchange");
                 } finally {
                   setIsSubmitting(false);
                 }
@@ -5243,8 +5142,7 @@ export default function DepositForm({
                       validateAddress(text, currentCurrency, currentNetwork);
                     }
                   } catch (err) {
-                    console.error("Failed to read clipboard:", err);
-                    showToast.error("Failed to paste from clipboard");
+                                        showToast.error("Failed to paste from clipboard");
                   }
                 }}
                 className="flex items-center justify-center gap-2 bg-[#1D8751] hover:bg-[#166b3e] text-white rounded-xl px-3 py-1.5 font-semibold text-sm transition-colors min-h-[36px] touch-manipulation flex-shrink-0 whitespace-nowrap"

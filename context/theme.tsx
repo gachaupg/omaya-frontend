@@ -41,8 +41,7 @@ export const ThemeProvider: React.FC<ThemeProviderProps> = ({ children }) => {
     try {
       reduxTheme.toggleTheme(newTheme as "light" | "dark" | "deem" | "system");
     } catch (error) {
-      console.log("Redux theme update failed, using local state:", error);
-    }
+          }
   };
 
   // Only use theme values after component is mounted to prevent hydration mismatch

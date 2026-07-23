@@ -7,7 +7,7 @@ import { StatusBadge } from "@/components/ui/StatusBadge";
 import { TransactionFromToCell } from "@/components/dashboard/ui/TransactionFromToCell";
 import type { AllTransactionItem } from "@/features/transactions/api";
 import type { FromToCellModel } from "@/lib/utils/transactionFromTo";
-import { normalizeTransactionStatusForBadge } from "@/lib/utils/transactionFromTo";
+import { formatDashboardTransactionStatus } from "@/lib/utils/dashboardTransactionDisplay";
 import { formatDashboardTransactionWhen } from "@/lib/globalFormatter";
 import { useDashboardI18n } from "@/lib/useDashboardI18n";
 import { resolveDashboardTransactionAssetImage } from "@/features/express/utils/imageHelpers";
@@ -33,6 +33,7 @@ export type DashboardTransactionDetailView = {
   assetSubtitle?: string;
   assetImageUrl?: string | null;
   typeLabel: string;
+  sideLabel: string;
 };
 
 type DashboardTransactionDetailsModalProps = {
@@ -110,7 +111,7 @@ export function DashboardTransactionDetailsModal({
 
   if (!open || !detail) return null;
 
-  const { tx, from, to, assetTitle, assetSubtitle, typeLabel } = detail;
+  const { tx, from, to, assetTitle, assetSubtitle, typeLabel, sideLabel } = detail;
   const showUsdFlag = isUsdOrMoneyXTransaction(tx, assetTitle, typeLabel);
   const headerLogo = resolveDashboardTransactionAssetImage(tx);
 
@@ -239,10 +240,14 @@ export function DashboardTransactionDetailsModal({
             </div>
             <div className="flex flex-wrap items-center gap-2 sm:gap-3 pt-3 border-t border-gray-200 dark:border-[#35353E]">
               <span className="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-semibold bg-[#1D8751]/10 text-[#1D8751]">
-                {typeLabel}
+                Type: {typeLabel}
+              </span>
+              <span className="inline-flex items-center px-2.5 py-1 rounded-full text-xs font-semibold bg-[#1D8751]/10 text-[#1D8751]">
+                Side: {sideLabel}
               </span>
               <StatusBadge
-                status={normalizeTransactionStatusForBadge(tx.status)}
+                status={formatDashboardTransactionStatus(tx.status)}
+                uppercase
               />
               {whenLabel && whenLabel !== "-" ? (
                 <span className="text-xs sm:text-sm font-medium text-gray-500 dark:text-[#A0A3BC] whitespace-nowrap">

@@ -46,20 +46,11 @@ class PerformanceMonitor {
 
     // Log slow requests
     if (metric.responseTime > this.slowThreshold) {
-      console.warn(`Slow API request detected:`, {
-        endpoint: metric.endpoint,
-        method: metric.method,
-        responseTime: metric.responseTime,
-        success: metric.success,
-      });
-    }
+          }
 
     // Log cache hits for optimization insights
     if (metric.cacheHit) {
-      console.log(`Cache hit for ${metric.method} ${metric.endpoint}`, {
-        responseTime: metric.responseTime,
-      });
-    }
+          }
   }
 
   /**

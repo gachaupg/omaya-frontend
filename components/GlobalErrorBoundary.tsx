@@ -23,8 +23,7 @@ class GlobalErrorBoundary extends Component<Props, State> {
   }
 
   componentDidCatch(error: Error, errorInfo: ErrorInfo) {
-    console.error('Global Error Boundary caught an error:', error, errorInfo);
-    
+        
     // Handle authentication errors
     if (this.isAuthError(error)) {
       this.handleAuthError();

@@ -16,8 +16,7 @@ const P2PTermsPage = () => {
       localStorage.setItem("p2p_terms_accepted", "true");
       router.push("/dashboard/p2p?tab=chats");
     } catch (err) {
-      console.error("[P2P Terms] Failed to accept:", err);
-      // Still save to localStorage so Chats can show instant on retry
+            // Still save to localStorage so Chats can show instant on retry
       localStorage.setItem("p2p_terms_accepted", "true");
       router.push("/dashboard/p2p?tab=chats");
     } finally {

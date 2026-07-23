@@ -159,8 +159,7 @@ export const useLiveChatWebSocket = ({
       ws.onmessage = (event) => {
         try {
           const data: LiveChatWebSocketMessage = JSON.parse(event.data);
-          console.log("[LiveChat] Response:", data);
-          logger.debug("live-chat", "WebSocket message received:", data);
+                    logger.debug("live-chat", "WebSocket message received:", data);
           
           setLastMessage(data);
           
@@ -344,9 +343,7 @@ export const useLiveChatWebSocket = ({
         message: message,
       };
       const apiUrl = wsRef.current.url;
-      console.log("[LiveChat] API (WebSocket):", apiUrl);
-      console.log("[LiveChat] Payload:", messageData);
-      wsRef.current.send(JSON.stringify(messageData));
+                  wsRef.current.send(JSON.stringify(messageData));
       
       const trimmed = message.trim();
       pendingSentRef.current.set(trimmed, Date.now());

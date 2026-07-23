@@ -53,11 +53,9 @@ const fetchBlogsFromSanity = async (): Promise<Blog[]> => {
     }
     const query = `*[${BASE_FILTER}] | ${ORDER_CLAUSE} ${BLOG_FIELDS}`;
     const data = await client.fetch(query);
-    console.log(`[API] Successfully fetched ${data?.length || 0} blogs from Sanity`);
-    return data || [];
+        return data || [];
   } catch (err) {
-    console.error(`[API] Failed to load blogs from Sanity:`, err);
-    return getFallbackBlogs();
+        return getFallbackBlogs();
   }
 };
 
@@ -101,8 +99,7 @@ const fetchBlogsPaginatedFromSanity = async (
 
     return { posts: posts || [], totalCount: totalCount ?? 0 };
   } catch (err) {
-    console.error(`[API] Failed to load paginated blogs from Sanity:`, err);
-    const fallback = getFallbackBlogs();
+        const fallback = getFallbackBlogs();
     return { posts: fallback, totalCount: fallback.length };
   }
 };
@@ -201,8 +198,7 @@ export default async function handler(
     const blogs = await fetchBlogs(refresh);
     res.status(200).json(blogs);
   } catch (error) {
-    console.error("API handler error:", error);
-    // Return fallback data instead of 500 error
+        // Return fallback data instead of 500 error
     const fallbackBlogs = getFallbackBlogs();
     res.status(200).json(fallbackBlogs);
   }

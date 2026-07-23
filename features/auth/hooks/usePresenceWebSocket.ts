@@ -67,8 +67,8 @@ function getAccessToken(accessFromStore?: string | null): string | null {
  * - **Connect** (tab visible + authenticated) → server marks user **online**
  * - **Disconnect** (tab hide, navigate away, close tab, logout, offline) → server marks **offline**
  *
- * The live socket always uses the real JWT in the query string. `console.log` lines use a
- * **redacted** URL only so tokens never appear in the console.
+ * The live socket always uses the real JWT in the query string. Log output uses a
+ * **redacted** URL only so tokens never appear in logs.
  *
  * **Chrome:** DevTools → **Network** → reload page → filter box type `presence` OR set type
  * filter to **WS** / **Socket** → click the `ws/presence/` row → **Messages** (frames).
@@ -82,22 +82,11 @@ export function usePresenceWebSocket(options?: { enabled?: boolean }) {
 
   useEffect(() => {
     const tokenPreview = getAccessToken(accessToken);
-    console.log("[presence-ws] effect", {
-      enabled,
-      isAuthenticated,
-      visibility:
-        typeof document !== "undefined" ? document.visibilityState : "ssr",
-      hasToken: !!tokenPreview,
-      jwtShapeOk: !!tokenPreview && tokenPreview.includes("."),
-    });
-
-    if (!enabled || !isAuthenticated) {
+        if (!enabled || !isAuthenticated) {
       reconnectsRef.current = 0;
       if (!enabled) {
-        console.log("[presence-ws] skip: hook disabled");
-      } else if (!isAuthenticated) {
-        console.log("[presence-ws] skip: not authenticated (wait for login / rehydrate)");
-      }
+              } else if (!isAuthenticated) {
+              }
       return;
     }
 
@@ -117,14 +106,7 @@ export function usePresenceWebSocket(options?: { enabled?: boolean }) {
       if (ws) {
         const rs = ws.readyState;
         const urlSafe = ws.url ? redactPresenceUrl(ws.url) : undefined;
-        console.log(TAG, {
-          event: "disconnect",
-          reason,
-          readyStateBeforeClose: rs,
-          url: urlSafe,
-          backend: "user should be marked OFFLINE after socket closes",
-        });
-        clearDevSocketExpose();
+                clearDevSocketExpose();
         try {
           ws.close(1000, "client");
         } catch {
@@ -138,20 +120,10 @@ export function usePresenceWebSocket(options?: { enabled?: boolean }) {
       if (cancelled) return;
       if (document.visibilityState !== "visible") return;
       if (reconnectsRef.current >= MAX_RECONNECTS) {
-        console.log(TAG, {
-          event: "reconnect_aborted",
-          reason: "max_attempts",
-          attempts: reconnectsRef.current,
-        });
-        return;
+                return;
       }
       reconnectsRef.current += 1;
-      console.log(TAG, {
-        event: "reconnect_scheduled",
-        attempt: reconnectsRef.current,
-        delayMs: RECONNECT_MS,
-      });
-      reconnectTimer = setTimeout(() => {
+            reconnectTimer = setTimeout(() => {
         reconnectTimer = null;
         connectIfNeeded();
       }, RECONNECT_MS);
@@ -163,11 +135,7 @@ export function usePresenceWebSocket(options?: { enabled?: boolean }) {
 
       const token = getAccessToken(accessToken);
       if (!token || !token.includes(".")) {
-        console.log(TAG, {
-          event: "connect_skipped",
-          reason: "no_valid_jwt",
-        });
-        return;
+                return;
       }
 
       if (
@@ -175,12 +143,7 @@ export function usePresenceWebSocket(options?: { enabled?: boolean }) {
         (ws.readyState === WebSocket.OPEN ||
           ws.readyState === WebSocket.CONNECTING)
       ) {
-        console.log(TAG, {
-          event: "connect_skipped",
-          reason: "already_open_or_connecting",
-          readyState: ws.readyState,
-        });
-        return;
+                return;
       }
 
       safeClose("reconnect_replace_socket");
@@ -188,23 +151,10 @@ export function usePresenceWebSocket(options?: { enabled?: boolean }) {
       const url = API_CONFIG.AUTH.PRESENCE_WS(token);
       const urlLogged = redactPresenceUrl(url);
 
-      console.log(TAG, {
-        event: "connecting",
-        url: urlLogged,
-        note: "Real JWT is used for new WebSocket() — token redacted here only",
-        visibility: document.visibilityState,
-        backend: "server will mark ONLINE after handshake",
-      });
-
-      try {
+            try {
         ws = new WebSocket(url);
       } catch (e) {
-        console.log(TAG, {
-          event: "construct_failed",
-          url: urlLogged,
-          error: String(e),
-        });
-        scheduleReconnect();
+                scheduleReconnect();
         return;
       }
 
@@ -213,59 +163,23 @@ export function usePresenceWebSocket(options?: { enabled?: boolean }) {
         if (IS_DEV && typeof window !== "undefined" && ws) {
           (window as unknown as { __OMAYA_PRESENCE_WS__: WebSocket }).__OMAYA_PRESENCE_WS__ = ws;
         }
-        console.log(TAG, {
-          event: "open",
-          url: urlLogged,
-          readyState: ws?.readyState,
-          extensions: ws?.extensions || "",
-          protocol: ws?.protocol || "",
-          backend: "user should be marked ONLINE",
-        });
-        console.log(
-          TAG,
-          "Inspect socket in Chrome: F12 → Network → (All) reload page → filter “presence” OR column Type = websocket → click row → “Messages” tab for frames. Dev: window.__OMAYA_PRESENCE_WS__"
-        );
-      };
+                      };
 
       ws.onmessage = (event: MessageEvent<string | ArrayBuffer>) => {
         if (typeof event.data === "string") {
           const parsed = formatWsMessageData(event.data);
-          console.log(TAG, {
-            event: "message",
-            ...parsed,
-          });
-        } else if (event.data instanceof ArrayBuffer) {
-          console.log(TAG, {
-            event: "message",
-            kind: "arraybuffer",
-            byteLength: event.data.byteLength,
-          });
-        } else {
-          console.log(TAG, { event: "message", kind: "other", value: String(event.data) });
-        }
+                  } else if (event.data instanceof ArrayBuffer) {
+                  } else {
+                  }
       };
 
       ws.onerror = (ev) => {
-        console.log(TAG, {
-          event: "ws_error_event",
-          url: urlLogged,
-          type: ev.type,
-          readyState: ws?.readyState,
-        });
-      };
+              };
 
       ws.onclose = (ev) => {
         clearDevSocketExpose();
         ws = null;
-        console.log(TAG, {
-          event: "close",
-          code: ev.code,
-          reason: ev.reason || "(empty)",
-          wasClean: ev.wasClean,
-          url: urlLogged,
-          backend: "user should be marked OFFLINE (unless reconnecting while tab visible)",
-        });
-        if (cancelled) return;
+                if (cancelled) return;
         if (document.visibilityState !== "visible") return;
         scheduleReconnect();
       };
@@ -275,30 +189,25 @@ export function usePresenceWebSocket(options?: { enabled?: boolean }) {
       if (document.visibilityState === "hidden") {
         reconnectsRef.current = 0;
         safeClose("visibility_hidden");
-        console.log(TAG, { event: "lifecycle", action: "tab_hidden" });
-      } else {
+              } else {
         reconnectsRef.current = 0;
-        console.log(TAG, { event: "lifecycle", action: "tab_visible" });
-        connectIfNeeded();
+                connectIfNeeded();
       }
     };
 
     const onPageHide = () => {
       reconnectsRef.current = 0;
       safeClose("pagehide");
-      console.log(TAG, { event: "lifecycle", action: "pagehide" });
-    };
+          };
 
     const onWindowOffline = () => {
       reconnectsRef.current = 0;
       safeClose("browser_offline");
-      console.log(TAG, { event: "lifecycle", action: "browser_offline" });
-    };
+          };
 
     const onWindowOnline = () => {
       reconnectsRef.current = 0;
-      console.log(TAG, { event: "lifecycle", action: "browser_online" });
-      connectIfNeeded();
+            connectIfNeeded();
     };
 
     document.addEventListener("visibilitychange", onVisibility);
@@ -316,7 +225,6 @@ export function usePresenceWebSocket(options?: { enabled?: boolean }) {
       window.removeEventListener("online", onWindowOnline);
       safeClose("effect_cleanup_logout_or_unmount");
       clearDevSocketExpose();
-      console.log(TAG, { event: "lifecycle", action: "hook_cleanup" });
-    };
+          };
   }, [enabled, isAuthenticated, accessToken]);
 }

@@ -38,7 +38,7 @@ class EnhancedCache {
 
     // Also store in IndexedDB if enabled and data is large
     if (this.options.useIndexedDB && this.shouldUseIndexedDB(data)) {
-      browserCache.set(key, data, ttl).catch(console.error);
+      browserCache.set(key, data, ttl).catch(() => {});
     }
   }
 
@@ -63,8 +63,7 @@ class EnhancedCache {
           return indexedData;
         }
       } catch (error) {
-        console.warn(`[EnhancedCache] IndexedDB get failed for ${key}:`, error);
-      }
+              }
     }
 
     return null;
@@ -84,8 +83,7 @@ class EnhancedCache {
 
     // Check if there's already a pending request
     if (this.pendingRequests.has(key)) {
-      console.log(`[EnhancedCache] Deduplicating request for ${key}`);
-      return this.pendingRequests.get(key)!;
+            return this.pendingRequests.get(key)!;
     }
 
     // Create new request
@@ -110,8 +108,7 @@ class EnhancedCache {
       try {
         await browserCache.clear();
       } catch (error) {
-        console.warn('[EnhancedCache] Failed to clear IndexedDB cache:', error);
-      }
+              }
     }
   }
 
@@ -125,8 +122,7 @@ class EnhancedCache {
       try {
         return await browserCache.has(key);
       } catch (error) {
-        console.warn(`[EnhancedCache] IndexedDB has check failed for ${key}:`, error);
-      }
+              }
     }
 
     return false;

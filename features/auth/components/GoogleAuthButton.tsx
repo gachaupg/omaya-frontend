@@ -48,13 +48,10 @@ const GoogleAuthButton: React.FC<GoogleAuthButtonProps> = ({
 
       // Get the OAuth URL using our helper function
       const authUrl = getGoogleOAuthUrl(state);
-      console.log('Opening Google OAuth popup:', authUrl);
-
-      // Redirect to Google OAuth in the same window
+            // Redirect to Google OAuth in the same window
       window.location.href = authUrl;
     } catch (error) {
-      console.error('Error during Google OAuth initialization:', error);
-      toast.error('Failed to initialize Google Sign-In. Please try again.');
+            toast.error('Failed to initialize Google Sign-In. Please try again.');
       onError?.(error);
     }
   }, [onError]);

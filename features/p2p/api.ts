@@ -342,8 +342,7 @@ export type PublicPaymentMethodsQuery = {
 export const getPublicPaymentMethods = async (
   params?: PublicPaymentMethodsQuery
 ): Promise<P2PResponse> => {
-  console.log("🌐 API: Calling getPublicPaymentMethods...", params);
-  return withRetry(async () => {
+    return withRetry(async () => {
     const searchParams = new URLSearchParams();
     if (params?.flow) searchParams.set("flow", params.flow);
     if (params?.selected_provider_id) {
@@ -354,11 +353,9 @@ export const getPublicPaymentMethods = async (
 
     try {
       const directResponse = await get<P2PResponse>(path);
-      console.log("🌐 API: Public payment methods response:", directResponse.data);
-      return directResponse.data;
+            return directResponse.data;
     } catch (directError) {
-      console.warn("⚠️ API: Public payment methods request failed:", directError);
-      throw directError;
+            throw directError;
     }
   });
 };

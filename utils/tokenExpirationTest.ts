@@ -34,11 +34,9 @@ export const simulateTokenExpiration = () => {
           localStorage.setItem('access_token', expiredToken);
         }
         
-        console.log('🔒 Token expiration simulated. Next API call should trigger refresh.');
-        return true;
+                return true;
       } catch (error) {
-        console.error('Failed to simulate token expiration:', error);
-        return false;
+                return false;
       }
     }
   }
@@ -57,16 +55,14 @@ export const simulateInvalidRefreshToken = () => {
       },
     });
     
-    console.log('🔒 Invalid refresh token simulated. Next API call should trigger logout.');
-    return true;
+        return true;
   }
   return false;
 };
 
 export const restoreValidTokens = () => {
   // This would need to be called with valid tokens from your login flow
-  console.log('⚠️  You need to log in again to restore valid tokens.');
-  return false;
+    return false;
 };
 
 // Development helper - add to window for easy testing
@@ -77,6 +73,5 @@ if (typeof window !== 'undefined' && process.env.NODE_ENV === 'development') {
     restore: restoreValidTokens,
   };
   
-  console.log('🧪 Token test utilities available at window.tokenTest');
-}
+  }
 

@@ -117,8 +117,7 @@ export const useThemeToggle = () => {
         setUpdating(false);
       }, 300);
     } catch (error) {
-      console.error("Failed to update theme:", error);
-      // Revert to previous theme on error
+            // Revert to previous theme on error
       dispatch(setThemeMode(theme.mode));
       setUpdating(false);
     }
@@ -140,8 +139,7 @@ export const useThemeToggle = () => {
 
       // No server API calls - using client-side only
     } catch (error) {
-      console.error("Failed to update custom colors:", error);
-    }
+          }
   };
 
   const getCurrentTheme = () => {

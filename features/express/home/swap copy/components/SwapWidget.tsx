@@ -446,11 +446,7 @@ const SwapWidget: React.FC<SwapWidgetProps> = ({ usePublicApi = false }) => {
         if (activeInputField === "from") {
           logger.error("swap", "Swap estimate request failed:", error);
         } else {
-          console.warn(
-            "Reverse calculation failed, this might be expected:",
-            error
-          );
-        }
+                  }
       });
     } else {
       // Clear estimate if conditions are not met
@@ -533,8 +529,7 @@ const SwapWidget: React.FC<SwapWidgetProps> = ({ usePublicApi = false }) => {
       );
 
     if (!isValidationError) {
-      console.error("Swap estimate error:", errMsg);
-    }
+          }
     logger.debug(
       "swap",
       "Active input field during error:",
@@ -542,12 +537,7 @@ const SwapWidget: React.FC<SwapWidgetProps> = ({ usePublicApi = false }) => {
     );
 
     if (activeInputField !== "from" && !isValidationError) {
-      console.warn(
-        "Reverse calculation error (might be expected):",
-        errMsg
-      );
-
-      if (lastSuccessfulEstimate && debouncedToAmount) {
+            if (lastSuccessfulEstimate && debouncedToAmount) {
         try {
           const toAmount =
             lastSuccessfulEstimate.raw_response?.toAmount ||
@@ -576,14 +566,9 @@ const SwapWidget: React.FC<SwapWidgetProps> = ({ usePublicApi = false }) => {
               fromAmount,
             });
           } else {
-            console.warn("Fallback calculation skipped: invalid amounts", {
-              toAmount,
-              fromAmount,
-            });
-          }
+                      }
         } catch (fallbackError) {
-          console.error("Fallback calculation failed:", fallbackError);
-        }
+                  }
       }
     }
   }, [
@@ -603,8 +588,7 @@ const SwapWidget: React.FC<SwapWidgetProps> = ({ usePublicApi = false }) => {
         : (swapError as { message?: string })?.message != null
           ? String((swapError as { message?: string }).message)
           : "Swap failed";
-    console.error("Swap error:", desc);
-    setLocalSwapError(desc);
+        setLocalSwapError(desc);
   }, [swapError]);
 
   // Handle next step validation - first button
@@ -809,14 +793,12 @@ const SwapWidget: React.FC<SwapWidgetProps> = ({ usePublicApi = false }) => {
           return;
         }
         // If verification status is unknown, allow the action to proceed
-        console.warn("KYC status check failed, proceeding with caution:", error);
-      }
+              }
     }
 
     logger.debug("swap", "handleSubmit called");
     if (!fromAsset || !toAsset || !walletAddress || !estimate) {
-      console.error("Missing required fields");
-      setLocalSwapError("Please fill in all required information.");
+            setLocalSwapError("Please fill in all required information.");
       return;
     }
 
@@ -855,8 +837,7 @@ const SwapWidget: React.FC<SwapWidgetProps> = ({ usePublicApi = false }) => {
 
       setCurrentStep("copy-address");
     } catch (error: any) {
-      console.error("Failed to create swap:", error);
-      const sameCoinMsg = resolveSwapCreateErrorMessage(error);
+            const sameCoinMsg = resolveSwapCreateErrorMessage(error);
       const msg =
         sameCoinMsg ||
         error?.response?.data?.message ||
@@ -898,8 +879,7 @@ const SwapWidget: React.FC<SwapWidgetProps> = ({ usePublicApi = false }) => {
         setCopyMessage("");
       }, 2000);
     } catch (err) {
-      console.error("Failed to copy:", err);
-      setCopyMessage("Failed — copy manually");
+            setCopyMessage("Failed — copy manually");
       setTimeout(() => {
         setCopyMessage("");
       }, 2000);

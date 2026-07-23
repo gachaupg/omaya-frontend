@@ -159,8 +159,7 @@ const EditAdModal: React.FC<EditAdModalProps> = ({
         throw new Error("Failed to update order");
       }
     } catch (error) {
-      console.error("Error updating order:", error);
-    } finally {
+          } finally {
       setIsLoading(false);
     }
   };

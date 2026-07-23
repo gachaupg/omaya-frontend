@@ -18,14 +18,11 @@ export class DebugHelper {
           const summary = ApiHealthChecker.getHealthSummary();
 
         
-          console.groupEnd();
-
-          return { report, summary };
+                    return { report, summary };
         },
 
         clearHealth: () => {
-          console.log("Clearing API health data...");
-          // This would need to be implemented in ApiHealthChecker
+                    // This would need to be implemented in ApiHealthChecker
         },
 
         testEndpoint: async (endpoint: string) => {
@@ -51,9 +48,7 @@ export class DebugHelper {
             
             }
           });
-          console.groupEnd();
-
-          return circuits;
+                    return circuits;
         },
 
         resetCircuit: (endpoint: string) => {
@@ -68,15 +63,9 @@ export class DebugHelper {
   }
 
   static logNetworkError(endpoint: string, error: any) {
-    if (process.env.NODE_ENV === "development") {
-    
-    }
   }
 
   static logApiSuccess(endpoint: string, responseTime?: number) {
-    if (process.env.NODE_ENV === "development") {
-    
-    }
   }
 }
 

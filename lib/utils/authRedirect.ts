@@ -55,8 +55,7 @@ export const setAuthRedirectPath = (path: string) => {
   try {
     sessionStorage.setItem(AUTH_REDIRECT_KEY, path);
   } catch (error) {
-    console.warn("Failed to set auth redirect path", error);
-  }
+      }
 };
 
 /** Store express form state as fallback when URL params may be lost (e.g. long URLs) */
@@ -195,8 +194,7 @@ export const consumeAuthRedirectPath = (): string | null => {
       return path;
     }
   } catch (error) {
-    console.warn("Failed to consume auth redirect path", error);
-  }
+      }
 
   return null;
 };
@@ -209,8 +207,7 @@ export const peekAuthRedirectPath = (): string | null => {
   try {
     return sessionStorage.getItem(AUTH_REDIRECT_KEY);
   } catch (error) {
-    console.warn("Failed to read auth redirect path", error);
-    return null;
+        return null;
   }
 };
 

@@ -40,8 +40,7 @@ export const imageBuilder = (source: any) => {
       const dataset = process.env.NEXT_PUBLIC_SANITY_DATASET || 'production';
 
       if (!projectId) {
-        console.warn('Sanity project ID not configured');
-        return '/images/alert-circle.svg';
+                return '/images/alert-circle.svg';
       }
 
       const imageId = source.asset._ref
@@ -57,7 +56,6 @@ export const imageBuilder = (source: any) => {
 
     return '/images/alert-circle.svg';
   } catch (error) {
-    console.error('Image builder error:', error);
-    return '/images/alert-circle.svg';
+        return '/images/alert-circle.svg';
   }
 };

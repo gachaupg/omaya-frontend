@@ -624,9 +624,7 @@ export default function Exchanging({ transactionData }: ExchangingProps) {
       {
         token: token ?? undefined,
         onMessage: (data: TransactionStatusMessage) => {
-          console.log("[P2P Exchanging] WebSocket message:", data);
-
-          // Clear any WebSocket errors when we receive a message
+                    // Clear any WebSocket errors when we receive a message
           setWsError(null);
           setConnectionAttempts(0); // Reset connection attempts on successful message
 
@@ -955,15 +953,9 @@ export default function Exchanging({ transactionData }: ExchangingProps) {
         },
         onError: (error) => {
           // Minimal error logging
-          console.warn(
-            `WebSocket error for transaction ${effectiveTransactionData?.transactionId}`
-          );
-
-          if (finalWebsocketUrl) {
-            console.warn(`URL: ${finalWebsocketUrl}`);
-          } else {
-            console.warn("No WebSocket URL provided");
-          }
+                    if (finalWebsocketUrl) {
+                      } else {
+                      }
 
           // Increment connection attempts
           setConnectionAttempts((prev) => prev + 1);
@@ -1018,8 +1010,7 @@ export default function Exchanging({ transactionData }: ExchangingProps) {
   useEffect(() => {
     if (shouldUseWebSocket) {
       const url = effectiveTransactionData?.websocketUrl || effectiveTransactionData?.websocket_url || "(fallback: by transactionId)";
-      console.log("[P2P Exchanging] WebSocket URL:", url, "transactionId:", effectiveTransactionData?.transactionId);
-      logger.debug('p2p',
+            logger.debug('p2p',
         "WebSocket enabled for transaction:",
         effectiveTransactionData?.transactionId
       );

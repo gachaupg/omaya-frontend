@@ -40,30 +40,23 @@ export const getSupportedAssets = async (): Promise<SupportedAsset[]> => {
         return data;
       }
       
-      console.warn("Unexpected response format, returning empty array");
-      return [];
+            return [];
     } catch (error: any) {
-      console.error("Failed to fetch supported assets:", error);
-
-      // Handle different error scenarios
+            // Handle different error scenarios
       if (error.code === "ECONNREFUSED" || error.code === "ENOTFOUND" || error.message?.includes("Network Error")) {
-        console.warn("Network connection issue, returning empty assets list");
-        return [];
+                return [];
       }
 
       if (error.response?.status === 500) {
-        console.warn("Server error, returning empty assets list");
-        return [];
+                return [];
       }
 
       if (error.response?.status === 404) {
-        console.warn("Endpoint not found, returning empty assets list");
-        return [];
+                return [];
       }
 
       // For other errors, return empty array instead of throwing
-      console.warn("Unknown error, returning empty assets list");
-      return [];
+            return [];
     }
   });
 };
@@ -83,9 +76,7 @@ export const getEstimateSwap = async (
       );
       return response.data;
     } catch (error: any) {
-      console.error("Failed to fetch swap estimate:", error);
-
-      // Handle network errors gracefully
+            // Handle network errors gracefully
       if (error.code === "ECONNREFUSED" || error.code === "ENOTFOUND") {
         throw new Error(
           "Network connection issue. Please check your internet connection and try again."
@@ -146,9 +137,7 @@ export const getPublicEstimateSwap = async (
       );
       return response.data;
     } catch (error: any) {
-      console.error("Failed to fetch public swap estimate:", error);
-
-      if (error.code === "ECONNREFUSED" || error.code === "ENOTFOUND") {
+            if (error.code === "ECONNREFUSED" || error.code === "ENOTFOUND") {
         throw new Error(
           "Network connection issue. Please check your internet connection and try again."
         );
@@ -222,11 +211,7 @@ export const createSwap = async (
         toNetwork: data.toNetwork ?? data.to_network ?? "",
       } as CreateSwapResponse;
     } catch (error: any) {
-      console.error("Swap creation error:", error);
-      console.error("Error response:", error.response?.data);
-      console.error("Error status:", error.response?.status);
-
-      // Provide user-friendly error messages for different status codes
+                        // Provide user-friendly error messages for different status codes
       if (error.response?.status === 500) {
         throw new Error(
           "Server Error: Unable to create swap. Please try again later."
@@ -281,8 +266,7 @@ export const getSwapStatus = async (swapId: string): Promise<SwapStatus> => {
       );
       return response.data;
     } catch (error: any) {
-      console.error("Failed to fetch swap status:", error);
-      if (error.response?.status === 500) {
+            if (error.response?.status === 500) {
         throw new Error(
           "Server Error: Unable to fetch swap status. Please try again later."
         );
@@ -346,8 +330,7 @@ export const getSwapHistory = async (
       );
       return response.data;
     } catch (error: any) {
-      console.error("Failed to fetch swap history:", error);
-      
+            
       // Handle network errors gracefully
       if (error.code === "ECONNREFUSED" || error.code === "ENOTFOUND") {
         throw new Error(

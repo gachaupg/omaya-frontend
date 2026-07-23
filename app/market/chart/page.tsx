@@ -122,12 +122,10 @@ const MarketChartContent = () => {
 
         const [details, chart] = await Promise.all([
           fetchCoinDetailsPublic(coinId).catch(e => {
-            console.warn("Failed to fetch details:", e);
-            return null;
+                        return null;
           }),
           fetchCoinMarketChartPublic(coinId, Number(timeRange)).catch(e => {
-            console.error("Failed to fetch chart:", e);
-            throw e;
+                        throw e;
           })
         ]);
 

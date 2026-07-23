@@ -296,8 +296,7 @@ const ChatBox: React.FC<{
     const onCanceled = (e: Event) => {
       const d = (e as CustomEvent<{ tradeId?: string; message?: string }>).detail;
       if (d?.tradeId == null || String(d.tradeId) !== String(tradeId)) return;
-      console.log("[P2P ChatBox] P2P_TRADE_CANCELED_EVENT for this trade", d);
-      setTradeCanceledModal((prev) =>
+            setTradeCanceledModal((prev) =>
         prev.open ? prev : { open: true, message: d.message }
       );
     };
@@ -599,8 +598,7 @@ const ChatBox: React.FC<{
       setIsRecording(true);
       setRecordingSeconds(0);
     } catch (err) {
-      console.error("Failed to start recording:", err);
-      setIsRecording(false);
+            setIsRecording(false);
       setRecordingSeconds(0);
     }
   };
@@ -677,8 +675,7 @@ const ChatBox: React.FC<{
       // Refresh for final audio URLs when uploads are still processing
       fetchMessages();
     } catch (e) {
-      console.error("Failed to send voice message:", e);
-      fetchMessages();
+            fetchMessages();
     }
   };
 

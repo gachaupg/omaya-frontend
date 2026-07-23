@@ -36,10 +36,8 @@ export class ForexStatusWebSocket {
     if (this.debugMode) {
       const timestamp = new Date().toISOString();
       if (data) {
-        console.log(`[ForexWebSocket ${timestamp}] ${message}`, data);
-      } else {
-        console.log(`[ForexWebSocket ${timestamp}] ${message}`);
-      }
+              } else {
+              }
     }
   }
 

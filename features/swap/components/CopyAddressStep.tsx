@@ -271,8 +271,7 @@ const CopyAddressStep: React.FC<CopyAddressStepProps> = ({
               }
             }
           } catch (e) {
-            console.error("Failed to parse WebSocket message", e, event.data);
-          }
+                      }
         },
       });
     }

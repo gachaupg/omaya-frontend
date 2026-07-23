@@ -72,9 +72,7 @@ export const useTradeStatusWebSocket = (options: UseTradeStatusWebSocketOptions)
 
       try {
         const msgAny = message as Record<string, unknown>;
-        console.log("[P2P trade-status WS] handler tradeId=%s payload=", tradeId, msgAny);
-
-        switch (message.type) {
+                switch (message.type) {
           case "connection_established":
             logger.debug('p2p', "✅ Trade status connection established");
             break;
@@ -123,11 +121,7 @@ export const useTradeStatusWebSocket = (options: UseTradeStatusWebSocketOptions)
                   typeof (data as { message?: string }).message === "string"
                     ? (data as { message: string }).message
                     : undefined;
-                console.log("[P2P trade-status WS] trade canceled → event", {
-                  tradeId,
-                  detailMsg,
-                });
-                if (typeof window !== "undefined") {
+                                if (typeof window !== "undefined") {
                   window.dispatchEvent(
                     new CustomEvent(P2P_TRADE_CANCELED_EVENT, {
                       detail: {
@@ -141,30 +135,24 @@ export const useTradeStatusWebSocket = (options: UseTradeStatusWebSocketOptions)
               }
               const cb = onStatusUpdateRef.current;
               if (cb) cb(tradeStatus);
-              else console.warn("⚠️ onStatusUpdate callback not provided!");
-            } else {
-              console.warn("⚠️ Status update missing 'status' field:", message);
             }
             break;
           }
 
           case "error":
-            console.warn("⚠️ Trade status error:", message.data || message);
-            break;
+                        break;
 
           default:
             logger.debug('p2p', "📨 Unknown message type:", message);
             break;
         }
       } catch (error) {
-        console.error("❌ Error handling trade status message:", error);
-      }
+              }
     });
 
     // Handle WebSocket errors
     const unsubscribeError = ws.onError((error) => {
-      console.warn("⚠️ Trade status WebSocket error:", error);
-    });
+          });
 
     // Handle WebSocket close
     const unsubscribeClose = ws.onClose(() => {

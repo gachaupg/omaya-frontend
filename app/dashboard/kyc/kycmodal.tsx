@@ -346,8 +346,7 @@ const KYCVerificationModal: React.FC = () => {
             });
           }
         } catch (error) {
-          console.error("Error parsing KYC status from localStorage:", error);
-        }
+                  }
       }
     }
   }, [kycModalOpen, user?.user_id, dispatch]);
@@ -528,8 +527,7 @@ const KYCVerificationModal: React.FC = () => {
         setFaceImage(file);
         setFacePreview(base64Image);
       } catch (error) {
-        console.error("Error converting face image:", error);
-        try {
+                try {
           const byteString = atob(base64Image.split(",")[1] || "");
           const mime = base64Image.match(/data:([^;]+);/)?.[1] || "image/jpeg";
           const ab = new ArrayBuffer(byteString.length);
@@ -734,8 +732,7 @@ const KYCVerificationModal: React.FC = () => {
       // Refetch KYC status after successful verification
       dispatch(checkAuthKYCStatus(true));
     } catch (error) {
-      console.error("KYC Verification Error:", error);
-      const raw =
+            const raw =
         typeof error === "string"
           ? error
           : "An error occurred during verification submission";
@@ -819,8 +816,7 @@ const KYCVerificationModal: React.FC = () => {
         setShowSubmittedModal(true);
       }
     } catch (error) {
-      console.error("Error checking KYC status:", error);
-      showToast.error(
+            showToast.error(
         "Verification Error",
         "Failed to check verification status"
       );

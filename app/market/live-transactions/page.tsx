@@ -146,8 +146,7 @@ const LiveTransactionsPage = () => {
           });
         }
       } catch (err) {
-        console.error("Error processing WebSocket message:", err);
-      }
+              }
     });
 
     const unsubscribeOpen = wsRef.current.onOpen(() => setIsConnected(true));

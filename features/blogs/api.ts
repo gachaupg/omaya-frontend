@@ -69,8 +69,7 @@ export const blogApi = {
       // Filter for blog category
       return allPosts.filter((blog: BlogPost) => blog.category === "blog");
     } catch (error) {
-      console.error("Error fetching blogs:", error);
-      // Return fallback data for blogs
+            // Return fallback data for blogs
       return [
         {
           _id: "fallback-blog-1",
@@ -99,8 +98,7 @@ export const blogApi = {
       // Filter for news category
       return allPosts.filter((blog: BlogPost) => blog.category === "news");
     } catch (error) {
-      console.error("Error fetching news:", error);
-      // Return fallback data for news
+            // Return fallback data for news
       return [
         {
           _id: "fallback-news-1",

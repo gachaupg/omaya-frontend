@@ -76,8 +76,7 @@ export default function GoogleOAuthCallback() {
 
       return data;
     } catch (error) {
-      console.error('Error exchanging code for tokens:', error);
-      throw error;
+            throw error;
     }
   };
 
@@ -162,8 +161,7 @@ export default function GoogleOAuthCallback() {
           const isHttps = typeof window !== 'undefined' && window.location.protocol === 'https:';
           document.cookie = `access_token=${data.access}; Max-Age=${maxAge}; Path=/; SameSite=Lax${isHttps ? '; Secure' : ''}`;
         } catch (e) {
-          console.warn('Could not set auth cookie in callback:', e);
-        }
+                  }
 
         // Immediately notify app state so Providers can hydrate Redux and set cookie
         try {
@@ -177,8 +175,7 @@ export default function GoogleOAuthCallback() {
           window.dispatchEvent(evt);
         } catch (e) {
           // non-fatal
-          console.warn('Could not dispatch auth-state-changed event:', e);
-        }
+                  }
         
         // If in popup, send success message to parent and close
         if (isPopup) {
@@ -212,8 +209,7 @@ export default function GoogleOAuthCallback() {
         }
         
       } catch (err) {
-        console.error('Authentication error:', err);
-        const errorMessage = err instanceof Error ? err.message : 'An unknown error occurred';
+                const errorMessage = err instanceof Error ? err.message : 'An unknown error occurred';
         
         if (isInPopup()) {
           sendMessageToParent('OAUTH_ERROR', { error: errorMessage });

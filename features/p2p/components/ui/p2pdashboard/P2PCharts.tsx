@@ -256,8 +256,7 @@ const P2PCharts = ({
           : ((await fetchAllUserTradesPages({ fetchAll: true })) as UserTrade[]);
       return rows.map((t) => transformUserTradeToTransaction(t, user?.email));
     } catch (err) {
-      console.error("Error fetching user trades for export:", err);
-      return transformedData;
+            return transformedData;
     }
   }, [allTrades, user?.email, transformedData]);
 

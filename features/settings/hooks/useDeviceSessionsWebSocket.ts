@@ -323,29 +323,12 @@ export function useDeviceSessionsWebSocket(options?: { enabled?: boolean }) {
 
   useEffect(() => {
     const tokenPreview = getAccessToken(accessToken);
-    console.log(TAG, {
-      event: "effect",
-      enabled,
-      isAuthenticated,
-      sessionBootstrapReady,
-      visibility:
-        typeof document !== "undefined" ? document.visibilityState : "ssr",
-      hasToken: !!tokenPreview,
-      jwtShapeOk: !!tokenPreview && tokenPreview.includes("."),
-      api: redactSessionUrl(
-        API_CONFIG.AUTH.DEVICE_SESSIONS_WS(tokenPreview || "missing-token")
-      ),
-    });
-
-    if (!enabled || !isAuthenticated || !sessionBootstrapReady) {
+        if (!enabled || !isAuthenticated || !sessionBootstrapReady) {
       reconnectsRef.current = 0;
       if (!enabled) {
-        console.log(TAG, { event: "skip", reason: "hook_disabled" });
-      } else if (!isAuthenticated) {
-        console.log(TAG, { event: "skip", reason: "not_authenticated" });
-      } else if (!sessionBootstrapReady) {
-        console.log(TAG, { event: "skip", reason: "session_bootstrap_pending" });
-      }
+              } else if (!isAuthenticated) {
+              } else if (!sessionBootstrapReady) {
+              }
       return;
     }
 
@@ -366,13 +349,7 @@ export function useDeviceSessionsWebSocket(options?: { enabled?: boolean }) {
       clearReconnect();
       if (ws) {
         const urlLogged = ws.url ? redactSessionUrl(ws.url) : undefined;
-        console.log(TAG, {
-          event: "disconnect",
-          reason,
-          readyStateBeforeClose: ws.readyState,
-          url: urlLogged,
-        });
-        clearDevSocketExpose();
+                clearDevSocketExpose();
         try {
           ws.close(1000, "client");
         } catch {
@@ -386,21 +363,11 @@ export function useDeviceSessionsWebSocket(options?: { enabled?: boolean }) {
       if (cancelled || exitingRef.current) return;
       if (document.visibilityState !== "visible") return;
       if (reconnectsRef.current >= MAX_RECONNECTS) {
-        console.log(TAG, {
-          event: "reconnect_aborted",
-          reason: "max_attempts",
-          attempts: reconnectsRef.current,
-        });
-        logger.warn("device-sessions-ws", "max reconnect attempts");
+                logger.warn("device-sessions-ws", "max reconnect attempts");
         return;
       }
       reconnectsRef.current += 1;
-      console.log(TAG, {
-        event: "reconnect_scheduled",
-        attempt: reconnectsRef.current,
-        delayMs: RECONNECT_MS,
-      });
-      reconnectTimer = setTimeout(() => {
+            reconnectTimer = setTimeout(() => {
         reconnectTimer = null;
         connectIfNeeded();
       }, RECONNECT_MS);
@@ -409,20 +376,12 @@ export function useDeviceSessionsWebSocket(options?: { enabled?: boolean }) {
     const connectIfNeeded = () => {
       if (cancelled || exitingRef.current) return;
       if (document.visibilityState !== "visible") {
-        console.log(TAG, {
-          event: "connect_skipped",
-          reason: "tab_not_visible",
-        });
-        return;
+                return;
       }
 
       const token = getAccessToken(accessToken);
       if (!token || !token.includes(".")) {
-        console.log(TAG, {
-          event: "connect_skipped",
-          reason: "no_valid_jwt",
-        });
-        return;
+                return;
       }
 
       if (
@@ -430,12 +389,7 @@ export function useDeviceSessionsWebSocket(options?: { enabled?: boolean }) {
         (ws.readyState === WebSocket.OPEN ||
           ws.readyState === WebSocket.CONNECTING)
       ) {
-        console.log(TAG, {
-          event: "connect_skipped",
-          reason: "already_open_or_connecting",
-          readyState: ws.readyState,
-        });
-        return;
+                return;
       }
 
       safeClose("reconnect_replace_socket");
@@ -443,24 +397,10 @@ export function useDeviceSessionsWebSocket(options?: { enabled?: boolean }) {
       const url = API_CONFIG.AUTH.DEVICE_SESSIONS_WS(token);
       const urlLogged = redactSessionUrl(url);
 
-      console.log(TAG, {
-        event: "connecting",
-        url: urlLogged,
-        api: "/ws/session/",
-        note: "Real JWT is used for new WebSocket() — token redacted here only",
-        visibility: document.visibilityState,
-        userActive: document.visibilityState === "visible",
-      });
-
-      try {
+            try {
         ws = new WebSocket(url);
       } catch (e) {
-        console.log(TAG, {
-          event: "construct_failed",
-          url: urlLogged,
-          error: String(e),
-        });
-        logger.error("device-sessions-ws", "WebSocket construct failed", e);
+                logger.error("device-sessions-ws", "WebSocket construct failed", e);
         scheduleReconnect();
         return;
       }
@@ -472,36 +412,14 @@ export function useDeviceSessionsWebSocket(options?: { enabled?: boolean }) {
             window as unknown as { __OMAYA_DEVICE_SESSIONS_WS__: WebSocket }
           ).__OMAYA_DEVICE_SESSIONS_WS__ = ws;
         }
-        console.log(TAG, {
-          event: "open",
-          url: urlLogged,
-          readyState: ws?.readyState,
-          protocol: ws?.protocol || "",
-        });
-        console.log(
-          TAG,
-          "Inspect: F12 → Network → filter “session” → Messages tab. Dev: window.__OMAYA_DEVICE_SESSIONS_WS__"
-        );
-        logger.debug("device-sessions-ws", "open");
+                        logger.debug("device-sessions-ws", "open");
       };
 
       ws.onmessage = (event: MessageEvent<string | ArrayBuffer>) => {
         if (typeof event.data === "string") {
           const formatted = formatWsMessageData(event.data);
-          console.log(TAG, {
-            event: "message",
-            url: urlLogged,
-            response: formatted,
-          });
-        } else {
-          console.log(TAG, {
-            event: "message",
-            url: urlLogged,
-            kind: "binary",
-            byteLength:
-              event.data instanceof ArrayBuffer ? event.data.byteLength : 0,
-          });
-        }
+                  } else {
+                  }
 
         try {
           const parsed = JSON.parse(String(event.data)) as DevicesUpdateMessage &
@@ -532,26 +450,13 @@ export function useDeviceSessionsWebSocket(options?: { enabled?: boolean }) {
       };
 
       ws.onerror = (ev) => {
-        console.log(TAG, {
-          event: "ws_error_event",
-          url: urlLogged,
-          type: ev.type,
-          readyState: ws?.readyState,
-        });
-        logger.warn("device-sessions-ws", "error event");
+                logger.warn("device-sessions-ws", "error event");
       };
 
       ws.onclose = (event) => {
         clearDevSocketExpose();
         ws = null;
-        console.log(TAG, {
-          event: "close",
-          url: urlLogged,
-          code: event.code,
-          reason: event.reason || "(empty)",
-          wasClean: event.wasClean,
-        });
-        logger.warn("device-sessions-ws", "close", {
+                logger.warn("device-sessions-ws", "close", {
           code: event.code,
           reason: event.reason || undefined,
           wasClean: event.wasClean,
@@ -580,30 +485,25 @@ export function useDeviceSessionsWebSocket(options?: { enabled?: boolean }) {
       if (document.visibilityState === "hidden") {
         reconnectsRef.current = 0;
         safeClose("visibility_hidden");
-        console.log(TAG, { event: "lifecycle", action: "tab_hidden" });
-      } else {
+              } else {
         reconnectsRef.current = 0;
-        console.log(TAG, { event: "lifecycle", action: "tab_visible" });
-        connectIfNeeded();
+                connectIfNeeded();
       }
     };
 
     const onPageHide = () => {
       reconnectsRef.current = 0;
       safeClose("pagehide");
-      console.log(TAG, { event: "lifecycle", action: "pagehide" });
-    };
+          };
 
     const onWindowOffline = () => {
       reconnectsRef.current = 0;
       safeClose("browser_offline");
-      console.log(TAG, { event: "lifecycle", action: "browser_offline" });
-    };
+          };
 
     const onWindowOnline = () => {
       reconnectsRef.current = 0;
-      console.log(TAG, { event: "lifecycle", action: "browser_online" });
-      connectIfNeeded();
+            connectIfNeeded();
     };
 
     document.addEventListener("visibilitychange", onVisibility);
@@ -621,8 +521,7 @@ export function useDeviceSessionsWebSocket(options?: { enabled?: boolean }) {
       window.removeEventListener("online", onWindowOnline);
       safeClose("effect_cleanup_logout_or_unmount");
       clearDevSocketExpose();
-      console.log(TAG, { event: "lifecycle", action: "hook_cleanup" });
-    };
+          };
   }, [
     enabled,
     isAuthenticated,

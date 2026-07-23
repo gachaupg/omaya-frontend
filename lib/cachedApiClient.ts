@@ -275,8 +275,7 @@ class CachedApiClient {
         
         return response;
       } catch (error) {
-        console.error(`[CachedApiClient] DELETE request failed for ${url}:`, error);
-        throw error;
+                throw error;
       }
     }
 

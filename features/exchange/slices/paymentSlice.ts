@@ -183,8 +183,7 @@ export const fetchAdminPaymentDetails = createAsyncThunk<AdminPaymentDetail[], b
       try {
         const staleCache = await sliceCache.get<AdminPaymentDetail[]>('payment', 'fetchAdminPaymentDetails');
         if (staleCache && staleCache.length > 0) {
-          console.warn('⚠️ Using stale cache due to API error');
-          return staleCache;
+                    return staleCache;
         }
       } catch (cacheError) {
         // Ignore cache errors

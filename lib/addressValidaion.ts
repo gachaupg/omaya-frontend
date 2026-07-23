@@ -76,8 +76,7 @@ export const validateWalletAddress = (
       };
   }
 
-  console.log("Validation successful for network:", normalizedNetwork);
-  return {
+    return {
     isValid: true,
   };
 };

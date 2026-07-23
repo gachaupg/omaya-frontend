@@ -98,9 +98,7 @@ export default function ForexWithdrawal({
         user_notes: userNotes.trim() || "Please send USD to my bank account",
       };
 
-      console.log("🚀 Forex Withdrawal Payload:", payload);
-
-      const result = await dispatch(createForexExchangeThunk(payload)).unwrap();
+            const result = await dispatch(createForexExchangeThunk(payload)).unwrap();
       
       // Store exchange data in localStorage
       localStorage.setItem('currentForexExchange', JSON.stringify(result));
@@ -110,8 +108,7 @@ export default function ForexWithdrawal({
       // Navigate to forex status page
       router.push(`/dashboard/express-exchange/forex-status?transactionId=${result.forex_transaction_id}`);
     } catch (error: any) {
-      console.error("Failed to create forex withdrawal:", error);
-      showToast.error(error || "Failed to create forex withdrawal");
+            showToast.error(error || "Failed to create forex withdrawal");
     } finally {
       setIsSubmitting(false);
     }

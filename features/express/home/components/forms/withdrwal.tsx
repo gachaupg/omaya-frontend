@@ -1106,8 +1106,7 @@ export default function WithdrawalForm({
       }
       showToast.success("Payment method added successfully!");
     } catch (error) {
-      console.error("Failed to refresh payment details:", error);
-      if (!paymentAddRefreshErrorToastShownRef.current) {
+            if (!paymentAddRefreshErrorToastShownRef.current) {
         paymentAddRefreshErrorToastShownRef.current = true;
         showToast.error(
           "Payment method added, but failed to refresh. Please reload the page."
@@ -1450,16 +1449,14 @@ export default function WithdrawalForm({
 
     // Prevent infinite retries - max 3 attempts
     if (adminWalletRetryCount >= MAX_RETRIES) {
-      console.warn('⚠️ Max retries reached for admin wallet list');
-      setHasFetchedAdminWallet(true);
+            setHasFetchedAdminWallet(true);
       return;
     }
 
     dispatch(fetchAdminWalletList(false))
       .unwrap()
       .then((data) => {
-        console.log("✅ Admin wallet list fetched successfully");
-        setHasFetchedAdminWallet(true);
+                setHasFetchedAdminWallet(true);
         setAdminWalletRetryCount(0); // Reset retry count on success
 
         // If no data in cache, try one force refresh (counts as a retry)
@@ -1475,8 +1472,7 @@ export default function WithdrawalForm({
         }
       })
       .catch((error: unknown) => {
-        console.error(`❌ Failed to fetch admin wallet list (attempt ${adminWalletRetryCount + 1}/${MAX_RETRIES}):`, error);
-        setAdminWalletRetryCount(prev => prev + 1);
+                setAdminWalletRetryCount(prev => prev + 1);
 
         // Only show toast on final retry
         if (adminWalletRetryCount + 1 >= MAX_RETRIES) {
@@ -1496,8 +1492,7 @@ export default function WithdrawalForm({
 
     // Prevent infinite retries - max 3 attempts
     if (assetsRetryCount >= MAX_RETRIES) {
-      console.warn('⚠️ Max retries reached for assets');
-      setHasFetchedAssets(true);
+            setHasFetchedAssets(true);
       return;
     }
 
@@ -1505,8 +1500,7 @@ export default function WithdrawalForm({
     dispatch(fetchAssets(false))
       .unwrap()
       .then((data) => {
-        console.log("✅ Assets fetched successfully");
-        setHasFetchedAssets(true);
+                setHasFetchedAssets(true);
         setAssetsRetryCount(0); // Reset retry count on success
 
         // If no assets in cache, try one force refresh (counts as a retry)
@@ -1522,8 +1516,7 @@ export default function WithdrawalForm({
         }
       })
       .catch((error: unknown) => {
-        console.error(`❌ Failed to fetch assets (attempt ${assetsRetryCount + 1}/${MAX_RETRIES}):`, error);
-        setAssetsRetryCount(prev => prev + 1);
+                setAssetsRetryCount(prev => prev + 1);
 
         // Only show toast on final retry
         if (assetsRetryCount + 1 >= MAX_RETRIES) {
@@ -1568,8 +1561,7 @@ export default function WithdrawalForm({
         return data;
       })
       .catch((error: unknown) => {
-        console.error("❌ Failed to fetch user payment details:", error);
-      });
+              });
   }, [dispatch, isHomePage, isAuthenticated]);
 
   // Fetch swap assets
@@ -1581,16 +1573,14 @@ export default function WithdrawalForm({
 
     // Prevent infinite retries - max 3 attempts
     if (swapAssetsRetryCount >= MAX_RETRIES) {
-      console.warn('⚠️ Max retries reached for swap assets');
-      setHasFetchedSwapAssets(true);
+            setHasFetchedSwapAssets(true);
       return;
     }
 
     dispatch(fetchSupportedAssets({ forceRefresh: false, feature: "exchange" }))
       .unwrap()
       .then((data) => {
-        console.log("✅ Swap assets fetched successfully");
-        setHasFetchedSwapAssets(true);
+                setHasFetchedSwapAssets(true);
         setSwapAssetsRetryCount(0); // Reset retry count on success
 
         // If no assets in cache, try one force refresh (counts as a retry)
@@ -1608,8 +1598,7 @@ export default function WithdrawalForm({
         }
       })
       .catch((error: unknown) => {
-        console.error(`❌ Failed to fetch swap assets (attempt ${swapAssetsRetryCount + 1}/${MAX_RETRIES}):`, error);
-        setSwapAssetsRetryCount(prev => prev + 1);
+                setSwapAssetsRetryCount(prev => prev + 1);
 
         // Only show toast on final retry
         if (swapAssetsRetryCount + 1 >= MAX_RETRIES) {

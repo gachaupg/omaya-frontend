@@ -113,8 +113,7 @@ export const getGoogleOAuthUrl = (state?: string): string => {
     const redirectUri = rawRedirectUri.replace(/\/$/, '');
 
     if (!clientId) {
-      console.warn('Google OAuth client ID is not configured; proceeding to Google which will show an error.');
-    }
+          }
 
     // Create URL object to ensure proper encoding
     const authUrl = new URL('https://accounts.google.com/o/oauth2/v2/auth');
@@ -135,30 +134,23 @@ export const getGoogleOAuthUrl = (state?: string): string => {
     authUrl.search = params.toString();
     
     if (process.env.NODE_ENV === 'development') {
-      console.log('🔧 Google OAuth Configuration:', {
-        clientId: GOOGLE_OAUTH_CONFIG.clientId ? '***' + GOOGLE_OAUTH_CONFIG.clientId.slice(-4) : 'not set',
-        redirectUri: redirectUri,
-        scope: GOOGLE_OAUTH_CONFIG.scope
-      });
-      
+            
       const debugUrl = new URL(authUrl.toString());
       if (debugUrl.searchParams.has('client_id')) {
         const clientId = debugUrl.searchParams.get('client_id') || '';
         debugUrl.searchParams.set('client_id', '***' + clientId.slice(-4));
       }
-      console.log('🔗 Generated Google OAuth URL:', debugUrl.toString());
-    }
+          }
     
     return authUrl.toString();
   } catch (error) {
-    console.error('❌ Error generating Google OAuth URL:', error);
-    throw new Error(`Failed to generate Google OAuth URL: ${error instanceof Error ? error.message : String(error)}`);
+        throw new Error(`Failed to generate Google OAuth URL: ${error instanceof Error ? error.message : String(error)}`);
   }
 };
 
 // Helper function to validate Google OAuth response
 export const validateGoogleOAuthResponse = (response: any): { code: string } => {
-  console.log('Received OAuth response:', response); // For debugging
+   // For debugging
   
   if (!response) {
     const error = new Error("No response received from Google OAuth");
@@ -250,37 +242,19 @@ export const isAuthenticated = (): boolean => {
 
 // Debug function to log OAuth URLs
 export function debugGoogleOAuthUrls() {
-  if (process.env.NODE_ENV === 'development') {
-    console.log('Google OAuth Configuration:');
-    console.log('- Client ID:', GOOGLE_OAUTH_CONFIG.clientId);
-    console.log('- Redirect URI:', GOOGLE_OAUTH_CONFIG.redirectUri);
-    console.log('- Backend Auth URL:', GOOGLE_OAUTH_CONFIG.backendAuthUrl);
-    console.log('- Scope:', GOOGLE_OAUTH_CONFIG.scope);
-    console.log('- OAuth URL:', getGoogleOAuthUrl());
-  }
 }
 
 // Logging utilities
 export function logGoogleOAuthResponse(response: any, context: string = "Google OAuth") {
-  console.group(`${context} Response Log`);
-  console.log("Timestamp:", new Date().toISOString());
-  console.log("Response:", response);
-  
+        
   if (response.code) {
-    console.log("Code Length:", response.code.length);
-  }
+      }
   
-  console.groupEnd();
-};
+  };
 
 export const logGoogleOAuthError = (error: any, context: string = "Google OAuth Error") => {
-  console.group(`${context} Error Log`);
-  console.log("Timestamp:", new Date().toISOString());
-  console.log("Error:", error);
-  
+        
   if (error.message) {
-    console.log("Error Message:", error.message);
-  }
+      }
   
-  console.groupEnd();
-};
+  };
