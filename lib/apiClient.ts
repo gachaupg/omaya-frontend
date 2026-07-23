@@ -24,10 +24,6 @@ import {
   shouldAttachDeviceInfoToRequest,
 } from "./utils/deviceInfo";
 
-if (!resolveApiBaseUrl() && typeof window === "undefined") {
-  throw new Error("VITE_BASE_URL is not defined in environment variables");
-}
-
 interface ApiClientConfig {
   timeout: number;
   retries: number;

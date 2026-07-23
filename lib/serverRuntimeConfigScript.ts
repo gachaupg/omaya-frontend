@@ -1,6 +1,8 @@
 /** Inline script: expose server runtime env to the browser before app bundles load. */
 export function buildServerRuntimeConfigScript(): string {
-  const viteBaseUrl = String(process.env.VITE_BASE_URL || "")
+  const viteBaseUrl = String(
+    process.env.VITE_BASE_URL || process.env.NEXT_PUBLIC_API_URL || ""
+  )
     .trim()
     .replace(/\/+$/, "");
 
