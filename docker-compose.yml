@@ -14,6 +14,7 @@ services:
         
         # API Configuration (from .env / host environment)
         - VITE_BASE_URL=${VITE_BASE_URL:-}
+        - NEXT_PUBLIC_API_URL=${NEXT_PUBLIC_API_URL:-}
         - NEXT_PUBLIC_APP_URL=${NEXT_PUBLIC_APP_URL:-}
         
         # Sanity Configuration
@@ -44,6 +45,7 @@ services:
       
       # API Configuration (from .env / host environment)
       - VITE_BASE_URL=${VITE_BASE_URL:-}
+      - NEXT_PUBLIC_API_URL=${NEXT_PUBLIC_API_URL:-}
       - NEXT_PUBLIC_APP_URL=${NEXT_PUBLIC_APP_URL:-}
       
       # Sanity Configuration
