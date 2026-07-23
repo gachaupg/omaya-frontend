@@ -127,8 +127,7 @@ const IdentityVerificationModal: React.FC<IdentityVerificationModalProps> = ({
         setPhoneNumber(status.phone_number);
       }
     } catch (error) {
-      console.error("Failed to fetch KYC status:", error);
-      showToast.error("Error", "Failed to check verification status");
+            showToast.error("Error", "Failed to check verification status");
     } finally {
       setCheckingStatus(false);
     }

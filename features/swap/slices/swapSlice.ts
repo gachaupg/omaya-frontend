@@ -278,8 +278,7 @@ export const fetchSupportedAssets = createAsyncThunk<
       }
       return data;
     } catch (error) {
-      console.error("❌ Failed to fetch supported assets:", error);
-      
+            
       return rejectWithValue(
         error instanceof Error ? error.message : "Failed to fetch supported assets"
       ) as any;
@@ -337,8 +336,7 @@ export const fetchSwapEstimate = createAsyncThunk(
       return data;
     } catch (error: any) {
       if (!isSwapEstimateValidationError(error)) {
-        console.error("Failed to fetch swap estimate:", error);
-      }
+              }
       // Pass full error so UI can show response_data (e.g. minAmount for deposit_too_small)
       const responseData = error?.response_data ?? (error?.response?.data && typeof error.response.data === "object" ? (error.response.data as any)?.response_data ?? error.response.data : undefined);
       const payload =
@@ -364,9 +362,7 @@ export const createSwapTransaction = createAsyncThunk(
       const response = await createSwap(swapData);
       return response;
     } catch (error) {
-      console.error("Failed to create swap transaction:", error);
-
-      return rejectWithValue(
+            return rejectWithValue(
         error instanceof Error
           ? error.message
           : "Failed to create swap transaction"

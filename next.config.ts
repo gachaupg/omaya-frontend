@@ -3,18 +3,16 @@ import type { NextConfig } from "next";
 
 // Validate critical env vars at build time (production only)
 if (process.env.NODE_ENV === 'production') {
+  const hasApiUrl =
+    process.env.VITE_BASE_URL || process.env.NEXT_PUBLIC_API_URL;
   const requiredEnv = [
+    ...(hasApiUrl ? [] : ['VITE_BASE_URL or NEXT_PUBLIC_API_URL']),
     'NEXT_PUBLIC_GOOGLE_CLIENT_ID',
-    'NEXT_PUBLIC_API_URL',
     'NEXT_PUBLIC_APP_URL',
   ];
   const missing = requiredEnv.filter((k) => !process.env[k] || process.env[k] === '');
   if (missing.length) {
-    // Do not throw; warn instead to allow runtime-provided env via container .env
-    // eslint-disable-next-line no-console
-    console.warn(
-      `Warning: missing env at build time: ${missing.join(', ')}. Will rely on runtime configuration.`
-    );
+    // Missing env at build time — rely on runtime configuration.
   }
 }
 
@@ -22,6 +20,9 @@ const nextConfig: NextConfig = {
   output: 'standalone',
   trailingSlash: true,
   reactStrictMode: true,
+  compiler: {
+    removeConsole: true,
+  },
   outputFileTracingIncludes: {
     '/legal/[slug]': ['./content/legal/**/*'],
   },
@@ -53,7 +54,8 @@ const nextConfig: NextConfig = {
     NEXT_PUBLIC_GOOGLE_REDIRECT_URI: process.env.NEXT_PUBLIC_GOOGLE_REDIRECT_URI,
     
     // API Configuration
-    NEXT_PUBLIC_API_URL: process.env.NEXT_PUBLIC_API_URL,
+    VITE_BASE_URL: process.env.VITE_BASE_URL || process.env.NEXT_PUBLIC_API_URL,
+    NEXT_PUBLIC_API_URL: process.env.NEXT_PUBLIC_API_URL || process.env.VITE_BASE_URL,
     NEXT_PUBLIC_APP_URL: process.env.NEXT_PUBLIC_APP_URL,
     
     // Facebook OAuth

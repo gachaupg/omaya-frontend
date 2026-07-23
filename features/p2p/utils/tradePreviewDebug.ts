@@ -10,11 +10,9 @@ export function logTradePreview(
 ): void {
   if (process.env.NODE_ENV === "production") return;
   if (data == null || typeof data === "string") {
-    console.info(`${PREFIX} ${scope}`, data ?? "");
-    return;
+        return;
   }
-  console.info(`${PREFIX} ${scope}`, data);
-}
+  }
 
 function getAccessTokenPreview(): string | null {
   const cookieToken = cookieUtils.getCookie("access_token");

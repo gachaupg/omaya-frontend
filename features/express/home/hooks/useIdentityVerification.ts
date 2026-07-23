@@ -41,8 +41,7 @@ export const useIdentityVerification = () => {
         setIsModalOpen(false);
       }
     } catch (error) {
-      console.error("Failed to fetch KYC status:", error);
-    } finally {
+          } finally {
       setLoading(false);
     }
   }, [dispatch, isAuthenticated]);

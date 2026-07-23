@@ -61,16 +61,6 @@ function ForexStatusContent() {
     return status;
   };
 
-  // Debug auth state on mount
-  useEffect(() => {
-    // console.log("🔐 Auth State Debug:", {
-    //   authState,
-    //   accessToken: accessToken ? "Present" : "Missing",
-    //   tokenLength: accessToken?.length,
-    //   transactionId
-    // });
-  }, [authState, accessToken, transactionId]);
-
   // Fetch exchange details when page loads with a transactionId
   useEffect(() => {
     if (!transactionId) return;
@@ -99,8 +89,7 @@ function ForexStatusContent() {
           localStorage.removeItem('currentForexExchange');
         }
       } catch (e) {
-        console.error('❌ Failed to parse cached forex exchange:', e);
-        localStorage.removeItem('currentForexExchange');
+                localStorage.removeItem('currentForexExchange');
       }
     }
 
@@ -109,8 +98,7 @@ function ForexStatusContent() {
         localStorage.setItem('currentForexExchange', JSON.stringify(data));
       })
       .catch((error) => {
-        console.error('❌ Failed to load forex exchange:', error);
-      });
+              });
   }, [transactionId, currentExchange, dispatch]);
 
   // WebSocket connection for real-time status updates
@@ -169,8 +157,7 @@ function ForexStatusContent() {
     });
 
     const unsubscribeError = forexStatusWebSocket.onError((error) => {
-      console.error("❌ WebSocket error", error);
-    });
+          });
 
     // Cleanup on unmount
     return () => {

@@ -230,8 +230,7 @@ function FinalBuy({ orderData }: FinalBuyProps) {
           logger.debug('p2p', "✅ Fetch confirm order success:", result);
         })
         .catch((error) => {
-          console.error("❌ Fetch confirm order error:", error);
-        });
+                  });
     } else {
       logger.debug('p2p', "⚠️ Not fetching - missing auth or orderId:", { isAuthenticated, orderId });
     }

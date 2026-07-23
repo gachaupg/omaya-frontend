@@ -1676,8 +1676,7 @@ export const Chats: React.FC = () => {
       setIsRecording(true);
       setRecordingSeconds(0);
     } catch (err) {
-      console.error('Failed to start recording:', err);
-      setIsRecording(false);
+            setIsRecording(false);
       setRecordingSeconds(0);
     }
   };
@@ -1724,12 +1723,7 @@ export const Chats: React.FC = () => {
       .toLowerCase();
     const targetId = messageType === "p2p" ? resolvedTradeId : resolvedThreadId;
     if (!targetId) {
-      console.error("No valid thread/trade UUID for voice message", {
-        messageType,
-        resolvedTradeId,
-        resolvedThreadId,
-      });
-      return;
+            return;
     }
     if (messageType !== "p2p" && messageType !== "support" && messageType !== "appeal") {
       return;
@@ -1808,8 +1802,7 @@ export const Chats: React.FC = () => {
         });
       }, 1000);
     } catch (error) {
-      console.error('Failed to send voice message:', error);
-      const msg = error instanceof Error ? error.message : String(error);
+            const msg = error instanceof Error ? error.message : String(error);
       showToast.error("Could not send voice message", msg);
       setOptimisticMessages((prev) => {
         const newMap = new Map(prev);
@@ -1831,8 +1824,7 @@ export const Chats: React.FC = () => {
       setTermsAccepted(true);
       localStorage.setItem(P2P_TERMS_KEY, "true");
     } catch (err) {
-      console.error("Failed to accept terms:", err);
-    }
+          }
   };
   const handleSendMessage = async () => {
     if (
@@ -1849,13 +1841,7 @@ export const Chats: React.FC = () => {
       .toLowerCase();
     const targetId = messageType === "p2p" ? resolvedTradeId : resolvedThreadId;
     if (!targetId) {
-      console.error("No valid thread/trade UUID available for message send", {
-        messageType,
-        entity_id: (selectedUser as any)?.entity_id,
-        resolvedTradeId,
-        resolvedThreadId,
-      });
-      return;
+            return;
     }
     setActiveThreadId(targetId);
 
@@ -1956,8 +1942,7 @@ export const Chats: React.FC = () => {
         removeOptimisticMessage(entityId, tempId, optimisticMessage.images);
       }
     } catch (error) {
-      console.error("Failed to send message:", error);
-      const msg = error instanceof Error ? error.message : String(error);
+            const msg = error instanceof Error ? error.message : String(error);
       showToast.error("Could not send message", msg);
 
       removeOptimisticMessage(
@@ -2731,8 +2716,7 @@ export const Chats: React.FC = () => {
             setTermsAccepted(true);
             setShowTermsModal(false);
           } catch (err) {
-            console.error("Failed to accept terms:", err);
-          }
+                      }
         }}
       />
     </div>

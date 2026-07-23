@@ -90,8 +90,7 @@ const ProcessingNotifications: React.FC = () => {
         localStorage.setItem("p2p_orders", JSON.stringify(existingOrders));
       }
     } catch (error) {
-      console.error("Error storing order in localStorage:", error);
-    }
+          }
 
     const isOwner = trade.owner === user?.email;
 

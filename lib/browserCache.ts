@@ -49,8 +49,7 @@ class BrowserCache {
 
       request.onerror = () => {
         clearTimeout(timeout);
-        console.error('Failed to open IndexedDB:', request.error);
-        reject(request.error);
+                reject(request.error);
       };
 
       request.onsuccess = () => {
@@ -145,7 +144,7 @@ class BrowserCache {
 
       // Auto cleanup if enabled
       if (this.options.autoCleanup) {
-        this.cleanupExpired().catch(console.error);
+        this.cleanupExpired().catch(() => {});
       }
 
       return data;
@@ -181,7 +180,7 @@ class BrowserCache {
 
           if (this.isExpired(entry)) {
             // Delete expired entry
-            this.delete(key).catch(console.error);
+            this.delete(key).catch(() => {});
             resolve(null);
             return;
           }

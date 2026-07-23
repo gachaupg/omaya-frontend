@@ -957,14 +957,7 @@ const getPaymentRestrictionMessage = (status?: string) =>
         const apiAsset = resolveCommissionApiAsset(selectedAsset) || "fxprimus";
         setIsCalculating(true);
         setIsCalculatingReceive(true);
-        console.log("[Rates FXP reverse] force request commission", {
-          apiAsset,
-          amount: newAmount,
-          mode: isDepositMode ? "deposit" : "withdrawal",
-          assetId: (selectedAsset as any)?.asset_id,
-          selectedAsset,
-        });
-        fetchCommissionDetails(
+                fetchCommissionDetails(
           apiAsset,
           newAmount,
           isDepositMode ? "deposit" : "withdrawal",
@@ -1109,8 +1102,7 @@ const getPaymentRestrictionMessage = (status?: string) =>
         setTimeout(() => setIsPasted(false), 2000);
       }
     } catch (err) {
-      console.error("Paste failed", err);
-    }
+          }
   };
   const hasRestoredState = useRef(false);
 
@@ -1920,9 +1912,7 @@ const getPaymentRestrictionMessage = (status?: string) =>
             setIsCalculatingReceive(false);
           })
           .catch((error) => {
-            console.error("Failed to fetch swap estimate:", error);
-
-            let errorMessage = "";
+                        let errorMessage = "";
             let errorDetails = "";
 
             if ((error as any)?.response_data?.error) {
@@ -2155,9 +2145,7 @@ const getPaymentRestrictionMessage = (status?: string) =>
             setIsCalculatingReceive(false);
           })
           .catch((error) => {
-            console.error("Failed to fetch reverse estimate:", error);
-
-            let errorMessage = "";
+                        let errorMessage = "";
             let errorDetails = "";
 
             if ((error as any)?.response_data?.error) {
@@ -2345,8 +2333,7 @@ const getPaymentRestrictionMessage = (status?: string) =>
 
   const handleAssetSelect = (asset: Asset) => {
     // Debug selected asset object to trace missing/invalid asset_id issues.
-    console.log("[Rates] Selected asset object:", asset);
-    logger.debug("general", "[Rates] Selected asset object:", asset);
+        logger.debug("general", "[Rates] Selected asset object:", asset);
     logger.debug("general", "[Rates] Selected asset identifiers:", {
       asset_id: (asset as any)?.asset_id,
       id: (asset as any)?.id,
@@ -2769,8 +2756,7 @@ const getPaymentRestrictionMessage = (status?: string) =>
               }
             }
           } catch (error: any) {
-            console.error("Failed to update deposit address:", error);
-            let errorMessage = "Failed to update wallet address";
+                        let errorMessage = "Failed to update wallet address";
             if (error.response?.data?.message) {
               errorMessage = error.response.data.message;
             } else if (error.message) {
@@ -2898,8 +2884,7 @@ const getPaymentRestrictionMessage = (status?: string) =>
         `/dashboard/express-exchange?resumeStatus=1&mode=${encodeURIComponent(mode)}`
       );
     } catch (error: any) {
-      console.error("Failed to proceed to exchanging:", error);
-      showToast.error("Failed to proceed. Please try again.");
+            showToast.error("Failed to proceed. Please try again.");
     } finally {
       setIsSubmitting(false);
     }
@@ -3427,8 +3412,7 @@ const getPaymentRestrictionMessage = (status?: string) =>
       // Reset restore flag so it can restore on next login
       assetRestoreAttempted.current = false;
     } catch (error) {
-      console.error("Failed to save calculator state:", error);
-    }
+          }
   };
 
   const handleBeforeLegalNavigate = useCallback(() => {
@@ -3572,8 +3556,7 @@ const getPaymentRestrictionMessage = (status?: string) =>
       clearRatesCalculatorLegalReturnFlag();
       finalizeRatesCalculatorLegalReturnState();
     } catch (error) {
-      console.error("Failed to restore calculator state:", error);
-      // Clear corrupted state
+            // Clear corrupted state
       localStorage.removeItem("rates_calculator_state");
       localStorage.removeItem("rates_calculator_asset");
       localStorage.removeItem("rates_calculator_payment_detail");
@@ -3687,8 +3670,7 @@ const getPaymentRestrictionMessage = (status?: string) =>
       // Mark as attempted
       assetRestoreAttempted.current = true;
     } catch (error) {
-      console.error("Failed to restore asset:", error);
-      localStorage.removeItem("rates_calculator_asset");
+            localStorage.removeItem("rates_calculator_asset");
       assetRestoreAttempted.current = true;
     }
   }, [isAuthenticated, assetsDisplay.displayData]);
@@ -3751,8 +3733,7 @@ const getPaymentRestrictionMessage = (status?: string) =>
         localStorage.removeItem("rates_calculator_payment_detail");
       }
     } catch (error) {
-      console.error("Failed to restore payment detail:", error);
-      localStorage.removeItem("rates_calculator_payment_detail");
+            localStorage.removeItem("rates_calculator_payment_detail");
     }
   }, [isAuthenticated, publicPaymentMethods, userPaymentDetails]);
 
@@ -4106,8 +4087,7 @@ const getPaymentRestrictionMessage = (status?: string) =>
         }
       }
     } catch (error: any) {
-      console.error("Error submitting transaction:", error);
-      const errorMessage = extractApiErrorMessage(
+            const errorMessage = extractApiErrorMessage(
         error,
         "Failed to submit transaction. Please try again."
       );

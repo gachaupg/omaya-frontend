@@ -322,8 +322,7 @@ export default function WithdrawalForm({
       logger.debug('p2p', "=== Starting debug asset fetch ===");
       await debugAssetFetching();
     } catch (error) {
-      console.error("Debug failed:", error);
-    }
+          }
   };
 
   // Force refresh assets
@@ -338,8 +337,7 @@ export default function WithdrawalForm({
       );
       logger.debug('p2p', "✅ Assets force refreshed");
     } catch (error) {
-      console.error("❌ Force refresh failed:", error);
-    }
+          }
   };
 
   // Add user payment details state
@@ -776,8 +774,7 @@ export default function WithdrawalForm({
         logger.debug('p2p', "DEBUG: Number of assets:", data?.length || 0);
       })
       .catch((error: unknown) => {
-        console.error("DEBUG: Failed to fetch swap assets:", error);
-        // Only show error if it's a network issue, not cache issues
+                // Only show error if it's a network issue, not cache issues
         if (
           error instanceof Error &&
           (error.message.includes("Network") ||
@@ -1233,11 +1230,7 @@ export default function WithdrawalForm({
           })
           .catch((error) => {
             clearTimeout(timeoutId); // Clear timeout on error
-            console.error("Failed to fetch swap estimate:", error);
-            console.error("Error response data:", error.response?.data);
-            console.error("Error response status:", error.response?.status);
-
-            // Handle API validation errors for receive amount
+                                                // Handle API validation errors for receive amount
             if (
               error.response?.data?.error ||
               error.response?.data?.response_data?.error
@@ -1549,14 +1542,7 @@ export default function WithdrawalForm({
           }
         })
         .catch((error) => {
-          console.error("Failed to fetch reverse estimate:", error);
-          console.error("Reverse error response data:", error.response?.data);
-          console.error(
-            "Reverse error response status:",
-            error.response?.status
-          );
-
-          // Handle API validation errors for receive amount first
+                                        // Handle API validation errors for receive amount first
           if (
             error.response?.data?.error ||
             error.response?.data?.response_data?.error
@@ -2028,8 +2014,7 @@ export default function WithdrawalForm({
           }
         }
       } catch (error) {
-        console.error("Calculation error:", error);
-        setReceiveAmountError("Calculation error occurred");
+                setReceiveAmountError("Calculation error occurred");
       } finally {
         setIsCalculating(false);
         setIsCalculatingReceive(false);
@@ -2331,9 +2316,7 @@ export default function WithdrawalForm({
           transactionId,
         });
       } catch (error: any) {
-        console.error("Error submitting withdrawal request:", error);
-
-        let errorMessage = "Failed to submit withdrawal request";
+                let errorMessage = "Failed to submit withdrawal request";
 
         if (error.response?.data) {
           const responseData = error.response.data;

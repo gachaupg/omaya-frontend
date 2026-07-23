@@ -17,12 +17,6 @@ import rootReducer, { RootState } from "./rootReducer";
 import {
   persistStore,
   persistReducer,
-  FLUSH,
-  REHYDRATE,
-  PAUSE,
-  PERSIST,
-  PURGE,
-  REGISTER,
   type PersistConfig,
   type PersistState,
 } from "redux-persist";
@@ -75,11 +69,8 @@ const store = configureStore({
   reducer: persistedReducer,
   middleware: (getDefaultMiddleware) =>
     getDefaultMiddleware({
-      serializableCheck: {
-        // Ignore redux-persist actions
-        ignoredActions: [FLUSH, REHYDRATE, PAUSE, PERSIST, PURGE, REGISTER],
-      },
-      immutableCheck: false, // Keep disabled for now (will fix in Week 2)
+      serializableCheck: false,
+      immutableCheck: false,
     }),
 });
 

@@ -289,15 +289,6 @@ const CustomSelect: React.FC<CustomSelectProps> = ({
       });
       
       // Debug log to verify positioning
-      if (process.env.NODE_ENV === 'development') {
-        console.log('Dropdown position:', {
-          triggerBottom: triggerRect.bottom,
-          calculatedTop: top,
-          finalTop,
-          verticalOffset,
-          baseGap: 2
-        });
-      }
     } else {
       // Fallback: if no card found, or dropdownMatchTriggerWidth - position relative to trigger button
       const rect = triggerElement.getBoundingClientRect();

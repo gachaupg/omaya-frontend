@@ -40,8 +40,7 @@ function ForexSuccessContent() {
             setExchangeData(data);
           }
         } catch (e) {
-          console.error('Failed to parse cached exchange data:', e);
-        }
+                  }
       }
     }
   }, [currentExchange, transactionId]);

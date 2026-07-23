@@ -127,8 +127,7 @@ export const getActiveSessions = async (): Promise<BrowserSession[]> => {
     try {
       sessions = JSON.parse(storedSessions);
     } catch (error) {
-      console.log("Error parsing stored sessions:", error);
-    }
+          }
   }
 
   // Add current session if not already present

@@ -22,8 +22,7 @@ export const validateSanityConfig = () => {
   const config = getSanityConfig();
   
   if (!config.isConfigured) {
-    console.warn('Sanity CMS is not properly configured. Missing NEXT_PUBLIC_SANITY_PROJECT_ID environment variable.');
-    return false;
+        return false;
   }
   
   return true;

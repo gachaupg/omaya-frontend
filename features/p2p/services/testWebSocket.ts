@@ -7,7 +7,7 @@ import { cookieUtils } from "@/lib/utils/cookieUtils";
 
 import { logger } from '@/lib/utils/logger';
 
-export const testWebSocketConnection = () => {
+export const testWebSocketConnection = async () => {
   logger.debug('p2p', "🧪 Starting WebSocket Diagnostics...\n");
 
   // Step 1: Check for access token
@@ -16,11 +16,7 @@ export const testWebSocketConnection = () => {
   const localToken = typeof window !== "undefined" ? localStorage.getItem("access_token") : null;
 
   if (!cookieToken && !localToken) {
-    console.error("❌ FAILED: No access token found!");
-    console.error("Solutions:");
-    console.error("1. Log out and log back in");
-    console.error("2. Check if your session expired");
-    return;
+                    return;
   }
 
   const token = cookieToken || localToken;
@@ -31,9 +27,7 @@ export const testWebSocketConnection = () => {
   logger.debug('p2p', "\n📋 Step 2: Validating token format...");
   const tokenParts = token?.split('.') || [];
   if (tokenParts.length !== 3) {
-    console.error("❌ FAILED: Invalid JWT format!");
-    console.error("Expected 3 parts (header.payload.signature), got:", tokenParts.length);
-    return;
+            return;
   }
   logger.debug('p2p', "✅ Valid JWT format");
 
@@ -48,18 +42,16 @@ export const testWebSocketConnection = () => {
     logger.debug('p2p', "Is expired:", isExpired ? "❌ YES" : "✅ NO");
     
     if (isExpired) {
-      console.error("❌ FAILED: Token is expired!");
-      console.error("Solution: Log out and log back in");
-      return;
+                  return;
     }
   } catch (e) {
-    console.warn("⚠️ Could not decode token payload:", e);
-  }
+      }
 
   // Step 4: Test WebSocket connection
   logger.debug('p2p', "\n📋 Step 4: Testing WebSocket connection...");
   
-  const baseUrl = process.env.NEXT_PUBLIC_BASE_URL || "https://dev.backend.omaya.io";
+  const { API_BASE_URL } = await import("@/config/api");
+  const baseUrl = API_BASE_URL;
   const wsUrl = baseUrl.replace(/^https/, "wss").replace(/^http/, "ws");
   const fullUrl = `${wsUrl}/ws/matched-trades/?token=${token}`;
   
@@ -68,12 +60,7 @@ export const testWebSocketConnection = () => {
   const testWs = new WebSocket(fullUrl);
   
   const timeout = setTimeout(() => {
-    console.error("❌ Connection timeout (10 seconds)");
-    console.error("Possible causes:");
-    console.error("- Backend WebSocket server is not running");
-    console.error("- Network/firewall blocking WebSocket");
-    console.error("- CORS issues");
-    testWs.close();
+                        testWs.close();
   }, 10000);
 
   testWs.onopen = () => {
@@ -94,12 +81,8 @@ export const testWebSocketConnection = () => {
 
   testWs.onerror = (error) => {
     clearTimeout(timeout);
-    console.error("❌ WebSocket error occurred");
-    console.error("Error object:", error);
-    console.error("ReadyState:", testWs.readyState);
-    const states = ["CONNECTING (0)", "OPEN (1)", "CLOSING (2)", "CLOSED (3)"];
-    console.error("State meaning:", states[testWs.readyState]);
-  };
+                const states = ["CONNECTING (0)", "OPEN (1)", "CLOSING (2)", "CLOSED (3)"];
+      };
 
   testWs.onclose = (event) => {
     clearTimeout(timeout);

@@ -40,8 +40,7 @@ const ClientIdSection: React.FC<ClientIdSectionProps> = ({ user }) => {
       });
       setQrCodeDataUrl(qrDataUrl);
     } catch (error) {
-      console.error("Error generating QR code:", error);
-      setQrCodeError(true);
+            setQrCodeError(true);
       setQrCodeDataUrl("");
     }
   };

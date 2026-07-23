@@ -11,6 +11,8 @@ import FloatingChatButton from "@/components/ui/FloatingChatButton";
 import P2PRejectionModalRoot from "@/components/P2PRejectionModalRoot";
 import NetworkOfflineRedirect from "@/components/NetworkOfflineRedirect";
 import { getServerLocale } from "@/lib/localePersistence.server";
+import { CONSOLE_NOISE_FILTER_SCRIPT } from "@/lib/utils/suppressKnownConsoleNoise";
+import { buildServerRuntimeConfigScript } from "@/lib/serverRuntimeConfigScript";
 
 // Load all three fonts from local assets for offline-friendly builds
 const geistSans = localFont({
@@ -81,10 +83,15 @@ export default async function RootLayout({
   children: React.ReactNode;
 }) {
   const initialLocale = await getServerLocale();
+  const runtimeConfigScript = buildServerRuntimeConfigScript();
 
   return (
     <html lang={initialLocale} suppressHydrationWarning>
       <head>
+        <script
+          dangerouslySetInnerHTML={{ __html: CONSOLE_NOISE_FILTER_SCRIPT }}
+        />
+        <script dangerouslySetInnerHTML={{ __html: runtimeConfigScript }} />
         <script
           dangerouslySetInnerHTML={{
             __html: `(function(){try{var m=document.cookie.match(/(?:^|; )NEXT_LOCALE=([^;]*)/);var l=m?decodeURIComponent(m[1]):localStorage.getItem("omaya_locale");if(l==="so"||l==="en")document.documentElement.lang=l;}catch(e){}})();`,

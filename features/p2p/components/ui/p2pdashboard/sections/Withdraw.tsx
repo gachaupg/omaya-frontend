@@ -69,8 +69,7 @@ const Withdraw: React.FC = () => {
   // Debug: Log errors when they change (can be removed in production)
   useEffect(() => {
     if (errors.length > 0) {
-      console.log("Validation errors:", errors);
-    }
+          }
   }, [errors]);
 
   /* --------------------------------------------------------------------- */

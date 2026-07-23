@@ -104,8 +104,7 @@ export const useP2POrdersWebSocket = (
 
         return newAccessToken;
       } catch (error) {
-        console.error("❌ [Auth] Token refresh failed:", error);
-        // Redirect to login if refresh fails
+                // Redirect to login if refresh fails
         if (typeof window !== "undefined") {
           localStorage.removeItem("profile");
           localStorage.removeItem("access_token");
@@ -137,8 +136,7 @@ export const useP2POrdersWebSocket = (
       // Validate JWT structure
       const tokenParts = token.split('.');
       if (tokenParts.length !== 3) {
-        console.error("⚠️ [Auth] Invalid JWT structure");
-        return null;
+                return null;
       }
 
       // Check if token is expired
@@ -155,18 +153,15 @@ export const useP2POrdersWebSocket = (
         });
 
         if (isExpired) {
-          console.warn("⚠️ [Auth] Token has expired, attempting to refresh...");
-          const newToken = await refreshAccessToken();
+                    const newToken = await refreshAccessToken();
           if (newToken) {
             logger.debug('p2p', "✅ [Auth] Using refreshed token");
             return newToken;
           }
-          console.error("❌ [Auth] Token refresh failed");
-          return null;
+                    return null;
         }
       } catch (e) {
-        console.warn("⚠️ [Auth] Could not decode token payload:", e);
-      }
+              }
 
       return token;
     };
@@ -176,8 +171,7 @@ export const useP2POrdersWebSocket = (
       const token = await getAccessToken();
 
       if (!token) {
-        console.warn("⚠️ [Auth] No access token available, cannot connect to P2P Orders WebSocket");
-        setConnectionError("No access token");
+                setConnectionError("No access token");
         
         // Fall back to polling if enabled
         if (fallbackToPolling) {
@@ -243,8 +237,7 @@ export const useP2POrdersWebSocket = (
               );
               logger.debug('p2p', "✅ [WS Hook] Dispatched initial data to Redux");
             } else {
-              console.warn("⚠️ [WS Hook] initial_data message has no buy_orders or sell_orders");
-            }
+                          }
             break;
 
           case "orders_update":
@@ -282,8 +275,7 @@ export const useP2POrdersWebSocket = (
               );
               logger.debug('p2p', "✅ [WS Hook] Dispatched update to Redux");
             } else {
-              console.warn("⚠️ [WS Hook] orders_update message has no buy_orders or sell_orders");
-            }
+                          }
             break;
 
           case "pong":
@@ -292,18 +284,13 @@ export const useP2POrdersWebSocket = (
             break;
 
           case "error":
-            console.error("❌ [WS Hook] P2P Orders WebSocket error:", message.data.message);
-            setConnectionError(message.data.message || "WebSocket error");
+                        setConnectionError(message.data.message || "WebSocket error");
             break;
 
           default:
-            console.warn("⚠️ [WS Hook] Unknown P2P Orders message type:", message.type);
-            console.warn("📄 [WS Hook] Full message:", message);
-        }
+                                }
       } catch (error) {
-        console.error("❌ [WS Hook] Error handling P2P Orders WebSocket message:", error);
-        console.error("📄 [WS Hook] Message that caused error:", message);
-      }
+                      }
     });
 
       // Handle WebSocket errors
@@ -323,12 +310,7 @@ export const useP2POrdersWebSocket = (
         
         // Check if it's a 4003 (Forbidden) error
         if (event && event.code === 4003) {
-          console.error("🚫 [WS Hook] WebSocket closed with 4003 (Forbidden) - Authentication failed");
-          console.error("💡 [WS Hook] This usually means:");
-          console.error("   1. Token is invalid or expired");
-          console.error("   2. Backend WebSocket authentication is failing");
-          console.error("   3. Token format doesn't match backend expectations");
-          setConnectionError("Authentication failed (4003)");
+                                                            setConnectionError("Authentication failed (4003)");
           
           // ALWAYS fall back to polling on auth errors
           logger.debug('p2p', "🔄 [WS Hook] Falling back to HTTP polling due to auth failure");
@@ -384,22 +366,18 @@ export const useP2POrdersWebSocket = (
     // This prevents overwriting pagination when user is on other pages
     const currentPageFromState = store.getState()?.p2pMarket?.currentPage || 1;
     if (currentPageFromState === 1 && currentPageRef.current === 1) {
-      console.log('📡 [WS Hook] Polling: Fetching page 1');
-      dispatch(fetchAllP2PBuyandSell(1));
+            dispatch(fetchAllP2PBuyandSell(1));
     } else {
-      console.log('📡 [WS Hook] Polling: Skipping fetch - user on page', currentPageFromState);
-    }
+          }
 
     // Then set up interval - only poll if on page 1
     pollingIntervalRef.current = setInterval(() => {
       if (mountedRef.current && !wsRef.current.isConnected()) {
         const pageInState = store.getState()?.p2pMarket?.currentPage || 1;
         if (pageInState === 1) {
-          console.log('📡 [WS Hook] Polling interval: Fetching page 1');
-          dispatch(fetchAllP2PBuyandSell(1));
+                    dispatch(fetchAllP2PBuyandSell(1));
         } else {
-          console.log('📡 [WS Hook] Polling interval: Skipping - user on page', pageInState);
-        }
+                  }
       }
     }, pollingInterval);
   };

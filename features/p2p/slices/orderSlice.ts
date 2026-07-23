@@ -131,8 +131,7 @@ const resolvePaymentDetails = (
     }
   } catch (error) {
     // If we can't set the cache, continue without caching
-    console.warn('Failed to initialize paymentLogoCache:', error);
-  }
+      }
 
   // Get a safe reference to the cache
   const cache = state.paymentLogoCache || {};
@@ -157,8 +156,7 @@ const resolvePaymentDetails = (
         }
       } catch (error) {
         // Silently fail if cache update fails
-        console.warn('Failed to update paymentLogoCache:', error);
-      }
+              }
     }
 
     return {
@@ -489,8 +487,7 @@ const p2pMarketSlice = createSlice({
     setCurrentPage: (state, action) => {
       const newPage = action.payload;
       const oldPage = state.currentPage;
-      console.log('🔴 [Redux] setCurrentPage called:', { oldPage, newPage, stack: new Error().stack });
-      state.currentPage = newPage;
+            state.currentPage = newPage;
     },
     resetMatchState: (state) => {
       state.matchLoading = false;
@@ -526,8 +523,7 @@ const p2pMarketSlice = createSlice({
       // CRITICAL: Block ALL WebSocket updates when user is NOT on page 1
       // This prevents WebSocket from overwriting paginated data
       if (state.currentPage !== 1) {
-        console.log('🚫 [Redux] BLOCKED ALL WebSocket updates - user on page', state.currentPage, 'not page 1');
-        // Only update total counts, don't touch results at all
+                // Only update total counts, don't touch results at all
         if (buy_orders && pagination?.total_buy_orders !== undefined) {
           state.p2pBuyOrders = {
             ...state.p2pBuyOrders,
@@ -543,8 +539,7 @@ const p2pMarketSlice = createSlice({
         return; // Exit early, don't replace ANY results
       }
       
-      console.log('✅ [Redux] Applying WebSocket update - user on page 1');
-      
+            
       // Helper function to merge payment_details preserving provider_logo
       const mergePaymentDetails = (existing: PaymentDetail[], incoming: PaymentDetail[]): PaymentDetail[] => {
         if (!incoming || incoming.length === 0) {

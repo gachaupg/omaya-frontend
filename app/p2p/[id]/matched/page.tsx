@@ -19,8 +19,7 @@ const MatchedOrderPage = () => {
       const parsedData = JSON.parse(orderData);
       orderType = parsedData.order_type;
     } catch (e) {
-      console.error("Error parsing orderData:", e);
-    }
+          }
   }
 
   if (trade && trade !== "") {

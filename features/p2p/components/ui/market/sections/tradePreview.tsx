@@ -14,6 +14,8 @@ import {
   isBuyAvailableBelowAdMin,
   isIncompleteTradeAmountInput,
   parseTradeAmountInput,
+  sanitizeTradeAmountInput,
+  blockNegativeTradeAmountKey,
   validateBuyReceiveUsdt,
   validateBuySendAmount,
   validateSellReceiveFiat,
@@ -544,23 +546,24 @@ const TradePreview: React.FC<TradePreviewProps> = ({
   };
 
   const handleSendAmountChange = (value: string) => {
+    const sanitized = sanitizeTradeAmountInput(value);
     setActiveField("send");
-    setSendAmount(value);
+    setSendAmount(sanitized);
 
-    if (!value.trim()) {
+    if (!sanitized.trim()) {
       setIsAmountValid(true);
       setErrorMessage("");
       setReceiveAmount("");
       return;
     }
 
-    if (isIncompleteTradeAmountInput(value)) {
+    if (isIncompleteTradeAmountInput(sanitized)) {
       setIsAmountValid(true);
       setErrorMessage("");
       return;
     }
 
-    const parsed = parseTradeAmountInput(value);
+    const parsed = parseTradeAmountInput(sanitized);
     if (parsed === null) {
       setIsAmountValid(false);
       setErrorMessage("Enter a valid amount");
@@ -582,23 +585,24 @@ const TradePreview: React.FC<TradePreviewProps> = ({
   };
 
   const handleReceiveAmountChange = (value: string) => {
+    const sanitized = sanitizeTradeAmountInput(value);
     setActiveField("receive");
-    setReceiveAmount(value);
+    setReceiveAmount(sanitized);
 
-    if (!value.trim()) {
+    if (!sanitized.trim()) {
       setIsAmountValid(true);
       setErrorMessage("");
       setSendAmount("");
       return;
     }
 
-    if (isIncompleteTradeAmountInput(value)) {
+    if (isIncompleteTradeAmountInput(sanitized)) {
       setIsAmountValid(true);
       setErrorMessage("");
       return;
     }
 
-    const parsed = parseTradeAmountInput(value);
+    const parsed = parseTradeAmountInput(sanitized);
     if (parsed === null) {
       setIsAmountValid(false);
       setErrorMessage("Enter a valid amount");
@@ -915,7 +919,9 @@ const TradePreview: React.FC<TradePreviewProps> = ({
                       </span>
                       <input
                         type="number"
+                        min={0}
                         value={sendAmount}
+                        onKeyDown={blockNegativeTradeAmountKey}
                         onChange={(e) => handleSendAmountChange(e.target.value)}
                         placeholder="220"
                         className={`flex-1 bg-transparent text-lg sm:text-xl font-semibold focus:outline-none rounded-xl px-3 sm:px-4 py-2 text-gray-900 dark:text-white placeholder:text-gray-400 dark:placeholder:text-[#788099] ${!isAmountValid && errorMessage && activeField === "send" ? "border border-red-500" : ""
@@ -950,7 +956,9 @@ const TradePreview: React.FC<TradePreviewProps> = ({
                       </span>
                       <input
                         type="number"
+                        min={0}
                         value={receiveAmount}
+                        onKeyDown={blockNegativeTradeAmountKey}
                         onChange={(e) => handleReceiveAmountChange(e.target.value)}
                         placeholder={`220 ${rangeLimitSuffix}`}
                         max={advertiserData.availableAmount || 0}
@@ -1001,7 +1009,9 @@ const TradePreview: React.FC<TradePreviewProps> = ({
                       </span>
                       <input
                         type="number"
+                        min={0}
                         value={sendAmount}
+                        onKeyDown={blockNegativeTradeAmountKey}
                         onChange={(e) => handleSendAmountChange(e.target.value)}
                         placeholder={`220 ${rangeLimitSuffix}`}
                         max={
@@ -1041,7 +1051,9 @@ const TradePreview: React.FC<TradePreviewProps> = ({
                       </span>
                       <input
                         type="number"
+                        min={0}
                         value={receiveAmount}
+                        onKeyDown={blockNegativeTradeAmountKey}
                         onChange={(e) => handleReceiveAmountChange(e.target.value)}
                         placeholder="220 USDT"
                         max={advertiserData.availableAmount || 0}

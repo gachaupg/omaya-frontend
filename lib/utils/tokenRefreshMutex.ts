@@ -17,8 +17,7 @@ class TokenRefreshMutex {
   ): Promise<string | null> {
     // If already refreshing, wait for that refresh to complete
     if (this.isRefreshing && this.refreshPromise) {
-      console.log("[TokenMutex] Refresh in progress, waiting...");
-      return this.refreshPromise;
+            return this.refreshPromise;
     }
 
     // Start new refresh
@@ -38,17 +37,13 @@ class TokenRefreshMutex {
     refreshFn: () => Promise<string | null>
   ): Promise<string | null> {
     try {
-      console.log("[TokenMutex] Executing token refresh");
-      const newToken = await refreshFn();
-      console.log("[TokenMutex] Token refresh successful");
-
-      // Notify all subscribers
+            const newToken = await refreshFn();
+            // Notify all subscribers
       this.notifySubscribers(newToken);
 
       return newToken;
     } catch (error) {
-      console.error("[TokenMutex] Token refresh failed", error);
-      this.notifySubscribers(null);
+            this.notifySubscribers(null);
       throw error;
     }
   }

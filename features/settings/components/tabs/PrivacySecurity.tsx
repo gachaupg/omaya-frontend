@@ -181,9 +181,7 @@ const PrivacySecurity = () => {
         logger.debug('dashboard', "Data length:", data?.length);
       })
       .catch(async (error: unknown) => {
-        console.error("Error loading device sessions:", error);
-
-        // Only use fallback if it's a network error, not an auth error
+                // Only use fallback if it's a network error, not an auth error
         const errorMessage = error instanceof Error ? error.message : String(error);
         if (!errorMessage.includes("401") && !errorMessage.includes("403")) {
           // Fallback to local browser sessions
@@ -194,8 +192,7 @@ const PrivacySecurity = () => {
             setFallbackSessions(deviceSessions);
             logger.debug('dashboard', "Using fallback browser sessions:", deviceSessions);
           } catch (fallbackError) {
-            console.error("Error loading fallback sessions:", fallbackError);
-          }
+                      }
         } else {
           logger.debug('dashboard', "Auth error detected, not using fallback sessions");
         }
@@ -216,8 +213,7 @@ const PrivacySecurity = () => {
           update2FA(true, error.message); // Store the actual error message
           logger.debug('dashboard', "2FA is already enabled on server - setting state to enabled");
         } else {
-          console.error("Failed to check 2FA status:", error);
-          // Keep the current local state if we can't check server status
+                    // Keep the current local state if we can't check server status
         }
       }
     };
@@ -456,8 +452,7 @@ const PrivacySecurity = () => {
 
       showToast.success("All other devices logged out successfully");
     } catch (error) {
-      console.error("Failed to logout devices one by one:", error);
-      showToast.error("Failed to logout some devices");
+            showToast.error("Failed to logout some devices");
     } finally {
       setLogoutLoading(false);
       setShowLogoutModal(false);
@@ -528,8 +523,7 @@ const PrivacySecurity = () => {
       dispatch(fetchDeviceSessions());
       router.push("/dashboard/account/?tab=privacy");
     } catch (error: any) {
-      console.error("Failed to remove device session:", error);
-      const msg = error?.message || "";
+            const msg = error?.message || "";
       const isRawStatus = /request failed with status code \d+/i.test(msg) || /status code \d+/i.test(msg);
       showToast.error(isRawStatus ? "Failed to remove device session" : msg || "Failed to remove device session");
     } finally {
@@ -1144,8 +1138,7 @@ const PrivacySecurity = () => {
                   setFallbackSessions(deviceSessions);
                   logger.debug('dashboard', "Loaded fallback sessions:", deviceSessions);
                 } catch (error) {
-                  console.error("Error loading fallback sessions:", error);
-                }
+                                  }
               }}
               className="text-[#FACC15] text-sm hover:underline"
             >
@@ -1239,8 +1232,7 @@ const PrivacySecurity = () => {
                         dispatch(fetchDeviceSessions(undefined));
                         showToast.success("Session created successfully!");
                       } catch (error) {
-                        console.error("Failed to create session:", error);
-                        showToast.error("Failed to create session");
+                                                showToast.error("Failed to create session");
                       } finally {
                         setIsCreatingSession(false);
                       }

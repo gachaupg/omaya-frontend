@@ -456,9 +456,7 @@ export default function TransferForm({ isHomePage = false, onTransfer, commissio
       if (savedState) {
         const state = JSON.parse(savedState);
 
-        console.log("Restoring moneyx form state:", state);
-
-        isRestoringRef.current = true;
+                isRestoringRef.current = true;
 
         // Restore amounts immediately
         const restoredPayInput = normalizeMoneyXAmountInputForRestore(
@@ -507,8 +505,7 @@ export default function TransferForm({ isHomePage = false, onTransfer, commissio
         hasRestoredState.current = true;
       }
     } catch (error) {
-      console.error("Failed to restore moneyx form state:", error);
-    }
+          }
   }, [isHomePage, isAuthenticated]);
 
   // Restore payment methods after they're loaded
@@ -526,9 +523,7 @@ export default function TransferForm({ isHomePage = false, onTransfer, commissio
     const restoreTo = localStorage.getItem("moneyx_restore_to");
 
     if (restoreFrom || restoreTo) {
-      console.log("Restoring payment methods - From:", restoreFrom, "To:", restoreTo);
-
-      // Prevent minimise effect from collapsing when we set selected payment details
+            // Prevent minimise effect from collapsing when we set selected payment details
       isRestoringRef.current = true;
       let matchedFromMethod: any = null;
       let matchedToMethod: any = null;
@@ -540,9 +535,7 @@ export default function TransferForm({ isHomePage = false, onTransfer, commissio
         if (savedFromDetail) {
           try {
             const fromDetail = JSON.parse(savedFromDetail);
-            console.log("Trying to match from payment detail:", fromDetail);
-
-            // Try multiple matching strategies
+                        // Try multiple matching strategies
             matchedFromMethod = fromPaymentMethods.find(
               (m: any) => {
                 const providerName = getProviderName(m);
@@ -557,8 +550,7 @@ export default function TransferForm({ isHomePage = false, onTransfer, commissio
               }
             );
           } catch (e) {
-            console.error("Failed to parse from payment detail:", e);
-          }
+                      }
         }
 
         // If no match by ID, try by name
@@ -569,12 +561,10 @@ export default function TransferForm({ isHomePage = false, onTransfer, commissio
         }
 
         if (matchedFromMethod) {
-          console.log("Matched from payment method:", matchedFromMethod);
-          setFromPaymentMethod(getPaymentMethodKey(matchedFromMethod) || restoreFrom);
+                    setFromPaymentMethod(getPaymentMethodKey(matchedFromMethod) || restoreFrom);
           setSelectedFromPaymentDetail(matchedFromMethod);
         } else {
-          console.warn("Could not match from payment method:", restoreFrom);
-        }
+                  }
       }
 
       // Restore "to" payment method (filtered list for selected from provider)
@@ -584,9 +574,7 @@ export default function TransferForm({ isHomePage = false, onTransfer, commissio
         if (savedToDetail) {
           try {
             const toDetail = JSON.parse(savedToDetail);
-            console.log("Trying to match to payment detail:", toDetail);
-
-            matchedToMethod = toPaymentMethods.find(
+                        matchedToMethod = toPaymentMethods.find(
               (m: any) => {
                 const providerName = getProviderName(m);
                 return (
@@ -601,8 +589,7 @@ export default function TransferForm({ isHomePage = false, onTransfer, commissio
               }
             );
           } catch (e) {
-            console.error("Failed to parse to payment detail:", e);
-          }
+                      }
         }
 
         if (!matchedToMethod) {
@@ -612,12 +599,10 @@ export default function TransferForm({ isHomePage = false, onTransfer, commissio
         }
 
         if (matchedToMethod) {
-          console.log("Matched to payment method:", matchedToMethod);
-          setToPaymentMethod(getPaymentMethodKey(matchedToMethod) || restoreTo);
+                    setToPaymentMethod(getPaymentMethodKey(matchedToMethod) || restoreTo);
           setSelectedToPaymentDetail(matchedToMethod);
         } else {
-          console.warn("Could not match to payment method:", restoreTo);
-        }
+                  }
       }
 
       const restoredFrom = !restoreFrom || !!matchedFromMethod;
@@ -1425,8 +1410,7 @@ export default function TransferForm({ isHomePage = false, onTransfer, commissio
                     clearSaveBookmarkError();
                     setBankAccountAddress(text);
                   } catch (err) {
-                    console.error("Failed to read clipboard:", err);
-                    showToast.error("Failed to paste from clipboard");
+                                        showToast.error("Failed to paste from clipboard");
                   }
                 }}
                 className="flex items-center gap-1 dark:bg-[#1D1D23] border border-[#1D8751] 
@@ -1697,8 +1681,7 @@ export default function TransferForm({ isHomePage = false, onTransfer, commissio
                     });
                   }
                 } catch (error: any) {
-                  console.error("Update transaction error:", error);
-                  const scamMsg = resolveScamFlagDisplayError(
+                                    const scamMsg = resolveScamFlagDisplayError(
                     error,
                     error?.response?.data,
                     typeof error === "string" ? error : error?.message

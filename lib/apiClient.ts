@@ -15,7 +15,7 @@ declare module "axios" {
   }
 }
 import { storage } from "../features/auth/utils/storage";
-import { API_BASE_URL } from "@/config/api";
+import { API_BASE_URL, resolveApiBaseUrl } from "@/config/api";
 import { logger } from "./utils/logger";
 import ApiHealthChecker from "./utils/apiHealthChecker";
 import {
@@ -23,12 +23,6 @@ import {
   mergeDeviceInfoIntoRequestData,
   shouldAttachDeviceInfoToRequest,
 } from "./utils/deviceInfo";
-
-if (!API_BASE_URL) {
-  throw new Error(
-    "NEXT_PUBLIC_BASE_URL is not defined in environment variables"
-  );
-}
 
 interface ApiClientConfig {
   timeout: number;
@@ -171,6 +165,11 @@ const createAxiosInstance = (config: ApiClientConfig = DEFAULT_CONFIG): AxiosIns
 
   // Request interceptor with timeout override and CSRF token
   instance.interceptors.request.use((requestConfig) => {
+    const baseUrl = resolveApiBaseUrl();
+    if (baseUrl) {
+      requestConfig.baseURL = baseUrl;
+    }
+
     const endpoint = requestConfig.url || "";
     
     // For FormData, remove Content-Type so browser sets multipart/form-data with boundary

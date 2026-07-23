@@ -33,8 +33,7 @@ export default function DownloadReceiptButton({
         isDark,
       });
     } catch (err) {
-      console.error("Receipt PDF download failed:", err);
-    } finally {
+          } finally {
       setIsDownloading(false);
     }
   }, [receiptRef, isDark, fileNamePrefix, transactionId]);

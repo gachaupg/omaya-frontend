@@ -58,7 +58,7 @@ const DEFAULT_CONFIG: Required<BaseWebSocketConfig> = {
  *
  * const ws = new MyWebSocket({ id: '123', token: 'jwt...' });
  * ws.connect();
- * ws.onMessage((msg) => console.log(msg));
+ * ws.onMessage((msg) => );
  * ```
  */
 export abstract class BaseWebSocket<TParams = any> {

@@ -102,8 +102,7 @@ const EnhancedKYCModal: React.FC = () => {
         return result.payload.access_token;
       }
     } catch (error) {
-      console.error("Error refreshing access token:", error);
-    }
+          }
     return null;
   };
 
@@ -337,8 +336,7 @@ const EnhancedKYCModal: React.FC = () => {
                     }}
                     onMessage={handleSumSubMessage}
                     onError={(error: Error) => {
-                      console.error("SumSub Error:", error);
-                      setError("Verification process encountered an error");
+                                            setError("Verification process encountered an error");
                       showToast.error("Verification Error", "Verification process encountered an error");
                     }}
                   />

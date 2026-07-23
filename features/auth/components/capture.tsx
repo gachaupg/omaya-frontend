@@ -101,8 +101,7 @@ export default function DragFitCaptcha({
       setSuccess(false);
     };
     img.onerror = () => {
-      console.error("Failed to load captcha image:", imgSrc);
-    };
+          };
     img.src = imgSrc;
   }, [imgSrc, width, height, pieceSize]);
 

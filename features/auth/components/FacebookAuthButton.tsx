@@ -7,6 +7,7 @@ import { AppDispatch } from '@/features/auth/store';
 import { showToast } from '@/lib/utils/toast';
 import axios from 'axios';
 import { storage } from '../utils/storage';
+import { API_BASE_URL } from '@/config/api';
 
 interface FacebookAuthButtonProps {
   onSuccess?: (userData: any) => void;
@@ -36,8 +37,7 @@ const FacebookAuthButton: React.FC<FacebookAuthButtonProps> = ({
   // Handle Facebook response
   const handleFacebookResponse = useCallback(async (response: any) => {
     const { toast } = await import('react-toastify');
-    console.log('Handling Facebook response:', response);
-    try {
+        try {
       setIsLoading(true);
       
       if (response.status === 'connected') {
@@ -58,7 +58,7 @@ const FacebookAuthButton: React.FC<FacebookAuthButtonProps> = ({
 
         // Send token to your backend
         const backendResponse = await axios.post(
-          `${process.env.NEXT_PUBLIC_API_URL || 'https://dev.backend.omaya.io'}/api/auth/facebook/`,
+          `${API_BASE_URL}/api/auth/facebook/`,
           {
             access_token: authResponse.accessToken,
             user: userInfo,
@@ -109,8 +109,7 @@ const FacebookAuthButton: React.FC<FacebookAuthButtonProps> = ({
         throw new Error('Facebook login failed');
       }
     } catch (error: any) {
-      console.error('Facebook login error:', error);
-      const errorMessage = error.response?.data?.detail || 'Failed to login with Facebook';
+            const errorMessage = error.response?.data?.detail || 'Failed to login with Facebook';
       onError?.(error);
       
       // Show error message using toast
@@ -122,14 +121,11 @@ const FacebookAuthButton: React.FC<FacebookAuthButtonProps> = ({
 
   // Initialize Facebook SDK
   useEffect(() => {
-    console.log('Initializing Facebook SDK...');
-    
-    const initializeFacebookSDK = () => {
-      console.log('Checking for FB object...');
-      
-      if (window.FB) {
-        console.log('FB object found, initializing...');
         
+    const initializeFacebookSDK = () => {
+            
+      if (window.FB) {
+                
         window.FB.init({
           appId: process.env.NEXT_PUBLIC_FACEBOOK_APP_ID || '596315263341600',
           cookie: true,
@@ -142,19 +138,14 @@ const FacebookAuthButton: React.FC<FacebookAuthButtonProps> = ({
         // On HTTP pages, some SDK methods (like getLoginStatus) are blocked by Facebook.
         // If not HTTPS, skip the preflight status check but keep the SDK usable on click.
         if (typeof window !== 'undefined' && window.location.protocol !== 'https:') {
-          console.warn('Facebook SDK: Skipping getLoginStatus because page is not HTTPS. Login will still work on click.');
-          setIsSDKLoaded(true);
+                    setIsSDKLoaded(true);
         } else {
-          console.log('FB.init called, checking login status...');
-          // Check login status (only on HTTPS)
+                    // Check login status (only on HTTPS)
           window.FB.getLoginStatus((response: any) => {
-            console.log('FB.getLoginStatus response:', response);
-            if (response.status === 'connected') {
-              console.log('Already connected to Facebook');
-              handleFacebookResponse(response);
+                        if (response.status === 'connected') {
+                            handleFacebookResponse(response);
             } else {
-              console.log('Not connected to Facebook');
-            }
+                          }
             setIsSDKLoaded(true);
           });
         }
@@ -177,8 +168,7 @@ const FacebookAuthButton: React.FC<FacebookAuthButtonProps> = ({
         };
         
         script.onerror = (error) => {
-          console.error('Failed to load Facebook SDK', error);
-          onError?.({ message: 'Failed to load Facebook SDK' });
+                    onError?.({ message: 'Failed to load Facebook SDK' });
         };
         
         document.body.appendChild(script);
@@ -203,27 +193,21 @@ const FacebookAuthButton: React.FC<FacebookAuthButtonProps> = ({
 
   const handleFacebookLogin = async () => {
     const { toast } = await import('react-toastify');
-    console.log('Facebook login button clicked');
-    
+        
     if (typeof window === 'undefined' || !window.FB) {
-      console.error('Facebook SDK not loaded');
-      toast.error('Facebook SDK is not loaded yet. Please try again.');
+            toast.error('Facebook SDK is not loaded yet. Please try again.');
       return;
     }
 
-    console.log('Calling FB.login()...');
-    setIsLoading(true);
+        setIsLoading(true);
 
     window.FB.login(
       (response: any) => {
-        console.log('FB.login response:', response);
-        
+                
         if (response.authResponse) {
-          console.log('Auth response received, handling...');
-          handleFacebookResponse(response);
+                    handleFacebookResponse(response);
         } else {
-          console.log('User cancelled login or did not fully authorize.');
-          setIsLoading(false);
+                    setIsLoading(false);
           onError?.({ message: 'Facebook login was cancelled or not authorized' });
           
           // Show info message using toast

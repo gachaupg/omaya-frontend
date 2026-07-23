@@ -57,8 +57,7 @@ export const testChangeNowIntegration = async () => {
     };
     
   } catch (error) {
-    console.error('❌ Test failed:', error);
-    return {
+        return {
       success: false,
       error: error instanceof Error ? error.message : 'Unknown error'
     };

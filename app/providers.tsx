@@ -25,6 +25,7 @@ import { initializeTokenRefresh } from "@/lib/utils/tokenRefresh";
 import { clearSupportedTokensCachesOnReload } from "@/lib/utils/supportedTokensCache";
 import GlobalSessionManager from "@/components/GlobalSessionManager";
 import { WebPushProvider } from "@/features/notifications/components/WebPushProvider";
+import { suppressKnownConsoleNoise } from "@/lib/utils/suppressKnownConsoleNoise";
 
 declare global {
   interface Window {
@@ -34,6 +35,7 @@ declare global {
 }
 
 if (typeof window !== "undefined") {
+  suppressKnownConsoleNoise();
   initializeCrossTabSync();
   initializeTokenRefresh(store.dispatch, updateTokens);
 }
@@ -169,8 +171,7 @@ export default function Providers({
             authHardRedirect("/dashboard");
           }
         } catch (e) {
-          console.error(' Error setting credentials from profile:', e);
-        }
+                  }
         return;
       }
 
@@ -204,8 +205,7 @@ export default function Providers({
             authHardRedirect("/dashboard");
           }
         } catch (e) {
-          console.error(' Error parsing user data:', e);
-          // Don't clear everything on parse error, just log it
+                    // Don't clear everything on parse error, just log it
         }
         return;
       }
@@ -246,8 +246,7 @@ export default function Providers({
             authHardRedirect("/dashboard");
           }
         } catch (e) {
-          console.warn(' Failed to hydrate session from cookie:', e);
-          clearMiddlewareAccessTokenCookie();
+                    clearMiddlewareAccessTokenCookie();
           clearStoredAuthCredentials();
         }
         return;

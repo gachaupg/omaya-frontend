@@ -118,9 +118,7 @@ export const useMatchedTradesWebSocket = (
     const token = getAccessToken();
 
     if (!token) {
-      console.warn("⚠️ No access token found, cannot connect to WebSocket");
-      console.warn("Checked locations: cookies (access_token), localStorage (access_token)");
-      setConnectionError("No access token");
+                  setConnectionError("No access token");
       
       // Fall back to polling if enabled
       if (fallbackToPolling) {
@@ -132,8 +130,7 @@ export const useMatchedTradesWebSocket = (
 
     // Validate token format (basic check)
     if (!token.includes('.')) {
-      console.error("⚠️ Invalid token format (not a JWT)");
-      setConnectionError("Invalid token format");
+            setConnectionError("Invalid token format");
       
       if (fallbackToPolling) {
         logger.debug('p2p', "🔄 Falling back to HTTP polling");
@@ -250,8 +247,7 @@ export const useMatchedTradesWebSocket = (
             }
         }
       } catch (error) {
-        console.error("Error handling WebSocket message:", error);
-      }
+              }
     });
 
     // Handle WebSocket errors

@@ -63,8 +63,7 @@ const ReferralMainCard: React.FC<Props> = ({
       });
       setQrCodeDataUrl(qrDataUrl);
     } catch (error) {
-      console.error("Error generating QR code:", error);
-    }
+          }
   };
 
   /* ───────────── handle QR icon click ───────────── */

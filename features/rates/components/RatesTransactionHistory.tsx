@@ -121,8 +121,7 @@ const RatesTransactionHistory = () => {
           dispatch(prependTransaction(tx));
         }
       } catch (err) {
-        console.error("RatesTransactionHistory: WebSocket message error", err);
-      }
+              }
     });
 
     const unsubOpen = wsRef.current.onOpen(() => setIsConnected(true));

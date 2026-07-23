@@ -388,18 +388,7 @@ export default function DepositForm({
 
   // Update payment methods state ONLY when payment data changes (not when asset changes)
   useEffect(() => {
-    console.log("🔍 DepositForm Payment Methods Debug:", {
-      isHomePage,
-      paymentMethodsData,
-      publicPaymentMethods,
-      adminMethods,
-      publicNormalizedCount: publicNormalizedMethods.length,
-      paymentMethodsDataLength: Array.isArray(paymentMethodsData)
-        ? paymentMethodsData.length
-        : 0,
-    });
-
-    // Prefer the same public payment-methods API as home (includes short_name)
+        // Prefer the same public payment-methods API as home (includes short_name)
     const hasPaymentData =
       publicNormalizedMethods.length > 0 ||
       (Array.isArray(paymentMethodsData) && paymentMethodsData.length > 0);
@@ -533,25 +522,9 @@ export default function DepositForm({
           });
       }
 
-      console.log("🔍 Setting stable payment methods:", {
-        count: activeMethods.length,
-        firstMethod: activeMethods[0]
-          ? {
-            provider_name: activeMethods[0].provider_name,
-            short_name: activeMethods[0].short_name,
-            provider_logo: activeMethods[0].provider_logo,
-            logo: activeMethods[0].logo,
-          }
-          : null,
-      });
-      setStablePaymentMethods(activeMethods);
+            setStablePaymentMethods(activeMethods);
     } else {
-      console.log("🔍 No payment methods data available", {
-        isHomePage,
-        hasPublicPaymentMethods: !!publicPaymentMethods,
-        publicNormalizedCount: publicNormalizedMethods.length,
-      });
-      setStablePaymentMethods([]);
+            setStablePaymentMethods([]);
     }
   }, [publicPaymentMethods, publicNormalizedMethods, adminMethods, isHomePage]); // Update when payment data changes
 
@@ -1871,17 +1844,9 @@ export default function DepositForm({
           })
           .catch((actionOrError: any) => {
             if (cancelled) return;
-            console.log("[EXPRESS DASHBOARD DEPOSIT] ESTIMATE CATCH", { actionOrError });
-            const error = actionOrError?.payload ?? actionOrError;
+                        const error = actionOrError?.payload ?? actionOrError;
             const responseData = error?.response_data ?? actionOrError?.response_data;
-            console.log("[EXPRESS DASHBOARD DEPOSIT] PARSED ERROR", {
-              message: error?.message,
-              rawError: error,
-              responseData,
-            });
-            console.error("Failed to fetch swap estimate:", actionOrError);
-
-            setIsCalculating(false);
+                                    setIsCalculating(false);
             setIsCalculatingReceive(false);
             setEstimateLoading(false);
 
@@ -2270,8 +2235,7 @@ export default function DepositForm({
         setIsCalculating(false);
         setIsCalculatingReceive(false);
         setEstimateLoading(false);
-        console.log("Safety timeout: Cleared all loading states");
-      }
+              }
     }, 10000); // 10 second safety timeout (reduced from 15s)
 
     return () => clearTimeout(safetyTimeout);
@@ -3299,8 +3263,7 @@ export default function DepositForm({
         );
       }
     } catch (error: any) {
-      console.error("Failed to update deposit address:", error);
-      let errorMessage = "Failed to process request";
+            let errorMessage = "Failed to process request";
 
       if (error.response?.data) {
         const responseData = error.response.data;
@@ -3989,25 +3952,7 @@ export default function DepositForm({
 
                     // Debug logging when payment method is selected
                     if (normalizedPayment) {
-                      console.log("🔍 Selected Payment Method:", {
-                        isHomePage,
-                        provider_name: normalizedPayment.provider_name,
-                        provider_logo: normalizedPayment.provider_logo,
-                        logo: normalizedPayment.logo,
-                        account_name: normalizedPayment.account_name,
-                        account_number: normalizedPayment.account_number,
-                        hasLogo: !!(
-                          normalizedPayment.provider_logo || normalizedPayment.logo
-                        ),
-                        admin_payment_detail_id:
-                          normalizedPayment.admin_payment_detail_id,
-                        hasAdminPaymentDetails: !!(normalizedPayment as any).admin_payment_details,
-                        adminPaymentDetailsLength: (normalizedPayment as any).admin_payment_details?.length || 0,
-                        hasPaymentDetails: !!(normalizedPayment as any).payment_details,
-                        paymentDetailsLength: (normalizedPayment as any).payment_details?.length || 0,
-                        fullPayment: normalizedPayment,
-                      });
-                    }
+                                          }
 
                     setPayBank(value);
                     setSelectedPaymentDetail(normalizedPayment);
@@ -4719,9 +4664,7 @@ export default function DepositForm({
                     admin_payment_detail_id: resolvedAdminId,
                   };
 
-                  console.log("🚀 Forex Deposit Payload:", forexPayload);
-
-                  const result = await dispatch(
+                                    const result = await dispatch(
                     createForexExchangeThunk(forexPayload)
                   ).unwrap();
 
@@ -4738,8 +4681,7 @@ export default function DepositForm({
                     `/dashboard/express-exchange/forex-status?transactionId=${result.forex_transaction_id}`
                   );
                 } catch (error: any) {
-                  console.error("Failed to create forex exchange:", error);
-                  showToast.error(error || "Failed to create forex exchange");
+                                    showToast.error(error || "Failed to create forex exchange");
                 } finally {
                   setIsSubmitting(false);
                 }
@@ -5082,8 +5024,7 @@ export default function DepositForm({
                       resetAddressValidation();
                     }
                   } catch (err) {
-                    console.error("Failed to read clipboard:", err);
-                    showToast.error("Failed to paste from clipboard");
+                                        showToast.error("Failed to paste from clipboard");
                   }
                 }}
                 className="flex items-center justify-center gap-2 bg-[#1D8751] hover:bg-[#166b3e] text-white rounded-xl px-3 py-1.5 font-semibold text-sm transition-colors min-h-[36px] touch-manipulation flex-shrink-0 whitespace-nowrap"
