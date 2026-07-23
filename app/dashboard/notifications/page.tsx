@@ -94,8 +94,6 @@ const Notifications = () => {
       handlePageChange(activePage + 1);
     }
   };
-  // console.log(user?.email);
-  // console.log(matchedTrades?.results);
   const handleViewOrder = async (trade: Record<string, unknown>) => {
     await openMatchedTradeNotification({
       trade,

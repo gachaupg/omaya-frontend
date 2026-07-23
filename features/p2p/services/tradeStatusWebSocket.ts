@@ -114,20 +114,12 @@ export class TradeStatusWebSocket {
           logger.debug('p2p', "📊 Message status:", message.status || message.data?.status);
           this.messageHandlers.forEach((handler) => handler(message));
         } catch (error) {
-          console.warn("⚠️ Failed to parse WebSocket message:", error);
-          console.warn("📄 Raw data:", event.data);
-        }
+                            }
       };
 
       this.ws.onerror = (error) => {
         if (this.reconnectAttempts === 0) {
-          console.warn("⚠️ Trade Status WebSocket connection failed");
-          console.error("❌ Error details:", {
-            url: this.url,
-            readyState: this.ws?.readyState,
-            error: error
-          });
-        }
+                            }
         
         this.errorHandlers.forEach((handler) => handler(error));
       };
@@ -140,15 +132,13 @@ export class TradeStatusWebSocket {
           case 1008: // Policy violation
             this.hasPermanentFailure = true;
             if (this.reconnectAttempts === 0) {
-              console.warn("⚠️ WebSocket auth failed - check token permissions");
-            }
+                          }
             break;
           case 4001: // Unauthorized
           case 4003: // Forbidden
             this.hasPermanentFailure = true;
             if (this.reconnectAttempts === 0) {
-              console.warn("⚠️ WebSocket unauthorized - check authentication");
-            }
+                          }
             break;
           case 1006: // Abnormal closure
           default:

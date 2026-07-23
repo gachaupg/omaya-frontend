@@ -659,8 +659,7 @@ const authSlice = createSlice({
               setMiddlewareAccessTokenCookie(accessToken);
               return;
             } catch (e) {
-              console.error('Error restoring auth from localStorage:', e);
-            }
+                          }
           }
         }
         
@@ -687,8 +686,7 @@ const authSlice = createSlice({
               localStorage.setItem("p2p_act", p2pAct);
             }
 
-            console.log('🔒 Invalid or incomplete profile found, redirecting to login...');
-            setTimeout(() => {
+                        setTimeout(() => {
               authHardRedirect("/auth/login");
             }, 100);
           }

@@ -128,12 +128,7 @@ export async function validateAddress(
     // Runtime check - ensure endpoint exists (helps catch configuration issues)
     if (!endpoint) {
       const errorMsg = "VALIDATE_ADDRESS endpoint is not defined in API_CONFIG.SWAP";
-      console.error("[validateAddress]", errorMsg, {
-        API_CONFIG: !!API_CONFIG,
-        SWAP: !!API_CONFIG?.SWAP,
-        VALIDATE_ADDRESS: API_CONFIG?.SWAP?.VALIDATE_ADDRESS,
-      });
-      logger.error("validateAddress", errorMsg);
+            logger.error("validateAddress", errorMsg);
       return {
         isValid: false,
         message: null,

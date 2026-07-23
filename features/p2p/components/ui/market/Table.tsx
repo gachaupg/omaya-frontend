@@ -171,8 +171,7 @@ const MarketTable: React.FC<MarketTableProps> = ({
     if (orderId) {
       window.open(`/p2p/messages/${orderId}`, '_blank');
     } else {
-      console.error('No order ID found for trade:', row);
-    }
+          }
   };
 
   const handleImageClick = (imageUrl: string, advertiserName: string) => {

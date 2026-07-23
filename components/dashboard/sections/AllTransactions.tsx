@@ -22,6 +22,7 @@ import { getAllUserTransactions } from "@/features/transactions/api";
 import { getMyTransactions as getMyP2PTransactions } from "@/features/p2p/api";
 import { TransactionFromToCell } from "@/components/dashboard/ui/TransactionFromToCell";
 import { TransactionStatusCell } from "@/components/dashboard/ui/TransactionStatusCell";
+import { TransactionTypeCell, TransactionSideCell } from "@/components/dashboard/ui/TransactionTypeSideCell";
 import { TransactionAmountCell } from "@/components/dashboard/ui/TransactionAmountCell";
 import { useDashboardTransactionUsdValues } from "@/features/transactions/hooks/useDashboardTransactionUsdValues";
 import {
@@ -40,19 +41,7 @@ import {
   withFromToLogos,
 } from "@/lib/utils/transactionFromTo";
 import { getNetworkDisplayName } from "@/lib/utils/networkDisplay";
-
-const normalizeStatusForBadge = (status: unknown): string => {
-  const s = String(status ?? "").trim();
-  if (!s) return "n/a";
-  const map: Record<string, string> = {
-    otp_pending: "pending",
-    pending_address: "pending",
-    pending_approval: "pending approval",
-    admin_approval_required: "processing",
-  };
-  const key = s.toLowerCase();
-  return map[key] ?? key.replace(/_/g, " ");
-};
+import { getDashboardTransactionTypeSide } from "@/lib/utils/dashboardTransactionDisplay";
 
 const getAssetName = (symbol: string) => {
   switch (symbol) {
@@ -87,58 +76,6 @@ const matchesSubTypeFilter = (
     return !excludeSubTypes.some((s) => sub.includes(s.trim().toLowerCase()));
   }
   return true;
-};
-
-const getTypeLabel = (type: string, subType: string) => {
-  const sub = (subType || "").toLowerCase();
-  if (type === "exchange") {
-    return sub === "deposit" ? "Deposit" : sub === "withdrawal" ? "Withdrawal" : type;
-  }
-  if (type === "p2p") {
-    if (sub === "buy") return "Buy";
-    if (sub === "sell") return "Sell";
-    if (sub === "deposit") return "Deposit";
-    if (sub === "withdrawal") return "Withdrawal";
-    return "P2P";
-  }
-  if (type === "moneyx") return "MoneyX";
-  if (type === "swap") return "Swap";
-  return type;
-};
-
-// Format status for user-friendly display
-const formatStatus = (status: string | undefined | null): string => {
-  if (!status) return "N/A";
-
-  // Map database status values to user-friendly labels
-  const statusMap: Record<string, string> = {
-    'otp_pending': 'Pending',
-    'OTP_PENDING': 'Pending',
-    'pending': 'Pending',
-    'pending_address': 'Pending',
-    'pending_approval': 'Pending Approval',
-    'admin_approval_required': 'Processing',
-    'completed': 'Completed',
-    'approved': 'Approved',
-    'rejected': 'Rejected',
-    'error': 'Error',
-    'failed': 'Failed',
-    'cancelled': 'Cancelled',
-    'processing': 'Processing',
-    'waiting': 'Waiting',
-    'new': 'New',
-  };
-
-  const lowerStatus = status.toLowerCase();
-  if (statusMap[lowerStatus]) {
-    return statusMap[lowerStatus];
-  }
-
-  // Fallback: Replace underscores with spaces and capitalize first letter of each word
-  return status
-    .replace(/_/g, ' ')
-    .toLowerCase()
-    .replace(/\b\w/g, (char) => char.toUpperCase());
 };
 
 type AllTransactionsProps = {
@@ -569,6 +506,7 @@ const AllTransactions = ({
         display.to
       );
       const assetLabels = getAssetColumnLabels(tx);
+      const { typeLabel, sideLabel } = getDashboardTransactionTypeSide(tx);
       return {
         tx,
         from,
@@ -576,7 +514,8 @@ const AllTransactions = ({
         assetTitle: assetLabels.title,
         assetSubtitle: assetLabels.subtitle,
         assetImageUrl: resolveDashboardTransactionAssetImage(tx),
-        typeLabel: getTypeLabel(tx.type, tx.sub_type),
+        typeLabel,
+        sideLabel,
       };
     },
     [getFromToDisplay]
@@ -737,6 +676,12 @@ const AllTransactions = ({
             iconUrl={toCell.iconUrl}
           />
         </td>
+        <td className="px-3 sm:px-4 lg:px-6 py-4 border-b border-gray-200 dark:border-[#35353E] align-middle">
+          <TransactionTypeCell tx={tx} />
+        </td>
+        <td className="px-3 sm:px-4 lg:px-6 py-4 border-b border-gray-200 dark:border-[#35353E] align-middle">
+          <TransactionSideCell tx={tx} />
+        </td>
         <td className="px-3 sm:px-4 lg:px-6 py-4 border-b border-gray-200 dark:border-[#35353E] align-middle whitespace-nowrap">
           <TransactionAmountCell
             tx={tx}
@@ -840,9 +785,8 @@ const AllTransactions = ({
             className="flex flex-nowrap items-center gap-2 pt-2 border-t border-gray-200 dark:border-[#35353E] overflow-x-auto scrollbar-thin"
             onClick={(e) => e.stopPropagation()}
           >
-            <span className="text-[11px] px-2.5 py-1 rounded-full font-semibold bg-[#1D8751]/10 text-[#1D8751] flex-shrink-0 whitespace-nowrap">
-              {getTypeLabel(tx.type, tx.sub_type)}
-            </span>
+            <TransactionTypeCell tx={tx} />
+            <TransactionSideCell tx={tx} />
             <div className="flex-shrink-0">
               <TransactionStatusCell
                 status={tx.status}
@@ -874,6 +818,18 @@ const AllTransactions = ({
               subLabel={toCell.subLabel}
               iconUrl={toCell.iconUrl}
             />
+          </div>
+          <div>
+            <div className="text-xs text-gray-500 dark:text-[#A0A3BC] mb-1">
+              {t("transactions.type", "Type")}
+            </div>
+            <TransactionTypeCell tx={tx} />
+          </div>
+          <div>
+            <div className="text-xs text-gray-500 dark:text-[#A0A3BC] mb-1">
+              {t("transactions.side", "Side")}
+            </div>
+            <TransactionSideCell tx={tx} />
           </div>
           <div>
             <div className="text-xs text-gray-500 dark:text-[#A0A3BC] mb-1">
@@ -925,6 +881,8 @@ const AllTransactions = ({
                 t("transactions.asset", "Asset"),
                 t("transactions.from", "From"),
                 t("transactions.to", "To"),
+                t("transactions.type", "Type"),
+                t("transactions.side", "Side"),
                 t("transactions.assetAmount", "Asset amount"),
                 t("transactions.usdValue", "USD value"),
                 t("transactions.status", "Status"),

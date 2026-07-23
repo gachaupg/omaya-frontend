@@ -95,8 +95,7 @@ const MoneyXRates = ({
 }: {
   commissionType?: "deposit" | "withdrawal";
 }) => {
-  console.log("MoneyXRates component rendering");
-  const dispatch = useDispatch<AppDispatch>();
+    const dispatch = useDispatch<AppDispatch>();
   const router = useRouter();
   const { isDark } = useTheme();
   const { t } = useRatesI18n();
@@ -961,8 +960,7 @@ const MoneyXRates = ({
         `/dashboard/exchange/exchanging${txId ? `?transactionId=${encodeURIComponent(txId)}` : ""}`
       );
     } catch (error: any) {
-      console.error("Update transaction error:", error);
-      const scamMsg = resolveScamFlagDisplayError(
+            const scamMsg = resolveScamFlagDisplayError(
         error,
         error?.response?.data,
         typeof error === "string" ? error : error?.message
@@ -1589,8 +1587,7 @@ const MoneyXRates = ({
                       const text = await navigator.clipboard.readText();
                       setBankAccountAddress(text);
                     } catch (err) {
-                      console.error("Failed to read clipboard:", err);
-                      showToast.error("Failed to paste from clipboard");
+                                            showToast.error("Failed to paste from clipboard");
                     }
                   }}
                   className={`flex items-center justify-center gap-1 ${isDark ? "bg-[#1D1D23]" : "bg-white"} border border-[#1D8751] text-[#1D8751] rounded-full p-0 w-9 h-9 sm:w-auto sm:h-auto sm:px-3 sm:py-2 ml-2 font-semibold text-sm hover:bg-[#1D8751] hover:text-white transition-colors flex-shrink-0 whitespace-nowrap`}

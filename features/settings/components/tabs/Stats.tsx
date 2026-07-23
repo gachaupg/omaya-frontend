@@ -117,8 +117,7 @@ const Stats = ({ onSupportClick }: StatsProps) => {
             }
           })
           .catch((error) => {
-            console.error("Failed to fetch profile:", error);
-          })
+                      })
           .finally(() => {
             profileFetchRef.current.inProgress = false;
           });
@@ -176,9 +175,7 @@ const Stats = ({ onSupportClick }: StatsProps) => {
       // Fetch referral data
       if (user?.referral_code) {
         dispatch(fetchReferredUsers(user.referral_code));
-        dispatch(fetchReferralWallet()).catch((e) =>
-          console.warn("Referral wallet API not available:", e)
-        );
+        dispatch(fetchReferralWallet()).catch(() => {});
       }
     }
   }, [dispatch, isAuthenticated, user?.referral_code]);

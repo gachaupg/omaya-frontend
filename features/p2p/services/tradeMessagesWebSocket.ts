@@ -100,9 +100,7 @@ export class TradeMessagesWebSocket {
       this.url = API_CONFIG.P2P.SOCKETS.TRADE_MESSAGES(tradeId, token);
       
       logger.debug('p2p', "🔌 Connecting to Trade Messages WebSocket...");
-      console.log("Trade Messages WebSocket URL:", this.url);
-
-      this.ws = new WebSocket(this.url);
+            this.ws = new WebSocket(this.url);
 
       this.ws.onopen = () => {
         if (this.reconnectAttempts === 0) {
@@ -119,25 +117,17 @@ export class TradeMessagesWebSocket {
       this.ws.onmessage = (event) => {
         try {
           const rawStr = typeof event.data === "string" ? event.data : String(event.data);
-          console.log("[P2P trade-messages WS] RAW:", rawStr.length > 800 ? `${rawStr.slice(0, 800)}…` : rawStr);
-          const message: WebSocketMessage = JSON.parse(rawStr) as WebSocketMessage;
-          console.log(
-            "[P2P trade-messages WS] PARSED type=%s keys=%s",
-            (message as any)?.type,
-            message && typeof message === "object" ? Object.keys(message as object).join(",") : ""
-          );
-          this.messageHandlers.forEach((handler) => handler(message));
+                    const message: WebSocketMessage = JSON.parse(rawStr) as WebSocketMessage;
+                    this.messageHandlers.forEach((handler) => handler(message));
         } catch (error) {
-          console.warn("⚠️ Failed to parse Trade Messages WebSocket payload:", error);
-        }
+                  }
       };
 
       this.ws.onerror = (error) => {
         // Silent error handling - errors will be reported via onclose event
         // Only log on first failure for debugging
         if (this.reconnectAttempts === 0) {
-          console.warn("⚠️ Trade Messages WebSocket connection failed (will retry silently)");
-        }
+                  }
         
         this.errorHandlers.forEach((handler) => handler(error));
       };
@@ -150,15 +140,13 @@ export class TradeMessagesWebSocket {
           case 1008: // Policy violation
             this.hasPermanentFailure = true;
             if (this.reconnectAttempts === 0) {
-              console.warn("⚠️ WebSocket auth failed - check token permissions");
-            }
+                          }
             break;
           case 4001: // Unauthorized
           case 4003: // Forbidden
             this.hasPermanentFailure = true;
             if (this.reconnectAttempts === 0) {
-              console.warn("⚠️ WebSocket unauthorized - check authentication");
-            }
+                          }
             break;
           case 1006: // Abnormal closure - silent, will retry
           default:

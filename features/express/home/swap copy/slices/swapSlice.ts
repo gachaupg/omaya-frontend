@@ -85,8 +85,7 @@ export const fetchSupportedAssets = createAsyncThunk<SupportedAsset[], boolean |
       logger.debug('swap', "✅ fetchSupportedAssets completed:", data?.length || 0, "assets");
       return data;
     } catch (error) {
-      console.error("❌ Failed to fetch supported assets:", error);
-      
+            
       // Provide fallback assets if API fails
       const fallbackAssets: SupportedAsset[] = [
         {
@@ -190,8 +189,7 @@ export const fetchSwapEstimate = createAsyncThunk(
       );
       return data;
     } catch (error) {
-      console.error("Failed to fetch swap estimate:", error);
-      return rejectWithValue(
+            return rejectWithValue(
         error instanceof Error ? error.message : "Failed to fetch swap estimate"
       );
     }
@@ -205,9 +203,7 @@ export const createSwapTransaction = createAsyncThunk(
       const response = await createSwap(swapData);
       return response;
     } catch (error) {
-      console.error("Failed to create swap transaction:", error);
-
-      return rejectWithValue(
+            return rejectWithValue(
         error instanceof Error
           ? error.message
           : "Failed to create swap transaction"

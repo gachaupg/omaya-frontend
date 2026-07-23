@@ -111,8 +111,7 @@ export const fetchUserTrades = createAsyncThunk(
       logger.debug('p2p', "API Response:", response);
       return response;
     } catch (err: any) {
-      console.error("Error fetching trades:", err);
-      handleP2PError(err);
+            handleP2PError(err);
       return rejectWithValue(err.message || "Failed to fetch user trades");
     }
   }

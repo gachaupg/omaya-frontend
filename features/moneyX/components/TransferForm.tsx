@@ -498,9 +498,7 @@ export default function TransferForm({ onTransfer, initialState, commissionType 
 
     if (state) {
       try {
-        console.log("🔄 [Dashboard] Restoring moneyx form state:", state);
-
-        isRestoringRef.current = true;
+                isRestoringRef.current = true;
 
         const restoredPayInput = normalizeMoneyXAmountInputForRestore(
           state.amountInput
@@ -548,8 +546,7 @@ export default function TransferForm({ onTransfer, initialState, commissionType 
         localStorage.removeItem("moneyx_form_state");
         hasRestoredState.current = true;
       } catch (error) {
-        console.error("❌ [Dashboard] Failed to restore moneyx form state:", error);
-      }
+              }
     }
   }, [isAuthenticated, initialState]);
 
@@ -1349,8 +1346,7 @@ export default function TransferForm({ onTransfer, initialState, commissionType 
                     clearSaveBookmarkError();
                     setBankAccountAddress(text);
                   } catch (err) {
-                    console.error("Failed to read clipboard:", err);
-                    showToast.error("Failed to paste from clipboard");
+                                        showToast.error("Failed to paste from clipboard");
                   }
                 }}
                 className="flex items-center justify-center gap-2 bg-[#1D8751] hover:bg-[#166b3e]
@@ -1546,8 +1542,7 @@ export default function TransferForm({ onTransfer, initialState, commissionType 
                     });
                   }
                 } catch (error: any) {
-                  console.error("Update transaction error:", error);
-                  const scamMsg = resolveScamFlagDisplayError(
+                                    const scamMsg = resolveScamFlagDisplayError(
                     error,
                     error?.response?.data,
                     typeof error === "string" ? error : error?.message

@@ -3,15 +3,9 @@ import type { AllTransactionItem } from "@/features/transactions/api";
 import type { TransactionType } from "@/features/p2p/types";
 import { formatP2pCryptoLabel } from "@/lib/utils/transactionFromTo";
 import { getNetworkDisplayName } from "@/lib/utils/networkDisplay";
+import { getDashboardTransactionTypeSide } from "@/lib/utils/dashboardTransactionDisplay";
 
 const FIAT_LABEL = "Fiat (P2P)";
-
-function getP2pTypeLabel(subType: string): string {
-  const sub = subType.toLowerCase();
-  if (sub === "buy") return "Buy";
-  if (sub === "sell") return "Sell";
-  return "P2P";
-}
 
 function resolveTradeNetwork(trade: Record<string, unknown>): string | null {
   const network =
@@ -83,12 +77,15 @@ export function buildP2pTradeDetailView(
     ? getNetworkDisplayName(tx.network)
     : undefined;
 
+  const { typeLabel, sideLabel } = getDashboardTransactionTypeSide(tx);
+
   return {
     tx,
     from: { label: fromAsset },
     to: { label: toAsset },
     assetTitle,
     assetSubtitle,
-    typeLabel: getP2pTypeLabel(subType),
+    typeLabel,
+    sideLabel,
   };
 }

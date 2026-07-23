@@ -13,7 +13,7 @@ services:
         - NEXT_PUBLIC_FACEBOOK_REDIRECT_URI=${NEXT_PUBLIC_FACEBOOK_REDIRECT_URI:-}
         
         # API Configuration
-        - NEXT_PUBLIC_API_URL=${NEXT_PUBLIC_API_URL:-https://dev.backend.omaya.io}
+        - NEXT_PUBLIC_API_URL=${NEXT_PUBLIC_API_URL:-https://backend.omaya.io}
         - NEXT_PUBLIC_APP_URL=${NEXT_PUBLIC_APP_URL:-https://dev.omaya.io}
         
         # Sanity Configuration
@@ -43,7 +43,7 @@ services:
       - NEXT_PUBLIC_FACEBOOK_REDIRECT_URI=${NEXT_PUBLIC_FACEBOOK_REDIRECT_URI:-}
       
       # API Configuration
-      - NEXT_PUBLIC_API_URL=${NEXT_PUBLIC_API_URL:-https://dev.backend.omaya.io}
+      - NEXT_PUBLIC_API_URL=${NEXT_PUBLIC_API_URL:-https://backend.omaya.io}
       - NEXT_PUBLIC_APP_URL=${NEXT_PUBLIC_APP_URL:-https://dev.omaya.io}
       
       # Sanity Configuration

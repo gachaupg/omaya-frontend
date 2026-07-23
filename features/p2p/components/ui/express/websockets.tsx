@@ -126,16 +126,14 @@ export class BaseTransactionStatusWebSocket {
         }
 
         const finalUrl = appendTokenToWebSocketUrl(this.wsUrl, this.options.token);
-        console.log("[Exchange] Connecting WebSocket URL:", finalUrl);
-        logger.debug('p2p', "WebSocket connecting:", { transactionId: this.transactionId, url: finalUrl });
+                logger.debug('p2p', "WebSocket connecting:", { transactionId: this.transactionId, url: finalUrl });
         
         this.ws = new WebSocket(finalUrl);
 
         // Add connection timeout
         const connectionTimeout = setTimeout(() => {
           if (this.ws && this.ws.readyState !== WebSocket.OPEN) {
-            console.warn("WebSocket connection timeout");
-            this.ws.close();
+                        this.ws.close();
           }
         }, 10000); // 10 second timeout
 
@@ -151,9 +149,7 @@ export class BaseTransactionStatusWebSocket {
         this.ws.onmessage = (event) => {
           try {
             const data: TransactionStatusMessage = JSON.parse(event.data);
-            console.log("[P2P Status] WebSocket data received:", data);
-
-            // Handle database errors gracefully
+                        // Handle database errors gracefully
             if (
               (data.type === "error" &&
                 data.data?.message?.includes("database")) ||
@@ -173,24 +169,18 @@ export class BaseTransactionStatusWebSocket {
           const target = error.target as WebSocket | null;
           
           // Simple, focused error logging
-          console.warn("WebSocket connection error occurred");
-          
+                    
           if (target?.readyState !== undefined) {
             const states = ['CONNECTING', 'OPEN', 'CLOSING', 'CLOSED'];
-            console.warn(`State: ${states[target.readyState] || target.readyState}`);
-          }
+                      }
           
           if (this.wsUrl) {
-            console.warn(`URL: ${this.wsUrl}`);
-          }
+                      }
           
-          console.warn(`Reconnect attempt: ${this.reconnectAttempts + 1}/${this.maxReconnectAttempts}`);
-          
+                    
           // Only log additional details if this is a repeated failure
           if (this.reconnectAttempts > 2) {
-            console.warn("Multiple connection failures - check network and server status");
-            console.warn(`Online: ${navigator.onLine}`);
-          }
+                                  }
 
           // Don't reject immediately on error - let the onclose handler deal with reconnection
           // Only call error callback for logging purposes
@@ -225,17 +215,10 @@ export class BaseTransactionStatusWebSocket {
 
             setTimeout(() => {
               this.connect().catch((error) => {
-                console.error(
-                  `Reconnection attempt ${this.reconnectAttempts} failed:`,
-                  error
-                );
-              });
+                              });
             }, this.reconnectDelay * this.reconnectAttempts);
           } else if (this.reconnectAttempts >= this.maxReconnectAttempts) {
-            console.warn(
-              "Max reconnection attempts reached. WebSocket will not reconnect automatically."
-            );
-          }
+                      }
         };
       } catch (error) {
         reject(error);
@@ -254,8 +237,7 @@ export class BaseTransactionStatusWebSocket {
     if (this.ws && this.ws.readyState === WebSocket.OPEN) {
       this.ws.send(JSON.stringify(message));
     } else {
-      console.warn("WebSocket is not connected");
-    }
+          }
   }
 
   isConnected(): boolean {
@@ -287,26 +269,22 @@ export class BaseTransactionStatusWebSocket {
     
     // Check if URL is valid
     if (!this.wsUrl || typeof this.wsUrl !== 'string') {
-      console.error("Health Check Failed: Invalid WebSocket URL");
-      return false;
+            return false;
     }
 
     // Check if URL format is correct
     if (!this.wsUrl.startsWith('ws://') && !this.wsUrl.startsWith('wss://')) {
-      console.error("Health Check Failed: Invalid WebSocket protocol");
-      return false;
+            return false;
     }
 
     // Check transaction ID
     if (!this.transactionId) {
-      console.error("Health Check Failed: Missing transaction ID");
-      return false;
+            return false;
     }
 
     // Check connection state
     if (!this.isConnected()) {
-      console.warn("Health Check: WebSocket not connected");
-      return false;
+            return false;
     }
 
     logger.debug('p2p', "Health Check Passed: WebSocket connection is healthy");
@@ -421,7 +399,7 @@ export const useTransactionStatusWebSocket = (
 
     ws.connect()
       .then(() => setIsConnected(true))
-      .catch(console.error);
+      .catch(() => {});
 
     return () => {
       ws.disconnect();

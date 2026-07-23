@@ -2,10 +2,8 @@
 
 import Link from "next/link";
 import { StatusBadge } from "@/components/ui/StatusBadge";
-import {
-  isOtpPendingStatus,
-  normalizeTransactionStatusForBadge,
-} from "@/lib/utils/transactionFromTo";
+import { isOtpPendingStatus } from "@/lib/utils/transactionFromTo";
+import { formatDashboardTransactionStatus } from "@/lib/utils/dashboardTransactionDisplay";
 
 type TransactionStatusCellProps = {
   status: unknown;
@@ -17,12 +15,13 @@ export function TransactionStatusCell({
   transactionId,
 }: TransactionStatusCellProps) {
   const otpPending = isOtpPendingStatus(status);
-  const badgeStatus = normalizeTransactionStatusForBadge(status);
+  const badgeStatus = formatDashboardTransactionStatus(status);
 
   return (
     <div className="flex flex-col gap-1.5 items-start">
       <StatusBadge
         status={badgeStatus}
+        uppercase
         title={
           otpPending
             ? "Enter the verification code sent to your email to complete this withdrawal."

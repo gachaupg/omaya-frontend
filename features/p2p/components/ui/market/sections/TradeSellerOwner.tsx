@@ -224,8 +224,7 @@ const FinalSell: React.FC<FinalSellProps> = ({ orderData }) => {
           const parsedData = JSON.parse(tradeData);
           setTradeDataJson(parsedData);
         } catch (error) {
-          console.error("Failed to parse trade data from localStorage:", error);
-          setTradeDataJson({});
+                    setTradeDataJson({});
         }
       }
     }

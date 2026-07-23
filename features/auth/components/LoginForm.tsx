@@ -85,8 +85,7 @@ export default function LoginPage() {
   //   }
   // };
   // const handleGoogleError = (error: any) => {
-  //   console.error("Google authentication error:", error);
-  // };
+  //     // };
 
   const validateForm = () => {
     let isValid = true;
@@ -174,8 +173,7 @@ export default function LoginPage() {
         }
       }
     } catch (error) {
-      console.error("Login error:", error);
-      setErrors((prev) => ({
+            setErrors((prev) => ({
         ...prev,
         email: "An unexpected error occurred during login",
       }));

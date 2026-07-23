@@ -212,8 +212,7 @@ export const Table = forwardRef<TableExportRef, TableProps>(({
       try {
         await Promise.resolve(onExport(format));
       } catch (error) {
-        console.error("Export error:", error);
-        alert("Failed to export. Please try again.");
+                alert("Failed to export. Please try again.");
       }
       return;
     }
@@ -221,35 +220,20 @@ export const Table = forwardRef<TableExportRef, TableProps>(({
     // Use default export functionality with all data fetching
     let sourceData: TransactionType[] = [];
 
-    console.log('🔍 Export - Checking data sources:', {
-      hasOnFetchAllData: !!onFetchAllDataForExport,
-      hasAllDataForExport: !!allDataForExport,
-      allDataLength: allDataForExport?.length || 0,
-      dataLength: data.length,
-      totalPages,
-    });
-
-    if (onFetchAllDataForExport) {
+        if (onFetchAllDataForExport) {
       // Prefer fetching all data via callback
       try {
-        console.log('📡 Export - Fetching all data via onFetchAllDataForExport callback');
-        sourceData = await onFetchAllDataForExport();
-        console.log(`✅ Export - Fetched ${sourceData.length} items via callback`);
-      } catch (error) {
-        console.error("❌ Export - Error fetching all data:", error);
-        // Fall back to allDataForExport or data
+                sourceData = await onFetchAllDataForExport();
+              } catch (error) {
+                // Fall back to allDataForExport or data
         sourceData = allDataForExport && allDataForExport.length > 0 ? allDataForExport : data;
-        console.warn(`⚠️ Export - Using fallback data: ${sourceData.length} items`);
-      }
+              }
     } else if (allDataForExport && allDataForExport.length > 0) {
       sourceData = allDataForExport;
-      console.log(`✅ Export - Using allDataForExport prop: ${sourceData.length} items`);
-    } else {
+          } else {
       sourceData = data;
-      console.warn(`⚠️ Export - Using data prop (current page only): ${sourceData.length} items`);
-      if (totalPages > 1) {
-        console.warn(`⚠️ Export - Warning: Only exporting current page (${data.length} items) out of ${totalPages} pages. Consider providing onFetchAllDataForExport prop.`);
-      }
+            if (totalPages > 1) {
+              }
     }
 
     // Debug: Log data counts
@@ -306,8 +290,7 @@ export const Table = forwardRef<TableExportRef, TableProps>(({
         const fileName = `${title.toLowerCase().replace(/\s+/g, "_")}_${new Date().toISOString().split("T")[0]}.csv`;
         XLSX.writeFile(workbook, fileName);
       } catch (error) {
-        console.error("CSV export error:", error);
-        alert("Failed to export CSV. Please try again.");
+                alert("Failed to export CSV. Please try again.");
       }
     } else if (format === "pdf") {
       // Export as PDF with OMAYA logo, title, and export info
@@ -402,8 +385,7 @@ export const Table = forwardRef<TableExportRef, TableProps>(({
         const fileName = `OMAYA_${safeTitle}_Export_${dateStr}.pdf`;
         doc.save(fileName);
       } catch (error) {
-        console.error("PDF export error:", error);
-        alert("Failed to export PDF. Please try again.");
+                alert("Failed to export PDF. Please try again.");
       }
     }
   };

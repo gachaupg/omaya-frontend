@@ -132,8 +132,7 @@ export class BaseTransactionStatusWebSocket {
         }
 
         const finalUrl = appendTokenToWebSocketUrl(this.wsUrl, this.options.token);
-        console.log("[Exchange] Connecting WebSocket URL:", finalUrl);
-        this.ws = new WebSocket(finalUrl);
+                this.ws = new WebSocket(finalUrl);
 
         // Add connection timeout
         const connectionTimeout = setTimeout(() => {
@@ -389,7 +388,7 @@ export const useTransactionStatusWebSocket = (
 
     ws.connect()
       .then(() => setIsConnected(true))
-      .catch(console.error);
+      .catch(() => {});
 
     return () => {
       ws.disconnect();

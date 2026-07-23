@@ -77,7 +77,7 @@ export const useMoneyXStatusWebSocket = (
 
     ws.connect()
       .then(() => setIsConnected(true))
-      .catch(console.error);
+      .catch(() => {});
 
     return () => {
       ws.disconnect();

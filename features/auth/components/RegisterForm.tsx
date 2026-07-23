@@ -849,8 +849,7 @@ export default function RegistrationPage() {
       }
     } catch (error: any) {
       // Handle unexpected errors
-      console.error("Registration error:", error);
-      const errorMessage = error?.message || "An error occurred during registration";
+            const errorMessage = error?.message || "An error occurred during registration";
 
       setErrors((prev) => ({
         ...prev,
@@ -915,8 +914,7 @@ export default function RegistrationPage() {
         );
       }
     } catch (error: any) {
-      console.error("Failed to resend code:", error);
-      throw error;
+            throw error;
     }
   };
 
@@ -930,8 +928,7 @@ export default function RegistrationPage() {
   //   }
   // };
   // const handleGoogleError = (error: any) => {
-  //   // console.error("Google authentication error:", error);
-  // };
+  //   //   // };
 
   return (
     <>
@@ -1864,8 +1861,7 @@ export default function RegistrationPage() {
                         );
                       }}
                       onError={(error) => {
-                        console.error("Facebook authentication error:", error);
-                        showToast.error(
+                                                showToast.error(
                           "Facebook authentication failed. Please try again."
                         );
                       }}

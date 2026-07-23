@@ -83,8 +83,7 @@ export class SwapStatusWebSocket extends SingletonWebSocket<{
    */
   protected buildUrl(params: { swapId: string; token?: string }): string {
     const url = API_CONFIG.SWAP.SWAP_STATUS_WS(params.swapId, params.token);
-    console.log("[Exchange/Swap] Connecting WebSocket URL:", url);
-    return url;
+        return url;
   }
 
   /**

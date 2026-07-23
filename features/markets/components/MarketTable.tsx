@@ -262,8 +262,7 @@ const MarketTable = ({ showFullLayout = true }: MarketTableProps) => {
           logger.debug("general", "Public API test result:", data);
           return data;
         } catch (error) {
-          console.error("Public API test failed:", error);
-        }
+                  }
       };
       logger.debug(
         "general",
@@ -601,14 +600,12 @@ const MarketTable = ({ showFullLayout = true }: MarketTableProps) => {
         setCoinDetails(detailsResponse);
         setDetailsForCoinId(id);
       } else {
-        console.warn("Coin details API error:", detailsResponse);
-        setCoinDetails(null);
+                setCoinDetails(null);
         setDetailsForCoinId(null);
       }
     } catch (error) {
       if (generation !== detailsFetchGenerationRef.current) return;
-      console.warn("Network error fetching coin data:", error);
-      setCoinDetails(null);
+            setCoinDetails(null);
       setDetailsForCoinId(null);
     } finally {
       if (generation === detailsFetchGenerationRef.current) {

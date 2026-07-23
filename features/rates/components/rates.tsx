@@ -73,8 +73,7 @@ const Rates = () => {
 
   // Debug
   React.useEffect(() => {
-    console.log('Rates component - activeTab changed to:', activeTab);
-  }, [activeTab]);
+      }, [activeTab]);
   return (
     <div className="w-full text-gray-900 dark:text-white px-0 sm:px-6 lg:px-0 max-w-6xl mx-auto">
       {/* Back Button */}

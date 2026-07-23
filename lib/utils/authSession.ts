@@ -62,8 +62,7 @@ export function authHardRedirect(to: string): void {
     if (previous === fingerprint) {
       sessionStorage.removeItem(AUTH_BOUNCE_KEY);
       clearStoredAuthCredentials();
-      console.warn("[auth] Redirect loop detected; cleared stale session.", fingerprint);
-      return;
+            return;
     }
     sessionStorage.setItem(AUTH_BOUNCE_KEY, fingerprint);
   } catch {

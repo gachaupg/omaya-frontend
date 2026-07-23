@@ -10,24 +10,13 @@ export const sessionDebug = {
    * Log current session state
    */
   logSessionState: (sessions: DeviceSession[]) => {
-    console.group("🔍 Session Debug Info");
-    logger.debug('dashboard', "Total sessions:", sessions.length);
+        logger.debug('dashboard', "Total sessions:", sessions.length);
     logger.debug('dashboard', "Active sessions:", sessions.filter(s => s.is_active).length);
     logger.debug('dashboard', "Current sessions:", sessions.filter(s => s.is_current).length);
     
     if (sessions.length > 0) {
-      console.table(sessions.map(s => ({
-        id: s.session_id,
-        ip: s.ip_address,
-        location: s.location,
-        browser: s.browser,
-        active: s.is_active,
-        current: s.is_current,
-        signInTime: s.sign_in_time
-      })));
-    }
-    console.groupEnd();
-  },
+          }
+      },
 
   /**
    * Check for duplicate IP addresses
@@ -45,8 +34,7 @@ export const sessionDebug = {
       .map(([ip, count]) => ({ ip, count }));
 
     if (duplicates.length > 0) {
-      console.warn("⚠️ Found duplicate IP addresses:", duplicates);
-    } else {
+          } else {
       logger.debug('dashboard', "✅ No duplicate IP addresses found");
     }
 
@@ -65,8 +53,7 @@ export const sessionDebug = {
     if (!session.sign_in_time) issues.push("Missing sign_in_time");
     
     if (issues.length > 0) {
-      console.warn("⚠️ Session validation issues:", issues);
-      return false;
+            return false;
     }
     
     return true;

@@ -458,8 +458,7 @@ const SwapWidget = () => {
         }, 500);
       }
     } catch (error) {
-      console.warn("Failed to parse prefill state", error);
-      setHasRestoredState(true);
+            setHasRestoredState(true);
     }
   }, [supportedAssets, loading, searchParams, dispatch, hasRestoredState]);
 
@@ -495,8 +494,7 @@ const SwapWidget = () => {
     // Auto-expand: show wallet address step (same as clicking submit in TransactionInfoStep)
     const timer = setTimeout(() => {
       if (!hasAutoExpanded && fromAsset && toAsset && fromAmount && estimate) {
-        console.log("🚀 AUTO-EXPANDING SWAP FORM:", { fromAsset: fromAsset.ticker, toAsset: toAsset.ticker, fromAmount });
-        setShowWalletAddress(true);
+                setShowWalletAddress(true);
         setHasAutoExpanded(true);
       }
     }, 3000); // Increased delay to ensure everything is ready
@@ -576,11 +574,7 @@ const SwapWidget = () => {
         if (activeInputField === "from") {
           logger.error("swap", "Swap estimate request failed:", error);
         } else {
-          console.warn(
-            "Reverse calculation failed, this might be expected:",
-            error
-          );
-        }
+                  }
       });
     } else {
       // Clear estimate if conditions are not met
@@ -661,8 +655,7 @@ const SwapWidget = () => {
       );
 
     if (!isValidationError) {
-      console.error("Swap estimate error:", errMsg);
-    }
+          }
     logger.debug(
       "swap",
       "Active input field during error:",
@@ -670,12 +663,7 @@ const SwapWidget = () => {
     );
 
     if (activeInputField !== "from" && !isValidationError) {
-      console.warn(
-        "Reverse calculation error (might be expected):",
-        errMsg
-      );
-
-      if (lastSuccessfulEstimate && debouncedToAmount) {
+            if (lastSuccessfulEstimate && debouncedToAmount) {
         try {
           const toAmount =
             lastSuccessfulEstimate.raw_response?.toAmount ||
@@ -704,14 +692,9 @@ const SwapWidget = () => {
               fromAmount,
             });
           } else {
-            console.warn("Fallback calculation skipped: invalid amounts", {
-              toAmount,
-              fromAmount,
-            });
-          }
+                      }
         } catch (fallbackError) {
-          console.error("Fallback calculation failed:", fallbackError);
-        }
+                  }
       }
     }
   }, [
@@ -725,8 +708,7 @@ const SwapWidget = () => {
   // Handle swap errors (inline only — no toasts)
   useEffect(() => {
     if (swapError) {
-      console.error("Swap error:", swapError);
-      setLocalSwapError(
+            setLocalSwapError(
         typeof swapError === "string" ? swapError : "Swap failed. Please try again."
       );
     }
@@ -856,8 +838,7 @@ const SwapWidget = () => {
   const handleSubmit = async () => {
     logger.debug("swap", "handleSubmit called");
     if (!fromAsset || !toAsset || !walletAddress || !estimate) {
-      console.error("Missing required fields");
-      setLocalSwapError("Please fill in all required information.");
+            setLocalSwapError("Please fill in all required information.");
       return;
     }
 
@@ -885,8 +866,7 @@ const SwapWidget = () => {
       setLocalSwapError("");
       setCurrentStep("copy-address");
     } catch (error: any) {
-      console.error("Failed to create swap:", error);
-      const sameCoinMsg = resolveSwapCreateErrorMessage(error);
+            const sameCoinMsg = resolveSwapCreateErrorMessage(error);
       const msg =
         sameCoinMsg ||
         error?.response?.data?.message ||
@@ -925,8 +905,7 @@ const SwapWidget = () => {
         setCopyMessage("");
       }, 2000);
     } catch (err) {
-      console.error("Failed to copy:", err);
-      setCopyMessage("Failed — copy manually");
+            setCopyMessage("Failed — copy manually");
       setTimeout(() => {
         setCopyMessage("");
       }, 2000);

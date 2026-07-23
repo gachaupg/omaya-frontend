@@ -1140,10 +1140,8 @@ export default function Exchanging({ transactionData, isHomePage = false }: Exch
         },
         onError: (error) => {
           if (finalWebsocketUrl) {
-            console.warn(`URL: ${finalWebsocketUrl}`);
-          } else {
-            console.warn("No WebSocket URL provided");
-          }
+                      } else {
+                      }
 
           // Increment connection attempts
           setConnectionAttempts((prev) => prev + 1);

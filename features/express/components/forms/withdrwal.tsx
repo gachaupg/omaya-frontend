@@ -1145,8 +1145,7 @@ export default function WithdrawalForm({
       }
       showToast.success("Payment method added successfully!");
     } catch (error) {
-      console.error("Failed to refresh payment details:", error);
-      if (!paymentAddRefreshErrorToastShownRef.current) {
+            if (!paymentAddRefreshErrorToastShownRef.current) {
         paymentAddRefreshErrorToastShownRef.current = true;
         showToast.error(
           "Payment method added, but failed to refresh. Please reload the page."
@@ -1467,8 +1466,7 @@ export default function WithdrawalForm({
 
     // Prevent infinite retries - max 3 attempts
     if (adminWalletRetryCount >= MAX_RETRIES) {
-      console.warn('⚠️ Max retries reached for admin wallet list');
-      setHasFetchedAdminWallet(true);
+            setHasFetchedAdminWallet(true);
       return;
     }
 
@@ -1495,8 +1493,7 @@ export default function WithdrawalForm({
           }
         }
       } catch (error: unknown) {
-        console.error(`❌ Failed to fetch admin wallet list (attempt ${adminWalletRetryCount + 1}/${MAX_RETRIES}):`, error);
-        setAdminWalletRetryCount(prev => prev + 1);
+                setAdminWalletRetryCount(prev => prev + 1);
 
         // Only show toast on final retry
         if (adminWalletRetryCount + 1 >= MAX_RETRIES) {
@@ -1524,8 +1521,7 @@ export default function WithdrawalForm({
 
     // Prevent infinite retries - max 3 attempts
     if (assetsRetryCount >= MAX_RETRIES) {
-      console.warn('⚠️ Max retries reached for assets');
-      setHasFetchedAssets(true);
+            setHasFetchedAssets(true);
       return;
     }
 
@@ -1534,8 +1530,7 @@ export default function WithdrawalForm({
       try {
         // First try cache, then force refresh; timeout so slow API doesn't freeze the form
         const data = await withTimeout(dispatch(fetchAssets(false)).unwrap(), 15_000);
-        console.log("✅ Assets fetched successfully");
-        setHasFetchedAssets(true);
+                setHasFetchedAssets(true);
         setAssetsRetryCount(0);
 
         if ((!data?.assets || data.assets.length === 0) && assetsRetryCount === 0) {
@@ -1549,8 +1544,7 @@ export default function WithdrawalForm({
           setHasFetchedAssets(true);
           return;
         }
-        console.error(`❌ Failed to fetch assets (attempt ${assetsRetryCount + 1}/${MAX_RETRIES}):`, error);
-        setAssetsRetryCount((prev) => prev + 1);
+                setAssetsRetryCount((prev) => prev + 1);
         if (assetsRetryCount + 1 >= MAX_RETRIES) {
           // Only toast if we truly have no assets in state.
           if (!isHomePage && (!assets || assets.length === 0)) {
@@ -1613,8 +1607,7 @@ export default function WithdrawalForm({
           await sliceCache.set('payment', 'fetchUserPaymentDetails', data, undefined, 60 * 60 * 1000);
         }
       } catch (error) {
-        console.error("❌ Failed to fetch user payment details:", error);
-      }
+              }
     };
 
     fetchWithCache();
@@ -1629,8 +1622,7 @@ export default function WithdrawalForm({
 
     // Prevent infinite retries - max 3 attempts
     if (swapAssetsRetryCount >= MAX_RETRIES) {
-      console.warn('⚠️ Max retries reached for swap assets');
-      setHasFetchedSwapAssets(true);
+            setHasFetchedSwapAssets(true);
 
       const existingSwap = store.getState().swap.supportedAssets;
       if (Array.isArray(existingSwap) && existingSwap.length > 0) {
@@ -1699,8 +1691,7 @@ export default function WithdrawalForm({
     // Must exceed getSupportedAssets axios timeout (30s) or UI shows "Request timeout" first
     withTimeout(resolveSwapPayload(false), 35_000)
       .then((data) => {
-        console.log("✅ Swap assets fetched successfully");
-        setHasFetchedSwapAssets(true);
+                setHasFetchedSwapAssets(true);
         setSwapAssetsRetryCount(0);
 
         if ((!data || data.length === 0) && swapAssetsRetryCount === 0) {
@@ -1711,8 +1702,7 @@ export default function WithdrawalForm({
         }
       })
       .catch((error: unknown) => {
-        console.error(`❌ Failed to fetch swap assets (attempt ${swapAssetsRetryCount + 1}/${MAX_RETRIES}):`, error);
-        setSwapAssetsRetryCount((prev) => {
+                setSwapAssetsRetryCount((prev) => {
           const nextRetry = prev + 1;
           if (nextRetry >= MAX_RETRIES) {
             const existingSwap = store.getState().swap.supportedAssets;
@@ -2941,9 +2931,7 @@ export default function WithdrawalForm({
             errorMessage = serviceError;
           }
 
-          console.log("Error parsing (withdrawal):", { errorMessage, errorDetails, hasResponseData: !!error?.response_data });
-
-          // Handle deposit_too_small error
+                    // Handle deposit_too_small error
           if (
             isExpressBelowMinAmountError(errorMessage) ||
             isExpressBelowMinAmountError(errorDetails)
@@ -3703,8 +3691,7 @@ export default function WithdrawalForm({
             return;
           }
           // If verification status is unknown, allow the action to proceed
-          console.warn("KYC status check failed, proceeding with caution:", error);
-        }
+                  }
       }
 
       setIsSubmitting(true);
@@ -3919,8 +3906,7 @@ export default function WithdrawalForm({
           return;
         }
         // If verification status is unknown, allow the action to proceed
-        console.warn("KYC status check failed, proceeding with caution:", error);
-      }
+              }
     }
 
     setIsSubmitting(true);
@@ -4484,11 +4470,7 @@ export default function WithdrawalForm({
                               assetIconSrc={getHighResAssetIcon(selectedAsset, 72)}
                               showNetworkBadge={shouldShowAssetNetworkBadge(selectedAsset)}
                               onAssetIconError={(e) => {
-                                console.log(
-                                  "Image failed to load for asset:",
-                                  selectedAsset
-                                );
-                                e.currentTarget.src = getHighResAssetIcon(null, 72);
+                                                                e.currentTarget.src = getHighResAssetIcon(null, 72);
                               }}
                             />
                             <SwapAssetOptionDisplay

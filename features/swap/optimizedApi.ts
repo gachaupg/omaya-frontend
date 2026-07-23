@@ -49,30 +49,23 @@ export const getSupportedAssetsOptimized = async (): Promise<SupportedAsset[]> =
       return data;
     }
     
-    console.warn("Unexpected response format, returning empty array");
-    return [];
+        return [];
   } catch (error: any) {
-    console.error("Failed to fetch supported assets (optimized):", error);
-
-    // Handle different error scenarios gracefully
+        // Handle different error scenarios gracefully
     if (error.code === "ECONNREFUSED" || error.code === "ENOTFOUND" || error.message?.includes("Network Error")) {
-      console.warn("Network connection issue, returning empty assets list");
-      return [];
+            return [];
     }
 
     if (error.response?.status === 500) {
-      console.warn("Server error, returning empty assets list");
-      return [];
+            return [];
     }
 
     if (error.response?.status === 404) {
-      console.warn("Endpoint not found, returning empty assets list");
-      return [];
+            return [];
     }
 
     // For other errors, return empty array instead of throwing
-    console.warn("Unknown error, returning empty assets list");
-    return [];
+        return [];
   }
 };
 
@@ -102,9 +95,7 @@ export const getEstimateSwapOptimized = async (
     
     return response.data;
   } catch (error: any) {
-    console.error("Failed to fetch swap estimate (optimized):", error);
-
-    // Handle network errors gracefully
+        // Handle network errors gracefully
     if (error.code === "ECONNREFUSED" || error.code === "ENOTFOUND") {
       throw new Error(
         "Network connection issue. Please check your internet connection and try again."
@@ -150,11 +141,7 @@ export const createSwapOptimized = async (
     logger.debug('swap', "Swap response (optimized):", response.data);
     return response.data;
   } catch (error: any) {
-    console.error("Swap creation error (optimized):", error);
-    console.error("Error response:", error.response?.data);
-    console.error("Error status:", error.response?.status);
-
-    // Provide user-friendly error messages for different status codes
+                // Provide user-friendly error messages for different status codes
     if (error.response?.status === 500) {
       throw new Error(
         "Server Error: Unable to create swap. Please try again later."
@@ -207,8 +194,7 @@ export const getSwapStatusOptimized = async (swapId: string): Promise<SwapStatus
     
     return response.data;
   } catch (error: any) {
-    console.error("Failed to fetch swap status (optimized):", error);
-    
+        
     if (error.response?.status === 500) {
       throw new Error(
         "Server Error: Unable to fetch swap status. Please try again later."
@@ -281,16 +267,14 @@ export const getMultipleEstimatesOptimized = async (
         estimate.toNetwork,
         estimate.amount
       ).catch(error => {
-        console.error(`Failed to get estimate for ${estimate.fromCurrency}->${estimate.toCurrency}:`, error);
-        return null; // Return null for failed estimates
+                return null; // Return null for failed estimates
       })
     );
 
     const results = await Promise.all(promises);
     return results.filter(result => result !== null) as SwapEstimate[];
   } catch (error) {
-    console.error("Failed to get multiple estimates:", error);
-    return [];
+        return [];
   }
 };
 
@@ -315,8 +299,7 @@ export const testSwapApiPerformance = async (): Promise<{
     };
   } catch (error) {
     const responseTime = Date.now() - startTime;
-    console.error("Swap API performance test failed:", error);
-    
+        
     return {
       success: false,
       responseTime,

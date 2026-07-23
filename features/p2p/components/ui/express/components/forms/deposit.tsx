@@ -251,8 +251,7 @@ export default function DepositForm({
 
       logger.debug('p2p', "✅ Assets force refreshed");
     } catch (error) {
-      console.error("Debug failed:", error);
-    }
+          }
   };
 
   // Asset selection state for search functionality
@@ -307,8 +306,7 @@ export default function DepositForm({
     try {
       // Validate WebSocket URL
       if (!websocketUrl || websocketUrl.trim() === "") {
-        console.error("WebSocket URL is empty or undefined");
-        setWebsocketError("WebSocket URL is empty or undefined");
+                setWebsocketError("WebSocket URL is empty or undefined");
         return null;
       }
 
@@ -374,20 +372,13 @@ export default function DepositForm({
       try {
         new URL(finalUrl);
       } catch (urlError) {
-        console.error("Invalid WebSocket URL:", {
-          originalUrl: websocketUrl,
-          constructedUrl: finalUrl,
-          error: urlError
-        });
-        setWebsocketError(`Invalid WebSocket URL: ${finalUrl}`);
+                setWebsocketError(`Invalid WebSocket URL: ${finalUrl}`);
         return null;
       }
 
       finalUrl = appendTokenToWebSocketUrl(finalUrl, token);
       logger.debug('p2p', `Attempting WebSocket connection to: ${finalUrl}${isRetry ? ' (retry attempt)' : ''}`);
-      console.log("[P2P Deposit] Connecting WebSocket URL:", finalUrl);
-
-      // Pre-connection validation and logging
+            // Pre-connection validation and logging
       logger.debug('p2p', "WebSocket connection attempt details:", {
         originalUrl: websocketUrl,
         finalUrl: finalUrl,
@@ -406,8 +397,7 @@ export default function DepositForm({
       // Set up connection timeout
       const connectionTimeout = setTimeout(() => {
         if (ws.readyState === WebSocket.CONNECTING) {
-          console.error("WebSocket connection timeout after 10 seconds");
-          ws.close();
+                    ws.close();
           setWebsocketError("WebSocket connection timeout. Please check your network connection.");
           setWebsocket(null);
         }
@@ -424,8 +414,7 @@ export default function DepositForm({
       ws.onmessage = (event) => {
         try {
           const raw = JSON.parse(event.data);
-          console.log("[P2P Deposit] WebSocket data received:", raw);
-          logger.debug('p2p', "WebSocket message received:", raw);
+                    logger.debug('p2p', "WebSocket message received:", raw);
 
           // Handle wrapped format: { type: "status_update", data: { status?, transaction_id?, transaction_hash? } }
           const payload = raw.type === "status_update" && raw.data
@@ -447,8 +436,7 @@ export default function DepositForm({
             }
           }
         } catch (error) {
-          console.error("Error parsing WebSocket message:", error);
-        }
+                  }
       };
 
       ws.onclose = (event) => {
@@ -469,15 +457,13 @@ export default function DepositForm({
           setTimeout(() => {
             const retryWs = connectWebSocket(websocketUrl, true);
             if (!retryWs) {
-              console.error(`WebSocket retry ${websocketRetryCount + 1} failed`);
-              if (websocketRetryCount >= 2) {
+                            if (websocketRetryCount >= 2) {
                 setWebsocketError("WebSocket connection failed after multiple retry attempts. Please refresh the page to try again.");
               }
             }
           }, 2000 * (websocketRetryCount + 1)); // Exponential backoff
         } else if (!event.wasClean && websocketRetryCount >= 3) {
-          console.error("WebSocket connection failed after maximum retry attempts");
-          setWebsocketError("WebSocket connection failed after multiple retry attempts. Please refresh the page to try again.");
+                    setWebsocketError("WebSocket connection failed after multiple retry attempts. Please refresh the page to try again.");
         }
       };
 
@@ -558,15 +544,7 @@ export default function DepositForm({
           }
         };
 
-        console.error("WebSocket error details:", errorInfo);
-        console.error("WebSocket error summary:", {
-          url: finalUrl,
-          readyState: ['CONNECTING', 'OPEN', 'CLOSING', 'CLOSED'][ws.readyState],
-          errorType: errorType,
-          suggestedAction: suggestedAction
-        });
-
-        // Try alternative protocol if this is the first attempt
+                        // Try alternative protocol if this is the first attempt
         if (websocketRetryCount === 0 && finalUrl.startsWith('ws://')) {
           logger.debug('p2p', "Attempting fallback to wss:// protocol");
           const fallbackUrl = finalUrl.replace('ws://', 'wss://');
@@ -583,12 +561,7 @@ export default function DepositForm({
       return ws;
     } catch (error) {
       const errorMessage = `Failed to create WebSocket connection: ${error instanceof Error ? error.message : 'Unknown error'}`;
-      console.error("Failed to create WebSocket connection:", {
-        error: error,
-        url: websocketUrl,
-        message: error instanceof Error ? error.message : 'Unknown error'
-      });
-      setWebsocketError(errorMessage);
+            setWebsocketError(errorMessage);
       return null;
     }
   };
@@ -729,8 +702,7 @@ export default function DepositForm({
         router.push('/dashboard/express-exchange');
       }
     } catch (error: any) {
-      console.error("Deposit submission error:", error);
-      showToast.error(`Failed to create deposit: ${error.message || error}`);
+            showToast.error(`Failed to create deposit: ${error.message || error}`);
     } finally {
       setIsSubmitting(false);
     }
@@ -799,8 +771,7 @@ export default function DepositForm({
           }
         })
         .catch((error: unknown) => {
-          console.error("Failed to fetch deposit address:", error);
-        });
+                  });
     }
   }, [dispatch, selectedAsset, selectedNetwork]);
 
@@ -828,17 +799,14 @@ export default function DepositForm({
         return data;
       })
       .catch((error: unknown) => {
-        console.error("Failed to fetch swap assets from cache, trying force refresh:", error);
-        return withTimeout(
+                return withTimeout(
           dispatch(
             fetchSupportedAssets({ forceRefresh: true, feature: "exchange" })
           ).unwrap(),
           15_000
         ).catch(
           (refreshError: unknown) => {
-            console.error("Failed to fetch swap assets even with force refresh:", refreshError);
-
-            // Only show error if it's a network issue, not cache issues
+                        // Only show error if it's a network issue, not cache issues
             if (refreshError instanceof Error) {
               if (refreshError.message.includes("Network Error") || refreshError.message.includes("Network connection issue")) {
                 showToast.warning("Network issue", "Asset list may be incomplete. You can still continue if options appear.");
@@ -1035,9 +1003,7 @@ export default function DepositForm({
           setIsCalculatingReceive(false);
         })
         .catch((error) => {
-          console.error("Failed to fetch swap estimate:", error);
-
-          // Handle different types of errors gracefully
+                    // Handle different types of errors gracefully
           if (error.message?.includes("Request timeout")) {
             setEstimateError("Request timeout: Using fallback calculation");
             logger.debug('p2p', "Using fallback calculation due to request timeout");
@@ -1153,9 +1119,7 @@ export default function DepositForm({
           }
         })
         .catch((error) => {
-          console.error("Failed to fetch reverse estimate:", error);
-
-          // Handle different types of errors gracefully
+                    // Handle different types of errors gracefully
           if (error.message?.includes("Request timeout")) {
             setEstimateError("Request timeout: Using fallback calculation");
             logger.debug('p2p', "Using fallback calculation due to request timeout");
@@ -1482,8 +1446,7 @@ export default function DepositForm({
           }
         }
       } catch (error) {
-        console.error("Calculation error:", error);
-        setReceiveAmountError("Calculation error occurred");
+                setReceiveAmountError("Calculation error occurred");
       } finally {
         setIsCalculating(false);
         setIsCalculatingReceive(false);
@@ -1789,8 +1752,7 @@ export default function DepositForm({
         router.push(`/dashboard/express-exchange?transactionId=${finalResponse.transaction_id}`);
       }
     } catch (error: any) {
-      console.error("Failed to update deposit address:", error);
-      let errorMessage = "Failed to process request";
+            let errorMessage = "Failed to process request";
 
       if (error.response?.data) {
         const responseData = error.response.data;

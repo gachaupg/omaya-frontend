@@ -47,13 +47,16 @@ export function StatusBadge({
   status,
   className,
   title,
+  uppercase = false,
 }: {
   status: unknown;
   className?: string;
   title?: string;
+  uppercase?: boolean;
 }) {
-  const label = normalizeStatusLabel(status);
-  const tone = getTone(label);
+  const normalized = normalizeStatusLabel(status);
+  const label = uppercase ? normalized.toUpperCase() : normalized;
+  const tone = getTone(normalized);
 
   return (
     <span

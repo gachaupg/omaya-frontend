@@ -24,7 +24,7 @@ ENV DISABLE_ESLINT=true
 # OAuth and API configuration - Build Args with defaults
 ARG NEXT_PUBLIC_GOOGLE_CLIENT_ID=""
 ARG NEXT_PUBLIC_GOOGLE_REDIRECT_URI=""
-ARG NEXT_PUBLIC_API_URL="https://dev.backend.omaya.io"
+ARG NEXT_PUBLIC_API_URL="https://backend.omaya.io"
 ARG NEXT_PUBLIC_APP_URL="https://dev.omaya.io"
 ARG NEXT_PUBLIC_FACEBOOK_APP_ID=""
 ARG NEXT_PUBLIC_FACEBOOK_REDIRECT_URI=""

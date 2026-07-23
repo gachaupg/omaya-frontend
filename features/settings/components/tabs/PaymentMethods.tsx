@@ -77,8 +77,7 @@ const AddressQrImage: React.FC<{ value: string }> = ({ value }) => {
         }
       } catch (err) {
         if (!cancelled) {
-          console.error("Failed to generate wallet QR:", err);
-          setHasError(true);
+                    setHasError(true);
           setQrDataUrl(null);
         }
       }

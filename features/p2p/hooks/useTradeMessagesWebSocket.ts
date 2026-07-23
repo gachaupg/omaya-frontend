@@ -136,8 +136,7 @@ export const useTradeMessagesWebSocket = (options: UseTradeMessagesWebSocketOpti
 
       try {
         const msgAny = message as Record<string, unknown>;
-        console.log("[P2P trade-messages WS] handler tradeId=%s payload=", tradeId, msgAny);
-        const candidatePayload: any =
+                const candidatePayload: any =
           (message as any)?.data && typeof (message as any).data === "object"
             ? (message as any).data
             : (message as any);
@@ -198,15 +197,9 @@ export const useTradeMessagesWebSocket = (options: UseTradeMessagesWebSocketOpti
           parseTradeMessagesCancelPayload(msgAny, tradeId);
         if (shouldNotify && tradeId?.trim()) {
           if (cancelModalFiredRef.current) {
-            console.log("[P2P trade-messages WS] skip duplicate cancel modal for trade", tradeId);
-          } else {
+                      } else {
             cancelModalFiredRef.current = true;
-            console.log("[P2P trade-messages WS] trade canceled → modal + event", {
-              tradeId,
-              statusRaw,
-              detail,
-            });
-            onTradeCanceledRef.current?.({ status: statusRaw, message: detail });
+                        onTradeCanceledRef.current?.({ status: statusRaw, message: detail });
             if (typeof window !== "undefined") {
               window.dispatchEvent(
                 new CustomEvent(P2P_TRADE_CANCELED_EVENT, {
@@ -405,8 +398,7 @@ export const useTradeMessagesWebSocket = (options: UseTradeMessagesWebSocketOpti
                 });
                 
                 if (!hasValidUrls) {
-                  console.warn("⚠️ WebSocket message has images but no valid S3 URLs yet - auto-refresh should trigger");
-                }
+                                  }
               }
             }
             setIsConnected(true);
@@ -414,8 +406,7 @@ export const useTradeMessagesWebSocket = (options: UseTradeMessagesWebSocketOpti
 
           case "error":
             // Silent error handling
-            console.warn("⚠️ WebSocket error message:", message.data);
-            break;
+                        break;
 
           case "status_update":
             // Handled above (canceled → callback). No-op here for chat message types.
@@ -426,8 +417,7 @@ export const useTradeMessagesWebSocket = (options: UseTradeMessagesWebSocketOpti
             break;
         }
       } catch (error) {
-        console.error("[P2P trade-messages WS] onMessage handler error:", error);
-      }
+              }
     });
 
     // Handle WebSocket errors
@@ -452,10 +442,8 @@ export const useTradeMessagesWebSocket = (options: UseTradeMessagesWebSocketOpti
     // Log and connect to WebSocket (helps verify exact socket endpoint in runtime).
     try {
       const wsUrl = API_CONFIG.P2P.SOCKETS.TRADE_MESSAGES(tradeId, token);
-      console.log("[P2P trade-messages WS] connecting URL:", wsUrl);
-    } catch (e) {
-      console.warn("[P2P trade-messages WS] failed to build URL for logging");
-    }
+          } catch (e) {
+          }
     ws.connect(tradeId, token);
 
     // Cleanup function

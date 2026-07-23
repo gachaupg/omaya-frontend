@@ -38,8 +38,7 @@ export const fetchBlogs = createAsyncThunk(
       // Filter for blog category
       return blogs.filter((blog: BlogPost) => blog.category === 'blog');
     } catch (error) {
-      console.error("fetchBlogs error:", error);
-      // Return fallback data instead of rejecting
+            // Return fallback data instead of rejecting
       return [
         {
           _id: "fallback-blog-1",
@@ -76,8 +75,7 @@ export const fetchNews = createAsyncThunk(
       const news = await blogApi.fetchNews();
       return news;
     } catch (error) {
-      console.error("fetchNews error:", error);
-      // Return fallback data instead of rejecting
+            // Return fallback data instead of rejecting
       return [
         {
           _id: "fallback-news-1",

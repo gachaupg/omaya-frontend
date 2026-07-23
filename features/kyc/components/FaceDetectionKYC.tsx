@@ -739,7 +739,7 @@ const FaceDetectionKYC: React.FC<FaceDetectionKYCProps> = ({
                   alt="Captured Face" 
                   className="w-full h-full object-cover"
                   onLoad={() => logger.debug('general', 'Image loaded successfully')}
-                  onError={(e) => console.error('Image failed to load:', e)}
+                  onError={() => {}}
                 />
               ) : (
                 <div className="flex items-center justify-center w-full h-full text-white">
