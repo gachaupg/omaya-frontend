@@ -1,14 +1,17 @@
-import { API_BASE_URL } from "@/config/api";
+import { resolveApiBaseUrl } from "@/config/api";
 
 function getWebSocketBaseUrl() {
-  if (API_BASE_URL.startsWith("https")) {
-    return API_BASE_URL.replace(/^https/, "wss");
+  const apiBase = resolveApiBaseUrl();
+  if (apiBase.startsWith("https")) {
+    return apiBase.replace(/^https/, "wss");
   }
-  return API_BASE_URL.replace(/^http/, "ws");
+  return apiBase.replace(/^http/, "ws");
 }
 // Create lib/apiConfig.ts
 export const API_CONFIG = {
-  BASE_URL: API_BASE_URL,
+  get BASE_URL() {
+    return resolveApiBaseUrl();
+  },
   headers: {
     "Content-Type": "application/json",
   },
