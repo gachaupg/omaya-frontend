@@ -8,9 +8,9 @@ phases:
   build:
     commands:
       - echo Build started on `date`
-      - aws s3 cp s3://omaya-env/omaya-frontend-dev/.env ./   
-      - echo Building the Docker image...          
-      - docker build -t omayafrontend-dev .
+      - aws s3 cp s3://omaya-env/omaya-frontend-dev/.env ./
+      - chmod +x scripts/docker-build-with-env.sh
+      - ./scripts/docker-build-with-env.sh omayafrontend-dev
       - docker tag omayafrontend-dev:latest 480195466229.dkr.ecr.eu-north-1.amazonaws.com/omayafrontend-dev:latest      
   post_build:
     commands:

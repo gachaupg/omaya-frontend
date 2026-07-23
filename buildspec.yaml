@@ -7,9 +7,10 @@ phases:
       - aws ecr get-login-password --region eu-central-1 | docker login --username AWS --password-stdin 867344454629.dkr.ecr.eu-central-1.amazonaws.com
   build:
     commands:
-      - echo Build started on `date`   
-      - echo Building the Docker image...          
-      - docker build -t omaya-frontend-service .
+      - echo Build started on `date`
+      - aws s3 cp s3://omaya-env/omaya-frontend/.env ./
+      - chmod +x scripts/docker-build-with-env.sh
+      - ./scripts/docker-build-with-env.sh omaya-frontend-service
       - docker tag omaya-frontend-service:latest 867344454629.dkr.ecr.eu-central-1.amazonaws.com/omaya-frontend-service:latest     
   post_build:
     commands:

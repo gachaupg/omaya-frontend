@@ -1,31 +1,43 @@
-/** Resolve API origin — VITE_BASE_URL preferred, NEXT_PUBLIC_API_URL fallback. */
+/** Normalize API origin (no trailing slash). */
+function normalizeApiOrigin(raw: string): string {
+  return String(raw).trim().replace(/\/+$/, "");
+}
+
+/**
+ * Resolve API origin — same pattern as Admin (`NEXT_PUBLIC_BASE_URL` first).
+ * Legacy keys kept for backward compatibility.
+ */
 export function getApiBaseUrlFromEnv(): string {
   const raw =
-    process.env.VITE_BASE_URL || process.env.NEXT_PUBLIC_API_URL || "";
-  return String(raw).trim().replace(/\/+$/, "");
+    process.env.NEXT_PUBLIC_BASE_URL ||
+    process.env.NEXT_PUBLIC_API_URL ||
+    process.env.VITE_BASE_URL ||
+    "";
+  return normalizeApiOrigin(raw);
 }
 
 declare global {
   interface Window {
     __RUNTIME_CONFIG__?: {
+      NEXT_PUBLIC_BASE_URL?: string;
       VITE_BASE_URL?: string;
     };
   }
 }
 
-/** Server env first, then window.__RUNTIME_CONFIG__ injected by layout (Docker runtime). */
+function readRuntimeConfigBaseUrl(): string {
+  if (typeof window === "undefined") return "";
+  const cfg = window.__RUNTIME_CONFIG__;
+  const raw =
+    cfg?.NEXT_PUBLIC_BASE_URL || cfg?.VITE_BASE_URL || "";
+  return normalizeApiOrigin(raw);
+}
+
+/** Build-time env first, then window.__RUNTIME_CONFIG__ from layout (Docker runtime). */
 export function resolveApiBaseUrl(): string {
   const fromEnv = getApiBaseUrlFromEnv();
   if (fromEnv) return fromEnv;
-
-  if (typeof window !== "undefined") {
-    const fromRuntime = window.__RUNTIME_CONFIG__?.VITE_BASE_URL;
-    if (fromRuntime) {
-      return String(fromRuntime).trim().replace(/\/+$/, "");
-    }
-  }
-
-  return "";
+  return readRuntimeConfigBaseUrl();
 }
 
 const apiBaseUrlProxy = new Proxy(Object.create(null) as object, {
@@ -49,5 +61,5 @@ const apiBaseUrlProxy = new Proxy(Object.create(null) as object, {
   },
 }) as unknown as string;
 
-/** Lazy API origin — safe for Docker runtime env (not only build-time). */
+/** Lazy API origin — baked at build via NEXT_PUBLIC_BASE_URL (Admin pattern). */
 export const API_BASE_URL = apiBaseUrlProxy;
