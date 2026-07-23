@@ -1,3 +1,4 @@
+import type { KeyboardEvent } from "react";
 import {
   buyUsdtFromFiatPaid,
   effectiveP2PRate,
@@ -13,11 +14,25 @@ export type AmountValidationResult = {
 export function parseTradeAmountInput(value: string): number | null {
   const trimmed = value.trim();
   if (!trimmed) return null;
-  if (trimmed === "-" || trimmed === "." || trimmed === ",") return null;
+  if (trimmed === "." || trimmed === ",") return null;
   const normalized = trimmed.replace(",", ".");
-  if (/^-?\.$/.test(normalized) || /\.$/.test(normalized)) return null;
+  if (/^\.$/.test(normalized) || /\.$/.test(normalized)) return null;
   const n = parseFloat(normalized);
-  return Number.isFinite(n) ? n : null;
+  if (!Number.isFinite(n) || n < 0) return null;
+  return n;
+}
+
+/** Strip minus so users cannot enter negative amounts. */
+export function sanitizeTradeAmountInput(value: string): string {
+  return value.replace(/-/g, "");
+}
+
+export function blockNegativeTradeAmountKey(
+  e: KeyboardEvent<HTMLInputElement>
+): void {
+  if (e.key === "-" || e.key === "e" || e.key === "E") {
+    e.preventDefault();
+  }
 }
 
 export function isIncompleteTradeAmountInput(value: string): boolean {
