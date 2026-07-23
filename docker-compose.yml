@@ -13,6 +13,7 @@ services:
         - NEXT_PUBLIC_FACEBOOK_REDIRECT_URI=${NEXT_PUBLIC_FACEBOOK_REDIRECT_URI:-}
         
         # API Configuration (from .env / host environment)
+        - NEXT_PUBLIC_BASE_URL=${NEXT_PUBLIC_BASE_URL:-}
         - VITE_BASE_URL=${VITE_BASE_URL:-}
         - NEXT_PUBLIC_API_URL=${NEXT_PUBLIC_API_URL:-}
         - NEXT_PUBLIC_APP_URL=${NEXT_PUBLIC_APP_URL:-}
@@ -44,6 +45,7 @@ services:
       - NEXT_PUBLIC_FACEBOOK_REDIRECT_URI=${NEXT_PUBLIC_FACEBOOK_REDIRECT_URI:-}
       
       # API Configuration (from .env / host environment)
+      - NEXT_PUBLIC_BASE_URL=${NEXT_PUBLIC_BASE_URL:-}
       - VITE_BASE_URL=${VITE_BASE_URL:-}
       - NEXT_PUBLIC_API_URL=${NEXT_PUBLIC_API_URL:-}
       - NEXT_PUBLIC_APP_URL=${NEXT_PUBLIC_APP_URL:-}
