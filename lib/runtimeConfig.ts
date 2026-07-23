@@ -1,4 +1,4 @@
-import { getApiBaseUrlFromEnv } from '@/config/api';
+import { resolveApiBaseUrl } from '@/config/api';
 
 export type PublicRuntimeConfig = {
   NEXT_PUBLIC_GOOGLE_CLIENT_ID: string;
@@ -16,7 +16,7 @@ function readPublicRuntimeConfigFromEnv(): PublicRuntimeConfig {
     NEXT_PUBLIC_GOOGLE_CLIENT_ID: process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID || '',
     NEXT_PUBLIC_GOOGLE_REDIRECT_URI:
       process.env.NEXT_PUBLIC_GOOGLE_REDIRECT_URI || '',
-    VITE_BASE_URL: getApiBaseUrlFromEnv(),
+    VITE_BASE_URL: resolveApiBaseUrl(),
     NEXT_PUBLIC_APP_URL: process.env.NEXT_PUBLIC_APP_URL || '',
     NEXT_PUBLIC_FACEBOOK_APP_ID: process.env.NEXT_PUBLIC_FACEBOOK_APP_ID || '',
     NEXT_PUBLIC_FACEBOOK_REDIRECT_URI:
