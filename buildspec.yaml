@@ -17,7 +17,7 @@ phases:
       - echo Build completed on `date`
       - echo Pushing the Docker image...
       - docker push 867344454629.dkr.ecr.eu-central-1.amazonaws.com/omaya-frontend-service:latest
-      - printf '[{"name":"omaya-frontend-container","imageUri":"%s"}]' 867344454629.dkr.ecr.eu-central-1.amazonaws.com/omaya-frontend-service:latest > imagedefinitions.json
+      - printf '[{"name":"omaya-frontend","imageUri":"%s"}]' 867344454629.dkr.ecr.eu-central-1.amazonaws.com/omaya-frontend-service:latest > imagedefinitions.json
 
 artifacts:
     files: imagedefinitions.json
