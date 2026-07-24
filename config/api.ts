@@ -10,7 +10,6 @@ function normalizeApiOrigin(raw: string): string {
 export function getApiBaseUrlFromEnv(): string {
   const raw =
     process.env.NEXT_PUBLIC_BASE_URL ||
-    process.env.NEXT_PUBLIC_API_URL ||
     process.env.VITE_BASE_URL ||
     "";
   return normalizeApiOrigin(raw);
