@@ -4,8 +4,8 @@ function normalizeApiOrigin(raw: string): string {
 }
 
 /**
- * Resolve API origin — same pattern as Admin (`NEXT_PUBLIC_BASE_URL` first).
- * Legacy keys kept for backward compatibility.
+ * Resolve API origin — Admin pattern: NEXT_PUBLIC_BASE_URL first.
+ * Legacy keys kept so existing .env / S3 files still work.
  */
 export function getApiBaseUrlFromEnv(): string {
   const raw =
@@ -25,41 +25,20 @@ declare global {
   }
 }
 
-function readRuntimeConfigBaseUrl(): string {
-  if (typeof window === "undefined") return "";
-  const cfg = window.__RUNTIME_CONFIG__;
-  const raw =
-    cfg?.NEXT_PUBLIC_BASE_URL || cfg?.VITE_BASE_URL || "";
-  return normalizeApiOrigin(raw);
-}
-
-/** Build-time env first, then window.__RUNTIME_CONFIG__ from layout (Docker runtime). */
+/** Runtime fallback when build-time env was empty (Docker SSR / layout script). */
 export function resolveApiBaseUrl(): string {
   const fromEnv = getApiBaseUrlFromEnv();
   if (fromEnv) return fromEnv;
-  return readRuntimeConfigBaseUrl();
+
+  if (typeof window !== "undefined") {
+    const cfg = window.__RUNTIME_CONFIG__;
+    const raw = cfg?.NEXT_PUBLIC_BASE_URL || cfg?.VITE_BASE_URL || "";
+    const fromRuntime = normalizeApiOrigin(raw);
+    if (fromRuntime) return fromRuntime;
+  }
+
+  return "";
 }
 
-const apiBaseUrlProxy = new Proxy(Object.create(null) as object, {
-  get(_target, prop) {
-    const url = resolveApiBaseUrl();
-    if (prop === Symbol.toPrimitive) {
-      return (hint: string) => (hint === "number" ? Number.NaN : url);
-    }
-    if (prop === "toString") return () => url;
-    if (prop === "valueOf") return () => url;
-    if (typeof prop === "string" && prop in String.prototype) {
-      const method = (String.prototype as unknown as Record<string, unknown>)[
-        prop
-      ];
-      if (typeof method === "function") {
-        return (...args: unknown[]) =>
-          (method as (...a: unknown[]) => unknown).apply(url, args);
-      }
-    }
-    return (url as unknown as Record<string | symbol, unknown>)[prop];
-  },
-}) as unknown as string;
-
-/** Lazy API origin — baked at build via NEXT_PUBLIC_BASE_URL (Admin pattern). */
-export const API_BASE_URL = apiBaseUrlProxy;
+/** Inlined at build via NEXT_PUBLIC_BASE_URL (same as Admin apiClient). */
+export const API_BASE_URL = getApiBaseUrlFromEnv();

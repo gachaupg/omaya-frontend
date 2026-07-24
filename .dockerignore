@@ -8,12 +8,8 @@ yarn-error.log*
 .next
 out
 
-# Environment files
-#.env
-.env.local
-.env.development.local
-.env.test.local
-.env.production.local
+# Local env overrides only — keep .env in Docker context (Admin pattern, S3 → build)
+.env*.local
 
 # Logs
 logs
@@ -25,10 +21,8 @@ pids
 *.seed
 *.pid.lock
 
-# Coverage directory used by tools like istanbul
+# Coverage
 coverage
-
-# nyc test coverage
 .nyc_output
 
 # Dependency directories
@@ -45,9 +39,6 @@ jspm_packages/
 
 # Yarn Integrity file
 .yarn-integrity
-
-# dotenv environment variables file
-#.env
 
 # IDE files
 .vscode
@@ -74,8 +65,6 @@ docker-compose.yml
 .dockerignore
 
 # Testing
-coverage
-.nyc_output
 test-results
 playwright-report
 playwright/.cache
@@ -83,7 +72,7 @@ playwright/.cache
 # Build artifacts
 buildspec-*.yaml
 
-# Exclude documentation and markdown files from Docker context
+# Exclude documentation from Docker context
 docs/
 *.md
 **/*.md
