@@ -3,18 +3,6 @@ function normalizeApiOrigin(raw: string): string {
   return String(raw).trim().replace(/\/+$/, "");
 }
 
-/**
- * Resolve API origin — same pattern as Admin (`NEXT_PUBLIC_BASE_URL` first).
- * Legacy keys kept for backward compatibility.
- */
-export function getApiBaseUrlFromEnv(): string {
-  const raw =
-    process.env.NEXT_PUBLIC_BASE_URL ||
-    process.env.VITE_BASE_URL ||
-    "";
-  return normalizeApiOrigin(raw);
-}
-
 declare global {
   interface Window {
     __RUNTIME_CONFIG__?: {
@@ -24,18 +12,34 @@ declare global {
   }
 }
 
+/**
+ * Server-only API origin.
+ * ECS injects NEXT_PUBLIC_BASE_URL at container start (AWS Secrets Manager).
+ */
+export function getApiBaseUrlFromEnv(): string {
+  return normalizeApiOrigin(process.env.NEXT_PUBLIC_BASE_URL || "");
+}
+
+/** Client-only: value injected by layout via window.__RUNTIME_CONFIG__. */
 function readRuntimeConfigBaseUrl(): string {
   if (typeof window === "undefined") return "";
   const cfg = window.__RUNTIME_CONFIG__;
-  const raw =
-    cfg?.NEXT_PUBLIC_BASE_URL || cfg?.VITE_BASE_URL || "";
+  const raw = cfg?.NEXT_PUBLIC_BASE_URL || cfg?.VITE_BASE_URL || "";
   return normalizeApiOrigin(raw);
 }
 
-/** Build-time env first, then window.__RUNTIME_CONFIG__ from layout (Docker runtime). */
+/**
+ * Resolve API origin for the current runtime.
+ * - Server (Node): process.env.NEXT_PUBLIC_BASE_URL from ECS
+ * - Browser: window.__RUNTIME_CONFIG__.NEXT_PUBLIC_BASE_URL (injected in layout)
+ */
 export function resolveApiBaseUrl(): string {
-  const fromEnv = getApiBaseUrlFromEnv();
-  if (fromEnv) return fromEnv;
+  // Server-side
+  if (typeof window === "undefined") {
+    return normalizeApiOrigin(process.env.NEXT_PUBLIC_BASE_URL || "");
+  }
+
+  // Client-side — do not use process.env; it is build-time only
   return readRuntimeConfigBaseUrl();
 }
 
@@ -60,5 +64,5 @@ const apiBaseUrlProxy = new Proxy(Object.create(null) as object, {
   },
 }) as unknown as string;
 
-/** Lazy API origin — baked at build via NEXT_PUBLIC_BASE_URL (Admin pattern). */
+/** Lazy API origin — server reads ECS env; client reads window.__RUNTIME_CONFIG__. */
 export const API_BASE_URL = apiBaseUrlProxy;

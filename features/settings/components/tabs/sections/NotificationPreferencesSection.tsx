@@ -7,6 +7,37 @@ import {
   setNotificationSoundMuted,
   NOTIFICATION_PREFERENCES_CHANGED_EVENT,
 } from "@/lib/notifications/notificationPreferences";
+
+function NotificationSwitch({
+  enabled,
+  disabled,
+  label,
+  onToggle,
+}: {
+  enabled: boolean;
+  disabled?: boolean;
+  label: string;
+  onToggle: () => void;
+}) {
+  return (
+    <button
+      type="button"
+      role="switch"
+      aria-checked={enabled}
+      aria-label={label}
+      disabled={disabled}
+      onClick={onToggle}
+      className={`inline-flex h-7 w-[52px] min-w-[52px] shrink-0 items-center rounded-full p-1 transition-colors duration-200 focus:outline-none focus-visible:ring-2 focus-visible:ring-[#1D8751]/40 disabled:cursor-not-allowed disabled:opacity-50 ${
+        enabled
+          ? "justify-end bg-[#1D8751]"
+          : "justify-start bg-gray-300 dark:bg-[#4A4A56]"
+      }`}
+    >
+      <span className="block h-5 w-5 rounded-full bg-white shadow-[0_1px_3px_rgba(0,0,0,0.28)]" />
+    </button>
+  );
+}
+
 function PreferenceToggle({
   label,
   description,
@@ -21,31 +52,25 @@ function PreferenceToggle({
   onToggle: () => void;
 }) {
   return (
-    <div className="flex items-center justify-between gap-4 py-3 border-b border-gray-100 dark:border-[#35353E] last:border-b-0">
-      <div className="min-w-0">
-        <p className="text-sm font-semibold text-gray-900 dark:text-white">
-          {label}
-        </p>
-        <p className="text-xs text-gray-500 dark:text-[#8C8CA1] mt-0.5">
-          {description}
-        </p>
+    <div className="rounded-xl border border-gray-100 bg-gray-50/80 p-3.5 dark:border-[#35353E] dark:bg-[#18181D]/60 sm:rounded-none sm:border-0 sm:border-b sm:bg-transparent sm:p-0 sm:py-4 sm:dark:bg-transparent last:sm:border-b-0">
+      <div className="flex items-start gap-3">
+        <div className="min-w-0 flex-1">
+          <div className="flex items-center justify-between gap-3">
+            <p className="text-sm font-semibold leading-snug text-gray-900 dark:text-white">
+              {label}
+            </p>
+            <NotificationSwitch
+              enabled={enabled}
+              disabled={disabled}
+              label={label}
+              onToggle={onToggle}
+            />
+          </div>
+          <p className="mt-2 text-xs leading-relaxed text-gray-500 dark:text-[#8C8CA1]">
+            {description}
+          </p>
+        </div>
       </div>
-      <button
-        type="button"
-        role="switch"
-        aria-checked={enabled}
-        disabled={disabled}
-        onClick={onToggle}
-        className={`relative shrink-0 w-11 h-6 rounded-full transition-colors disabled:opacity-50 disabled:cursor-not-allowed ${
-          enabled ? "bg-[#1D8751]" : "bg-gray-300 dark:bg-[#35353E]"
-        }`}
-      >
-        <span
-          className={`absolute top-0.5 left-0.5 w-5 h-5 bg-white rounded-full shadow transition-transform ${
-            enabled ? "translate-x-5" : "translate-x-0"
-          }`}
-        />
-      </button>
     </div>
   );
 }
@@ -125,10 +150,10 @@ const NotificationPreferencesSection: React.FC = () => {
 
   return (
     <>
-      <div className="text-sm font-bold dark:text-white text-gray-900 mb-1 mt-1">
+      <div className="mb-1 mt-1 text-sm font-bold text-gray-900 dark:text-white">
         Notifications
       </div>
-      <section className="dark:bg-card bg-card rounded-xl dark:border-[#35353E] border-[#E8EFF5] border p-3 sm:px-4 sm:py-1">
+      <section className="min-w-0 overflow-hidden rounded-xl border border-[#E8EFF5] bg-card p-2 dark:border-[#35353E] dark:bg-card sm:space-y-0 sm:p-3 sm:px-4">
         <PreferenceToggle
           label="Browser notifications"
           description={browserDescription}

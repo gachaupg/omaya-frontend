@@ -19,10 +19,10 @@ const SystemThemeSection: React.FC = () => {
       <div className="text-sm font-bold dark:text-white text-gray-900 mb-1">
         System Theme
       </div>
-      <section className="dark:bg-card bg-card rounded-xl dark:border-[#35353E] border-[#E8EFF5] border p-3 sm:p-4">
-        <div className="flex gap-3">
+      <section className="dark:bg-card bg-card rounded-xl dark:border-[#35353E] border-[#E8EFF5] border p-3 sm:p-4 min-w-0 overflow-hidden">
+        <div className="grid grid-cols-2 gap-2 sm:grid-cols-4 sm:gap-3">
           <button
-            className={`flex-1 flex items-center justify-center gap-2 py-2 rounded-2xl font-semibold text-sm transition-all border bg-white dark:bg-[#18181D] hover:bg-gray-50 dark:hover:bg-[#14141B] ${
+            className={`flex items-center justify-center gap-1 sm:gap-2 py-2.5 px-2 sm:px-3 rounded-xl sm:rounded-2xl font-semibold text-xs sm:text-sm transition-all border bg-white dark:bg-[#18181D] hover:bg-gray-50 dark:hover:bg-[#14141B] min-w-0 ${
               isLight
                 ? activeClass
                 : inactiveClass
@@ -33,8 +33,9 @@ const SystemThemeSection: React.FC = () => {
           >
             <span className="w-4 h-4 rounded-full border border-gray-300 bg-white flex-shrink-0" />
             <svg
-              width="18"
-              height="18"
+              width="16"
+              height="16"
+              className="sm:w-[18px] sm:h-[18px] shrink-0"
               fill="none"
               viewBox="0 0 24 24"
               stroke="currentColor"
@@ -45,10 +46,10 @@ const SystemThemeSection: React.FC = () => {
                 strokeWidth="2"
               />
             </svg>
-            Light
+            <span className="truncate">Light</span>
           </button>
           <button
-            className={`flex-1 flex items-center justify-center gap-2 py-2 rounded-2xl font-semibold text-sm transition-all border bg-white dark:bg-[#18181D] hover:bg-gray-50 dark:hover:bg-[#14141B] ${
+            className={`flex items-center justify-center gap-1 sm:gap-2 py-2.5 px-2 sm:px-3 rounded-xl sm:rounded-2xl font-semibold text-xs sm:text-sm transition-all border bg-white dark:bg-[#18181D] hover:bg-gray-50 dark:hover:bg-[#14141B] min-w-0 ${
               isDeem
                 ? activeClass
                 : inactiveClass
@@ -59,8 +60,9 @@ const SystemThemeSection: React.FC = () => {
           >
             <span className="w-4 h-4 rounded-full border border-[#35353E] bg-[#23232B] flex-shrink-0" />
             <svg
-              width="18"
-              height="18"
+              width="16"
+              height="16"
+              className="sm:w-[18px] sm:h-[18px] shrink-0"
               fill="none"
               viewBox="0 0 24 24"
               stroke="currentColor"
@@ -72,10 +74,10 @@ const SystemThemeSection: React.FC = () => {
                 strokeLinecap="round"
               />
             </svg>
-            Dim
+            <span className="truncate">Dim</span>
           </button>
           <button
-            className={`flex-1 flex items-center justify-center gap-2 py-2 rounded-2xl font-semibold text-sm transition-all border bg-white dark:bg-[#18181D] hover:bg-gray-50 dark:hover:bg-[#14141B] ${
+            className={`flex items-center justify-center gap-1 sm:gap-2 py-2.5 px-2 sm:px-3 rounded-xl sm:rounded-2xl font-semibold text-xs sm:text-sm transition-all border bg-white dark:bg-[#18181D] hover:bg-gray-50 dark:hover:bg-[#14141B] min-w-0 ${
               currentTheme === "dark"
                 ? activeClass
                 : inactiveClass
@@ -86,8 +88,9 @@ const SystemThemeSection: React.FC = () => {
           >
             <span className="w-4 h-4 rounded-full border border-[#2F2F3A] bg-[#0F0F17] flex-shrink-0" />
             <svg
-              width="18"
-              height="18"
+              width="16"
+              height="16"
+              className="sm:w-[18px] sm:h-[18px] shrink-0"
               fill="none"
               viewBox="0 0 24 24"
               stroke="currentColor"
@@ -97,10 +100,10 @@ const SystemThemeSection: React.FC = () => {
                 strokeWidth="2"
               />
             </svg>
-            Dark
+            <span className="truncate">Dark</span>
           </button>
           <button
-            className={`flex-1 flex items-center justify-center gap-2 py-2 rounded-2xl font-semibold text-sm transition-all border bg-white dark:bg-[#18181D] hover:bg-gray-50 dark:hover:bg-[#14141B] ${
+            className={`flex items-center justify-center gap-1 sm:gap-2 py-2.5 px-2 sm:px-3 rounded-xl sm:rounded-2xl font-semibold text-xs sm:text-sm transition-all border bg-white dark:bg-[#18181D] hover:bg-gray-50 dark:hover:bg-[#14141B] min-w-0 ${
               isSystem ? activeClass : inactiveClass
             }`}
             onClick={() => handleThemeChange("system")}
@@ -110,8 +113,9 @@ const SystemThemeSection: React.FC = () => {
           >
             <span className="w-4 h-4 rounded-full border border-gray-300 bg-gradient-to-br from-white to-[#0F0F17] flex-shrink-0" />
             <svg
-              width="18"
-              height="18"
+              width="16"
+              height="16"
+              className="sm:w-[18px] sm:h-[18px] shrink-0"
               fill="none"
               viewBox="0 0 24 24"
               stroke="currentColor"
@@ -133,7 +137,7 @@ const SystemThemeSection: React.FC = () => {
                 strokeLinecap="round"
               />
             </svg>
-            System
+            <span className="truncate">System</span>
           </button>
         </div>
         {updating && (

@@ -553,7 +553,7 @@ const MarketTable: React.FC<MarketTableProps> = ({
           )}
 
           {/* ---------------- pagination --------------- */}
-          {(filteredData.length > 0 || currentPage > 1) && (() => {
+          {filteredData.length > 0 && totalPages > 1 && (() => {
             const pagesToRender = getPaginationPages();
             // Disable next button if current page is empty or at last page
             const isNextDisabled = currentPage >= totalPages || filteredData.length === 0;

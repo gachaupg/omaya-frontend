@@ -43,7 +43,7 @@ const ProfileSettings = () => {
   }, [authUser, profileFromApi]);
 
   return (
-    <div className="w-full">
+    <div className="w-full min-w-0 overflow-x-hidden">
       <div className="flex flex-col gap-3">
         <ClientIdSection user={user} />
         <BasicInfoSection user={user} />

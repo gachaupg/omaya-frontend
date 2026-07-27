@@ -33,6 +33,10 @@ import { logger } from '@/lib/utils/logger';
 import { MdCheckCircle } from "react-icons/md";
 import { API_CONFIG } from "@/lib/appConfig";
 import { markP2PMarketScrollOnLoad } from "@/lib/utils/scrollAppToTop";
+import {
+  formatP2PAdAmountInput,
+  normalizeP2PAdAmountInput,
+} from "@/features/p2p/utils/p2pAdAmountFormat";
 
 type LiveExchangeRatesResponse = {
   rate?: string;
@@ -91,10 +95,14 @@ function getSellOrderMaxLimit(
   return usdtCap;
 }
 
-function formatOrderMaxInputValue(value: number): string {
-  if (!Number.isFinite(value) || value <= 0) return "";
-  return (Math.round(value * 100) / 100).toFixed(2);
-}
+const applyAdAmountBlur =
+  (setter: React.Dispatch<React.SetStateAction<string>>) =>
+  (value: string) => {
+    const normalized = normalizeP2PAdAmountInput(value);
+    if (normalized !== value) {
+      setter(normalized);
+    }
+  };
 
 const paymentMethods = [
   { label: "Bank Transfer", value: "bank" },
@@ -182,7 +190,7 @@ const Adds: React.FC<AddsProps> = ({ filterType }) => {
       showToast.error("No available balance to use for order max");
       return;
     }
-    setOrderMax(formatOrderMaxInputValue(sellOrderMaxLimit));
+    setOrderMax(formatP2PAdAmountInput(sellOrderMaxLimit));
     setErrors((prev) => ({ ...prev, orderMax: undefined }));
   };
 
@@ -676,9 +684,9 @@ const Adds: React.FC<AddsProps> = ({ filterType }) => {
       currency: "USDT",
       asset_id: P2P_USDT_ASSET_ID,
       range_currency: activeCurrency,
-      amount,
-      min_order_amount: orderMin,
-      max_order_amount: orderMax,
+      amount: normalizeP2PAdAmountInput(amount),
+      min_order_amount: normalizeP2PAdAmountInput(orderMin),
+      max_order_amount: normalizeP2PAdAmountInput(orderMax),
       commission_rate: commission.toString(),
       exchange_rate:
         activeCurrency === "KES" ? commission.toString() : "0.3",
@@ -981,7 +989,7 @@ const Adds: React.FC<AddsProps> = ({ filterType }) => {
                         type="button"
                         onClick={() => {
                           if (availableBalance > 0) {
-                            setAmount(availableBalance.toFixed(2));
+                            setAmount(formatP2PAdAmountInput(availableBalance));
                             // Clear any existing amount errors when using max
                             setErrors((prev) => ({ ...prev, amount: undefined }));
                           }
@@ -1120,6 +1128,7 @@ const Adds: React.FC<AddsProps> = ({ filterType }) => {
                         setErrors((prev) => ({ ...prev, amount: undefined }));
                       }
                     }}
+                    onBlur={(e) => applyAdAmountBlur(setAmount)(e.target.value)}
                     className={`w-full bg-transparent border-none text-gray-900 dark:text-white text-base focus:outline-none ${errors.amount
                       ? "border-2 border-red-500 rounded-[19px]"
                       : ""
@@ -1268,6 +1277,7 @@ const Adds: React.FC<AddsProps> = ({ filterType }) => {
                         setErrors((prev) => ({ ...prev, orderMin: undefined }));
                       }
                     }}
+                    onBlur={(e) => applyAdAmountBlur(setOrderMin)(e.target.value)}
                     className="w-full bg-transparent border-none text-gray-900 dark:text-white text-base focus:outline-none"
                     placeholder="20.00"
                   />
@@ -1396,13 +1406,6 @@ const Adds: React.FC<AddsProps> = ({ filterType }) => {
                             orderMax: "Maximum order amount cannot be greater than amount"
                           }));
                         }
-                        // Check if it exceeds maximum
-                        else if (valueNum > 1000000) {
-                          setErrors((prev) => ({
-                            ...prev,
-                            orderMax: "Maximum order amount cannot exceed 1,000,000"
-                          }));
-                        }
                         // Valid - clear error
                         else {
                           setErrors((prev) => ({ ...prev, orderMax: undefined }));
@@ -1427,6 +1430,7 @@ const Adds: React.FC<AddsProps> = ({ filterType }) => {
                         setErrors((prev) => ({ ...prev, orderMax: undefined }));
                       }
                     }}
+                    onBlur={(e) => applyAdAmountBlur(setOrderMax)(e.target.value)}
                     className="w-full bg-transparent border-none text-gray-900 dark:text-white text-base focus:outline-none"
                     placeholder="200.00"
                   />
