@@ -1,14 +1,10 @@
 // next.config.ts
 import type { NextConfig } from "next";
 
-// Validate critical env vars at build time (production only)
+// Validate build-time-only variables in production. The API URL is
+// intentionally excluded because ECS injects it when the container starts.
 if (process.env.NODE_ENV === 'production') {
-  const hasApiUrl =
-    process.env.NEXT_PUBLIC_BASE_URL ||
-    process.env.NEXT_PUBLIC_API_URL ||
-    process.env.VITE_BASE_URL;
   const requiredEnv = [
-    ...(hasApiUrl ? [] : ['NEXT_PUBLIC_BASE_URL (or NEXT_PUBLIC_API_URL / VITE_BASE_URL)']),
     'NEXT_PUBLIC_GOOGLE_CLIENT_ID',
     'NEXT_PUBLIC_APP_URL',
   ];
@@ -55,19 +51,6 @@ const nextConfig: NextConfig = {
     NEXT_PUBLIC_GOOGLE_CLIENT_ID: process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID,
     NEXT_PUBLIC_GOOGLE_REDIRECT_URI: process.env.NEXT_PUBLIC_GOOGLE_REDIRECT_URI,
     
-    // API Configuration (NEXT_PUBLIC_BASE_URL — same as Admin, baked at build)
-    NEXT_PUBLIC_BASE_URL:
-      process.env.NEXT_PUBLIC_BASE_URL ||
-      process.env.NEXT_PUBLIC_API_URL ||
-      process.env.VITE_BASE_URL,
-    NEXT_PUBLIC_API_URL:
-      process.env.NEXT_PUBLIC_API_URL ||
-      process.env.NEXT_PUBLIC_BASE_URL ||
-      process.env.VITE_BASE_URL,
-    VITE_BASE_URL:
-      process.env.VITE_BASE_URL ||
-      process.env.NEXT_PUBLIC_BASE_URL ||
-      process.env.NEXT_PUBLIC_API_URL,
     NEXT_PUBLIC_APP_URL: process.env.NEXT_PUBLIC_APP_URL,
     
     // Facebook OAuth

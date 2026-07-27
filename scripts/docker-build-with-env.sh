@@ -1,5 +1,6 @@
 #!/bin/sh
-# Source .env (from S3 in CodeBuild) and pass API/OAuth vars as Docker build args.
+# Source .env when available and pass build-time public vars as Docker args.
+# The API URL is deliberately not a build arg; ECS injects it at runtime.
 set -eu
 
 IMAGE_NAME="${1:?Image name required}"
@@ -11,20 +12,10 @@ if [ -f .env ]; then
   . ./.env
   set +a
 else
-  echo "[docker-build-with-env] WARNING: .env not found in $(pwd) — all NEXT_PUBLIC_* build args will be empty!"
-fi
-
-API_URL="${NEXT_PUBLIC_BASE_URL:-${NEXT_PUBLIC_API_URL:-${VITE_BASE_URL:-}}}"
-
-echo "[docker-build-with-env] Resolved API_URL='${API_URL}'"
-if [ -z "$API_URL" ]; then
-  echo "[docker-build-with-env] WARNING: API_URL is empty. Check that .env contains NEXT_PUBLIC_BASE_URL (or NEXT_PUBLIC_API_URL / VITE_BASE_URL)."
+  echo "[docker-build-with-env] .env not found; continuing with the current build environment."
 fi
 
 docker build \
-  --build-arg NEXT_PUBLIC_BASE_URL="${API_URL}" \
-  --build-arg NEXT_PUBLIC_API_URL="${NEXT_PUBLIC_API_URL:-${API_URL}}" \
-  --build-arg VITE_BASE_URL="${VITE_BASE_URL:-${API_URL}}" \
   --build-arg NEXT_PUBLIC_APP_URL="${NEXT_PUBLIC_APP_URL:-}" \
   --build-arg NEXT_PUBLIC_GOOGLE_CLIENT_ID="${NEXT_PUBLIC_GOOGLE_CLIENT_ID:-}" \
   --build-arg NEXT_PUBLIC_GOOGLE_REDIRECT_URI="${NEXT_PUBLIC_GOOGLE_REDIRECT_URI:-}" \
