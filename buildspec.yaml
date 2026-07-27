@@ -8,7 +8,6 @@ phases:
   build:
     commands:
       - echo Build started on `date`
-      - aws s3 cp s3://omaya-env/omaya-frontend/.env ./
       - echo ".env fetched, size and line count:" && wc -c .env && wc -l .env
       - chmod +x scripts/docker-build-with-env.sh
       - ./scripts/docker-build-with-env.sh omaya-frontend-service
