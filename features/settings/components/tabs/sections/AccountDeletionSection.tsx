@@ -9,8 +9,8 @@ const AccountDeletionSection: React.FC = () => {
       <div className="text-sm font-bold dark:text-white text-gray-900 mb-1 mt-1">
         Account Deletion
       </div>
-      <section className="dark:bg-[var(--card-color)] bg-white rounded-xl border border-[#E8EFF5] dark:border-[#35353E] p-4 sm:p-6">
-        <div className="flex items-start gap-3">
+      <section className="dark:bg-[var(--card-color)] bg-white rounded-xl border border-[#E8EFF5] dark:border-[#35353E] p-4 sm:p-6 min-w-0 overflow-hidden">
+        <div className="flex flex-col gap-3 sm:flex-row sm:items-start">
           <div className="w-10 h-10 rounded-xl bg-[#E23D3A]/10 flex items-center justify-center shrink-0">
             <Trash2 className="w-5 h-5 text-[#E23D3A]" />
           </div>
@@ -28,7 +28,7 @@ const AccountDeletionSection: React.FC = () => {
             </p>
             <Link
               href="/delete-account"
-              className="inline-flex items-center justify-center px-4 py-2 rounded-xl border border-[#E23D3A] text-[#E23D3A] text-sm font-semibold hover:bg-[#E23D3A] hover:text-white transition-colors"
+              className="inline-flex w-full sm:w-auto items-center justify-center px-4 py-2.5 rounded-xl border border-[#E23D3A] text-[#E23D3A] text-sm font-semibold hover:bg-[#E23D3A] hover:text-white transition-colors"
             >
               Request account deletion
             </Link>

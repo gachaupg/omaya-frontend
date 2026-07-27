@@ -21,6 +21,7 @@ import {
   getP2PProfile,
   getWithdrawalAddresses,
 } from "../api";
+import { normalizeMarketOrdersResponse } from "../utils/marketCurrencyPagination";
 import {
   OrderMatchRequest,
   P2POrderList,
@@ -737,19 +738,8 @@ const p2pMarketSlice = createSlice({
         const requestedPage = action.meta.arg || 1;
         state.currentPage = requestedPage;
 
-        const buyOrders = response.buy_orders || {
-          next: null,
-          previous: null,
-          total_orders_count: 0,
-          results: [],
-        };
-
-        const sellOrders = response.sell_orders || {
-          next: null,
-          previous: null,
-          total_orders_count: 0,
-          results: [],
-        };
+        const { buy_orders: buyOrders, sell_orders: sellOrders } =
+          normalizeMarketOrdersResponse(response);
 
         state.p2pBuyOrders = resolveOrderList(state, buyOrders);
         state.p2pSellOrders = resolveOrderList(state, sellOrders);

@@ -22,6 +22,13 @@ import {
   formatDurationForDisplay,
   formatMarketTimeLimit,
 } from "@/features/p2p/components/Common/utils";
+import {
+  fetchAllMarketOrdersForTab,
+  getClientFilteredPageCount,
+  normalizeMarketOrderSide,
+  orderMatchesMarketCurrencyFilter,
+  sliceMarketPage,
+} from "@/features/p2p/utils/marketCurrencyPagination";
 
 interface Option {
   label: string;
@@ -39,8 +46,8 @@ const getCurrencyOptions = (): Option[] => [
 ];
 
 type MarketOrdersBundle = {
-  buy_orders?: { results?: unknown[] };
-  sell_orders?: { results?: unknown[] };
+  buy_orders?: { results?: unknown[]; total_orders_count?: number } | unknown[];
+  sell_orders?: { results?: unknown[]; total_orders_count?: number } | unknown[];
 } | null | undefined;
 
 /** Same order list as the market table for the active Buy / Sell tab. */
@@ -49,23 +56,13 @@ const collectMarketOrderResultsForTab = (
   activeTab: string
 ): any[] => {
   if (!orders) return [];
-  if (activeTab === "buy") {
-    return Array.isArray(orders.sell_orders?.results)
-      ? orders.sell_orders.results
-      : [];
-  }
-  if (activeTab === "sell") {
-    return Array.isArray(orders.buy_orders?.results)
-      ? orders.buy_orders.results
-      : [];
-  }
-  const buy = Array.isArray(orders.buy_orders?.results)
-    ? orders.buy_orders.results
-    : [];
-  const sell = Array.isArray(orders.sell_orders?.results)
-    ? orders.sell_orders.results
-    : [];
-  return [...buy, ...sell];
+
+  const buyOrders = normalizeMarketOrderSide(orders.buy_orders);
+  const sellOrders = normalizeMarketOrderSide(orders.sell_orders);
+
+  if (activeTab === "buy") return sellOrders.results;
+  if (activeTab === "sell") return buyOrders.results;
+  return [...buyOrders.results, ...sellOrders.results];
 };
 
 const getMarketSideFilterCopy = (activeTab: string) => {
@@ -202,9 +199,6 @@ const formatSelectionSummary = (
 
 const MarketTransactions = memo(({ activeTab }: { activeTab: string }) => {
   const dispatch = useDispatch();
-  const { isAuthenticated } = useSelector((state: RootState) => state.auth);
-
-  // Use memoized selector for better performance
   const { buy_orders, sell_orders, totalBuyCount, totalSellCount } =
     useSelector(selectAllP2POrders);
   const { loading, error, currentPage } = useSelector(
@@ -231,8 +225,16 @@ const MarketTransactions = memo(({ activeTab }: { activeTab: string }) => {
   const [showMerchantBusinessOnly, setShowMerchantBusinessOnly] = useState(false);
   const [minOrderLimit, setMinOrderLimit] = useState("");
   const [maxOrderLimit, setMaxOrderLimit] = useState("");
+  const [mergedMarketOrders, setMergedMarketOrders] = useState<any[] | null>(null);
+  const [mergedMarketLoading, setMergedMarketLoading] = useState(false);
+  const [mergedMarketRefreshNonce, setMergedMarketRefreshNonce] = useState(0);
+  const mergedMarketFetchIdRef = useRef(0);
+  const [initialFetchDone, setInitialFetchDone] = useState(false);
+  /** Trailing server pages that returned no usable rows after filters. */
+  const [emptyPageCap, setEmptyPageCap] = useState<number | null>(null);
 
-  // Use only REST API (all-orders endpoint) - no WebSocket to prevent overwriting data
+  const usesKesClientPagination =
+    selectedCurrency.toUpperCase() === "KES";
   const { isConnected: wsConnected, connectionError: wsError } =
     useP2POrdersWebSocket({
       enabled: false, // Disabled - market data comes from REST API only
@@ -243,26 +245,74 @@ const MarketTransactions = memo(({ activeTab }: { activeTab: string }) => {
 
 
   useEffect(() => {
-    // Always fetch on mount when authenticated - ensures all data displays correctly by default
-    if (!hasInitializedRef.current && isAuthenticated) {
+    if (!hasInitializedRef.current) {
       hasInitializedRef.current = true;
       const currentPageInState = store.getState()?.p2pMarket?.currentPage || 1;
-      dispatch(fetchAllP2PBuyandSell(currentPageInState) as any);
+      dispatch(fetchAllP2PBuyandSell(currentPageInState) as any).finally(() =>
+        setInitialFetchDone(true)
+      );
     }
-  }, [dispatch, isAuthenticated]);
+  }, [dispatch]);
+
+  const serverPageCount = useMemo(() => {
+    const buyOrders = normalizeMarketOrderSide(orders?.buy_orders);
+    const sellOrders = normalizeMarketOrderSide(orders?.sell_orders);
+    const activeCount =
+      activeTab === "buy"
+        ? sellOrders.total_orders_count
+        : activeTab === "sell"
+          ? buyOrders.total_orders_count
+          : Math.max(buyOrders.total_orders_count, sellOrders.total_orders_count);
+    return Math.max(1, Math.ceil(activeCount / 10));
+  }, [orders, activeTab]);
 
   useEffect(() => {
-    if (!isAuthenticated) return;
+    if (!usesKesClientPagination) {
+      setMergedMarketOrders(null);
+      setMergedMarketLoading(false);
+      return;
+    }
 
+    let cancelled = false;
+    const fetchId = ++mergedMarketFetchIdRef.current;
+    setMergedMarketLoading(true);
+
+    fetchAllMarketOrdersForTab(activeTab, serverPageCount)
+      .then((merged) => {
+        if (cancelled || fetchId !== mergedMarketFetchIdRef.current) return;
+        setMergedMarketOrders(merged);
+      })
+      .catch(() => {
+        if (cancelled || fetchId !== mergedMarketFetchIdRef.current) return;
+        setMergedMarketOrders(null);
+      })
+      .finally(() => {
+        if (cancelled || fetchId !== mergedMarketFetchIdRef.current) return;
+        setMergedMarketLoading(false);
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [
+    usesKesClientPagination,
+    activeTab,
+    serverPageCount,
+    mergedMarketRefreshNonce,
+  ]);
+
+  useEffect(() => {
     const refetchMarketData = () => {
-      // Skip background tabs; refetch when user returns to this tab.
       if (typeof document !== "undefined" && document.hidden) return;
+      if (usesKesClientPagination) {
+        setMergedMarketRefreshNonce((n) => n + 1);
+      }
       dispatch(fetchAllP2PBuyandSell(currentPage) as any);
     };
 
     const intervalId = window.setInterval(refetchMarketData, 10000);
     return () => window.clearInterval(intervalId);
-  }, [dispatch, isAuthenticated, currentPage]);
+  }, [dispatch, currentPage, usesKesClientPagination]);
 
 
   const filterCopy = useMemo(
@@ -339,16 +389,23 @@ const MarketTransactions = memo(({ activeTab }: { activeTab: string }) => {
     }
   }, [currencyOptions, selectedCurrency]);
 
-  // Reset to page 1 and refetch when filters change so currency-filtered data shows correctly
+  // Reset to page 1 when filters change
   const prevFiltersRef = useRef<string>("");
   useEffect(() => {
     const key = `${selectedCurrency}|${providers.join(",")}|${paymentTypes.join(",")}`;
     if (prevFiltersRef.current && prevFiltersRef.current !== key) {
+      setEmptyPageCap(null);
       dispatch(setCurrentPage(1));
-      dispatch(fetchAllP2PBuyandSell(1) as any);
+      if (!usesKesClientPagination) {
+        dispatch(fetchAllP2PBuyandSell(1) as any);
+      }
     }
     prevFiltersRef.current = key;
-  }, [selectedCurrency, providers, paymentTypes, dispatch]);
+  }, [selectedCurrency, providers, paymentTypes, dispatch, usesKesClientPagination]);
+
+  useEffect(() => {
+    setEmptyPageCap(null);
+  }, [activeTab]);
 
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
@@ -399,37 +456,20 @@ const MarketTransactions = memo(({ activeTab }: { activeTab: string }) => {
 
 
   const getActiveOrders = useMemo(() => {
-    if (!orders) {
-
-      return [];
+    if (usesKesClientPagination && mergedMarketOrders !== null) {
+      return mergedMarketOrders;
     }
 
-    // When user is on "buy" tab (wants to buy), show sell orders (people selling)
-    // When user is on "sell" tab (wants to sell), show buy orders (people buying)
-    let activeOrdersList = [];
-
-    if (activeTab === "buy") {
-      // User wants to buy, so show sell orders
-      activeOrdersList = orders.sell_orders?.results || [];
-
-    } else if (activeTab === "sell") {
-      // User wants to sell, so show buy orders
-      activeOrdersList = orders.buy_orders?.results || [];
-
-    } else {
-      // Default: combine both
-      activeOrdersList = [
-        ...(orders.buy_orders?.results || []),
-        ...(orders.sell_orders?.results || []),
-      ];
-
-    }
-
-    // REMOVED FILTER - Show all orders regardless of status
-    // No filtering applied - display all orders from the API response
-
-    return activeOrdersList;
-  }, [orders, activeTab, buy_orders, sell_orders, currentPage]); // Add currentPage to dependencies
+    return collectMarketOrderResultsForTab(orders, activeTab);
+  }, [
+    orders,
+    activeTab,
+    buy_orders,
+    sell_orders,
+    currentPage,
+    usesKesClientPagination,
+    mergedMarketOrders,
+  ]);
 
   const transformedData: MarketRow[] = useMemo(() => {
 
@@ -525,15 +565,11 @@ const MarketTransactions = memo(({ activeTab }: { activeTab: string }) => {
         };
       })
       .filter((row: MarketRow) => {
-        // Currency filter: USD or KES via range_currency
-        if (selectedCurrency) {
-          const sel = selectedCurrency.toUpperCase();
-          if (sel === "KES") {
-            if ((row.range_currency || "").toUpperCase() !== "KES") return false;
-          } else if (sel === "USD") {
-            const rc = (row.range_currency || "").toUpperCase();
-            if (rc === "KES") return false;
-          }
+        if (
+          selectedCurrency &&
+          !orderMatchesMarketCurrencyFilter(row, selectedCurrency)
+        ) {
+          return false;
         }
 
         if (showMerchantOnly && !row.isMerchant) {
@@ -595,29 +631,10 @@ const MarketTransactions = memo(({ activeTab }: { activeTab: string }) => {
     sell_orders,
   ]); // Add direct Redux state dependencies to ensure re-calculation
 
-  // Calculate total pages from the latest Redux state (p2pMarket uses p2pBuyOrders/p2pSellOrders)
-  const getTotalPagesFromState = useCallback(() => {
-    const market = store.getState()?.p2pMarket;
-    const buyOrders = market?.p2pBuyOrders || { results: [], total_orders_count: 0 };
-    const sellOrders = market?.p2pSellOrders || { results: [], total_orders_count: 0 };
-    const buyCount = buyOrders.total_orders_count || 0;
-    const sellCount = sellOrders.total_orders_count || 0;
-
-    const activeCount =
-      activeTab === "buy"
-        ? sellCount
-        : activeTab === "sell"
-          ? buyCount
-          : Math.max(buyCount, sellCount);
-
-    let pages = Math.ceil(activeCount / 10);
-    pages = pages > 0 ? pages : 1;
-
-    return pages;
-  }, [activeTab]);
-
   const handleRefresh = () => {
-    // Always fetch fresh data on manual refresh, even if WebSocket is connected
+    if (usesKesClientPagination) {
+      setMergedMarketRefreshNonce((n) => n + 1);
+    }
     dispatch(fetchAllP2PBuyandSell(currentPage) as any);
   };
 
@@ -646,69 +663,131 @@ const MarketTransactions = memo(({ activeTab }: { activeTab: string }) => {
     toggleSelection(value, setProviders);
   };
 
-  const totalPages = useMemo(() => {
-    const buyCount = orders?.buy_orders?.total_orders_count || 0;
-    const sellCount = orders?.sell_orders?.total_orders_count || 0;
+  const filteredMarketCount = transformedData.length;
+  const usesKesSinglePageCollapse =
+    usesKesClientPagination && filteredMarketCount <= 10;
+
+  const serverTotalPages = useMemo(() => {
+    const buyOrders = normalizeMarketOrderSide(orders?.buy_orders);
+    const sellOrders = normalizeMarketOrderSide(orders?.sell_orders);
     const activeCount =
       activeTab === "buy"
-        ? sellCount
+        ? sellOrders.total_orders_count
         : activeTab === "sell"
-          ? buyCount
-          : Math.max(buyCount, sellCount);
+          ? buyOrders.total_orders_count
+          : Math.max(buyOrders.total_orders_count, sellOrders.total_orders_count);
+    return Math.max(1, Math.ceil(activeCount / 10));
+  }, [orders, activeTab]);
 
-    let pages = Math.ceil(activeCount / 10);
-    pages = pages > 0 ? pages : 1;
-
-    // If current page has no data, cap to previous pageUSDT
-    if (currentPage > 1 && getActiveOrders.length === 0) {
-      pages = Math.min(pages, currentPage - 1);
-      if (pages < 1) pages = 1;
+  const displayData = useMemo(() => {
+    if (!usesKesClientPagination) {
+      return transformedData;
     }
+    return sliceMarketPage(
+      transformedData,
+      currentPage,
+      usesKesSinglePageCollapse
+    );
+  }, [
+    usesKesClientPagination,
+    transformedData,
+    currentPage,
+    usesKesSinglePageCollapse,
+  ]);
 
-    return pages;
-  }, [orders, activeTab, currentPage, getActiveOrders.length]);
-
-  // Hide empty pages: if current page has no data, cap total pages to previous page
   const effectiveTotalPages = useMemo(() => {
-    if (currentPage > 1 && getActiveOrders.length === 0) {
-      const capped = Math.max(1, Math.min(totalPages, currentPage - 1));
-      return capped;
+    if (usesKesClientPagination) {
+      if (usesKesSinglePageCollapse) {
+        return filteredMarketCount > 0 ? 1 : 0;
+      }
+      return getClientFilteredPageCount(filteredMarketCount);
     }
-    return totalPages;
-  }, [currentPage, getActiveOrders.length, totalPages]);
+
+    let pages = serverTotalPages;
+    if (emptyPageCap !== null) {
+      pages = Math.min(pages, emptyPageCap);
+    }
+    // Fewer than a full server page means there is no next page
+    if (getActiveOrders.length > 0 && getActiveOrders.length < 10) {
+      pages = Math.min(pages, currentPage);
+    }
+    if (transformedData.length === 0 && currentPage > 1) {
+      pages = Math.min(pages, Math.max(1, currentPage - 1));
+    }
+    if (transformedData.length === 0 && currentPage <= 1) {
+      return 0;
+    }
+    return Math.max(1, pages);
+  }, [
+    usesKesClientPagination,
+    usesKesSinglePageCollapse,
+    filteredMarketCount,
+    serverTotalPages,
+    emptyPageCap,
+    transformedData.length,
+    currentPage,
+    getActiveOrders.length,
+  ]);
+
+  useEffect(() => {
+    if (usesKesClientPagination) {
+      if (transformedData.length === 0 && currentPage !== 1) {
+        dispatch(setCurrentPage(1));
+      } else if (currentPage > effectiveTotalPages && effectiveTotalPages > 0) {
+        dispatch(setCurrentPage(Math.max(1, effectiveTotalPages)));
+      }
+      return;
+    }
+
+    if (loading) return;
+
+    const pageHasNoRows =
+      getActiveOrders.length === 0 || transformedData.length === 0;
+
+    if (pageHasNoRows && currentPage > 1) {
+      const cappedPage = Math.max(1, currentPage - 1);
+      setEmptyPageCap((prev) =>
+        prev === null ? cappedPage : Math.min(prev, cappedPage)
+      );
+      if (currentPage !== cappedPage) {
+        dispatch(setCurrentPage(cappedPage));
+        dispatch(fetchAllP2PBuyandSell(cappedPage) as any);
+      }
+    }
+  }, [
+    usesKesClientPagination,
+    transformedData.length,
+    getActiveOrders.length,
+    currentPage,
+    effectiveTotalPages,
+    loading,
+    dispatch,
+  ]);
 
   const handlePageChange = useCallback((newPage: number) => {
-    // Get current page from Redux state directly (most up-to-date)
     const currentPageInState = store.getState()?.p2pMarket?.currentPage || 1;
-    const maxPages = Math.max(1, Math.min(getTotalPagesFromState(), effectiveTotalPages));
+    const maxPages = Math.max(1, effectiveTotalPages);
 
     if (newPage > maxPages || newPage < 1) return;
     if (newPage === currentPageInState) return;
 
     dispatch(setCurrentPage(newPage));
     window.scrollTo({ top: 0, behavior: "smooth" });
-    setTimeout(() => {
-      if (store.getState()?.p2pMarket?.currentPage === newPage) {
-        dispatch(fetchAllP2PBuyandSell(newPage) as any);
-      }
-    }, 10);
-  }, [dispatch, getTotalPagesFromState, effectiveTotalPages]);
 
-  // If user navigated past available data (empty page), auto-reset back
-  useEffect(() => {
-    if (
-      currentPage > 1 &&
-      getActiveOrders.length === 0 &&
-      effectiveTotalPages === Math.max(1, currentPage - 1)
-    ) {
-      const targetPage = Math.max(1, currentPage - 1);
-      dispatch(setCurrentPage(targetPage));
-      dispatch(fetchAllP2PBuyandSell(targetPage) as any);
+    if (!usesKesClientPagination) {
+      dispatch(fetchAllP2PBuyandSell(newPage) as any);
     }
-  }, [currentPage, getActiveOrders.length, effectiveTotalPages, dispatch]);
+  }, [dispatch, effectiveTotalPages, usesKesClientPagination]);
+
+  const isTableLoading =
+    (!initialFetchDone && displayData.length === 0) ||
+    (usesKesClientPagination &&
+      mergedMarketLoading &&
+      mergedMarketOrders === null &&
+      displayData.length === 0);
 
   // Show skeleton while loading initial data (no mounted gate - render immediately)
-  if (loading && transformedData.length === 0) {
+  if (isTableLoading) {
     return <P2PMarketTableSkeleton rows={8} />;
   }
 
@@ -1073,11 +1152,11 @@ const MarketTransactions = memo(({ activeTab }: { activeTab: string }) => {
       </div>
       <div className="w-full overflow-x-auto scrollbar-thin scroll-smooth">
         <MarketTable
-          data={transformedData}
+          data={displayData}
           currentPage={currentPage}
           totalPages={effectiveTotalPages}
           onPageChange={handlePageChange}
-          loading={loading}
+          loading={loading || mergedMarketLoading}
           activeTab={activeTab}
         />
       </div>
