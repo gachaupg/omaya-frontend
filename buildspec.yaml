@@ -8,7 +8,7 @@ phases:
   build:
     commands:
       - echo Build started on `date`
-      - aws s3 cp s3://omaya-env/omaya-frontend/.env ./
+      - echo ".env fetched, size and line count:" && wc -c .env && wc -l .env
       - chmod +x scripts/docker-build-with-env.sh
       - ./scripts/docker-build-with-env.sh omaya-frontend-service
       - docker tag omaya-frontend-service:latest 867344454629.dkr.ecr.eu-central-1.amazonaws.com/omaya-frontend-service:latest     
