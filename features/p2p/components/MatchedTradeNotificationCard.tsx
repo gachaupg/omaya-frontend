@@ -60,7 +60,7 @@ export function MatchedTradeNotificationCard({
           : "group flex flex-col sm:flex-row sm:items-center justify-between bg-white dark:bg-[#1f1f27] border border-gray-100 dark:border-[#35353E] rounded-xl p-3 sm:p-4 mb-3 shadow-sm hover:shadow-md transition-all duration-200"
       }
     >
-      <div className="flex items-start gap-3 flex-1 min-w-0">
+      <div className="flex items-start gap-3 min-w-0">
         <div className="relative shrink-0">
           {profileImage ? (
             <img
@@ -127,11 +127,13 @@ export function MatchedTradeNotificationCard({
       </div>
 
       <div
-        className={`flex items-center justify-between gap-2 shrink-0 ${
-          isDropdown ? "pl-[52px]" : "w-full sm:w-auto mt-3 sm:mt-0 gap-3"
+        className={`flex items-center gap-2 shrink-0 ${
+          isDropdown
+            ? "w-full justify-between pt-0.5"
+            : "w-full sm:w-auto mt-3 sm:mt-0 gap-3"
         }`}
       >
-        <span className="inline-flex items-center px-2 py-1 rounded-full text-[10px] font-semibold whitespace-nowrap bg-green-100 text-[#1D8751] dark:bg-green-900/30 dark:text-[#1D8751]">
+        <span className="inline-flex items-center px-2 py-1 rounded-full text-[10px] font-semibold whitespace-nowrap bg-green-100 text-[#1D8751] dark:bg-green-900/30 dark:text-[#1D8751] max-w-[55%] truncate">
           {isDropdown ? status.text : (
             <>
               <span className="hidden sm:inline">{status.text}</span>
@@ -144,9 +146,9 @@ export function MatchedTradeNotificationCard({
           type="button"
           onClick={onView}
           disabled={isOpening}
-          className={`bg-[#1D8751] hover:bg-[#16663d] disabled:opacity-60 disabled:cursor-not-allowed text-white rounded-lg font-medium transition-colors shadow-sm whitespace-nowrap active:scale-95 ${
+          className={`bg-[#1D8751] hover:bg-[#16663d] disabled:opacity-60 disabled:cursor-not-allowed text-white rounded-lg font-medium transition-colors shadow-sm whitespace-nowrap active:scale-95 shrink-0 ${
             isDropdown
-              ? "py-1.5 px-3 text-xs"
+              ? "py-2 px-4 text-xs min-w-[72px]"
               : "py-1.5 px-4 sm:py-2 sm:px-5 text-xs sm:text-sm"
           }`}
         >
