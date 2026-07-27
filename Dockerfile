@@ -24,9 +24,6 @@ ENV DISABLE_ESLINT=true
 # OAuth and API configuration — values from build args / .env (no hardcoded URLs)
 ARG NEXT_PUBLIC_GOOGLE_CLIENT_ID=""
 ARG NEXT_PUBLIC_GOOGLE_REDIRECT_URI=""
-ARG NEXT_PUBLIC_BASE_URL=""
-ARG VITE_BASE_URL=""
-ARG NEXT_PUBLIC_API_URL=""
 ARG NEXT_PUBLIC_APP_URL=""
 ARG NEXT_PUBLIC_FACEBOOK_APP_ID=""
 ARG NEXT_PUBLIC_FACEBOOK_REDIRECT_URI=""
@@ -34,9 +31,6 @@ ARG NEXT_PUBLIC_FACEBOOK_REDIRECT_URI=""
 # Set environment variables for build
 ENV NEXT_PUBLIC_GOOGLE_CLIENT_ID=${NEXT_PUBLIC_GOOGLE_CLIENT_ID}
 ENV NEXT_PUBLIC_GOOGLE_REDIRECT_URI=${NEXT_PUBLIC_GOOGLE_REDIRECT_URI}
-ENV NEXT_PUBLIC_BASE_URL=${NEXT_PUBLIC_BASE_URL}
-ENV VITE_BASE_URL=${VITE_BASE_URL}
-ENV NEXT_PUBLIC_API_URL=${NEXT_PUBLIC_API_URL}
 ENV NEXT_PUBLIC_APP_URL=${NEXT_PUBLIC_APP_URL}
 ENV NEXT_PUBLIC_FACEBOOK_APP_ID=${NEXT_PUBLIC_FACEBOOK_APP_ID}
 ENV NEXT_PUBLIC_FACEBOOK_REDIRECT_URI=${NEXT_PUBLIC_FACEBOOK_REDIRECT_URI}
@@ -62,16 +56,11 @@ COPY --from=builder --chown=nextjs:nodejs /app/.next/static ./.next/static
 # Legal policy markdown (read at runtime by /legal/[slug])
 COPY --from=builder --chown=nextjs:nodejs /app/content ./content
 
-# Set environment variables for runtime (SSR + runtime-config API)
+# Set process configuration for runtime. ECS supplies API_BASE_URL (or one of
+# the supported legacy API URL names) from Secrets Manager at container start.
 ENV NODE_ENV=production
 ENV PORT=3000
 ENV HOSTNAME=0.0.0.0
-ARG NEXT_PUBLIC_BASE_URL=""
-ARG VITE_BASE_URL=""
-ARG NEXT_PUBLIC_API_URL=""
-ENV NEXT_PUBLIC_BASE_URL=${NEXT_PUBLIC_BASE_URL}
-ENV VITE_BASE_URL=${VITE_BASE_URL}
-ENV NEXT_PUBLIC_API_URL=${NEXT_PUBLIC_API_URL}
 
 USER nextjs
 

@@ -3,6 +3,29 @@ function normalizeApiOrigin(raw: string): string {
   return String(raw).trim().replace(/\/+$/, "");
 }
 
+const API_BASE_URL_ENV_KEYS = [
+  "API_BASE_URL",
+  "RUNTIME_API_BASE_URL",
+  "NEXT_PUBLIC_BASE_URL",
+  "NEXT_PUBLIC_API_URL",
+  "VITE_BASE_URL",
+] as const;
+
+/**
+ * Use indexed access so Next.js does not replace the value while building the
+ * image. ECS can then inject any supported key when the container starts.
+ */
+function readApiBaseUrlFromProcessEnv(): string {
+  if (typeof process === "undefined") return "";
+
+  for (const key of API_BASE_URL_ENV_KEYS) {
+    const value = process.env[key];
+    if (value?.trim()) return normalizeApiOrigin(value);
+  }
+
+  return "";
+}
+
 declare global {
   interface Window {
     __RUNTIME_CONFIG__?: {
@@ -17,7 +40,7 @@ declare global {
  * ECS injects NEXT_PUBLIC_BASE_URL at container start (AWS Secrets Manager).
  */
 export function getApiBaseUrlFromEnv(): string {
-  return normalizeApiOrigin(process.env.NEXT_PUBLIC_BASE_URL || "");
+  return readApiBaseUrlFromProcessEnv();
 }
 
 /** Client-only: value injected by layout via window.__RUNTIME_CONFIG__. */
@@ -30,13 +53,13 @@ function readRuntimeConfigBaseUrl(): string {
 
 /**
  * Resolve API origin for the current runtime.
- * - Server (Node): process.env.NEXT_PUBLIC_BASE_URL from ECS
+ * - Server (Node): an API URL environment variable injected by ECS
  * - Browser: window.__RUNTIME_CONFIG__.NEXT_PUBLIC_BASE_URL (injected in layout)
  */
 export function resolveApiBaseUrl(): string {
   // Server-side
   if (typeof window === "undefined") {
-    return normalizeApiOrigin(process.env.NEXT_PUBLIC_BASE_URL || "");
+    return readApiBaseUrlFromProcessEnv();
   }
 
   // Client-side — do not use process.env; it is build-time only

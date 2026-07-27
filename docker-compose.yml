@@ -12,10 +12,7 @@ services:
         - NEXT_PUBLIC_FACEBOOK_APP_ID=${NEXT_PUBLIC_FACEBOOK_APP_ID:-}
         - NEXT_PUBLIC_FACEBOOK_REDIRECT_URI=${NEXT_PUBLIC_FACEBOOK_REDIRECT_URI:-}
         
-        # API Configuration (from .env / host environment)
-        - NEXT_PUBLIC_BASE_URL=${NEXT_PUBLIC_BASE_URL:-}
-        - VITE_BASE_URL=${VITE_BASE_URL:-}
-        - NEXT_PUBLIC_API_URL=${NEXT_PUBLIC_API_URL:-}
+        # API URL is runtime-only; do not bake it into the image.
         - NEXT_PUBLIC_APP_URL=${NEXT_PUBLIC_APP_URL:-}
         
         # Sanity Configuration
@@ -45,6 +42,8 @@ services:
       - NEXT_PUBLIC_FACEBOOK_REDIRECT_URI=${NEXT_PUBLIC_FACEBOOK_REDIRECT_URI:-}
       
       # API Configuration (from .env / host environment)
+      - API_BASE_URL=${API_BASE_URL:-}
+      - RUNTIME_API_BASE_URL=${RUNTIME_API_BASE_URL:-}
       - NEXT_PUBLIC_BASE_URL=${NEXT_PUBLIC_BASE_URL:-}
       - VITE_BASE_URL=${VITE_BASE_URL:-}
       - NEXT_PUBLIC_API_URL=${NEXT_PUBLIC_API_URL:-}
