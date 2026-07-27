@@ -492,6 +492,12 @@ const addDeviceInfoInterceptor = (instance: AxiosInstance): AxiosInstance => {
       if (!shouldAttachDeviceInfoToRequest(url, method)) {
         return config;
       }
+      // On retries, config.data is already a JSON string produced by the
+      // first attempt (which already had device_info merged in). Re-running
+      // collectDeviceInfo() here would be wasted work, so skip it.
+      if (typeof config.data === "string") {
+        return config;
+      }
       try {
         const deviceInfo = await collectDeviceInfo();
         config.data = mergeDeviceInfoIntoRequestData(config.data, deviceInfo);

@@ -450,6 +450,17 @@ export const mergeDeviceInfoIntoRequestData = (
     return data;
   }
 
+  // On axios retries, `config.data` has already been JSON-stringified by the
+  // previous attempt (axios mutates `config.data` in-place during
+  // `dispatchRequest`, and the retry interceptor replays the same config
+  // through all request interceptors, including this one). The string already
+  // contains the original body + device_info from the first attempt, so it
+  // must be returned as-is — treating it as "no data" here would silently
+  // drop every field (e.g. email/otp) and send only `{ device_info }`.
+  if (typeof data === "string") {
+    return data;
+  }
+
   if (data && typeof data === "object" && !Array.isArray(data)) {
     const record = data as Record<string, unknown>;
     if (record.device_info) return data;
