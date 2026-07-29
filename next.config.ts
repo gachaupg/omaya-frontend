@@ -56,12 +56,10 @@ const nextConfig: NextConfig = {
     // Facebook OAuth
     NEXT_PUBLIC_FACEBOOK_APP_ID: process.env.NEXT_PUBLIC_FACEBOOK_APP_ID,
     NEXT_PUBLIC_FACEBOOK_REDIRECT_URI: process.env.NEXT_PUBLIC_FACEBOOK_REDIRECT_URI,
-    
-    // Sanity Configuration
-    NEXT_PUBLIC_SANITY_PROJECT_ID: process.env.NEXT_PUBLIC_SANITY_PROJECT_ID,
-    NEXT_PUBLIC_SANITY_DATASET: process.env.NEXT_PUBLIC_SANITY_DATASET || 'production',
-    NEXT_PUBLIC_SANITY_API_VERSION: process.env.NEXT_PUBLIC_SANITY_API_VERSION || '2023-05-03',
-    NEXT_PUBLIC_SANITY_READ_TOKEN: process.env.NEXT_PUBLIC_SANITY_READ_TOKEN,
+
+    // Sanity Configuration is intentionally excluded here (same reason as the
+    // API URL above): it is resolved at runtime via config/sanity.ts and
+    // window.__RUNTIME_CONFIG__ so ECS can inject it without a rebuild.
 
     // Web Push (browser notifications when user is away)
     NEXT_PUBLIC_VAPID_PUBLIC_KEY: process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY,

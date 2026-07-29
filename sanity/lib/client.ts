@@ -1,6 +1,7 @@
 // sanity/lib/client.ts
 import { createClient } from '@sanity/client';
 import { getSanityConfig } from '@/lib/sanityConfig';
+import { resolveSanityConfig } from '@/config/sanity';
 
 const config = getSanityConfig();
 
@@ -36,8 +37,7 @@ export const imageBuilder = (source: any) => {
 
     // Fallback to building URL from asset reference
     if (source.asset?._ref) {
-      const projectId = process.env.NEXT_PUBLIC_SANITY_PROJECT_ID;
-      const dataset = process.env.NEXT_PUBLIC_SANITY_DATASET || 'production';
+      const { projectId, dataset } = resolveSanityConfig();
 
       if (!projectId) {
                 return '/images/alert-circle.svg';

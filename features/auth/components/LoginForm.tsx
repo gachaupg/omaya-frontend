@@ -4,8 +4,9 @@ import React, { useState, useEffect, useRef, useId } from "react";
 import Link from "next/link";
 import Image from "next/image";
 import { useDispatch, useSelector } from "react-redux";
-import { loginUser } from "@/features/auth/slices/authSlice";
+import { loginUser, verifyOTP, resendOTP } from "@/features/auth/slices/authSlice";
 import { AppDispatch, RootState } from "@/features/auth/store";
+import { EmailVerificationModal } from "./EmailVerificationModal";
 import { useRouter, useSearchParams } from "next/navigation";
 // V2: Re-enable after Google/Facebook auth is fully tested
 // import GoogleAuthButton from "./GoogleAuthButton";
@@ -16,6 +17,7 @@ import { logger } from '@/lib/utils/logger';
 import DragFitCaptcha from "./capture";
 import { useTheme } from "@/context/theme";
 import { consumeAuthRedirectPath } from "@/lib/utils/authRedirect";
+import { renderTextWithEmailLinks } from "@/lib/utils/renderTextWithEmailLinks";
 import {
   authHardRedirect,
   clearAuthRedirectBounceGuard,
@@ -45,6 +47,8 @@ export default function LoginPage() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [captchaSuccess, setCaptchaSuccess] = useState(false);
   const captchaSuccessTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const [showOtpModal, setShowOtpModal] = useState(false);
+  const [otpEmail, setOtpEmail] = useState("");
 
   const dispatch = useDispatch<AppDispatch>();
   const router = useRouter();
@@ -86,6 +90,33 @@ export default function LoginPage() {
   // };
   // const handleGoogleError = (error: any) => {
   //     // };
+
+  // Detects the backend's "email/OTP not verified" login error so we can
+  // prompt for verification instead of showing a generic failure message.
+  // The backend sends an explicit `otp_verification_required` flag alongside
+  // the error (e.g. { error: "...", otp_verification_required: true }); fall
+  // back to matching the message text in case that flag is ever missing.
+  const isEmailNotVerifiedError = (
+    message: unknown,
+    errorData?: unknown
+  ): boolean => {
+    if (
+      errorData &&
+      typeof errorData === "object" &&
+      (errorData as Record<string, unknown>).otp_verification_required === true
+    ) {
+      return true;
+    }
+
+    if (typeof message !== "string") return false;
+    const msg = message.toLowerCase();
+    return (
+      msg.includes("not verified") ||
+      msg.includes("verify your email") ||
+      msg.includes("please verify") ||
+      msg.includes("unverified")
+    );
+  };
 
   const validateForm = () => {
     let isValid = true;
@@ -148,6 +179,23 @@ export default function LoginPage() {
             errorData?.details ||
             errorData ||
             "Login failed";
+
+          // Account exists but the email/OTP hasn't been verified yet -
+          // automatically send a fresh OTP and let the user verify inline.
+          const otpVerificationRequired = Boolean(
+            (result.meta as { otpVerificationRequired?: boolean } | undefined)
+              ?.otpVerificationRequired
+          );
+          if (
+            otpVerificationRequired ||
+            isEmailNotVerifiedError(errorMessage, errorData)
+          ) {
+            setOtpEmail(email);
+            setShowOtpModal(true);
+            dispatch(resendOTP({ email }));
+            setIsSubmitting(false);
+            return;
+          }
 
           // If there are field-specific errors, set them
           if (errorData?.errors) {
@@ -239,6 +287,34 @@ export default function LoginPage() {
     setCaptchaVerified(false);
   };
 
+  const handleVerifyLoginOtp = async (code: string) => {
+    const result = await dispatch(verifyOTP({ email: otpEmail, otp: code }));
+
+    if (verifyOTP.fulfilled.match(result)) {
+      setShowOtpModal(false);
+      // Email is verified now - log the user straight in with their existing credentials
+      proceedWithLogin();
+    } else if (verifyOTP.rejected.match(result)) {
+      throw new Error(
+        (result.payload as unknown as string) || "Verification failed"
+      );
+    }
+  };
+
+  const handleResendLoginOtp = async () => {
+    const result = await dispatch(resendOTP({ email: otpEmail }));
+
+    if (resendOTP.rejected.match(result)) {
+      throw new Error(
+        (result.payload as unknown as string) || "Failed to resend code"
+      );
+    }
+  };
+
+  const handleCloseOtpModal = () => {
+    setShowOtpModal(false);
+  };
+
   useEffect(() => {
     return () => {
       if (captchaSuccessTimeoutRef.current) {
@@ -253,7 +329,7 @@ export default function LoginPage() {
   }, []);
 
   return (
-    <div className="min-h-screen bg-gray-50 dark:bg-[#0a0a0a] flex flex-col md:flex-row items-center justify-center relative overflow-hidden px-4 sm:px-6 md:px-8 lg:px-12 py-8 sm:py-10 md:py-20 gap-6 sm:gap-8 md:gap-14 lg:gap-16">
+    <div className="min-h-screen bg-gray-50 dark:bg-[#0a0a0a] flex flex-col md:flex-row items-center justify-center relative overflow-hidden px-4 sm:px-6 md:px-8 lg:px-12 pt-24 pb-8 sm:pt-24 sm:pb-10 md:pt-24 md:pb-20 gap-6 sm:gap-8 md:gap-14 lg:gap-16">
       {/* Left Side - Mobile App Preview */}
       <div className="hidden md:flex w-full max-w-xs sm:max-w-sm md:max-w-none md:w-[40%] lg:w-[38%] justify-center shrink-0 relative z-10 mb-6 md:mb-0">
         {/* Background Glow Effect */}
@@ -402,7 +478,9 @@ export default function LoginPage() {
                 </div>
               </div>
               {errors.email && (
-                <p className="mt-1 text-xs text-[#F04438]">{errors.email}</p>
+                <p className="mt-1 text-xs text-[#F04438]">
+                  {renderTextWithEmailLinks(errors.email)}
+                </p>
               )}
             </div>
 
@@ -768,6 +846,24 @@ export default function LoginPage() {
               </div>
             </div>
           )}
+
+          {/* Email Verification Modal - shown automatically when login fails due to an unverified email */}
+          <EmailVerificationModal
+            isOpen={showOtpModal}
+            onClose={handleCloseOtpModal}
+            email={otpEmail}
+            onVerify={handleVerifyLoginOtp}
+            onResendCode={handleResendLoginOtp}
+            title={t("auth.modal.emailCode.title", "Email Verification Code")}
+            description={t(
+              "auth.modal.emailCode.desc",
+              "Enter Verification code sent to"
+            )}
+            notice={t(
+              "auth.modal.emailCode.accountNotVerified",
+              "Your account needs to be verified first for you to login."
+            )}
+          />
         </div>
       </div>
 

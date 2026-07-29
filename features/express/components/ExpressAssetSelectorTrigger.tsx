@@ -3,14 +3,17 @@
 import React from "react";
 import type { AssetLike } from "@/lib/utils/networkDisplay";
 import { AssetWithNetworkIcon } from "@/components/ui/AssetWithNetworkIcon";
-import { ASSET_ICON_BASE_CLASS } from "@/features/express/utils/imageHelpers";
+import {
+  ASSET_ICON_BASE_CLASS,
+  getDefaultAssetIcon,
+} from "@/features/express/utils/imageHelpers";
 import { SwapAssetOptionDisplay } from "@/features/swap/components/SwapAssetOptionDisplay";
 import {
   SWAP_FIELD_TEXT,
   expressAssetTriggerClass,
 } from "@/features/swap/components/swapFieldStyles";
 
-export const EXPRESS_ASSET_ICON_FALLBACK = "/assets/image_7_jijlik.png";
+export const EXPRESS_ASSET_ICON_FALLBACK = getDefaultAssetIcon();
 
 export { expressAssetTriggerClass };
 

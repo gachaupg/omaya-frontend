@@ -130,6 +130,14 @@ export interface OTPResponse {
   user: Pick<User, "id" | "email" | "otp_verified">;
 }
 
+export interface ResendOTPPayload {
+  email: string;
+}
+
+export interface ResendOTPResponse {
+  message?: string;
+}
+
 export interface KYCResponse {
   is_verified: boolean;
   status?: string;

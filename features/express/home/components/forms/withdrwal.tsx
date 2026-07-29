@@ -86,6 +86,7 @@ import { openKYCModal, checkKYCStatus } from "@/features/auth/slices/authSlice";
 import {
   ASSET_ICON_BASE_CLASS,
   ASSET_ICON_SIZE,
+  getDefaultAssetIcon,
   getHighResAssetIcon,
   getHighResPaymentLogo,
   PAYMENT_LOGO_BASE_CLASS,
@@ -132,7 +133,8 @@ const NEGATIVE_RECEIVE_ERROR =
   "Receive amount cannot be negative. Please adjust the amount.";
 const buildNegativeReceiveError = (value: number) =>
   `${NEGATIVE_RECEIVE_ERROR} Calculated value: ${value.toFixed(2)}.`;
-const ASSET_ICON_FALLBACK_URL = "/assets/image_7_jijlik.png";
+// Generic coin placeholder so missing asset icons always render in home flow.
+const ASSET_ICON_FALLBACK_URL = getDefaultAssetIcon();
 const FX_PRIMUS_ASSET_ICON_URL = "/assets/fx-primus-custom.svg";
 
 /** When ChangeNOW public tokens omit FX Primus, still show it under Popular on home express withdrawal. */

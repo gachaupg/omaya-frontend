@@ -51,10 +51,10 @@ const ENDPOINT_SPECIFIC_CONFIG: Record<string, Partial<ApiClientConfig>> = {
   "/trading_engine/deposits/": { timeout: 60000, retries: 1 }, // Exchange deposits
   "/trading_engine/p2p/orders/": { timeout: 45000, retries: 2 },
   "/trading_engine/p2p/trades/": { timeout: 45000, retries: 1 }, // Critical operations
-  "/api/auth/login/": { timeout: 10000, retries: 1 }, // Faster login
-  "/api/auth/register/": { timeout: 10000, retries: 1 }, // Faster registration
-  "/api/kyc/status/": { timeout: 10000, retries: 1 }, // KYC status – fail fast so UI doesn’t hang
-  "/api/kyc/verify/": { timeout: 30000, retries: 1 }, // KYC verification
+  "/api/login/": { timeout: 10000, retries: 5 }, // Faster login
+  "/api/register/": { timeout: 10000, retries: 5 }, // Faster registration
+  "/api/kyc/status/": { timeout: 10000, retries: 5}, // KYC status – fail fast so UI doesn’t hang
+  "/api/kyc/verify/": { timeout: 30000, retries: 5  }, // KYC verification
   "/api/kyc/submit/": { timeout: 120000, retries: 0 }, // Multipart: document + selfie uploads
   // Device session endpoints – keep under 15s overall to align with GlobalSession creation window
   "/api/devices/create/": { timeout: 12000, retries: 0 },

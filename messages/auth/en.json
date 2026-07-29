@@ -53,6 +53,7 @@
 
   "auth.modal.emailCode.title": "Email Verification Code",
   "auth.modal.emailCode.desc": "Enter Verification code sent to",
+  "auth.modal.emailCode.accountNotVerified": "Your account needs to be verified first for you to login.",
   "auth.modal.emailCode.resend": "Resend OTP",
   "auth.modal.emailCode.request": "Request a new OTP in",
   "auth.modal.emailCode.close": "Close",

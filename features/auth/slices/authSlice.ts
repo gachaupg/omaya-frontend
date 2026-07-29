@@ -15,6 +15,8 @@ import {
   AuthState,
   OTPPayload,
   OTPResponse,
+  ResendOTPPayload,
+  ResendOTPResponse,
   KYCResponse,
   KYCVerifyPayload,
   SumSubInitiatePayload,
@@ -112,6 +114,14 @@ const initialState: AuthState = {
 // Helper to handle API errors
 const handleApiError = (error: unknown): string => {
   if (error instanceof AxiosError) {
+    // No response at all means the request never reached the server (offline,
+    // DNS/CORS failure, timeout, etc.) - Axios's raw "Network Error"/"timeout of
+    // Xms exceeded" messages aren't meaningful to users, so show a clean message.
+    if (!error.response) {
+      return error.code === "ECONNABORTED"
+        ? "The request timed out. Please check your connection and try again, or contact support at support@omaya.io."
+        : "We couldn't reach the server. Please check your internet connection and try again, or contact support at support@omaya.io.";
+    }
     const data = error.response?.data;
     if (data && typeof data === "object") {
       const messages: string[] = [];
@@ -181,7 +191,11 @@ export const registerUser = createAsyncThunk<RegisterResponse, RegisterPayload>(
   }
 );
 
-export const loginUser = createAsyncThunk<AuthResponse, LoginPayload>(
+export const loginUser = createAsyncThunk<
+  AuthResponse,
+  LoginPayload,
+  { rejectValue: string; rejectedMeta: { otpVerificationRequired?: boolean } }
+>(
   "auth/login",
   async (payload, { rejectWithValue, dispatch }) => {
     const { remember_me, ...apiPayload } = payload;
@@ -189,7 +203,7 @@ export const loginUser = createAsyncThunk<AuthResponse, LoginPayload>(
       const response = await post<AuthResponse>(API_ENDPOINTS.LOGIN, apiPayload);
       const suspensionMessage = getSuspensionMessage(response.data?.user);
       if (suspensionMessage) {
-        return rejectWithValue(suspensionMessage);
+        return rejectWithValue(suspensionMessage, { otpVerificationRequired: false });
       }
 
       // Check if 2FA is required
@@ -208,7 +222,18 @@ export const loginUser = createAsyncThunk<AuthResponse, LoginPayload>(
 
       return response.data;
     } catch (error) {
-      return rejectWithValue(handleApiError(error));
+      // Surface the backend's explicit flag (e.g. { error: "...", otp_verification_required: true })
+      // via rejection meta so callers can detect it without relying on message text.
+      const responseData =
+        error instanceof AxiosError && error.response?.data;
+      const otpVerificationRequired =
+        Boolean(
+          responseData &&
+            typeof responseData === "object" &&
+            (responseData as Record<string, unknown>).otp_verification_required === true
+        );
+
+      return rejectWithValue(handleApiError(error), { otpVerificationRequired });
     }
   }
 );
@@ -368,6 +393,22 @@ export const verifyOTP = createAsyncThunk<OTPResponse, OTPPayload>(
     try {
       const response = await post<OTPResponse>(
         API_ENDPOINTS.VERIFY_OTP,
+        payload
+      );
+      return response.data;
+    } catch (error) {
+      return rejectWithValue(handleApiError(error));
+    }
+  }
+);
+
+// Request a new OTP be sent to an email (e.g. when login fails because the account isn't verified yet)
+export const resendOTP = createAsyncThunk<ResendOTPResponse, ResendOTPPayload>(
+  "auth/resendOTP",
+  async (payload, { rejectWithValue }) => {
+    try {
+      const response = await post<ResendOTPResponse>(
+        API_ENDPOINTS.RESEND_OTP,
         payload
       );
       return response.data;
@@ -540,6 +581,34 @@ const authSlice = createSlice({
         // Don't clear p2p_terms_accepted on logout - it should persist across sessions
         // Terms acceptance is user-specific and should remain accepted
         clearPersistedDeviceSessionId();
+
+        // Clear other account-specific data so it can't leak into the next
+        // account that logs in on this browser (device/browser-level prefs
+        // like theme, locale, device id, and p2p_act are intentionally kept).
+        [
+          "profile_photo",
+          "p2p_profile_image",
+          "sumsubData",
+          "twoFA_enabled",
+          "moneyx_transaction_data",
+          "moneyx_transaction_expiry",
+          "moneyx_form_state",
+          "moneyx_restore_from",
+          "moneyx_restore_to",
+          "moneyx_restore_from_cleaned",
+          "moneyx_restore_to_cleaned",
+          "moneyx_restore_from_detail",
+          "moneyx_restore_to_detail",
+          "express_transaction_data",
+          "currentForexExchange",
+          "p2p_trade_id",
+          "p2p_orders",
+          "new_order",
+          "rates_calculator_state",
+          "rates_calculator_asset",
+          "rates_calculator_payment_detail",
+          "browser_sessions",
+        ].forEach((key) => localStorage.removeItem(key));
       }
 
       // Clear all cached data on logout
@@ -916,6 +985,17 @@ const authSlice = createSlice({
     );
     builder.addCase(verifyOTP.rejected, (state, action) => {
       state.loading = false;
+      state.error = action.payload as string;
+    });
+
+    // Resend OTP
+    builder.addCase(resendOTP.pending, (state) => {
+      state.error = null;
+    });
+    builder.addCase(resendOTP.fulfilled, (state) => {
+      // no-op: modal owns its own resend/cooldown UI state
+    });
+    builder.addCase(resendOTP.rejected, (state, action) => {
       state.error = action.payload as string;
     });
 
