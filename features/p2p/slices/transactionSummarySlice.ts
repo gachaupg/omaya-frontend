@@ -23,8 +23,11 @@ export const fetchTransactionSummary = createAsyncThunk<
     );
     return normalizeTransactionSummary(response.data);
   } catch (error) {
+    // Silent: this powers a background dashboard widget, not a user action -
+    // a toast here shouldn't interrupt the user (and SettingsDataProvider
+    // caps retries, so failures can recur without becoming spam).
     try {
-      handleP2PError(error);
+      handleP2PError(error, { silent: true });
     } catch (err) {
       return rejectWithValue(
         err instanceof Error ? err.message : "An unexpected error occurred"

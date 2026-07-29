@@ -48,7 +48,14 @@ export const SettingsDataProvider = ({
     theme: false,
     security: true, // Disabled - API returns 404
     privacy: false,
+    summaryAttempts: 0,
   });
+
+  // If the summary endpoint keeps failing (e.g. backend 500s), `summary` stays
+  // null forever and `transactionSummary` gets a new object reference on every
+  // failed attempt (the `error` field changes), which would otherwise re-run
+  // this effect and refetch endlessly. Cap it so it gives up after a few tries.
+  const MAX_SUMMARY_FETCH_ATTEMPTS = 5;
 
   useEffect(() => {
     if (!isAuthenticated) {
@@ -70,7 +77,10 @@ export const SettingsDataProvider = ({
     const needsSecurity = false; // Disabled - API returns 404
     const needsPrivacy = false; // Disabled - API returns 404
     const needsWallets = !walletsData;
-    const needsSummary = !transactionSummary.summary;
+    const needsSummary =
+      !transactionSummary.summary &&
+      !transactionSummary.loading &&
+      fetchedDataRef.current.summaryAttempts < MAX_SUMMARY_FETCH_ATTEMPTS;
 
     if (
       needsProfile ||
@@ -102,7 +112,10 @@ export const SettingsDataProvider = ({
       // if (needsSecurity) promises.push(dispatch(fetchSecuritySettings()));
       // if (needsPrivacy) promises.push(dispatch(fetchPrivacySettings()));
       if (needsWallets) promises.push(dispatch(fetchWallets()));
-      if (needsSummary) promises.push(dispatch(fetchTransactionSummary()));
+      if (needsSummary) {
+        fetchedDataRef.current.summaryAttempts += 1;
+        promises.push(dispatch(fetchTransactionSummary()));
+      }
 
       Promise.all(promises)
         .then(() => {
@@ -112,6 +125,7 @@ export const SettingsDataProvider = ({
           );
           // Mark fetched data to prevent infinite loops
           fetchedDataRef.current = {
+            ...fetchedDataRef.current,
             profile: fetchedDataRef.current.profile || needsProfile,
             theme: true, // Always true since we're not fetching theme API
             security: true, // Always true since we're not fetching security API

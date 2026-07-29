@@ -91,6 +91,7 @@ import { resolveForexDepositAdminPaymentDetailId } from "@/features/express/util
 import {
   ASSET_ICON_BASE_CLASS,
   ASSET_ICON_SIZE,
+  getDefaultAssetIcon,
   getHighResAssetIcon,
   getHighResPaymentLogo,
   PAYMENT_LOGO_BASE_CLASS,
@@ -238,8 +239,8 @@ const getNetworkMatchKeys = (network: string): string[] => {
   return NETWORK_ALIASES[n] ? [...NETWORK_ALIASES[n], n] : [n];
 };
 
-// Use a local placeholder so missing icons always render in home flow.
-const ASSET_ICON_FALLBACK_URL = "/assets/image_7_jijlik.png";
+// Generic coin placeholder so missing asset icons always render in home flow.
+const ASSET_ICON_FALLBACK_URL = getDefaultAssetIcon();
 const FX_PRIMUS_ASSET_ICON_URL = "/assets/fx-primus-custom.svg";
 
 const getAssetDropdownIcon = (asset: any): string => {

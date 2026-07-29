@@ -18,45 +18,14 @@ import { toast } from "react-toastify";
 // const FacebookAuthButton = React.lazy(() => import("./FacebookAuthButton"));
 import { useI18n } from "@/lib/useI18n";
 import { countries } from "./countries";
+import { EmailVerificationModal } from "./EmailVerificationModal";
+import { renderTextWithEmailLinks } from "@/lib/utils/renderTextWithEmailLinks";
 
 const REGISTER_FORM_DRAFT_KEY = "registerFormDraft";
 
-type RegisterFormDraft = {
-  firstName: string;
-  lastName: string;
-  email: string;
-  phone: string;
-  password: string;
-  confirmPassword: string;
-  referralCode: string;
-  agreeToTerms: boolean;
-  selectedCountry: string;
-};
-
-const readRegisterDraft = (): RegisterFormDraft | null => {
-  if (typeof window === "undefined") return null;
-
-  const fromSession = window.sessionStorage.getItem(REGISTER_FORM_DRAFT_KEY);
-  const fromLocal = window.localStorage.getItem(REGISTER_FORM_DRAFT_KEY);
-  const rawDraft = fromSession || fromLocal;
-  if (!rawDraft) return null;
-
-  try {
-    return JSON.parse(rawDraft) as RegisterFormDraft;
-  } catch {
-    window.sessionStorage.removeItem(REGISTER_FORM_DRAFT_KEY);
-    window.localStorage.removeItem(REGISTER_FORM_DRAFT_KEY);
-    return null;
-  }
-};
-
-const writeRegisterDraft = (draft: RegisterFormDraft) => {
-  if (typeof window === "undefined") return;
-  const serialized = JSON.stringify(draft);
-  window.sessionStorage.setItem(REGISTER_FORM_DRAFT_KEY, serialized);
-  window.localStorage.setItem(REGISTER_FORM_DRAFT_KEY, serialized);
-};
-
+// The register form intentionally does NOT persist any draft anymore - a
+// reload (or navigating away and back) should always start from a blank
+// form. This just wipes out any leftover draft written by older builds.
 const clearRegisterDraft = () => {
   if (typeof window === "undefined") return;
   window.sessionStorage.removeItem(REGISTER_FORM_DRAFT_KEY);
@@ -84,322 +53,6 @@ const PHONE_LENGTH_BY_COUNTRY: Record<string, { min: number; max: number }> = {
   BD: { min: 10, max: 10 }, // Bangladesh
   GH: { min: 9, max: 10 },  // Ghana
 };
-
-// Email Verification Modal Component
-interface EmailVerificationModalProps {
-  isOpen: boolean;
-  onClose: () => void;
-  email: string;
-  onVerify: (code: string) => void;
-  onResendCode: () => void;
-}
-
-function EmailVerificationModal({
-  isOpen,
-  onClose,
-  email,
-  onVerify,
-  onResendCode,
-}: EmailVerificationModalProps) {
-  const [verificationCode, setVerificationCode] = useState([
-    "",
-    "",
-    "",
-    "",
-    "",
-    "",
-  ]);
-  const [isLoading, setIsLoading] = useState(false);
-  const [timeLeft, setTimeLeft] = useState(300);
-  const [canResend, setCanResend] = useState(false);
-  const [error, setError] = useState("");
-  const [profile, setProfile] = useState<any>(null);
-  const timerRef = React.useRef<NodeJS.Timeout | null>(null);
-
-  // Reset timer when modal opens
-  React.useEffect(() => {
-    if (isOpen) {
-      setTimeLeft(300);
-      setCanResend(false);
-    } else {
-      // Clear timer when modal closes
-      if (timerRef.current) {
-        clearInterval(timerRef.current);
-        timerRef.current = null;
-      }
-    }
-  }, [isOpen]);
-
-  // Timer countdown - runs continuously while modal is open and timeLeft > 0
-  React.useEffect(() => {
-    if (!isOpen) {
-      if (timerRef.current) {
-        clearInterval(timerRef.current);
-        timerRef.current = null;
-      }
-      return;
-    }
-
-    // Start the countdown timer
-    timerRef.current = setInterval(() => {
-      setTimeLeft((prev) => {
-        if (prev <= 1) {
-          setCanResend(true);
-          if (timerRef.current) {
-            clearInterval(timerRef.current);
-            timerRef.current = null;
-          }
-          return 0;
-        }
-        return prev - 1;
-      });
-    }, 1000);
-
-    return () => {
-      if (timerRef.current) {
-        clearInterval(timerRef.current);
-        timerRef.current = null;
-      }
-    };
-  }, [isOpen]);
-
-  // Format time display
-  const formatTime = (seconds: number) => {
-    const mins = Math.floor(seconds / 60);
-    const secs = seconds % 60;
-    return `${mins}:${secs.toString().padStart(2, "0")}`;
-  };
-
-  // Handle paste event for OTP
-  const handlePaste = (
-    e: React.ClipboardEvent<HTMLInputElement>,
-    activeIndex: number
-  ) => {
-    e.preventDefault();
-    const pastedData = e.clipboardData.getData("text/plain").trim();
-
-    // Only allow numeric codes
-    if (/^\d+$/.test(pastedData)) {
-      const digits = pastedData.split("").slice(0, 6); // Take first 6 digits
-      const newCode = [...verificationCode];
-
-      // Fill the codes starting from the current active input
-      for (let i = 0; i < digits.length; i++) {
-        if (activeIndex + i < 6) {
-          newCode[activeIndex + i] = digits[i];
-        }
-      }
-
-      setVerificationCode(newCode);
-      setError("");
-
-      // Focus the next empty input or submit if all are filled
-      const nextEmptyIndex = newCode.findIndex(
-        (digit, idx) => idx >= activeIndex && digit === ""
-      );
-
-      if (typeof document !== "undefined") {
-        if (nextEmptyIndex !== -1 && nextEmptyIndex < 6) {
-          const nextInput = document.getElementById(`code-${nextEmptyIndex}`);
-          nextInput?.focus();
-        } else if (newCode.every((digit) => digit !== "")) {
-          const submitButton = document.getElementById("verify-button");
-          submitButton?.focus();
-        }
-      }
-    }
-  };
-
-  // Handle input change for verification code
-  const handleInputChange = (index: number, value: string) => {
-    if (value.length > 1) return;
-
-    const newCode = [...verificationCode];
-    newCode[index] = value;
-    setVerificationCode(newCode);
-    setError("");
-
-    // Auto-focus next input
-    if (value && index < 5 && typeof document !== "undefined") {
-      const nextInput = document.getElementById(`code-${index + 1}`);
-      nextInput?.focus();
-    }
-  };
-
-  // Handle backspace
-  const handleKeyDown = (index: number, e: React.KeyboardEvent) => {
-    if (
-      e.key === "Backspace" &&
-      !verificationCode[index] &&
-      index > 0 &&
-      typeof document !== "undefined"
-    ) {
-      const prevInput = document.getElementById(`code-${index - 1}`);
-      prevInput?.focus();
-    }
-  };
-
-  // Handle verification
-  const handleVerify = async () => {
-    const code = verificationCode.join("");
-    if (code.length !== 6) {
-      setError("Please enter the complete verification code");
-      return;
-    }
-
-    setIsLoading(true);
-    try {
-      await onVerify(code);
-    } catch (error) {
-      setError("Invalid verification code. Please try again.");
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-  // Handle resend code
-  const handleResendCode = async () => {
-    // Clear existing timer
-    if (timerRef.current) {
-      clearInterval(timerRef.current);
-      timerRef.current = null;
-    }
-
-    setCanResend(false);
-    setVerificationCode(["", "", "", "", "", ""]);
-    setError("");
-    setTimeLeft(300); // Reset timer
-
-    // Restart timer manually
-    timerRef.current = setInterval(() => {
-      setTimeLeft((prev) => {
-        if (prev <= 1) {
-          setCanResend(true);
-          if (timerRef.current) {
-            clearInterval(timerRef.current);
-            timerRef.current = null;
-          }
-          return 0;
-        }
-        return prev - 1;
-      });
-    }, 1000);
-
-    await onResendCode();
-  };
-  if (!isOpen) return null;
-
-  return (
-    <div
-      className="fixed inset-0 flex items-center justify-center z-50 px-4"
-      style={{ background: "rgba(24, 24, 29, 0.5)" }}
-    >
-      <div className="bg-white dark:bg-[var(--card-color)] rounded-2xl p-8 max-w-md w-full relative">
-        {/* Close button */}
-        <button
-          onClick={onClose}
-          className="absolute top-4 right-4 dark:text-gray-400 text-gray-600 dark:hover:text-white hover:text-gray-900 transition-colors"
-        >
-          <svg
-            width="24"
-            height="24"
-            viewBox="0 0 24 24"
-            fill="none"
-            xmlns="http://www.w3.org/2000/svg"
-          >
-            <path
-              d="M18 6L6 18M6 6L18 18"
-              stroke="currentColor"
-              strokeWidth="2"
-              strokeLinecap="round"
-              strokeLinejoin="round"
-            />
-          </svg>
-        </button>
-
-        {/* Modal content */}
-        <div className="text-center">
-          {/* Title */}
-          <h2 className="dark:text-white text-gray-900 text-2xl font-semibold mb-2">
-            Email Verification Code
-          </h2>
-
-          {/* Description */}
-          <p className="text-[#788099] text-sm mb-6">
-            Enter Verification code sent to{" "}
-            <span className="dark:text-white text-gray-900 font-medium">
-              {email}
-            </span>
-          </p>
-
-          {/* Verification code inputs */}
-          <div className="flex justify-center gap-2 sm:gap-3 mb-6">
-            {verificationCode.map((digit, index) => (
-              <input
-                key={index}
-                id={`code-${index}`}
-                type="text"
-                inputMode="numeric"
-                maxLength={1}
-                value={digit}
-                onChange={(e) => handleInputChange(index, e.target.value)}
-                onKeyDown={(e) => handleKeyDown(index, e)}
-                onPaste={(e) => handlePaste(e, index)}
-                onFocus={(e) => e.target.select()}
-                className={`w-10 h-12 sm:w-12 sm:h-14 text-center dark:text-white text-gray-900 text-xl font-semibold dark:bg-[#35353E] bg-gray-100 border ${error
-                  ? "border-[#F04438]"
-                  : "border-gray-300 dark:border-[#35353E]"
-                  } rounded-lg focus:outline-none focus:border-[#1D8751] transition-colors`}
-              />
-            ))}
-          </div>
-
-          {/* Error message */}
-          {error && <p className="text-[#F04438] text-sm mb-4">{error}</p>}
-
-          {/* Timer */}
-          <div className="mb-4">
-            <p className="text-[#788099] text-sm">
-              Having trouble?{" "}
-              {canResend ? (
-                <button
-                  onClick={handleResendCode}
-                  className="text-[#1D8751] hover:text-[#0E5531] cursor-pointer font-medium"
-                >
-                  Resend OTP
-                </button>
-              ) : (
-                <span className="text-[#788099]">
-                  Request a new OTP in{" "}
-                  <span className="text-[#1D8751]">
-                    {formatTime(timeLeft)}s
-                  </span>
-                </span>
-              )}
-            </p>
-          </div>
-
-          {/* Action buttons */}
-          <div className="flex space-x-3">
-            <button
-              onClick={onClose}
-              className="flex-1 py-3 px-4 rounded-full border border-[#1D8751] text-[#1D8751]  transition-colors"
-            >
-              Close
-            </button>
-            <button
-              onClick={handleVerify}
-              disabled={isLoading || verificationCode.join("").length !== 6}
-              className="flex-1 bg-[#1D8751] text-white py-3 px-4 rounded-full hover:bg-[#0E5531] transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-            >
-              {isLoading ? "Verifying..." : "Confirm"}
-            </button>
-          </div>
-        </div>
-      </div>
-    </div>
-  );
-}
 
 export default function RegistrationPage() {
   const { t } = useI18n("auth");
@@ -435,7 +88,6 @@ export default function RegistrationPage() {
   const [countryDropdownRect, setCountryDropdownRect] = useState({ top: 0, left: 0, width: 240 });
   const [showReferralTooltip, setShowReferralTooltip] = useState(false);
   const [formErrors, setFormErrors] = useState<string[]>([]);
-  const [isDraftHydrated, setIsDraftHydrated] = useState(false);
   const referralTooltipRef = React.useRef<HTMLDivElement | null>(null);
   const referralTooltipButtonRef = React.useRef<HTMLButtonElement | null>(null);
   const errorBannerRef = React.useRef<HTMLDivElement | null>(null);
@@ -551,67 +203,10 @@ export default function RegistrationPage() {
   });
 
   useEffect(() => {
-    const draft = readRegisterDraft();
-    if (!draft) {
-      setIsDraftHydrated(true);
-      return;
-    }
-    setFirstName(draft.firstName ?? "");
-    setLastName(draft.lastName ?? "");
-    setEmail(draft.email ?? "");
-    setPhone(draft.phone ?? "");
-    setPassword(draft.password ?? "");
-    setConfirmPassword(draft.confirmPassword ?? "");
-    setReferralCode(draft.referralCode ?? refCodeFromUrl);
-    setAgreeToTerms(Boolean(draft.agreeToTerms));
-    setSelectedCountry(draft.selectedCountry ?? "SO");
-    setIsDraftHydrated(true);
-  }, [refCodeFromUrl]);
-
-  useEffect(() => {
-    if (typeof window === "undefined") return;
-    if (!isDraftHydrated) return;
-
-    const draft: RegisterFormDraft = {
-      firstName,
-      lastName,
-      email,
-      phone,
-      password,
-      confirmPassword,
-      referralCode,
-      agreeToTerms,
-      selectedCountry,
-    };
-
-    writeRegisterDraft(draft);
-  }, [
-    firstName,
-    lastName,
-    email,
-    phone,
-    password,
-    confirmPassword,
-    referralCode,
-    agreeToTerms,
-    selectedCountry,
-    isDraftHydrated,
-  ]);
-
-  const persistRegisterDraft = () => {
-    const draft: RegisterFormDraft = {
-      firstName,
-      lastName,
-      email,
-      phone,
-      password,
-      confirmPassword,
-      referralCode,
-      agreeToTerms,
-      selectedCountry,
-    };
-    writeRegisterDraft(draft);
-  };
+    // The form never persists a draft - purge any leftover draft from older
+    // builds so a reload (or navigating back to this page) always starts blank.
+    clearRegisterDraft();
+  }, []);
 
   const parseApiErrors = (errorData: unknown): string[] => {
     if (
@@ -834,6 +429,9 @@ export default function RegistrationPage() {
       );
 
       if (registerUser.fulfilled.match(result)) {
+        // Account is created at this point - stop persisting the draft so a
+        // reload/back-nav doesn't keep resurfacing already-submitted data.
+        clearRegisterDraft();
         setShowVerificationModal(true);
         setFormErrors([]);
       } else if (registerUser.rejected.match(result) && result.payload) {
@@ -1750,11 +1348,11 @@ export default function RegistrationPage() {
                       "By clicking Register, you agree to our Terms of Services and that you have read our Privacy Policy, including our Cookie Policy"
                     ).split(/(Terms of Services|Privacy Policy|Cookie Policy)/).map((part, i) =>
                       part === "Terms of Services" ? (
-                        <Link key={i} href="/legal/terms-of-service" className="text-[#1D8751] hover:underline" onClick={persistRegisterDraft}>{part}</Link>
+                        <Link key={i} href="/legal/terms-of-service" target="_blank" rel="noopener noreferrer" className="text-[#1D8751] hover:underline">{part}</Link>
                       ) : part === "Privacy Policy" ? (
-                        <Link key={i} href="/legal/privacy-policy" className="text-[#1D8751] hover:underline" onClick={persistRegisterDraft}>{part}</Link>
+                        <Link key={i} href="/legal/privacy-policy" target="_blank" rel="noopener noreferrer" className="text-[#1D8751] hover:underline">{part}</Link>
                       ) : part === "Cookie Policy" ? (
-                        <Link key={i} href="/legal/cookies-policy" className="text-[#1D8751] hover:underline" onClick={persistRegisterDraft}>{part}</Link>
+                        <Link key={i} href="/legal/cookies-policy" target="_blank" rel="noopener noreferrer" className="text-[#1D8751] hover:underline">{part}</Link>
                       ) : (
                         part
                       )
@@ -1784,7 +1382,9 @@ export default function RegistrationPage() {
                   </p>
                   <ul className="list-disc space-y-1 pl-5 text-red-800 dark:text-[#B42318] text-sm">
                     {formErrors.map((message, index) => (
-                      <li key={`button-${message}-${index}`}>{message}</li>
+                      <li key={`button-${message}-${index}`}>
+                        {renderTextWithEmailLinks(message)}
+                      </li>
                     ))}
                   </ul>
                 </div>
@@ -1881,6 +1481,11 @@ export default function RegistrationPage() {
         email={email}
         onVerify={handleVerifyEmail}
         onResendCode={handleResendCode}
+        title={t("auth.modal.emailCode.title", "Email Verification Code")}
+        description={t(
+          "auth.modal.emailCode.desc",
+          "Enter Verification code sent to"
+        )}
       />
     </>
   );

@@ -23,6 +23,7 @@ import {
 } from "@/lib/utils/authSession";
 import { initializeTokenRefresh } from "@/lib/utils/tokenRefresh";
 import { clearSupportedTokensCachesOnReload } from "@/lib/utils/supportedTokensCache";
+import { clearExpiredMoneyXTransactionCache } from "@/lib/utils/clearExpiredTransactionCache";
 import GlobalSessionManager from "@/components/GlobalSessionManager";
 import { WebPushProvider } from "@/features/notifications/components/WebPushProvider";
 import { suppressKnownConsoleNoise } from "@/lib/utils/suppressKnownConsoleNoise";
@@ -49,6 +50,7 @@ export default function Providers({
 }) {
   useEffect(() => {
     void clearSupportedTokensCachesOnReload();
+    clearExpiredMoneyXTransactionCache();
   }, []);
 
   useEffect(() => {

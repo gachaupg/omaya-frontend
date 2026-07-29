@@ -53,6 +53,7 @@
 
   "auth.modal.emailCode.title": "Koodhka Xaqiijinta Emailka",
   "auth.modal.emailCode.desc": "Geli koodhka xaqiijinta ee loo diray",
+  "auth.modal.emailCode.accountNotVerified": "Akoonkaaga waa in la xaqiijiyaa marka hore si aad u geli kartid.",
   "auth.modal.emailCode.resend": "Dib u dir OTP",
   "auth.modal.emailCode.request": "Dalbo OTP cusub",
   "auth.modal.emailCode.close": "Xir",

@@ -1,4 +1,5 @@
 import { resolveApiBaseUrl } from '@/config/api';
+import { getSanityConfigFromEnv } from '@/config/sanity';
 
 export type PublicRuntimeConfig = {
   NEXT_PUBLIC_GOOGLE_CLIENT_ID: string;
@@ -8,12 +9,17 @@ export type PublicRuntimeConfig = {
   NEXT_PUBLIC_APP_URL: string;
   NEXT_PUBLIC_FACEBOOK_APP_ID: string;
   NEXT_PUBLIC_FACEBOOK_REDIRECT_URI: string;
+  NEXT_PUBLIC_SANITY_PROJECT_ID: string;
+  NEXT_PUBLIC_SANITY_DATASET: string;
+  NEXT_PUBLIC_SANITY_API_VERSION: string;
+  NEXT_PUBLIC_SANITY_READ_TOKEN: string;
 };
 
 let cachedConfig: PublicRuntimeConfig | null = null;
 
 function readPublicRuntimeConfigFromEnv(): PublicRuntimeConfig {
   const apiBaseUrl = resolveApiBaseUrl();
+  const sanityConfig = getSanityConfigFromEnv();
   return {
     NEXT_PUBLIC_GOOGLE_CLIENT_ID: process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID || '',
     NEXT_PUBLIC_GOOGLE_REDIRECT_URI:
@@ -24,6 +30,10 @@ function readPublicRuntimeConfigFromEnv(): PublicRuntimeConfig {
     NEXT_PUBLIC_FACEBOOK_APP_ID: process.env.NEXT_PUBLIC_FACEBOOK_APP_ID || '',
     NEXT_PUBLIC_FACEBOOK_REDIRECT_URI:
       process.env.NEXT_PUBLIC_FACEBOOK_REDIRECT_URI || '',
+    NEXT_PUBLIC_SANITY_PROJECT_ID: sanityConfig.projectId,
+    NEXT_PUBLIC_SANITY_DATASET: sanityConfig.dataset,
+    NEXT_PUBLIC_SANITY_API_VERSION: sanityConfig.apiVersion,
+    NEXT_PUBLIC_SANITY_READ_TOKEN: sanityConfig.token,
   };
 }
 

@@ -81,8 +81,11 @@ export const setSuppress401Errors = (suppress: boolean) => {
   suppress401Errors = suppress;
 };
 
-export const handleApiError = (error: unknown, options?: { suppress401?: boolean }) => {
-  const shouldSuppress401 = options?.suppress401 || suppress401Errors;
+export const handleApiError = (
+  error: unknown,
+  options?: { suppress401?: boolean; silent?: boolean }
+) => {
+  const shouldSuppress401 = options?.suppress401 || suppress401Errors || options?.silent;
   
   if (error instanceof AxiosError) {
     // Handle network errors
@@ -154,8 +157,11 @@ export const handleAuthError = handleApiError;
 export const handleP2PError = handleApiError;
 
 // Safe variant: does not throw. Returns a normalized error message string.
-export const handleApiErrorSafe = (error: unknown, options?: { suppress401?: boolean }): string => {
-  const shouldSuppress401 = options?.suppress401 || suppress401Errors;
+export const handleApiErrorSafe = (
+  error: unknown,
+  options?: { suppress401?: boolean; silent?: boolean }
+): string => {
+  const shouldSuppress401 = options?.suppress401 || suppress401Errors || options?.silent;
   try {
     if (error instanceof AxiosError) {
       if (!error.response) {

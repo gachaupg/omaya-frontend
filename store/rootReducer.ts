@@ -15,7 +15,7 @@ import paymentReducer from "../features/exchange/slices/paymentSlice";
 import p2pMarketReducer from "../features/p2p/slices/orderSlice";
 import p2pBuySellReducer from "../features/p2p/slices/p2pbuysell";
 import myOrdersReducer from "../features/p2p/slices/myOrdersSlice";
-import authReducer from "../features/auth/slices/authSlice";
+import authReducer, { logout } from "../features/auth/slices/authSlice";
 import transactionSummaryReducer from "@/features/p2p/slices/transactionSummarySlice";
 import appealReducer from "../features/p2p/slices/appealSlice";
 import messageReducer from "../features/p2p/slices/messageSlice";
@@ -49,7 +49,7 @@ import allTransactionsReducer from "@/features/transactions/slices/allTransactio
 import p2pDepositAddressesReducer from "@/features/p2p/slices/p2pDepositAddressesSlice";
 import userWalletAddressesReducer from "@/features/settings/slices/userWalletAddressesSlice";
 
-const rootReducer = combineReducers({
+const appReducer = combineReducers({
   deposits: depositReducer,
   withdrawals: withdrawReducer,
   p2pAds: adReducer,
@@ -94,6 +94,26 @@ const rootReducer = combineReducers({
   userWalletAddresses: userWalletAddressesReducer,
 });
 
-export type RootState = ReturnType<typeof rootReducer>;
+/**
+ * Reset every slice to its initial state on logout.
+ *
+ * Without this, redux-persist keeps writing the whole store (wallet
+ * balances, transaction summary, matched trades, exchange, p2p market,
+ * settings, ...) to a single localStorage blob. If a different account logs
+ * in on the same browser afterwards, that stale/unrelated data gets
+ * rehydrated and shown as if it belonged to the new account until fresh API
+ * calls happen to overwrite it (and not at all if those calls fail/timeout).
+ */
+const rootReducer = (
+  state: ReturnType<typeof appReducer> | undefined,
+  action: AnyAction
+) => {
+  if (action.type === logout.type) {
+    state = undefined;
+  }
+  return appReducer(state, action);
+};
+
+export type RootState = ReturnType<typeof appReducer>;
 export type AppDispatch = ThunkDispatch<RootState, unknown, AnyAction>;
 export default rootReducer;

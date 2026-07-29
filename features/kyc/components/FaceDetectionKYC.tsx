@@ -1,5 +1,6 @@
 "use client";
 import React, { useRef, useEffect, useState, useCallback } from 'react';
+import { Image as ImageIcon } from 'lucide-react';
 import * as faceapi from 'face-api.js';
 
 import { logger } from '@/lib/utils/logger';
@@ -817,8 +818,9 @@ const FaceDetectionKYC: React.FC<FaceDetectionKYCProps> = ({
               type="button"
               onClick={() => galleryFileInputRef.current?.click()}
               disabled={!isModelLoaded || isGalleryValidating || captureInProgress}
-              className="w-full px-6 py-3 text-sm font-medium text-white border border-[#35353E] hover:bg-[#1a1a1a] rounded-lg transition-colors disabled:opacity-50"
+              className="w-full flex items-center justify-center gap-2 px-6 py-3 text-sm font-semibold text-white bg-[#26262e] border-2 border-[#4b4b57] rounded-lg shadow-sm transition-colors hover:bg-[#323240] hover:border-[#5b5b68] active:bg-[#1a1a22] disabled:opacity-50 disabled:cursor-not-allowed"
             >
+              <ImageIcon className="w-4 h-4 shrink-0" aria-hidden="true" />
               {isGalleryValidating
                 ? "Verifying selected photo…"
                 : !isModelLoaded

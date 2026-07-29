@@ -24,6 +24,7 @@ import { ShieldCheck, CircleCheckBig, Sparkles, Earth } from "lucide-react";
 import FloatingParticles from "@/components/ui/floating-particles";
 import { decodeHtml, stripLeadingImagesFromHtml } from "@/lib/utils/html";
 import KeyAchievementsSection from "@/components/marketing/KeyAchievementsSection";
+import { resolveSanityConfig } from "@/config/sanity";
 
 // Strip HTML tags for excerpt preview
 const stripHtmlTags = (html: string): string => {
@@ -237,9 +238,9 @@ export default function MarketingPage() {
 
       // Handle Sanity image with asset._ref (legacy format)
       if (post.image?.asset?._ref) {
-        const projectId =
-          process.env.NEXT_PUBLIC_SANITY_PROJECT_ID || "your-project-id";
-        const dataset = process.env.NEXT_PUBLIC_SANITY_DATASET || "production";
+        const sanityConfig = resolveSanityConfig();
+        const projectId = sanityConfig.projectId || "your-project-id";
+        const dataset = sanityConfig.dataset || "production";
         const imageId = post.image.asset._ref
           .replace("image-", "")
           .replace("-jpg", ".jpg")
@@ -492,7 +493,7 @@ export default function MarketingPage() {
                   <span className="text-lg">→</span>
                 </button>
                 <button className="rounded-xl px-5 sm:px-6 py-2.5 sm:py-2.5 text-gray-900 dark:text-white bg-gray-100 dark:bg-[#1D1D23] border-2 border-gray-300 dark:border-[#35353E] text-sm sm:text-base font-medium hover:bg-gray-200 dark:hover:bg-[#23232B] transition-colors min-h-[44px] flex items-center justify-center gap-2">
-                  {t("marketing.hero.cta.demo", "Watch Demo")}
+                  {t("marketing.hero.cta.demo", "Watch us")}
                   <Play size={16} className="text-[#1D8751]" />
                 </button>
               </div>

@@ -1,14 +1,10 @@
 <svg width="64" height="64" viewBox="0 0 64 64" fill="none" xmlns="http://www.w3.org/2000/svg">
   <rect width="64" height="64" rx="16" fill="#F5F7FB"/>
-  <circle cx="32" cy="24" r="11" fill="#FFFFFF" stroke="#1D4ED8" stroke-width="2"/>
-  <path d="M20 46C20 39.3726 25.3726 34 32 34C38.6274 34 44 39.3726 44 46" stroke="#94A3B8" stroke-width="2" stroke-linecap="round"/>
-  <path d="M27 24H37" stroke="#1D4ED8" stroke-width="2" stroke-linecap="round"/>
-  <path d="M32 19V29" stroke="#1D4ED8" stroke-width="2" stroke-linecap="round"/>
+  <!-- back coin -->
+  <circle cx="37" cy="35" r="14" fill="#E2E8F0" stroke="#94A3B8" stroke-width="2"/>
+  <!-- front coin -->
+  <circle cx="27" cy="29" r="14" fill="#FFFFFF" stroke="#1D8751" stroke-width="2"/>
+  <!-- currency symbol -->
+  <path d="M27 21.5V36.5" stroke="#1D8751" stroke-width="2" stroke-linecap="round"/>
+  <path d="M31.5 25C31.5 22.7909 29.4853 21 27 21C24.5147 21 22.5 22.7909 22.5 25C22.5 27.2091 24.5147 28.4 27 28.4C29.4853 28.4 31.5 29.7909 31.5 32C31.5 34.2091 29.4853 36 27 36C24.5147 36 22.5 34.2091 22.5 32" stroke="#1D8751" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
 </svg>
-
-
-
-
-
-
-
