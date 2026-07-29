@@ -138,6 +138,17 @@ export interface ResendOTPResponse {
   message?: string;
 }
 
+/** Sent when the user clicks the "verify your email" link from the registration email. */
+export interface VerifyOtpLinkPayload {
+  email: string;
+  token: string;
+}
+
+export interface VerifyOtpLinkResponse {
+  message?: string;
+  user?: Pick<User, "id" | "email" | "otp_verified">;
+}
+
 export interface KYCResponse {
   is_verified: boolean;
   status?: string;

@@ -4,7 +4,7 @@ import React, { useState, useEffect, useRef, useId } from "react";
 import Link from "next/link";
 import Image from "next/image";
 import { useDispatch, useSelector } from "react-redux";
-import { loginUser, verifyOTP, resendOTP } from "@/features/auth/slices/authSlice";
+import { loginUser, verifyOTP, resendOTP, verifyOtpLink } from "@/features/auth/slices/authSlice";
 import { AppDispatch, RootState } from "@/features/auth/store";
 import { EmailVerificationModal } from "./EmailVerificationModal";
 import { useRouter, useSearchParams } from "next/navigation";
@@ -49,6 +49,13 @@ export default function LoginPage() {
   const captchaSuccessTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const [showOtpModal, setShowOtpModal] = useState(false);
   const [otpEmail, setOtpEmail] = useState("");
+  // Full-screen overlay shown while an email verification link is being processed
+  const [emailLinkStatus, setEmailLinkStatus] = useState<
+    "idle" | "verifying" | "success" | "error"
+  >("idle");
+  const [emailLinkMessage, setEmailLinkMessage] = useState("");
+  const verifyLinkProcessedRef = useRef(false);
+  const emailLinkAutoDismissRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const dispatch = useDispatch<AppDispatch>();
   const router = useRouter();
@@ -80,6 +87,81 @@ export default function LoginPage() {
       }, 100);
     }
   }, [isAuthenticated, searchParams]);
+
+  // Handle the "verify your email" link from the registration email
+  // (e.g. /auth/login/?token=...&email=...) - verify it against the backend
+  // automatically instead of just landing the user on a plain login page.
+  useEffect(() => {
+    if (verifyLinkProcessedRef.current) return;
+
+    const token = searchParams?.get("token");
+    const linkEmail = searchParams?.get("email");
+    if (!token || !linkEmail) return;
+
+    verifyLinkProcessedRef.current = true;
+    setEmailLinkStatus("verifying");
+
+    const stripVerificationParamsFromUrl = () => {
+      const params = new URLSearchParams(searchParams?.toString() ?? "");
+      params.delete("token");
+      params.delete("email");
+      const query = params.toString();
+      router.replace(query ? `/auth/login?${query}` : "/auth/login");
+    };
+
+    (async () => {
+      const result = await dispatch(verifyOtpLink({ email: linkEmail, token }));
+
+      setEmail(linkEmail);
+      stripVerificationParamsFromUrl();
+
+      if (verifyOtpLink.fulfilled.match(result)) {
+        setEmailLinkStatus("success");
+        setEmailLinkMessage(
+          t(
+            "auth.login.verifyLinkSuccessDesc",
+            "Your email has been verified. You can now log in."
+          )
+        );
+        // Auto-advance to the login page shortly after - the "Skip and go to
+        // login" button below covers anyone who wants to move on immediately.
+        emailLinkAutoDismissRef.current = setTimeout(() => {
+          setEmailLinkStatus("idle");
+        }, 2500);
+      } else {
+        setEmailLinkStatus("error");
+        setEmailLinkMessage(
+          (result.payload as string | undefined) ||
+            t(
+              "auth.login.verifyLinkErrorDesc",
+              "This verification link is invalid or has expired. Please try logging in or request a new code."
+            )
+        );
+        // Give the user a moment to read the error, then drop them onto the login form.
+        emailLinkAutoDismissRef.current = setTimeout(() => {
+          setEmailLinkStatus("idle");
+        }, 3500);
+      }
+    })();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [searchParams]);
+
+  // Clean up the auto-dismiss timer if the component unmounts mid-countdown
+  useEffect(() => {
+    return () => {
+      if (emailLinkAutoDismissRef.current) {
+        clearTimeout(emailLinkAutoDismissRef.current);
+      }
+    };
+  }, []);
+
+  const dismissEmailLinkOverlay = () => {
+    if (emailLinkAutoDismissRef.current) {
+      clearTimeout(emailLinkAutoDismissRef.current);
+      emailLinkAutoDismissRef.current = null;
+    }
+    setEmailLinkStatus("idle");
+  };
 
   // V2: Re-enable with GoogleAuthButton
   // const handleGoogleSuccess = (userData: any) => {
@@ -867,6 +949,116 @@ export default function LoginPage() {
         </div>
       </div>
 
+      {/* Full-screen overlay shown while an email verification link is being processed */}
+      {emailLinkStatus !== "idle" && (
+        <div className="fixed inset-0 z-[9999] flex items-center justify-center p-4">
+          <div className="absolute inset-0 bg-[#18181D]/90 backdrop-blur-sm" />
+          <div className="relative bg-white dark:bg-[var(--card-color)] rounded-2xl shadow-2xl w-full max-w-sm border border-gray-200 dark:border-[#35353E] p-6 sm:p-8 text-center">
+            {emailLinkStatus === "verifying" && (
+              <>
+                <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-[#1D8751]/10">
+                  <svg
+                    className="h-8 w-8 animate-spin text-[#1D8751]"
+                    xmlns="http://www.w3.org/2000/svg"
+                    fill="none"
+                    viewBox="0 0 24 24"
+                  >
+                    <circle
+                      className="opacity-25"
+                      cx="12"
+                      cy="12"
+                      r="10"
+                      stroke="currentColor"
+                      strokeWidth="4"
+                    ></circle>
+                    <path
+                      className="opacity-75"
+                      fill="currentColor"
+                      d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+                    ></path>
+                  </svg>
+                </div>
+                <p className="text-base sm:text-lg font-semibold text-gray-900 dark:text-white">
+                  {t("auth.login.verifyingLink", "Verifying your email...")}
+                </p>
+                <p className="mt-2 text-xs sm:text-sm text-gray-500 dark:text-[#9CA3AF]">
+                  {t("auth.login.verifyingLinkDesc", "Hang tight, this only takes a moment.")}
+                </p>
+              </>
+            )}
+
+            {emailLinkStatus === "success" && (
+              <>
+                <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-[#E6F4EC] dark:bg-[#1F3B2C]">
+                  <svg
+                    xmlns="http://www.w3.org/2000/svg"
+                    className="w-8 h-8 text-[#1D8751]"
+                    viewBox="0 0 20 20"
+                    fill="currentColor"
+                  >
+                    <path
+                      fillRule="evenodd"
+                      d="M16.704 5.29a1 1 0 010 1.42l-7.778 7.777a1 1 0 01-1.414 0L3.296 10.27a1 1 0 111.414-1.414l3.095 3.094 7.071-7.071a1 1 0 011.414 0z"
+                      clipRule="evenodd"
+                    />
+                  </svg>
+                </div>
+                <p className="text-base sm:text-lg font-semibold text-gray-900 dark:text-white">
+                  {t("auth.login.verifyLinkSuccessTitle", "Email verified!")}
+                </p>
+                <p className="mt-2 text-xs sm:text-sm text-gray-500 dark:text-[#9CA3AF]">
+                  {emailLinkMessage}
+                </p>
+                <button
+                  type="button"
+                  onClick={dismissEmailLinkOverlay}
+                  className="w-full mt-6 bg-[#1D8751] hover:bg-[#167a47] text-white py-2.5 px-4 rounded-lg font-semibold transition-colors duration-300"
+                >
+                  {t("auth.login.verifyLinkSkip", "Skip and go to login")}
+                </button>
+                <p className="mt-3 text-xs text-gray-400 dark:text-[#6B7280]">
+                  {t("auth.login.verifyLinkRedirecting", "Redirecting you to login...")}
+                </p>
+              </>
+            )}
+
+            {emailLinkStatus === "error" && (
+              <>
+                <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-red-50 dark:bg-red-500/10">
+                  <svg
+                    xmlns="http://www.w3.org/2000/svg"
+                    className="w-8 h-8 text-[#F04438]"
+                    viewBox="0 0 20 20"
+                    fill="currentColor"
+                  >
+                    <path
+                      fillRule="evenodd"
+                      d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-8-3a1 1 0 00-1 1v3a1 1 0 102 0V8a1 1 0 00-1-1zm0 8a1 1 0 100-2 1 1 0 000 2z"
+                      clipRule="evenodd"
+                    />
+                  </svg>
+                </div>
+                <p className="text-base sm:text-lg font-semibold text-gray-900 dark:text-white">
+                  {t("auth.login.verifyLinkErrorTitle", "Verification failed")}
+                </p>
+                <p className="mt-2 text-xs sm:text-sm text-gray-500 dark:text-[#9CA3AF]">
+                  {emailLinkMessage}
+                </p>
+                <button
+                  type="button"
+                  onClick={dismissEmailLinkOverlay}
+                  className="w-full mt-6 bg-[#1D8751] hover:bg-[#167a47] text-white py-2.5 px-4 rounded-lg font-semibold transition-colors duration-300"
+                >
+                  {t("auth.login.verifyLinkSkip", "Skip and go to login")}
+                </button>
+                <p className="mt-3 text-xs text-gray-400 dark:text-[#6B7280]">
+                  {t("auth.login.verifyLinkRedirecting", "Redirecting you to login...")}
+                </p>
+              </>
+            )}
+          </div>
+        </div>
+      )}
     </div>
   );
 }
