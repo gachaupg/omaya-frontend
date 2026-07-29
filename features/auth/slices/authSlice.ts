@@ -17,6 +17,8 @@ import {
   OTPResponse,
   ResendOTPPayload,
   ResendOTPResponse,
+  VerifyOtpLinkPayload,
+  VerifyOtpLinkResponse,
   KYCResponse,
   KYCVerifyPayload,
   SumSubInitiatePayload,
@@ -401,6 +403,24 @@ export const verifyOTP = createAsyncThunk<OTPResponse, OTPPayload>(
     }
   }
 );
+
+// Verify the email/OTP via the link sent in the verification email
+// (e.g. https://omaya.io/auth/login/?token=...&email=...), rather than
+// requiring the user to manually type the OTP code.
+export const verifyOtpLink = createAsyncThunk<
+  VerifyOtpLinkResponse,
+  VerifyOtpLinkPayload
+>("auth/verifyOtpLink", async (payload, { rejectWithValue }) => {
+  try {
+    const response = await post<VerifyOtpLinkResponse>(
+      API_ENDPOINTS.VERIFY_OTP_LINK,
+      payload
+    );
+    return response.data;
+  } catch (error) {
+    return rejectWithValue(handleApiError(error));
+  }
+});
 
 // Request a new OTP be sent to an email (e.g. when login fails because the account isn't verified yet)
 export const resendOTP = createAsyncThunk<ResendOTPResponse, ResendOTPPayload>(
@@ -985,6 +1005,22 @@ const authSlice = createSlice({
     );
     builder.addCase(verifyOTP.rejected, (state, action) => {
       state.loading = false;
+      state.error = action.payload as string;
+    });
+
+    // Verify OTP link (email verification link click)
+    builder.addCase(verifyOtpLink.pending, (state) => {
+      state.error = null;
+    });
+    builder.addCase(
+      verifyOtpLink.fulfilled,
+      (state, action: PayloadAction<VerifyOtpLinkResponse>) => {
+        if (state.user && action.payload.user?.otp_verified !== undefined) {
+          state.user.otp_verified = action.payload.user.otp_verified;
+        }
+      }
+    );
+    builder.addCase(verifyOtpLink.rejected, (state, action) => {
       state.error = action.payload as string;
     });
 
