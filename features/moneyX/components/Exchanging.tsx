@@ -506,7 +506,6 @@ export default function Exchanging({ transactionData, onBackToTransfer }: Exchan
   }
 
   const finalWebsocketUrl = websocketUrl;
-
   // Shared message handler for WebSocket messages
   const handleWebSocketMessage = (data: TransactionStatusMessage) => {
     setWsError(null);
