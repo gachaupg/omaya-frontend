@@ -280,5 +280,5 @@ export const API_CONFIG = {
  * trading-engine asset UUID so deposit/withdraw POSTs send a valid `asset_id`.
  */
 export const CHANGE_NOW_PUBLIC_ASSET_ID_OVERRIDES: Record<string, string> = {
-  "usdt-bsc": "a0232aac-dca3-42a6-8a33-63658d191130",
+  "usdt-bsc": "79a3570d-9aa8-4bf9-a6b4-f435023517e0",
 };

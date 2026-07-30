@@ -225,7 +225,10 @@ const SuccessPage: React.FC<SuccessPageProps> = ({
       receivedAmount: formatAmount(receivedAmount),
       fromProvider: resolvePaymentProviderName(fromPm) || "—",
       toProvider: resolvePaymentProviderName(toPm) || "—",
-      fromAccount: resolvePaymentAccountNumber(fromPm) || "—",
+      fromAccount:
+        resolvePaymentAccountNumber(fromPm) ||
+        resolvePaymentAccountNumber(transactionData?.paymentDetail) ||
+        "—",
       toAccount: toAccount || "—",
     };
   };

@@ -17,6 +17,31 @@ export function findAutoSendPaymentDetail(
   return (match as Record<string, unknown>) ?? null;
 }
 
+/** Auto-send holder among bank/mobile rails only (crypto & forex excluded). */
+export function findAutoSendPaymentDetailForFiatRails(
+  details: unknown
+): Record<string, unknown> | null {
+  if (!Array.isArray(details)) return null;
+  for (const detail of details) {
+    if (!detail || typeof detail !== "object") continue;
+    const d = detail as PaymentMethodShape;
+    if (isCryptoPaymentMethodForAutoSend(d)) continue;
+    if (isForexPaymentMethodForAutoSend(d)) continue;
+    if (parseAllowAutoSend(d.allow_auto_send)) {
+      return d as Record<string, unknown>;
+    }
+  }
+  return null;
+}
+
+export function shouldShowAddAllowAutoSendCheckbox(
+  methodTab: "bank" | "crypto" | "forex",
+  allDetails: unknown
+): boolean {
+  if (methodTab !== "bank") return false;
+  return findAutoSendPaymentDetailForFiatRails(allDetails) == null;
+}
+
 type PaymentDetailRef = {
   id?: number | string;
   user_payment_detail_id?: string;
@@ -40,7 +65,7 @@ export function isEditingAutoSendPaymentDetail(
   editing: PaymentDetailRef | null | undefined,
   allDetails: unknown
 ): boolean {
-  const holder = findAutoSendPaymentDetail(allDetails);
+  const holder = findAutoSendPaymentDetailForFiatRails(allDetails);
   if (!holder || !editing) return false;
   return paymentDetailKeysMatch(editing, holder as PaymentDetailRef);
 }
@@ -84,7 +109,7 @@ export function shouldShowEditAllowAutoSendCheckbox(
   if (!editing) return false;
   if (isCryptoPaymentMethodForAutoSend(editing)) return false;
   if (isForexPaymentMethodForAutoSend(editing)) return false;
-  if (!findAutoSendPaymentDetail(allDetails)) return true;
+  if (!findAutoSendPaymentDetailForFiatRails(allDetails)) return true;
   return isEditingAutoSendPaymentDetail(editing, allDetails);
 }
 

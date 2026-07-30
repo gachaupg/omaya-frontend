@@ -21,6 +21,10 @@ import {
 } from "@/features/p2p/api";
 import { useAssetsDisplay } from "@/features/express/hooks/useDataDisplay";
 import { isForexPrimusAsset } from "@/features/express/api";
+import {
+  bookmarkedAddressesApi,
+  getBookmarkApiErrorMessage,
+} from "@/features/express/services/bookmarkedAddressesApi";
 
 /** Same network resolution as Express deposit (`deposit.tsx`). */
 const getAssetNetwork = (asset: any): string => {
@@ -37,6 +41,31 @@ const getAssetNetwork = (asset: any): string => {
 
 const assetRowKey = (a: any) =>
   `${(a?.ticker || a?.symbol || a?.name || "").toString().toLowerCase()}|${(a?.network || getAssetNetwork(a) || "").toString().toLowerCase()}`;
+
+type ModalStep = "details" | "otp";
+
+const maskEmailForOtp = (email: string): string => {
+  const value = String(email || "").trim();
+  if (!value || !value.includes("@")) return "";
+
+  const [localPartRaw, domainRaw] = value.split("@");
+  const localPart = localPartRaw || "";
+  const [domainNameRaw, ...tldParts] = (domainRaw || "").split(".");
+  const domainName = domainNameRaw || "";
+  const tld = tldParts.length > 0 ? `.${tldParts.join(".")}` : "";
+
+  const maskedLocal =
+    localPart.length <= 5
+      ? `${localPart.slice(0, 1)}...`
+      : `${localPart.slice(0, 5)}...`;
+
+  const maskedDomain =
+    domainName.length <= 2
+      ? `${domainName.slice(0, 1)}...`
+      : `${domainName.slice(0, 2)}...`;
+
+  return `${maskedLocal}@${maskedDomain}${tld}`;
+};
 
 interface AddWalletAddressModalProps {
   open: boolean;
@@ -76,11 +105,14 @@ const AddWalletAddressModal = ({
   const { addresses: p2pDepositAddresses } = useSelector(
     (s: RootState) => (s as any).p2pDepositAddresses || { addresses: [] }
   );
+  const { user } = useSelector((s: RootState) => s.auth);
 
+  const [step, setStep] = useState<ModalStep>("details");
   const [selectedAssetTicker, setSelectedAssetTicker] = useState("");
   const [selectedNetwork, setSelectedNetwork] = useState("");
   const [address, setAddress] = useState("");
   const [accountName, setAccountName] = useState("");
+  const [walletLabel, setWalletLabel] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   const [otp, setOtp] = useState("");
@@ -105,7 +137,12 @@ const AddWalletAddressModal = ({
   const [networkDropdownRect, setNetworkDropdownRect] = useState<{ top: number; left: number; width: number } | null>(null);
   const [assetLoadTimedOut, setAssetLoadTimedOut] = useState(false);
   const assetsBootstrapForOpenRef = useRef(false);
+  const hasInitializedForOpenRef = useRef(false);
 
+  const maskedUserEmail = useMemo(
+    () => maskEmailForOtp(String(user?.email || "")),
+    [user?.email]
+  );
   /** Same merged + cached list as Express deposit (`useAssetsDisplay`). */
   const expressAssetRows = assetsDisplay.displayData || [];
 
@@ -256,6 +293,26 @@ const AddWalletAddressModal = ({
     debounceMs: 400,
     minLength: 10,
   });
+
+  useEffect(() => {
+    if (!open) {
+      hasInitializedForOpenRef.current = false;
+      return;
+    }
+    if (hasInitializedForOpenRef.current) return;
+    hasInitializedForOpenRef.current = true;
+
+    setStep("details");
+    const fullName = user
+      ? `${user.first_name || ""} ${user.last_name || ""}`.trim()
+      : "";
+    setAccountName(fullName);
+    setWalletLabel("OMAYA Wallets");
+    setOtp("");
+    setOtpSent(false);
+    setOtpVerified(false);
+    setOtpFeedback(null);
+  }, [open, user]);
 
   useEffect(() => {
     if (!open) {
@@ -423,44 +480,53 @@ const AddWalletAddressModal = ({
     }
   };
 
-  const handleSendOtp = async () => {
-    if (sendOtpLoading || verifyOtpLoading) return;
-    // Restriction: user must provide a valid address before requesting OTP
+  const handleSendOtp = async (): Promise<boolean> => {
+    if (sendOtpLoading || verifyOtpLoading) return false;
     if (!selectedAssetTicker || !selectedNetwork) {
       setOtpFeedback({ type: "error", text: "Please select an asset and network first." });
-      return;
+      return false;
     }
     if (!address.trim()) {
       setOtpFeedback({ type: "error", text: "Please enter a wallet address first." });
-      return;
+      return false;
     }
     if (addressAlreadyExists) {
       setOtpFeedback({ type: "error", text: "This wallet address is already saved." });
-      return;
+      return false;
     }
     if (isValidating) {
       setOtpFeedback({ type: "error", text: "Please wait for address validation to complete." });
-      return;
+      return false;
     }
     if (!addressIsValid) {
       setOtpFeedback({
         type: "error",
         text: validationResult?.message || "Please enter a valid wallet address before requesting OTP.",
       });
-      return;
+      return false;
     }
+    if (!accountName.trim()) {
+      setOtpFeedback({ type: "error", text: "Name is required." });
+      return false;
+    }
+    if (!walletLabel.trim()) {
+      setOtpFeedback({ type: "error", text: "Label is required." });
+      return false;
+    }
+
     setOtpFeedback(null);
     setSendOtpLoading(true);
     try {
       await sendPaymentDetailAddOtp({
         provider_name: `${selectedAssetTicker} (${selectedNetwork})`,
-        account_name: selectedAssetTicker || "Wallet",
+        account_name: accountName.trim(),
         account_number: address.trim(),
       });
       setOtpSent(true);
       setOtpVerified(false);
       setOtp("");
       setOtpFeedback({ type: "success", text: "OTP sent to your email." });
+      return true;
     } catch (err: any) {
       const data = err?.response?.data;
       const message =
@@ -473,13 +539,103 @@ const AddWalletAddressModal = ({
         type: "error",
         text: message,
       });
+      return false;
     } finally {
       setSendOtpLoading(false);
     }
   };
 
+  const validateDetails = (): boolean => {
+    if (!selectedAssetTicker) {
+      showToast.error("Please select an asset");
+      return false;
+    }
+    if (!selectedNetwork) {
+      showToast.error("Please select a network");
+      return false;
+    }
+    if (!address.trim()) {
+      showToast.error("Wallet address is required");
+      return false;
+    }
+    if (addressAlreadyExists) {
+      showToast.error("This wallet address is already saved.");
+      return false;
+    }
+    if (address.trim().length >= 10 && !addressIsValid && !isValidating) {
+      showToast.error("Please wait for address validation to complete");
+      return false;
+    }
+    if (addressIsInvalid) {
+      showToast.error(validationResult?.message || "Invalid wallet address");
+      return false;
+    }
+    if (!accountName.trim()) {
+      showToast.error("Name is required");
+      return false;
+    }
+    if (!walletLabel.trim()) {
+      showToast.error("Label is required");
+      return false;
+    }
+    return true;
+  };
+
+  const handleContinue = async () => {
+    if (!validateDetails()) return;
+
+    const sent = await handleSendOtp();
+    if (sent) {
+      setStep("otp");
+    }
+  };
+
+  const saveWalletAddress = async () => {
+    setIsSubmitting(true);
+    try {
+      const result = await dispatch(
+        createUserWalletAddress({
+          address: address.trim(),
+          account_name: accountName.trim(),
+          label: walletLabel.trim(),
+          asset: selectedAssetTicker.toUpperCase(),
+          network: selectedNetwork,
+        }) as any
+      );
+
+      if (createUserWalletAddress.fulfilled.match(result)) {
+        const trimmedAddress = address.trim();
+        const asset = selectedAssetTicker.toUpperCase();
+        const network = selectedNetwork.trim();
+
+        try {
+          await bookmarkedAddressesApi.create({
+            address: trimmedAddress,
+            label: walletLabel.trim(),
+            network: network.toLowerCase(),
+            asset,
+          });
+          showToast.success("Wallet address added and whitelisted!");
+        } catch (bookmarkErr) {
+          showToast.success("Wallet address added successfully!");
+          const whitelistMsg = getBookmarkApiErrorMessage(bookmarkErr);
+          if (whitelistMsg) {
+            showToast.error(`Could not add to whitelist: ${whitelistMsg}`);
+          }
+        }
+
+        handleClose();
+        onSuccess?.();
+      } else if (createUserWalletAddress.rejected.match(result)) {
+        showToast.error(result.payload || "Failed to create wallet address");
+      }
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
   const handleVerifyOtp = async () => {
-    if (sendOtpLoading || verifyOtpLoading) return;
+    if (sendOtpLoading || verifyOtpLoading || isSubmitting) return;
     const code = otp.trim();
     if (!/^\d{6}$/.test(code)) {
       setOtpFeedback({ type: "error", text: "Enter a 6-digit OTP." });
@@ -490,7 +646,8 @@ const AddWalletAddressModal = ({
     try {
       await verifyPaymentDetailAddOtp(code);
       setOtpVerified(true);
-      setOtpFeedback({ type: "success", text: "OTP verified." });
+      setOtpFeedback({ type: "success", text: "OTP verified. Saving your address..." });
+      await saveWalletAddress();
     } catch (err: any) {
       setOtpVerified(false);
       const data = err?.response?.data;
@@ -555,70 +712,20 @@ const AddWalletAddressModal = ({
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-
-    if (!selectedAssetTicker) {
-      showToast.error("Please select an asset");
+    if (step === "details") {
+      await handleContinue();
       return;
     }
-    if (!selectedNetwork) {
-      showToast.error("Please select a network");
-      return;
-    }
-    if (!address.trim()) {
-      showToast.error("Wallet address is required");
-      return;
-    }
-    if (addressAlreadyExists) {
-      showToast.error("This wallet address is already saved.");
-      return;
-    }
-    if (address.trim().length >= 10 && !addressIsValid && !isValidating) {
-      showToast.error("Please wait for address validation to complete");
-      return;
-    }
-    if (addressIsInvalid) {
-      showToast.error(validationResult?.message || "Invalid wallet address");
-      return;
-    }
-    if (!accountName.trim()) {
-      showToast.error("Account name is required");
-      return;
-    }
-
-    if (!otpVerified) {
-      showToast.error("Please verify the OTP sent to your email");
-      return;
-    }
-
-    setIsSubmitting(true);
-    try {
-      const result = await dispatch(
-        createUserWalletAddress({
-          address: address.trim(),
-          account_name: accountName.trim(),
-          label: "OMAYA Wallets",
-          asset: selectedAssetTicker.toUpperCase(),
-          network: selectedNetwork,
-        }) as any
-      );
-
-      if (createUserWalletAddress.fulfilled.match(result)) {
-        showToast.success("Wallet address added successfully!");
-        handleClose();
-        onSuccess?.();
-      } else if (createUserWalletAddress.rejected.match(result)) {
-        showToast.error(result.payload || "Failed to create wallet address");
-      }
-    } finally {
-      setIsSubmitting(false);
-    }
+    await handleVerifyOtp();
   };
 
   const handleClose = () => {
+    setStep("details");
     setSelectedAssetTicker("");
     setSelectedNetwork("");
     setAddress("");
     setAccountName("");
+    setWalletLabel("");
     setOtp("");
     setOtpSent(false);
     setOtpVerified(false);
@@ -643,7 +750,7 @@ const AddWalletAddressModal = ({
       <div className="w-full max-w-md rounded-2xl border border-[#E3E6F0] dark:border-[#2A2A35] bg-white dark:bg-[var(--card-color)] p-6 shadow-xl max-h-[90vh] overflow-y-auto">
         <div className="flex items-center justify-between mb-6">
           <h2 className="text-lg sm:text-xl font-bold text-gray-900 dark:text-white">
-            Add Wallet Address
+            {step === "otp" ? "Verify Email" : "Add Wallet Address"}
           </h2>
           <button
             onClick={handleClose}
@@ -656,6 +763,118 @@ const AddWalletAddressModal = ({
         </div>
 
         <form onSubmit={handleSubmit} className="space-y-4">
+          {step === "otp" ? (
+            <>
+              <div className="rounded-xl border border-[#E3E6F0] dark:border-[#2A2A35] bg-gray-50/60 dark:bg-[#23232B]/50 p-4 space-y-2">
+                <p className="text-xs font-medium uppercase tracking-wide text-gray-500 dark:text-[#8B90A5]">
+                  Address summary
+                </p>
+                <p className="text-sm font-semibold text-gray-900 dark:text-white">
+                  {walletLabel.trim() || "—"}
+                </p>
+                {accountName.trim() ? (
+                  <p className="text-xs text-gray-500 dark:text-[#8B90A5]">
+                    Name: {accountName.trim()}
+                  </p>
+                ) : null}
+                <p className="text-sm text-gray-600 dark:text-[#8B90A5]">
+                  {selectedAssetTicker.toUpperCase()} · {selectedNetwork}
+                </p>
+                <p className="text-xs text-gray-500 dark:text-[#8B90A5] break-all">
+                  {address.trim()}
+                </p>
+              </div>
+
+              <p className="text-sm text-gray-600 dark:text-[#8B90A5]">
+                {maskedUserEmail
+                  ? `We sent a 6-digit verification code to ${maskedUserEmail}. Enter it below to save this address.`
+                  : "We sent a 6-digit verification code to your email. Enter it below to save this address."}
+              </p>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 dark:text-[#8B90A5] mb-2">
+                  Verification code
+                </label>
+                <input
+                  inputMode="numeric"
+                  pattern="[0-9]*"
+                  maxLength={6}
+                  value={otp}
+                  onChange={(e) => {
+                    setOtpVerified(false);
+                    setOtpFeedback(null);
+                    setOtp(e.target.value.replace(/\D/g, "").slice(0, 6));
+                  }}
+                  placeholder="Enter 6-digit OTP"
+                  className="w-full rounded-xl border border-[#E3E6F0] dark:border-[#2A2A35] bg-white dark:bg-[var(--card-color)] px-4 py-3 text-gray-900 dark:text-white text-center text-lg tracking-[0.35em] placeholder:text-gray-400 dark:placeholder:text-[#5C6175] focus:outline-none focus:ring-2 focus:ring-[#1D8751]/50"
+                  autoFocus
+                />
+              </div>
+
+              <div className="flex justify-center">
+                <button
+                  type="button"
+                  onClick={() => void handleSendOtp()}
+                  disabled={sendOtpLoading || verifyOtpLoading || isSubmitting}
+                  className="text-sm font-medium text-[#1D8751] hover:text-[#0f8f4d] disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  {sendOtpLoading ? "Sending..." : "Resend OTP"}
+                </button>
+              </div>
+
+              {otpFeedback && (
+                <div
+                  className={`text-sm font-medium ${
+                    otpFeedback.type === "success"
+                      ? "text-[#1D8751]"
+                      : "text-red-500 dark:text-red-400"
+                  }`}
+                >
+                  {otpFeedback.text}
+                </div>
+              )}
+
+              <div className="flex gap-3 pt-2">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setStep("details");
+                    setOtp("");
+                    setOtpVerified(false);
+                    setOtpFeedback(null);
+                  }}
+                  disabled={verifyOtpLoading || isSubmitting}
+                  className="flex-1 px-4 py-3 rounded-xl border border-[#E3E6F0] dark:border-[#2A2A35] text-gray-700 dark:text-[#8B90A5] font-medium hover:bg-gray-50 dark:hover:bg-[#2D2D33] transition-colors disabled:opacity-50"
+                >
+                  Back
+                </button>
+                <button
+                  type="submit"
+                  disabled={
+                    verifyOtpLoading ||
+                    isSubmitting ||
+                    sendOtpLoading ||
+                    !otpSent ||
+                    otp.trim().length !== 6
+                  }
+                  className="flex-1 px-4 py-3 rounded-xl bg-[#1D8751] text-white font-medium hover:bg-[#0f8f4d] transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+                >
+                  {verifyOtpLoading || isSubmitting ? (
+                    <>
+                      <svg className="animate-spin h-4 w-4" viewBox="0 0 24 24">
+                        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" fill="none" />
+                        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z" />
+                      </svg>
+                      {isSubmitting ? "Adding..." : "Verifying..."}
+                    </>
+                  ) : (
+                    "Verify & Add Address"
+                  )}
+                </button>
+              </div>
+            </>
+          ) : (
+            <>
           {/* 1. Asset dropdown */}
           <div>
             <label className="block text-sm font-medium text-gray-700 dark:text-[#8B90A5] mb-2">
@@ -1122,90 +1341,36 @@ const AddWalletAddressModal = ({
             </div>
           )}
 
-          {/* 4. Account name */}
+          {/* 4. Name & Label */}
           {selectedAsset && (
+            <>
             <div>
               <label className="block text-sm font-medium text-gray-700 dark:text-[#8B90A5] mb-2">
-                Account Name
+                Name
               </label>
               <input
                 type="text"
                 value={accountName}
                 onChange={(e) => setAccountName(e.target.value)}
+                placeholder="Your full name"
+                className="w-full rounded-xl border border-[#E3E6F0] dark:border-[#2A2A35] bg-white dark:bg-[var(--card-color)] px-4 py-3 text-gray-900 dark:text-white placeholder:text-gray-400 dark:placeholder:text-[#5C6175] focus:outline-none focus:ring-2 focus:ring-[#1D8751]/50"
+                required
+              />
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 dark:text-[#8B90A5] mb-2">
+                Label
+              </label>
+              <input
+                type="text"
+                value={walletLabel}
+                onChange={(e) => setWalletLabel(e.target.value)}
                 placeholder="My Main Wallet"
                 className="w-full rounded-xl border border-[#E3E6F0] dark:border-[#2A2A35] bg-white dark:bg-[var(--card-color)] px-4 py-3 text-gray-900 dark:text-white placeholder:text-gray-400 dark:placeholder:text-[#5C6175] focus:outline-none focus:ring-2 focus:ring-[#1D8751]/50"
                 required
               />
             </div>
-          )}
-
-          {/* 5. Email OTP (required) */}
-          {selectedAsset && (
-            <div className="rounded-xl border border-[#E3E6F0] dark:border-[#2A2A35] bg-gray-50/40 dark:bg-[#23232B]/40 p-4">
-              <div className="flex items-center justify-between gap-3">
-                <div className="min-w-0">
-                  <div className="text-sm font-semibold text-gray-900 dark:text-white">
-                    Email verification
-                  </div>
-                  <div className="text-xs text-gray-600 dark:text-[#8B90A5]">
-                    We have send a 6-digit OTP to your email.
-                  </div>
-                </div>
-                <button
-                  type="button"
-                  onClick={handleSendOtp}
-                  disabled={
-                    sendOtpLoading ||
-                    verifyOtpLoading ||
-                    !selectedAssetTicker ||
-                    !selectedNetwork ||
-                    !address.trim() ||
-                    addressAlreadyExists ||
-                    isValidating ||
-                    !addressIsValid
-                  }
-                  className="shrink-0 px-3 py-2 rounded-lg border border-[#1D8751] text-[#1D8751] hover:bg-[#1D8751]/10 transition-colors text-sm font-semibold disabled:opacity-50 disabled:cursor-not-allowed"
-                >
-                  {sendOtpLoading ? "Sending..." : otpSent ? "Resend OTP" : "Send OTP"}
-                </button>
-              </div>
-
-              <div className="mt-3 flex items-center gap-2">
-                <input
-                  inputMode="numeric"
-                  pattern="[0-9]*"
-                  maxLength={6}
-                  value={otp}
-                  onChange={(e) => {
-                    setOtpVerified(false);
-                    setOtpFeedback(null);
-                    setOtp(e.target.value.replace(/\D/g, "").slice(0, 6));
-                  }}
-                  placeholder="Enter OTP"
-                  className="flex-1 rounded-xl border border-[#E3E6F0] dark:border-[#2A2A35] bg-white dark:bg-[var(--card-color)] px-4 py-3 text-gray-900 dark:text-white placeholder:text-gray-400 dark:placeholder:text-[#5C6175] focus:outline-none focus:ring-2 focus:ring-[#1D8751]/50"
-                />
-                <button
-                  type="button"
-                  onClick={handleVerifyOtp}
-                  disabled={!otpSent || verifyOtpLoading || sendOtpLoading || otp.trim().length !== 6}
-                  className="px-3 py-3 rounded-xl bg-[#1D8751] text-white font-semibold hover:bg-[#0f8f4d] transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-                >
-                  {verifyOtpLoading ? "Verifying..." : otpVerified ? "Verified" : "Verify"}
-                </button>
-              </div>
-
-              {otpFeedback && (
-                <div
-                  className={`mt-2 text-xs font-medium ${
-                    otpFeedback.type === "success"
-                      ? "text-[#1D8751]"
-                      : "text-red-500 dark:text-red-400"
-                  }`}
-                >
-                  {otpFeedback.text}
-                </div>
-              )}
-            </div>
+            </>
           )}
 
           <div className="flex gap-3 pt-2">
@@ -1219,7 +1384,7 @@ const AddWalletAddressModal = ({
             <button
               type="submit"
               disabled={
-                isSubmitting ||
+                sendOtpLoading ||
                 !selectedAssetTicker ||
                 !selectedNetwork ||
                 !address.trim() ||
@@ -1227,23 +1392,26 @@ const AddWalletAddressModal = ({
                 addressIsInvalid ||
                 isValidating ||
                 (address.trim().length >= 10 && !addressIsValid) ||
-                !otpVerified
+                !accountName.trim() ||
+                !walletLabel.trim()
               }
               className="flex-1 px-4 py-3 rounded-xl bg-[#1D8751] text-white font-medium hover:bg-[#0f8f4d] transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
             >
-              {isSubmitting ? (
+              {sendOtpLoading ? (
                 <>
                   <svg className="animate-spin h-4 w-4" viewBox="0 0 24 24">
                     <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" fill="none" />
                     <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z" />
                   </svg>
-                  Adding...
+                  Sending OTP...
                 </>
               ) : (
-                "Add Address"
+                "Continue"
               )}
             </button>
           </div>
+            </>
+          )}
         </form>
       </div>
     </div>
