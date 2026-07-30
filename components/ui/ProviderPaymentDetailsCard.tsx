@@ -26,6 +26,68 @@ const copyValue = async (value: string, label: string) => {
   }
 };
 
+const CopyButton = ({
+  row,
+  copiedKey,
+  onCopy,
+}: {
+  row: PaymentDetailDisplayRow;
+  copiedKey: string | null;
+  onCopy: (row: PaymentDetailDisplayRow) => void;
+}) => (
+  <button
+    type="button"
+    onClick={() => onCopy(row)}
+    className="flex-shrink-0 p-1.5 rounded-lg bg-[#1D8751]/20 text-[#1D8751] hover:bg-[#1D8751]/30 transition-colors"
+    title={`Copy ${row.label.toLowerCase()}`}
+    aria-label={`Copy ${row.label.toLowerCase()}`}
+  >
+    {copiedKey === row.label ? (
+      <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+        <path
+          strokeLinecap="round"
+          strokeLinejoin="round"
+          strokeWidth={2}
+          d="M5 13l4 4L19 7"
+        />
+      </svg>
+    ) : (
+      <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+        <path
+          strokeLinecap="round"
+          strokeLinejoin="round"
+          strokeWidth={2}
+          d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h2m8 0h2a2 2 0 012 2v2m2 4a2 2 0 01-2 2h-8a2 2 0 01-2-2v-8"
+        />
+      </svg>
+    )}
+  </button>
+);
+
+const AccountDetailColumnLine = ({
+  row,
+  copiedKey,
+  onCopy,
+  labelClassName,
+  valueClassName,
+}: {
+  row: PaymentDetailDisplayRow;
+  copiedKey: string | null;
+  onCopy: (row: PaymentDetailDisplayRow) => void;
+  labelClassName: string;
+  valueClassName: string;
+}) => (
+  <div className="flex flex-col gap-1.5">
+    <span className={labelClassName}>{row.label}</span>
+    <div className="flex items-center justify-between gap-2 min-w-0">
+      <span className={`${valueClassName} min-w-0 break-all`}>{row.value}</span>
+      {row.copyable !== false ? (
+        <CopyButton row={row} copiedKey={copiedKey} onCopy={onCopy} />
+      ) : null}
+    </div>
+  </div>
+);
+
 export default function ProviderPaymentDetailsCard({
   paymentDetail,
   fallbackProviderName,
@@ -47,6 +109,12 @@ export default function ProviderPaymentDetailsCard({
     });
   };
 
+  const accountNameRow = rows.find((row) => row.label === "Account name");
+  const accountNumberRow = rows.find((row) => row.label === "Account number");
+  const otherRows = rows.filter(
+    (row) => row.label !== "Account name" && row.label !== "Account number"
+  );
+
   return (
     <div className={className}>
       {instruction ? (
@@ -61,53 +129,44 @@ export default function ProviderPaymentDetailsCard({
             support or choose another payment method.
           </p>
         ) : (
-          rows.map((row) => (
-            <div key={row.label} className={rowClassName}>
-              <span className={labelClassName}>{row.label}</span>
-              <div className="flex items-center gap-2 min-w-0">
-                <span className={`${valueClassName} min-w-0`}>{row.value}</span>
-                {row.copyable ? (
-                  <button
-                    type="button"
-                    onClick={() => handleCopy(row)}
-                    className="flex-shrink-0 p-1.5 rounded-lg bg-[#1D8751]/20 text-[#1D8751] hover:bg-[#1D8751]/30 transition-colors"
-                    title={`Copy ${row.label.toLowerCase()}`}
-                    aria-label={`Copy ${row.label.toLowerCase()}`}
-                  >
-                    {copiedKey === row.label ? (
-                      <svg
-                        className="w-5 h-5"
-                        fill="none"
-                        viewBox="0 0 24 24"
-                        stroke="currentColor"
-                      >
-                        <path
-                          strokeLinecap="round"
-                          strokeLinejoin="round"
-                          strokeWidth={2}
-                          d="M5 13l4 4L19 7"
-                        />
-                      </svg>
-                    ) : (
-                      <svg
-                        className="w-5 h-5"
-                        fill="none"
-                        viewBox="0 0 24 24"
-                        stroke="currentColor"
-                      >
-                        <path
-                          strokeLinecap="round"
-                          strokeLinejoin="round"
-                          strokeWidth={2}
-                          d="M8 16H6a2 2 0 01-2-2V6a2 2 0 012-2h2m8 0h2a2 2 0 012 2v2m2 4a2 2 0 01-2 2h-8a2 2 0 01-2-2v-8"
-                        />
-                      </svg>
-                    )}
-                  </button>
+          <>
+            {(accountNameRow || accountNumberRow) && (
+              <div className="p-3 border border-border dark:border-[#35353E] rounded-xl space-y-3">
+                {accountNameRow ? (
+                  <AccountDetailColumnLine
+                    row={accountNameRow}
+                    copiedKey={copiedKey}
+                    onCopy={handleCopy}
+                    labelClassName={labelClassName}
+                    valueClassName={valueClassName}
+                  />
+                ) : null}
+                {accountNameRow && accountNumberRow ? (
+                  <div className="border-t border-dashed border-[#E3E6F0] dark:border-[#35353E]" />
+                ) : null}
+                {accountNumberRow ? (
+                  <AccountDetailColumnLine
+                    row={accountNumberRow}
+                    copiedKey={copiedKey}
+                    onCopy={handleCopy}
+                    labelClassName={labelClassName}
+                    valueClassName={valueClassName}
+                  />
                 ) : null}
               </div>
-            </div>
-          ))
+            )}
+            {otherRows.map((row) => (
+              <div key={row.label} className={rowClassName}>
+                <AccountDetailColumnLine
+                  row={row}
+                  copiedKey={copiedKey}
+                  onCopy={handleCopy}
+                  labelClassName={labelClassName}
+                  valueClassName={valueClassName}
+                />
+              </div>
+            ))}
+          </>
         )}
       </div>
     </div>

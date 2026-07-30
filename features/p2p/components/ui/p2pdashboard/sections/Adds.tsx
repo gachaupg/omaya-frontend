@@ -66,7 +66,7 @@ const COLORS = {
 };
 
 /** Same USDT asset UUID as mobile (`p2pUsdtAssetId` in OmayaExchangeMobile). */
-const P2P_USDT_ASSET_ID = "a0232aac-dca3-42a6-8a33-63658d191130";
+const P2P_USDT_ASSET_ID = "79a3570d-9aa8-4bf9-a6b4-f435023517e0";
 
 /** Sell ads: USDT cap is the lesser of entered amount and wallet available. */
 function getSellUsdtCap(amount: string, availableBalance: number): number {

@@ -22,11 +22,16 @@ import {
 import CustomSelect from "@/components/ui/CustomSelect";
 import { useValidateAddress } from "@/hooks/useValidateAddress";
 import {
-  findAutoSendPaymentDetail,
+  findAutoSendPaymentDetailForFiatRails,
   pickProviderForFilter,
+  shouldShowAddAllowAutoSendCheckbox,
 } from "@/features/p2p/utils/paymentAutoSend";
 import { getPaymentMethodDisplayTitle, getPaymentMethodDisplaySubtitle, getPaymentMethodSelectLabels, getCleanPaymentProviderLabel, stripPaymentMethodTypeSuffix } from "@/lib/utils/paymentProviderLabel";
 import { normalizePublicPaymentMethods } from "@/features/express/utils/normalizePublicPaymentMethods";
+import {
+  bookmarkedAddressesApi,
+  getBookmarkApiErrorMessage,
+} from "@/features/express/services/bookmarkedAddressesApi";
 import {
   coercePaymentMethodText,
   isMoneyXMobilePaymentMethod,
@@ -214,6 +219,12 @@ const PaymentMethodsModal: React.FC<PaymentMethodsModalProps> = ({
   const onAddSuccessRef = useRef(onAddSuccess);
   const postSuccessHandledRef = useRef(false);
   const onAddSuccessInFlightRef = useRef(false);
+  const pendingWhitelistRef = useRef<{
+    address: string;
+    label: string;
+    network: string;
+    asset: string;
+  } | null>(null);
   const hasInitializedForOpenRef = useRef(false);
 
   onCloseRef.current = onClose;
@@ -229,10 +240,14 @@ const PaymentMethodsModal: React.FC<PaymentMethodsModalProps> = ({
   };
 
   const existingAutoSendMethod = React.useMemo(
-    () => findAutoSendPaymentDetail(userPaymentDetails),
+    () => findAutoSendPaymentDetailForFiatRails(userPaymentDetails),
     [userPaymentDetails]
   );
   const autoSendPreviouslyEnabled = existingAutoSendMethod != null;
+  const showAllowAutoSendCheckbox = shouldShowAddAllowAutoSendCheckbox(
+    methodTab,
+    userPaymentDetails
+  );
 
   // Set isClient to true after mount
   useEffect(() => {
@@ -307,6 +322,7 @@ const PaymentMethodsModal: React.FC<PaymentMethodsModalProps> = ({
      setPendingPayload(null);
      setOtpFeedback(null);
      postSuccessHandledRef.current = false;
+     pendingWhitelistRef.current = null;
      onAddSuccessInFlightRef.current = false;
      dispatch(clearPostStatus());
    }, [open, dispatch, isClient, user, isAuthenticated, initialAccountNumber]);
@@ -318,6 +334,12 @@ const PaymentMethodsModal: React.FC<PaymentMethodsModalProps> = ({
       setAllowAutoSend(false);
     }
   }, [autoSendPreviouslyEnabled, allowAutoSend]);
+
+  useEffect(() => {
+    if (methodTab !== "bank") {
+      setAllowAutoSend(false);
+    }
+  }, [methodTab]);
 
   // Process public payment methods to extract method types and providers.
   // Uses the same normalizer as home deposit/withdraw/MoneyX so this modal
@@ -745,6 +767,19 @@ const PaymentMethodsModal: React.FC<PaymentMethodsModalProps> = ({
        const verifyResult = await dispatch(verifyPaymentDetailAddOtp(otpCode) as any);
        if (verifyPaymentDetailAddOtp.fulfilled.match(verifyResult)) {
          setOtpFeedback({ type: "success", text: "OTP verified successfully. Adding your payment method..." });
+         if (
+           methodTab === "crypto" &&
+           pendingPayload?.wallet_address?.trim()
+         ) {
+           pendingWhitelistRef.current = {
+             address: pendingPayload.wallet_address.trim(),
+             label: pendingPayload.account_name?.trim() || "USDT Wallet",
+             network: cryptoNetworkForValidation.toLowerCase(),
+             asset: "USDT",
+           };
+         } else {
+           pendingWhitelistRef.current = null;
+         }
          dispatch(postUserPaymentDetail(pendingPayload));
        } else if (verifyPaymentDetailAddOtp.rejected.match(verifyResult)) {
          setOtpFeedback({ type: "error", text: (verifyResult.payload as string) || "Invalid OTP" });
@@ -761,6 +796,9 @@ const PaymentMethodsModal: React.FC<PaymentMethodsModalProps> = ({
 
     logger.debug("p2p", "postSuccess effect triggered", postSuccess);
 
+    const whitelistEntry = pendingWhitelistRef.current;
+    pendingWhitelistRef.current = null;
+
     setStep("form");
     setOtpCode("");
     setPendingPayload(null);
@@ -770,6 +808,20 @@ const PaymentMethodsModal: React.FC<PaymentMethodsModalProps> = ({
 
     if (onAddRef.current) {
       onAddRef.current();
+    }
+
+    if (whitelistEntry) {
+      void (async () => {
+        try {
+          await bookmarkedAddressesApi.create(whitelistEntry);
+          showToast.success("USDT wallet added and whitelisted!");
+        } catch (err) {
+          const whitelistMsg = getBookmarkApiErrorMessage(err);
+          if (whitelistMsg) {
+            showToast.error(`Could not add to whitelist: ${whitelistMsg}`);
+          }
+        }
+      })();
     }
 
     const runAddSuccess = onAddSuccessRef.current;
@@ -812,16 +864,16 @@ const PaymentMethodsModal: React.FC<PaymentMethodsModalProps> = ({
 
   return (
     <div 
-      className="fixed inset-0 z-[9999] flex items-center justify-center bg-black/50 backdrop-blur-sm p-3 sm:p-4"
+      className="fixed inset-0 z-[9999] flex items-start sm:items-center justify-center overflow-y-auto bg-black/50 backdrop-blur-sm p-3 sm:p-4 py-6 sm:py-8"
       onClick={onClose}
       style={{ pointerEvents: 'auto' }}
     >
       <div 
-        className="bg-white dark:bg-[#13151E] rounded-[28px] p-4 sm:p-6 w-full max-w-[620px] shadow-xl border border-[#E3E6F0] dark:border-[#2A2F40] relative z-[10000] max-h-[90vh] overflow-y-auto"
+        className="flex flex-col bg-white dark:bg-[#13151E] rounded-[28px] w-full max-w-[620px] shadow-xl border border-[#E3E6F0] dark:border-[#2A2F40] relative z-[10000] max-h-[min(calc(100dvh-2rem),90vh)] my-auto"
         onClick={(e) => e.stopPropagation()}
         style={{ pointerEvents: 'auto' }}
       >
-        <div className="flex items-center justify-between mb-4">
+        <div className="flex shrink-0 items-center justify-between px-4 sm:px-6 pt-4 sm:pt-6 pb-4">
           <div>
             <div className="text-gray-900 dark:text-white text-2xl leading-[1.1] font-semibold">
               {methodTab === "forex" ? "Add FOREX Broker" : "Add Payment Method"}
@@ -846,6 +898,7 @@ const PaymentMethodsModal: React.FC<PaymentMethodsModalProps> = ({
              </svg>
            </button>
         </div>
+        <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain px-4 sm:px-6 pb-4 sm:pb-6">
         {step === "otp" ? (
           <div className="flex flex-col gap-3">
             <p className="text-sm text-gray-600 dark:text-[#788099]">
@@ -989,6 +1042,31 @@ const PaymentMethodsModal: React.FC<PaymentMethodsModalProps> = ({
               <p className="mt-2 text-sm text-[#788099]">
                 No payment methods available.
               </p>
+            )}
+
+            {showAllowAutoSendCheckbox && (
+              <div className="mt-3 rounded-2xl border border-[#1D8751] bg-[linear-gradient(90deg,rgba(29,135,81,0.14)_0%,rgba(29,135,81,0.02)_100%)] dark:bg-[linear-gradient(90deg,rgba(29,135,81,0.18)_0%,rgba(29,135,81,0.04)_100%)] p-4">
+                <div className="flex items-center gap-2">
+                  <input
+                    type="checkbox"
+                    id="allowAutoSend"
+                    checked={allowAutoSend}
+                    onChange={(e) => setAllowAutoSend(e.target.checked)}
+                    className="w-4 h-4 text-[#1D8751] bg-white dark:bg-[#23232B] border-[#C7D2E5] dark:border-[#35353E] rounded focus:ring-2 focus:ring-[#1D8751] cursor-pointer"
+                    disabled={publicMethodsLoading}
+                  />
+                  <label
+                    htmlFor="allowAutoSend"
+                    className="text-sm sm:text-base font-medium text-gray-900 dark:text-white cursor-pointer"
+                  >
+                    Allow Auto Send
+                  </label>
+                </div>
+                <p className="mt-2 text-xs sm:text-sm text-gray-700 dark:text-[#D3D7E0]">
+                  Use this account for automatic USDT deposit processing. You can
+                  only enable auto send on one bank or mobile money account.
+                </p>
+              </div>
             )}
            </div>
 
@@ -1265,35 +1343,6 @@ const PaymentMethodsModal: React.FC<PaymentMethodsModalProps> = ({
            </div>
           )}
 
-          {methodTab !== "forex" &&
-            (methodTab || method) &&
-            !autoSendPreviouslyEnabled && (
-              <div className="rounded-2xl border border-[#1D8751] bg-[linear-gradient(90deg,rgba(29,135,81,0.14)_0%,rgba(29,135,81,0.02)_100%)] dark:bg-[linear-gradient(90deg,rgba(29,135,81,0.18)_0%,rgba(29,135,81,0.04)_100%)] p-4">
-                <div className="flex items-center gap-2">
-                  <input
-                    type="checkbox"
-                    id="allowAutoSend"
-                    checked={allowAutoSend}
-                    onChange={(e) => setAllowAutoSend(e.target.checked)}
-                    className="w-4 h-4 text-[#1D8751] bg-white dark:bg-[#23232B] border-[#C7D2E5] dark:border-[#35353E] rounded focus:ring-2 focus:ring-[#1D8751] cursor-pointer"
-                    disabled={publicMethodsLoading}
-                  />
-                  <label
-                    htmlFor="allowAutoSend"
-                    className="text-lg leading-none text-gray-900 dark:text-white cursor-pointer"
-                  >
-                    Automatic Transaction
-                  </label>
-                </div>
-                <p className="mt-3 text-sm text-gray-700 dark:text-[#D3D7E0]">
-                  Use this address for all your{" "}
-                  <span className="text-[#1D8751] font-medium">USDT deposits</span> so
-                  they are processed automatically. You can only enable this once per
-                  account.
-                </p>
-              </div>
-            )}
-           
           {/* Error/Loading */}
           {publicMethodsError && <div className="text-red-500 text-sm">{publicMethodsError}</div>}
           {postError && <div className="text-red-500 text-sm">{postError}</div>}
@@ -1392,6 +1441,7 @@ const PaymentMethodsModal: React.FC<PaymentMethodsModalProps> = ({
           </div>
         </form>
         )}
+        </div>
         {/* Forex address modal removed */}
       </div>
     </div>

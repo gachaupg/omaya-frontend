@@ -232,8 +232,13 @@ const WalletAddressCard = ({
       <div className="flex-1 flex items-center justify-between gap-3">
         <div>
           <p className="text-sm sm:text-base font-semibold text-gray-900 dark:text-white">
-            {addr.account_name || addr.label}
+            {addr.label || addr.account_name}
           </p>
+          {addr.account_name && addr.label && addr.account_name !== addr.label ? (
+            <p className="text-xs text-gray-500 dark:text-[#8B90A5] mt-0.5">
+              {addr.account_name}
+            </p>
+          ) : null}
           <p className="text-xs text-gray-500 dark:text-[#8B90A5] mt-0.5">
             {addr.network} • {addr.asset}
           </p>
@@ -374,7 +379,7 @@ const PaymentMethods = () => {
     return {
       title: "No payment methods yet",
       description:
-        "Link a bank account, mobile money, forex, or crypto wallet so you can deposit and withdraw on OMAYA.",
+        "Link a bank account, mobile money, or forex account so you can deposit and withdraw on OMAYA.",
       tone: "neutral" as const,
     };
   }, [bankTab]);
@@ -406,9 +411,12 @@ const PaymentMethods = () => {
     return "pending";
   };
 
-  // All linked P2P payment details (bank, mobile money, forex, and crypto wallets).
+  // Bank, mobile money, and forex only — crypto/USDT wallets belong under My OMAYA Wallets.
   const allPaymentMethodsWithStatus = useMemo(
-    () => (Array.isArray(userPaymentDetails) ? [...userPaymentDetails] : []),
+    () =>
+      (Array.isArray(userPaymentDetails) ? userPaymentDetails : []).filter(
+        (p) => !isCryptoWallet(p)
+      ),
     [userPaymentDetails]
   );
 
@@ -631,7 +639,7 @@ const PaymentMethods = () => {
             Payment Methods
           </p>
         </div>
-        <div className={`rounded-[32px] p-2 sm:p-3 md:p-4 space-y-3 ${PAYMENT_CARD_BORDER}`}>
+        <div className="rounded-[32px] p-2 sm:p-3 md:p-4 space-y-3 border border-[#E3E6F0] dark:border-[#2A2A35] bg-white dark:bg-[var(--card-color)]">
           {mainSection === "omaya-wallets" ? (
             <>
               {(p2pAddressesLoading || userWalletAddressesLoading) ? (

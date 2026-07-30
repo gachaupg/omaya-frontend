@@ -20,6 +20,7 @@ import {
   fetchBankHowToSend,
   resolveFormattedHowToSendForTx,
 } from "@/features/moneyX/utils/howToSend";
+import { resolvePaymentAccountNumber } from "@/features/express/utils/paymentDetailDisplay";
 
 import {
   cancelDepositTransaction,
@@ -1069,9 +1070,8 @@ export default function Exchanging({ transactionData, onBackToTransfer, isHomePa
     bankHowToSend
   );
   const fromPaymentAccountNumber = String(
-    effectiveTransactionData?.fromPaymentMethod?.account_number ||
-      effectiveTransactionData?.fromPaymentMethod?.payment_details?.[0]
-        ?.account_number ||
+    resolvePaymentAccountNumber(effectiveTransactionData?.fromPaymentMethod) ||
+      resolvePaymentAccountNumber(effectiveTransactionData?.paymentDetail) ||
       ""
   ).trim();
   const txAny = effectiveTransactionData as Record<string, unknown>;
@@ -1080,11 +1080,8 @@ export default function Exchanging({ transactionData, onBackToTransfer, isHomePa
     (txAny?.walletAddress != null && String(txAny.walletAddress).trim()) ||
       (moneyXTx?.recipient_account_number != null &&
         String(moneyXTx.recipient_account_number).trim()) ||
-      effectiveTransactionData?.toPaymentMethod?.account_number ||
-      effectiveTransactionData?.toPaymentMethod?.payment_details?.[0]
-        ?.account_number ||
-      effectiveTransactionData?.toPaymentMethod?.wallet_address ||
-      effectiveTransactionData?.toPaymentMethod?.mobile_number ||
+      resolvePaymentAccountNumber(effectiveTransactionData?.toPaymentMethod) ||
+      resolvePaymentAccountNumber(effectiveTransactionData?.toPaymentDetail) ||
       ""
   ).trim();
   const qrPayload =

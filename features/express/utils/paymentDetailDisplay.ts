@@ -80,7 +80,7 @@ export function getPaymentDetailDisplayRows(
   const rows: PaymentDetailDisplayRow[] = [];
 
   if (accountName) {
-    rows.push({ label: "Account name", value: accountName, copyable: false });
+    rows.push({ label: "Account name", value: accountName, copyable: true });
   }
   if (accountNumber) {
     rows.push({ label: "Account number", value: accountNumber, copyable: true });
