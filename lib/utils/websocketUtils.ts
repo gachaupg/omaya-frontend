@@ -5,6 +5,13 @@
 /**
  * Appends ?token= or &token= to a WebSocket URL when token is provided.
  * Safe to call with null/undefined token - returns original URL unchanged.
+ *
+ * Some backend-issued URLs (e.g. MoneyX's `websocket_url` from the
+ * transaction create/status response) already come with a `token` query
+ * param baked in. Appending another would produce a duplicate
+ * `?token=...&token=...` - the server likely just reads the first one, but
+ * it's wasted bytes and leaks the token twice into logs/devtools, so skip
+ * appending if the URL already has one.
  */
 export function appendTokenToWebSocketUrl(
   url: string,
@@ -12,6 +19,7 @@ export function appendTokenToWebSocketUrl(
 ): string {
   if (!url || typeof url !== "string") return url;
   if (!token || typeof token !== "string" || token.length < 10) return url;
+  if (/[?&]token=/.test(url)) return url;
 
   try {
     const separator = url.includes("?") ? "&" : "?";
