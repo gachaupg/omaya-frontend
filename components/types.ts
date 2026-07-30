@@ -53,6 +53,8 @@ export interface TransactionSummary {
   total_buy_trades?: number;
   total_sell_trades?: number;
   total_moneyx_by_status?: unknown;
+  /** Approved Money X volume from transaction summary API (`total_approved_moneyx`). */
+  total_approved_moneyx?: number;
   total_approved_moneyx_volume?: number;
   total_moneyx_volume?: number;
   total_approved_changenow_swap_volume?: number;

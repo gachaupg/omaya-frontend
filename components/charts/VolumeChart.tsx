@@ -5,6 +5,7 @@
 import React from "react";
 import { TransactionSummary } from "../types";
 import {
+  getMoneyXApprovedVolume,
   getP2PCombinedVolume,
   parseSummaryNumber,
 } from "@/lib/utils/normalizeTransactionSummary";
@@ -22,19 +23,7 @@ const VolumeChart: React.FC<VolumeChartProps> = ({ transactionSummary }) => {
     }).format(value || 0);
   };
 
-  const summary = transactionSummary as Record<string, any>;
-  const byStatus = summary?.total_moneyx_by_status;
-  const moneyXVolume =
-    (typeof byStatus === "object" && byStatus !== null
-      ? parseSummaryNumber(byStatus.approved) +
-        parseSummaryNumber(byStatus.completed) +
-        parseSummaryNumber(byStatus.agent_approved) +
-        parseSummaryNumber(byStatus.reviewer_approved)
-      : 0) ||
-    parseSummaryNumber(summary?.total_approved_moneyx_volume) ||
-    parseSummaryNumber(summary?.total_moneyx_volume) ||
-    parseSummaryNumber(summary?.total_completed_moneyx) ||
-    0;
+  const moneyXVolume = getMoneyXApprovedVolume(transactionSummary);
 
   const totalValue =
     parseSummaryNumber(transactionSummary?.total_volume) ||
@@ -50,8 +39,8 @@ const VolumeChart: React.FC<VolumeChartProps> = ({ transactionSummary }) => {
   const p2pVolume = getP2PCombinedVolume(transactionSummary);
 
   const swapVolume =
-    parseSummaryNumber(summary?.total_approved_changenow_swap_volume) ||
-    parseSummaryNumber(summary?.total_changenow_swap_volume) ||
+    parseSummaryNumber(transactionSummary?.total_approved_changenow_swap_volume) ||
+    parseSummaryNumber(transactionSummary?.total_changenow_swap_volume) ||
     parseSummaryNumber(transactionSummary.total_completed_changenow_swaps);
 
   const volumeData = [

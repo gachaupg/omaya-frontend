@@ -170,6 +170,9 @@ export function normalizeTransactionSummary(
       s.total_p2p_net ?? s.total_approved_p2p_net ?? s.total_approved_p2p_combined
     ),
     total_approved_p2p_volume: p2pVolume,
+    total_approved_moneyx: parseSummaryNumber(
+      s.total_approved_moneyx ?? s.total_approved_moneyx_volume
+    ),
     total_approved_all: totalApprovedVolume,
     total_approved_volume: totalApprovedVolume,
     total_approved_net: parseSummaryNumber(s.total_approved_net),
@@ -258,6 +261,16 @@ export function normalizeTransactionSummary(
         }
       : {}),
   } as TransactionSummary;
+}
+
+/** Approved Money X volume from API (`total_approved_moneyx`). */
+export function getMoneyXApprovedVolume(
+  summary: TransactionSummary | null | undefined
+): number {
+  const s = summary as Record<string, unknown> | null | undefined;
+  return parseSummaryNumber(
+    s?.total_approved_moneyx ?? s?.total_approved_moneyx_volume
+  );
 }
 
 /**
