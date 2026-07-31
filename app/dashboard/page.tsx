@@ -14,6 +14,7 @@ import { useKYC } from "@/features/kyc";
 import { openKYCModal } from "@/features/auth/slices/authSlice";
 import { AppDispatch, RootState } from "@/store";
 import { emptyTransactionSummary } from "@/components/types";
+import { formatUserDisplayName } from "@/lib/utils/userDisplayName";
 
 const CONGRATULATIONS_SHOWN_KEY = "omaya_congratulations_shown";
 // Track users who were previously unverified in this session
@@ -72,7 +73,10 @@ export default function DashboardPage() {
     }
   };
 
-  const userName = user?.first_name || user?.email?.split('@')[0] || '';
+  const userName =
+    formatUserDisplayName(user?.first_name, user?.last_name, "") ||
+    user?.email?.split("@")[0] ||
+    "";
 
   return (
     <div className="w-full min-h-screen pt-0 pb-4 flex flex-col gap-0 sm:gap-4 overflow-x-hidden px-3   md:px-6">

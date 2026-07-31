@@ -6,6 +6,7 @@ import { BlogPost } from "./types";
 import { imageBuilder } from "@/sanity/lib/client";
 
 import { logger } from '@/lib/utils/logger';
+import { withBlogListFallback, withNewsListFallback } from "./utils/blogPosts";
 
 export const blogApi = {
   async fetchAllPosts(forceRefresh: boolean = false): Promise<BlogPost[]> {
@@ -13,8 +14,8 @@ export const blogApi = {
       // Only add refresh parameter when explicitly requested
       // Normal requests use cache for fast loading
       const url = forceRefresh 
-        ? `/api/blogs/read?refresh=true&_t=${Date.now()}&_r=${Math.random()}` 
-        : `/api/blogs/read?_t=${Date.now()}`;
+        ? `/api/blogs/read/?refresh=true&_t=${Date.now()}&_r=${Math.random()}` 
+        : `/api/blogs/read/?_t=${Date.now()}`;
       
       const response = await fetch(url, {
         cache: forceRefresh ? 'no-store' : 'default', // Only bypass browser cache when refreshing
@@ -25,39 +26,21 @@ export const blogApi = {
       const blogs = await response.json();
 
       // Transform Sanity data to match UI expectations
-      return blogs.map((blog: BlogPost, index: number) => ({
-        ...blog,
-        id: index + 1, // Generate numeric ID for UI compatibility
-        created_at:
-          blog.createdAt || blog.created_at || new Date().toISOString(),
-        updated_at:
-          blog.createdAt || blog.created_at || new Date().toISOString(),
-        image: imageBuilder(blog.image),
-        author_name: blog.author_name || "Anonymous",
-      }));
+      return withBlogListFallback(
+        blogs.map((blog: BlogPost, index: number) => ({
+          ...blog,
+          id: index + 1,
+          created_at:
+            blog.createdAt || blog.created_at || new Date().toISOString(),
+          updated_at:
+            blog.createdAt || blog.created_at || new Date().toISOString(),
+          image: imageBuilder(blog.image),
+          author_name: blog.author_name || "Anonymous",
+        }))
+      );
     } catch (error) {
       logger.error('general', "Error fetching posts:", error);
-
-      // Return fallback data instead of throwing error
-      return [
-        {
-          _id: "fallback-blog-1",
-          id: 1,
-          title: "Blog Service Temporarily Unavailable",
-          description:
-            "Our blog service is currently experiencing technical difficulties. Please check back later for the latest updates and articles.",
-          content:
-            "Our blog service is currently experiencing technical difficulties. Please check back later for the latest updates and articles.",
-          slug: "service-unavailable",
-          image: "/images/placeholder.jpg",
-          author_name: "System",
-          created_at: new Date().toISOString(),
-          updated_at: new Date().toISOString(),
-          createdAt: new Date().toISOString(),
-          category: "system",
-          tags: ["system", "notice"],
-        },
-      ];
+      return withBlogListFallback([]);
     }
   },
 
@@ -66,58 +49,20 @@ export const blogApi = {
     try {
       const allPosts = await this.fetchAllPosts();
       logger.debug('general', "allPosts", allPosts);
-      // Filter for blog category
-      return allPosts.filter((blog: BlogPost) => blog.category === "blog");
+      const blogPosts = allPosts.filter((blog: BlogPost) => blog.category === "blog");
+      return blogPosts.length > 0 ? blogPosts : allPosts;
     } catch (error) {
-            // Return fallback data for blogs
-      return [
-        {
-          _id: "fallback-blog-1",
-          id: 1,
-          title: "Blog Service Temporarily Unavailable",
-          description:
-            "Our blog service is currently experiencing technical difficulties. Please check back later for the latest updates and articles.",
-          content:
-            "Our blog service is currently experiencing technical difficulties. Please check back later for the latest updates and articles.",
-          slug: "service-unavailable",
-          image: "/images/placeholder.jpg",
-          author_name: "System",
-          created_at: new Date().toISOString(),
-          updated_at: new Date().toISOString(),
-          createdAt: new Date().toISOString(),
-          category: "blog",
-          tags: ["system", "notice"],
-        },
-      ];
+      return withBlogListFallback([]);
     }
   },
 
   async fetchNews(): Promise<BlogPost[]> {
     try {
       const allPosts = await this.fetchAllPosts();
-      // Filter for news category
-      return allPosts.filter((blog: BlogPost) => blog.category === "news");
+      const newsPosts = allPosts.filter((blog: BlogPost) => blog.category === "news");
+      return withNewsListFallback(newsPosts);
     } catch (error) {
-            // Return fallback data for news
-      return [
-        {
-          _id: "fallback-news-1",
-          id: 1,
-          title: "News Service Temporarily Unavailable",
-          description:
-            "Our news service is currently experiencing technical difficulties. Please check back later for the latest news updates.",
-          content:
-            "Our news service is currently experiencing technical difficulties. Please check back later for the latest news updates.",
-          slug: "news-service-unavailable",
-          image: "/images/placeholder.jpg",
-          author_name: "System",
-          created_at: new Date().toISOString(),
-          updated_at: new Date().toISOString(),
-          createdAt: new Date().toISOString(),
-          category: "news",
-          tags: ["system", "notice", "news"],
-        },
-      ];
+      return withNewsListFallback([]);
     }
   },
 };

@@ -16,8 +16,10 @@ import { useSidebarSectionReset } from "@/lib/utils/sidebarNavigationReset";
 import { fetchAllUserTradesPages } from "@/features/p2p/utils/fetchAllUserTradesPages";
 import type { UserTrade } from "@/features/p2p/types";
 import type { P2PChartTimeFilter } from "@/features/p2p/utils/p2pTradeChartAggregation";
+import { scrollAppToTop } from "@/lib/utils/scrollAppToTop";
 
 const P2P_EXPRESS_STATE_KEY = "omaya_p2p_express_state";
+const P2P_LEGAL_RETURN_STATE_KEY = "omaya_p2p_legal_return_state";
 const RETURNING_FROM_LEGAL_KEY = "omaya_returning_from_legal";
 
 function P2PDashboardContent() {
@@ -54,18 +56,33 @@ function P2PDashboardContent() {
       const returning = sessionStorage.getItem(RETURNING_FROM_LEGAL_KEY);
       if (!returning) return;
 
-      const saved = sessionStorage.getItem(P2P_EXPRESS_STATE_KEY);
-      if (!saved) {
-        sessionStorage.removeItem(RETURNING_FROM_LEGAL_KEY);
-        return;
+      let savedForm: "deposit" | "withdraw" | "" = "";
+
+      const legalRaw = sessionStorage.getItem(P2P_LEGAL_RETURN_STATE_KEY);
+      if (legalRaw) {
+        const legalState = JSON.parse(legalRaw) as { isOpenForm?: string };
+        if (legalState.isOpenForm === "deposit" || legalState.isOpenForm === "withdraw") {
+          savedForm = legalState.isOpenForm;
+        }
       }
 
-      const { isOpenForm: savedForm } = JSON.parse(saved);
-      if (savedForm === "deposit" || savedForm === "withdraw") {
+      if (!savedForm) {
+        const saved = sessionStorage.getItem(P2P_EXPRESS_STATE_KEY);
+        if (saved) {
+          const { isOpenForm: savedFormFromKey } = JSON.parse(saved) as {
+            isOpenForm?: string;
+          };
+          if (savedFormFromKey === "deposit" || savedFormFromKey === "withdraw") {
+            savedForm = savedFormFromKey;
+          }
+        }
+      }
+
+      if (savedForm) {
         setIsOpenForm(savedForm);
+        window.setTimeout(() => scrollAppToTop("auto"), 0);
       }
 
-      sessionStorage.removeItem(RETURNING_FROM_LEGAL_KEY);
       sessionStorage.removeItem(P2P_EXPRESS_STATE_KEY);
     } catch {
       sessionStorage.removeItem(RETURNING_FROM_LEGAL_KEY);

@@ -23,7 +23,11 @@ import {
   roundKesRate,
   validateKesRateAgainstMarket,
 } from "@/lib/utils/kesRateBounds";
-import { formatLargeNumber } from "@/utils/formatters";
+import {
+  formatP2PAdAmountInput,
+  formatP2PAdDisplayAmount,
+  normalizeP2PAdAmountInput,
+} from "@/features/p2p/utils/p2pAdAmountFormat";
 import PaymentMethodsModal from "./PaymentMethodsModal";
 import UserPaymentSelector, { UserPaymentDetail } from "./UserPaymentSelector";
 import { selectP2PWalletAmounts, selectTransactionSummary } from "@/features/p2p/selectors";
@@ -33,10 +37,6 @@ import { logger } from '@/lib/utils/logger';
 import { MdCheckCircle } from "react-icons/md";
 import { API_CONFIG } from "@/lib/appConfig";
 import { markP2PMarketScrollOnLoad } from "@/lib/utils/scrollAppToTop";
-import {
-  formatP2PAdAmountInput,
-  normalizeP2PAdAmountInput,
-} from "@/features/p2p/utils/p2pAdAmountFormat";
 
 type LiveExchangeRatesResponse = {
   rate?: string;
@@ -93,6 +93,23 @@ function getSellOrderMaxLimit(
     return rate > 0 && usdtCap > 0 ? usdtCap * rate : 0;
   }
   return usdtCap;
+}
+
+/** Max allowed Order Max for buy — derived from the entered USDT amount. */
+function getBuyOrderMaxLimit(
+  tradeType: "buy" | "sell",
+  activeCurrency: string,
+  amount: string,
+  commission: string
+): number {
+  if (tradeType !== "buy") return 0;
+  const amountNum = Number(amount);
+  if (!Number.isFinite(amountNum) || amountNum <= 0) return 0;
+  if (activeCurrency === "KES") {
+    const rate = Number(commission) || 0;
+    return rate > 0 ? amountNum * rate : 0;
+  }
+  return amountNum;
 }
 
 const applyAdAmountBlur =
@@ -184,13 +201,25 @@ const Adds: React.FC<AddsProps> = ({ filterType }) => {
     availableBalance
   );
 
-  const applySellOrderMax = () => {
-    if (type !== "sell") return;
-    if (sellOrderMaxLimit <= 0) {
-      showToast.error("No available balance to use for order max");
+  const buyOrderMaxLimit = getBuyOrderMaxLimit(
+    type,
+    activeCurrency,
+    amount,
+    commission
+  );
+
+  const orderMaxLimit = type === "sell" ? sellOrderMaxLimit : buyOrderMaxLimit;
+
+  const applyOrderMax = () => {
+    if (orderMaxLimit <= 0) {
+      showToast.error(
+        type === "sell"
+          ? "No available balance to use for order max"
+          : "Enter an amount in I want to Buy first"
+      );
       return;
     }
-    setOrderMax(formatP2PAdAmountInput(sellOrderMaxLimit));
+    setOrderMax(formatP2PAdAmountInput(orderMaxLimit));
     setErrors((prev) => ({ ...prev, orderMax: undefined }));
   };
 
@@ -204,25 +233,6 @@ const Adds: React.FC<AddsProps> = ({ filterType }) => {
       dispatch(fetchAdminPaymentMethods() as any);
     }
   }, [dispatch, isAuthenticated]);
-
-  useEffect(() => {
-    if (selectedPaymentDetails.length > 0) {
-      logger.debug('p2p', "Selected Payment Details:", selectedPaymentDetails);
-
-      // Auto-populate Terms field with payment method names
-      const paymentMethodNames = selectedPaymentDetails
-        .map((detail) => detail.payment_provider_name || detail.payment_method_name)
-        .filter((name) => name) // Filter out empty/null names
-        .join(", ");
-
-      if (paymentMethodNames) {
-        setTerms(paymentMethodNames);
-      }
-    } else {
-      // Clear terms when no payment methods are selected
-      setTerms("");
-    }
-  }, [selectedPaymentDetails]);
 
   useEffect(() => {
     if (error) {
@@ -395,7 +405,7 @@ const Adds: React.FC<AddsProps> = ({ filterType }) => {
         } else if (amountNum < 10) {
           next.amount = "Minimum amount is 10 USDT";
         } else if (type === "sell" && amountNum > availableBalance) {
-          next.amount = `Amount cannot exceed available balance (${formatLargeNumber(
+          next.amount = `Amount cannot exceed available balance (${formatP2PAdDisplayAmount(
             availableBalance
           )} USDT)`;
         }
@@ -419,7 +429,7 @@ const Adds: React.FC<AddsProps> = ({ filterType }) => {
             sellFiatCap > 0 &&
             minNum > sellFiatCap
           ) {
-            next.orderMin = `Minimum order amount cannot exceed available (KSh ${formatLargeNumber(
+            next.orderMin = `Minimum order amount cannot exceed available (KSh ${formatP2PAdDisplayAmount(
               sellFiatCap
             )})`;
           } else if (
@@ -428,7 +438,7 @@ const Adds: React.FC<AddsProps> = ({ filterType }) => {
             rate > 0 &&
             minNum > kesMaxAllowed
           ) {
-            next.orderMin = `Minimum order amount cannot exceed KSh ${formatLargeNumber(
+            next.orderMin = `Minimum order amount cannot exceed KSh ${formatP2PAdDisplayAmount(
               kesMaxAllowed
             )}`;
           }
@@ -437,7 +447,7 @@ const Adds: React.FC<AddsProps> = ({ filterType }) => {
           if (minNum > cap) {
             next.orderMin =
               type === "sell"
-                ? `Minimum order amount cannot exceed available (${formatLargeNumber(cap)} USDT)`
+                ? `Minimum order amount cannot exceed available (${formatP2PAdDisplayAmount(cap)} USDT)`
                 : "Minimum order amount cannot be greater than amount";
           }
         }
@@ -457,7 +467,7 @@ const Adds: React.FC<AddsProps> = ({ filterType }) => {
             sellFiatCap > 0 &&
             maxNum > sellFiatCap
           ) {
-            next.orderMax = `Maximum order amount cannot exceed available (KSh ${formatLargeNumber(
+            next.orderMax = `Maximum order amount cannot exceed available (KSh ${formatP2PAdDisplayAmount(
               sellFiatCap
             )})`;
           } else if (
@@ -466,7 +476,7 @@ const Adds: React.FC<AddsProps> = ({ filterType }) => {
             rate > 0 &&
             maxNum > kesMaxAllowed
           ) {
-            next.orderMax = `Maximum order amount cannot exceed rate * amount (KSh ${formatLargeNumber(
+            next.orderMax = `Maximum order amount cannot exceed rate * amount (KSh ${formatP2PAdDisplayAmount(
               kesMaxAllowed
             )})`;
           }
@@ -475,7 +485,7 @@ const Adds: React.FC<AddsProps> = ({ filterType }) => {
           if (maxNum > cap) {
             next.orderMax =
               type === "sell"
-                ? `Maximum order amount cannot exceed available (${formatLargeNumber(cap)} USDT)`
+                ? `Maximum order amount cannot exceed available (${formatP2PAdDisplayAmount(cap)} USDT)`
                 : "Maximum order amount cannot be greater than amount";
           }
         }
@@ -532,7 +542,7 @@ const Adds: React.FC<AddsProps> = ({ filterType }) => {
     if (type === "sell" && amount) {
       const amountNum = Number(amount);
       if (!isNaN(amountNum) && amountNum > availableBalance) {
-        newErrors.amount = `Amount cannot exceed available balance (${formatLargeNumber(availableBalance)} USDT)`;
+        newErrors.amount = `Amount cannot exceed available balance (${formatP2PAdDisplayAmount(availableBalance)} USDT)`;
         isValid = false;
       }
     }
@@ -560,7 +570,7 @@ const Adds: React.FC<AddsProps> = ({ filterType }) => {
             maxAllowed > 0 &&
             minNum > maxAllowed
           ) {
-            newErrors.orderMin = `Minimum order amount cannot be greater than maximum allowed (KSh ${formatLargeNumber(maxAllowed)})`;
+            newErrors.orderMin = `Minimum order amount cannot be greater than maximum allowed (KSh ${formatP2PAdDisplayAmount(maxAllowed)})`;
             isValid = false;
           }
         } else if (minNum > amountNum) {
@@ -597,7 +607,7 @@ const Adds: React.FC<AddsProps> = ({ filterType }) => {
             availableBalance
           );
           if (rate > 0 && Number.isFinite(maxAllowed) && maxAllowed > 0 && maxNum > maxAllowed) {
-            newErrors.orderMax = `Maximum order amount cannot exceed available (${formatLargeNumber(maxAllowed)} KES)`;
+            newErrors.orderMax = `Maximum order amount cannot exceed available (${formatP2PAdDisplayAmount(maxAllowed)} KES)`;
             isValid = false;
           }
         }
@@ -615,8 +625,8 @@ const Adds: React.FC<AddsProps> = ({ filterType }) => {
         newErrors.orderMax =
           type === "sell"
             ? newErrors.orderMax ||
-              `Maximum order amount cannot exceed rate * amount (KSh ${formatLargeNumber(maxAllowed)})`
-            : `Maximum order amount cannot exceed rate * amount (KSh ${formatLargeNumber(maxAllowed)})`;
+              `Maximum order amount cannot exceed rate * amount (KSh ${formatP2PAdDisplayAmount(maxAllowed)})`
+            : `Maximum order amount cannot exceed rate * amount (KSh ${formatP2PAdDisplayAmount(maxAllowed)})`;
         isValid = false;
       }
     }
@@ -983,7 +993,7 @@ const Adds: React.FC<AddsProps> = ({ filterType }) => {
                   {type === "sell" && (
                     <div className="flex items-center gap-2">
                       <span className="text-xs text-[#1D8751] dark:text-[#1D8751]">
-                        Available: {formatLargeNumber(availableBalance)} USDT
+                        Available: {formatP2PAdDisplayAmount(availableBalance)} USDT
                       </span>
                       <button
                         type="button"
@@ -995,7 +1005,7 @@ const Adds: React.FC<AddsProps> = ({ filterType }) => {
                           }
                         }}
                         className="text-xs px-2 py-0.5 rounded bg-[#1D8751] text-white hover:bg-[#166b3e] transition-colors font-medium"
-                        title={`Set maximum available balance: ${formatLargeNumber(availableBalance)} USDT`}
+                        title={`Set maximum available balance: ${formatP2PAdDisplayAmount(availableBalance)} USDT`}
                       >
                         Max
                       </button>
@@ -1037,7 +1047,7 @@ const Adds: React.FC<AddsProps> = ({ filterType }) => {
                         else if (type === "sell" && amountNum > availableBalance) {
                           setErrors((prev) => ({
                             ...prev,
-                            amount: `Amount cannot exceed available balance (${formatLargeNumber(availableBalance)} USDT)`
+                            amount: `Amount cannot exceed available balance (${formatP2PAdDisplayAmount(availableBalance)} USDT)`
                           }));
                         }
                         // Check if orderMin is greater than amount
@@ -1090,7 +1100,7 @@ const Adds: React.FC<AddsProps> = ({ filterType }) => {
                                 ...prev,
                                 orderMin:
                                   activeCurrency === "KES"
-                                    ? `Minimum order amount cannot exceed KSh ${formatLargeNumber(
+                                    ? `Minimum order amount cannot exceed KSh ${formatP2PAdDisplayAmount(
                                         (Number(commission) || 0) * amountNum
                                       )}`
                                     : "Minimum order amount cannot be greater than amount"
@@ -1119,7 +1129,7 @@ const Adds: React.FC<AddsProps> = ({ filterType }) => {
                             if (!isNaN(maxNum) && !isNaN(maxAllowed) && maxNum > maxAllowed) {
                               setErrors((prev) => ({
                                 ...prev,
-                                orderMax: `Maximum order amount cannot exceed rate * amount (KSh ${formatLargeNumber(maxAllowed)})`
+                                orderMax: `Maximum order amount cannot exceed rate * amount (KSh ${formatP2PAdDisplayAmount(maxAllowed)})`
                               }));
                             }
                           }
@@ -1240,7 +1250,7 @@ const Adds: React.FC<AddsProps> = ({ filterType }) => {
                             ...prev,
                                 orderMin:
                                   activeCurrency === "KES"
-                                ? `Minimum order amount cannot exceed KSh ${formatLargeNumber(
+                                ? `Minimum order amount cannot exceed KSh ${formatP2PAdDisplayAmount(
                                     (Number(commission) || 0) * (Number(amount) || 0)
                                   )}`
                                     : "Minimum order amount cannot be greater than amount"
@@ -1302,33 +1312,48 @@ const Adds: React.FC<AddsProps> = ({ filterType }) => {
               <div className="flex-1 min-w-0 flex flex-col">
                 <label className="text-xs text-gray-600 dark:text-[#788099] mb-1 flex justify-between items-center gap-2">
                   <span>Order Max</span>
-                  {type === "sell" && (
-                    <div className="flex items-center gap-2 shrink-0">
+                  <div className="flex items-center gap-2 shrink-0">
+                    {type === "sell" ? (
                       <span className="text-xs text-[#1D8751] dark:text-[#1D8751] font-medium">
                         Available:{" "}
-                        {sellOrderMaxLimit > 0
-                          ? `${formatLargeNumber(sellOrderMaxLimit)} ${
+                        {orderMaxLimit > 0
+                          ? `${formatP2PAdDisplayAmount(orderMaxLimit)} ${
                               activeCurrency === "KES" ? "KES" : "USD"
                             }`
                           : "—"}
                       </span>
-                      <button
-                        type="button"
-                        onClick={applySellOrderMax}
-                        disabled={sellOrderMaxLimit <= 0}
-                        className="text-xs px-2 py-0.5 rounded bg-[#1D8751] text-white hover:bg-[#166b3e] transition-colors font-medium disabled:opacity-50 disabled:cursor-not-allowed"
-                        title={
-                          sellOrderMaxLimit > 0
-                            ? `Fill order max with ${formatLargeNumber(sellOrderMaxLimit)} ${
+                    ) : (
+                      orderMaxLimit > 0 && (
+                        <span className="text-xs text-[#1D8751] dark:text-[#1D8751] font-medium">
+                          From amount:{" "}
+                          {`${formatP2PAdDisplayAmount(orderMaxLimit)} ${
+                            activeCurrency === "KES" ? "KES" : "USD"
+                          }`}
+                        </span>
+                      )
+                    )}
+                    <button
+                      type="button"
+                      onClick={applyOrderMax}
+                      disabled={orderMaxLimit <= 0}
+                      className="text-xs px-2 py-0.5 rounded bg-[#1D8751] text-white hover:bg-[#166b3e] transition-colors font-medium disabled:opacity-50 disabled:cursor-not-allowed"
+                      title={
+                        orderMaxLimit > 0
+                          ? type === "sell"
+                            ? `Fill order max with ${formatP2PAdDisplayAmount(orderMaxLimit)} ${
                                 activeCurrency === "KES" ? "KES" : "USD"
                               }`
-                            : "No available balance"
-                        }
-                      >
-                        Max
-                      </button>
-                    </div>
-                  )}
+                            : `Fill order max with the amount you entered (${formatP2PAdDisplayAmount(orderMaxLimit)} ${
+                                activeCurrency === "KES" ? "KES" : "USD"
+                              })`
+                          : type === "sell"
+                            ? "No available balance"
+                            : "Enter an amount in I want to Buy first"
+                      }
+                    >
+                      Max
+                    </button>
+                  </div>
                 </label>
                 <div className={`flex items-center bg-card border ${errors.orderMax
                   ? "border-red-500"
@@ -1382,7 +1407,7 @@ const Adds: React.FC<AddsProps> = ({ filterType }) => {
                           if (!isNaN(maxAllowed) && valueNum > maxAllowed) {
                           setErrors((prev) => ({
                             ...prev,
-                            orderMax: `Maximum order amount cannot exceed rate * amount (KSh ${formatLargeNumber(maxAllowed)})`
+                            orderMax: `Maximum order amount cannot exceed rate * amount (KSh ${formatP2PAdDisplayAmount(maxAllowed)})`
                           }));
                           } else {
                             setErrors((prev) => ({ ...prev, orderMax: undefined }));
@@ -1627,9 +1652,7 @@ const Adds: React.FC<AddsProps> = ({ filterType }) => {
                   ? "border-red-500"
                   : "border-gray-200 dark:border-[#35353E]"
                   } rounded-[24px] px-6 py-5 text-gray-600 dark:text-[#788099] min-h-[120px] mb-6 resize-none`}
-                placeholder={selectedPaymentDetails.length > 0
-                  ? "Payment methods will be auto-filled here..."
-                  : "Select payment methods above to auto-fill..."}
+                placeholder="Describe your payment terms or instructions (optional)"
                 value={terms}
                 onChange={(e) => {
                   setTerms(e.target.value);

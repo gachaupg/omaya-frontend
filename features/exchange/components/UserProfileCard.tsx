@@ -13,6 +13,7 @@ import { useRouter } from "next/navigation";
 
 import { logger } from '@/lib/utils/logger';
 import { checkKYCStatus } from "@/features/kyc/slices/kycSlice";
+import { shortenDisplayName } from "@/lib/utils/userDisplayName";
 
 type UserProfileCardProps = {
   name: string;
@@ -192,7 +193,7 @@ const UserProfileCard: React.FC<UserProfileCardProps> = ({
           <div className="min-w-0">
             <div className="flex items-center gap-2">
               <h2 className="text-lg text-[14px] font-semibold text-gray-900 dark:text-[#FFFFFF] truncate">
-                Hello, {name}!
+                Hello, {shortenDisplayName(name)}!
               </h2>
             </div>
             <div className="flex items-center gap-1">

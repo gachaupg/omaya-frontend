@@ -27,3 +27,10 @@ export function normalizeP2PAdAmountInput(value: string): string {
   if (!Number.isFinite(num) || num <= 0) return trimmed;
   return formatP2PAdAmountInput(num);
 }
+
+/** Full amount for post-ad UI (available balance, limits) — never K/M/B abbreviations. */
+export function formatP2PAdDisplayAmount(value: number | undefined | null): string {
+  if (value === undefined || value === null || !Number.isFinite(value)) return "0";
+  if (value === 0) return "0";
+  return formatP2PAdAmountInput(value);
+}

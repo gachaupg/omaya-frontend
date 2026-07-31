@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useEffect, useState, useRef } from "react";
+import React, { useEffect, useState, useRef, useCallback } from "react";
 import { useRouter } from "next/navigation";
 import { FaExchangeAlt, FaExclamationCircle } from "react-icons/fa";
 import { useDispatch, useSelector } from "react-redux";
@@ -41,6 +41,11 @@ import { ExpressDepositResponse } from "../../types";
 import { logger } from '@/lib/utils/logger';
 import { appendTokenToWebSocketUrl } from "@/lib/utils/websocketUtils";
 import { cookieUtils } from "@/lib/utils/cookieUtils";
+import {
+  setP2PLegalReturnState,
+  consumeP2PLegalReturnState,
+} from "@/lib/utils/authRedirect";
+import { scrollAppToTop } from "@/lib/utils/scrollAppToTop";
 
 // Add UserPaymentDetail interface
 interface UserPaymentDetail {
@@ -267,6 +272,97 @@ export default function DepositForm({
 
   // First card submission state
   const [isFirstCardSubmitted, setIsFirstCardSubmitted] = useState(false);
+  const hasRestoredLegalState = useRef(false);
+
+  const handleBeforeLegalNavigate = useCallback(() => {
+    setP2PLegalReturnState({
+      mode: "deposit",
+      isOpenForm: "deposit",
+      payAmount,
+      payAmountInput,
+      getAmount,
+      getAmountInput,
+      payBank,
+      selectedPaymentDetail,
+      walletAddress,
+      selectedAsset,
+      selectedNetwork,
+      isFirstCardSubmitted,
+      confirmPayment,
+      isTransactionSubmitted,
+      scrollY: typeof window !== "undefined" ? window.scrollY : 0,
+    });
+    onBeforeLegalNavigate?.();
+  }, [
+    payAmount,
+    payAmountInput,
+    getAmount,
+    getAmountInput,
+    payBank,
+    selectedPaymentDetail,
+    walletAddress,
+    selectedAsset,
+    selectedNetwork,
+    isFirstCardSubmitted,
+    confirmPayment,
+    isTransactionSubmitted,
+    onBeforeLegalNavigate,
+  ]);
+
+  useEffect(() => {
+    if (hasRestoredLegalState.current) return;
+    if (typeof window === "undefined") return;
+
+    const state = consumeP2PLegalReturnState();
+    if (!state || state.mode !== "deposit") return;
+
+    hasRestoredLegalState.current = true;
+
+    if (state.payAmountInput !== undefined) {
+      setPayAmountInput(state.payAmountInput);
+      setPayAmount(
+        typeof state.payAmount === "number"
+          ? state.payAmount
+          : parseFloat(state.payAmountInput) || 0
+      );
+    }
+    if (state.getAmountInput !== undefined) {
+      setGetAmountInput(state.getAmountInput);
+      setGetAmount(
+        typeof state.getAmount === "number"
+          ? state.getAmount
+          : parseFloat(state.getAmountInput) || 0
+      );
+    }
+    if (state.payBank !== undefined) {
+      setPayBank(state.payBank);
+    }
+    if (state.selectedPaymentDetail !== undefined) {
+      setSelectedPaymentDetail(state.selectedPaymentDetail);
+    }
+    if (state.walletAddress !== undefined) {
+      setWalletAddress(state.walletAddress);
+    }
+    if (state.selectedAsset) {
+      setSelectedAsset(state.selectedAsset);
+    }
+    if (state.selectedNetwork) {
+      setSelectedNetwork(state.selectedNetwork);
+    }
+    if (state.isFirstCardSubmitted !== undefined) {
+      setIsFirstCardSubmitted(state.isFirstCardSubmitted);
+    }
+    if (state.confirmPayment !== undefined) {
+      setConfirmPayment(state.confirmPayment);
+    }
+    if (state.isTransactionSubmitted !== undefined) {
+      setIsTransactionSubmitted(state.isTransactionSubmitted);
+    }
+
+    window.setTimeout(() => {
+      scrollAppToTop("auto");
+    }, 0);
+  }, []);
 
   // Add loading state for "You Receive" calculation
   const [isCalculatingReceive, setIsCalculatingReceive] = useState(false);
@@ -2680,7 +2776,7 @@ export default function DepositForm({
                     payBank ||
                     "the selected provider"
                   }
-                  onBeforeLegalNavigate={onBeforeLegalNavigate}
+                  onBeforeLegalNavigate={handleBeforeLegalNavigate}
                 />
               </div>
 

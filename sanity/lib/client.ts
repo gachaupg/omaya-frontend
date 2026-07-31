@@ -1,24 +1,50 @@
 // sanity/lib/client.ts
-import { createClient } from '@sanity/client';
+import { createClient, type SanityClient } from '@sanity/client';
 import { getSanityConfig } from '@/lib/sanityConfig';
 import { resolveSanityConfig } from '@/config/sanity';
 
-const config = getSanityConfig();
+function buildSanityClient(): SanityClient | null {
+  const config = getSanityConfig();
+  if (!config.isConfigured) return null;
 
-// Only create client if Sanity is properly configured
-export const client = config.isConfigured ? createClient({
-  projectId: config.projectId!,
-  dataset: config.dataset,
-  apiVersion: config.apiVersion,
-  useCdn: false, // Must be false for live subscriptions to work
-  token: config.token, // Optional: for private datasets
-  // Add timeout configuration
-  requestTagPrefix: 'omaya-blog',
-  timeout: 10000, // 10 second timeout
-  ignoreBrowserTokenWarning: true,
-  // Enable real-time subscriptions
-  withCredentials: false,
-}) : null;
+  return createClient({
+    projectId: config.projectId!,
+    dataset: config.dataset,
+    apiVersion: config.apiVersion,
+    useCdn: false,
+    token: config.token,
+    requestTagPrefix: 'omaya-blog',
+    timeout: 10000,
+    ignoreBrowserTokenWarning: true,
+    withCredentials: false,
+  });
+}
+
+let cachedClient: SanityClient | null | undefined;
+
+/** Lazy Sanity client so browser can read runtime config injected before first use. */
+export function getSanityClient(): SanityClient | null {
+  if (cachedClient !== undefined) return cachedClient;
+  cachedClient = buildSanityClient();
+  return cachedClient;
+}
+
+export const client = {
+  fetch: (...args: Parameters<SanityClient["fetch"]>) => {
+    const active = getSanityClient();
+    if (!active) {
+      return Promise.reject(new Error("Sanity client not configured"));
+    }
+    return active.fetch(...args);
+  },
+  listen: (...args: Parameters<SanityClient["listen"]>) => {
+    const active = getSanityClient();
+    if (!active) {
+      throw new Error("Sanity client not configured");
+    }
+    return active.listen(...args);
+  },
+} as Pick<SanityClient, "fetch" | "listen">;
 
 // Enhanced image URL builder
 export const imageBuilder = (source: any) => {

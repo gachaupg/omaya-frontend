@@ -38,24 +38,7 @@ export const fetchBlogs = createAsyncThunk(
       // Filter for blog category
       return blogs.filter((blog: BlogPost) => blog.category === 'blog');
     } catch (error) {
-            // Return fallback data instead of rejecting
-      return [
-        {
-          _id: "fallback-blog-1",
-          id: 1,
-          title: "Blog Service Temporarily Unavailable",
-          description: "Our blog service is currently experiencing technical difficulties. Please check back later for the latest updates and articles.",
-          content: "Our blog service is currently experiencing technical difficulties. Please check back later for the latest updates and articles.",
-          slug: "service-unavailable",
-          image: "/images/placeholder.jpg",
-          author_name: "System",
-          created_at: new Date().toISOString(),
-          updated_at: new Date().toISOString(),
-          createdAt: new Date().toISOString(),
-          category: "blog",
-          tags: ["system", "notice"],
-        },
-      ];
+      return [];
     }
   }
 );
@@ -75,24 +58,7 @@ export const fetchNews = createAsyncThunk(
       const news = await blogApi.fetchNews();
       return news;
     } catch (error) {
-            // Return fallback data instead of rejecting
-      return [
-        {
-          _id: "fallback-news-1",
-          id: 1,
-          title: "News Service Temporarily Unavailable",
-          description: "Our news service is currently experiencing technical difficulties. Please check back later for the latest updates and articles.",
-          content: "Our news service is currently experiencing technical difficulties. Please check back later for the latest updates and articles.",
-          slug: "news-service-unavailable",
-          image: "/images/placeholder.jpg",
-          author_name: "System",
-          created_at: new Date().toISOString(),
-          updated_at: new Date().toISOString(),
-          createdAt: new Date().toISOString(),
-          category: "news",
-          tags: ["system", "notice"],
-        },
-      ];
+      return [];
     }
   }
 );

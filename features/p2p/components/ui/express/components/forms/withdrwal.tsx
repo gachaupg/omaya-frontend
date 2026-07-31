@@ -41,6 +41,7 @@ import {
   setP2PLegalReturnState,
   consumeP2PLegalReturnState,
 } from "@/lib/utils/authRedirect";
+import { scrollAppToTop } from "@/lib/utils/scrollAppToTop";
 import { useBookmarkedAddresses } from "@/features/express/hooks/useBookmarkedAddresses";
 import { BookmarkDropdown } from "@/features/express/components/forms/BookmarkDropdown";
 
@@ -489,6 +490,7 @@ export default function WithdrawalForm({
   const handleBeforeLegalNavigate = useCallback(() => {
     setP2PLegalReturnState({
       mode: "withdrawal",
+      isOpenForm: "withdraw",
       payAmount,
       payAmountInput,
       getAmount,
@@ -570,12 +572,9 @@ export default function WithdrawalForm({
       setSelectedNetwork(state.selectedNetwork);
     }
 
-    const savedScrollY = state.scrollY;
-    if (typeof savedScrollY === "number" && !Number.isNaN(savedScrollY)) {
-      window.setTimeout(() => {
-        window.scrollTo({ top: Math.max(0, savedScrollY), behavior: "auto" });
-      }, 0);
-    }
+    window.setTimeout(() => {
+      scrollAppToTop("auto");
+    }, 0);
   }, []);
 
   // Fetch withdrawal commission from no-auth endpoint (uses p2p feature for commission rates)

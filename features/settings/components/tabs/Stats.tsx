@@ -22,6 +22,7 @@ import { formatNumber } from "@/utils/formatters";
 import { formatCurrency, formatAmount } from "@/lib/globalFormatter";
 import { useRouter } from "next/navigation";
 import VerifiedBadge from "@/components/ui/VerifiedBadge";
+import { formatUserDisplayName } from "@/lib/utils/userDisplayName";
 
 import { logger } from "@/lib/utils/logger";
 
@@ -207,7 +208,7 @@ const Stats = ({ onSupportClick }: StatsProps) => {
           )}
           <div className="flex flex-col min-w-0">
             <span className="text-sm sm:text-[14px] font-semibold truncate max-w-xs sm:max-w-sm text-gray-900 dark:text-white">
-              {user?.first_name}
+              {formatUserDisplayName(user?.first_name, user?.last_name)}
             </span>
             <span className="flex items-center gap-1.5 text-[#1D8751] text-[8px] sm:text-xs font-medium whitespace-nowrap">
               <span className="shrink-0">Verified Profile</span>

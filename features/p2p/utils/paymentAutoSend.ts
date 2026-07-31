@@ -74,6 +74,7 @@ type PaymentMethodShape = PaymentDetailRef & {
   payment_method_name?: string;
   payment_provider_name?: string;
   wallet_address?: string | null;
+  allow_auto_send?: boolean | string;
 };
 
 /** Crypto on-chain wallets — auto-send applies to fiat/bank/mobile rails only. */

@@ -9,6 +9,7 @@ import {
   clearExpressDashboardLegalReturnFlag,
   finalizeExpressDashboardLegalReturnState,
 } from "@/lib/utils/authRedirect";
+import { scrollAppToTop } from "@/lib/utils/scrollAppToTop";
 
 /** Parse prefill from URL synchronously so form gets correct initial state on first render */
 function parsePrefillFromUrl(searchParams: URLSearchParams | null): Record<string, any> | null {
@@ -107,12 +108,7 @@ const ExpressExchangeForm: React.FC<ExpressExchangeFormProps> = ({
       }
       clearExpressDashboardLegalReturnFlag();
 
-      const savedScrollY = saved.scrollY;
-      if (typeof savedScrollY === "number" && !Number.isNaN(savedScrollY)) {
-        window.setTimeout(() => {
-          window.scrollTo({ top: Math.max(0, savedScrollY), behavior: "auto" });
-        }, 0);
-      }
+      window.setTimeout(() => scrollAppToTop("auto"), 0);
 
       window.setTimeout(() => {
         finalizeExpressDashboardLegalReturnState();

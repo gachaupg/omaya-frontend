@@ -305,12 +305,7 @@ const SwapWidget = () => {
 
     hasAppliedLegalReturn.current = true;
 
-    const savedScrollY = legalReturnState.scrollY;
-    if (typeof savedScrollY === "number" && !Number.isNaN(savedScrollY)) {
-      window.setTimeout(() => {
-        window.scrollTo({ top: Math.max(0, savedScrollY), behavior: "auto" });
-      }, 0);
-    }
+    window.setTimeout(() => scrollAppToTop("auto"), 0);
   }, [legalReturnState, supportedAssets, loading, dispatch]);
 
   // Home swap handoff: open copy-address / exchanging step on dashboard

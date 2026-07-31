@@ -468,7 +468,11 @@ export const consumePaymentModalPrefill = (): { method?: string; provider?: stri
 export const setP2PLegalReturnState = (state: Record<string, any>) => {
   if (typeof window === "undefined") return;
   try {
-    sessionStorage.setItem(P2P_LEGAL_RETURN_STATE_KEY, JSON.stringify(state));
+    sessionStorage.setItem(
+      P2P_LEGAL_RETURN_STATE_KEY,
+      JSON.stringify(withLegalReturnPath(state))
+    );
+    sessionStorage.setItem(RETURNING_FROM_LEGAL_KEY, "1");
   } catch {
     // Ignore storage errors
   }
@@ -478,11 +482,18 @@ export const setP2PLegalReturnState = (state: Record<string, any>) => {
 export const consumeP2PLegalReturnState = (): Record<string, any> | null => {
   if (typeof window === "undefined") return null;
   try {
+    const returning = sessionStorage.getItem(RETURNING_FROM_LEGAL_KEY);
+    if (!returning) return null;
     const raw = sessionStorage.getItem(P2P_LEGAL_RETURN_STATE_KEY);
-    if (!raw) return null;
+    if (!raw) {
+      sessionStorage.removeItem(RETURNING_FROM_LEGAL_KEY);
+      return null;
+    }
     sessionStorage.removeItem(P2P_LEGAL_RETURN_STATE_KEY);
+    sessionStorage.removeItem(RETURNING_FROM_LEGAL_KEY);
     return JSON.parse(raw) as Record<string, any>;
   } catch {
+    sessionStorage.removeItem(RETURNING_FROM_LEGAL_KEY);
     sessionStorage.removeItem(P2P_LEGAL_RETURN_STATE_KEY);
     return null;
   }
