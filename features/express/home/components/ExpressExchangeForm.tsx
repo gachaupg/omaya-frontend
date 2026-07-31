@@ -7,6 +7,7 @@ import {
   clearExpressHomeLegalReturnState,
   finalizeExpressHomeLegalReturnState,
 } from "@/lib/utils/authRedirect";
+import { scrollAppToTop } from "@/lib/utils/scrollAppToTop";
 import { ChangeNowAssetsProvider } from "@/features/express/home/context/ChangeNowAssetsProvider";
 
 interface ExpressExchangeFormProps {
@@ -89,12 +90,7 @@ const ExpressExchangeForm: React.FC<ExpressExchangeFormProps> = ({
       }
       clearExpressHomeLegalReturnState();
 
-      const savedScrollY = saved.scrollY;
-      if (typeof savedScrollY === "number" && !Number.isNaN(savedScrollY)) {
-        window.setTimeout(() => {
-          window.scrollTo({ top: Math.max(0, savedScrollY), behavior: "auto" });
-        }, 0);
-      }
+      window.setTimeout(() => scrollAppToTop("auto"), 0);
 
       window.setTimeout(() => {
         finalizeExpressHomeLegalReturnState();

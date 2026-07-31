@@ -9,6 +9,7 @@ import { BlogPost } from "../types";
 import { useBlogsI18n } from "@/lib/useBlogsI18n";
 import { imageBuilder } from "@/sanity/lib/client";
 import { decodeHtml, stripAllImagesFromHtml } from "@/lib/utils/html";
+import { isSystemFallbackBlogPost } from "../utils/blogPosts";
 
 import { logger } from '@/lib/utils/logger';
 
@@ -278,7 +279,8 @@ const BlogPage = () => {
                     </p>
                     <button
                       onClick={() => handleReadArticle(getPostId(post))}
-                      className="mt-auto w-fit text-[#1D8751] border border-[#1D8751] rounded-full px-6 py-2.5 text-base font-semibold hover:bg-[#1D8751] hover:text-white transition-colors duration-300 self-start"
+                      disabled={isSystemFallbackBlogPost(post)}
+                      className="mt-auto w-fit text-[#1D8751] border border-[#1D8751] rounded-full px-6 py-2.5 text-base font-semibold hover:bg-[#1D8751] hover:text-white transition-colors duration-300 self-start disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:bg-transparent disabled:hover:text-[#1D8751]"
                     >
                       {t("blogs.readArticle", "Read Article")}
                     </button>

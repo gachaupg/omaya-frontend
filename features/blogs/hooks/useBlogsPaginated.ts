@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { BlogPost } from "../types";
+import { withBlogListFallback } from "../utils/blogPosts";
 
 export interface UseBlogsPaginatedOptions {
   page: number;
@@ -44,7 +45,7 @@ export const useBlogsPaginated = ({
       }
 
       try {
-        const res = await fetch(`/api/blogs/read?${params.toString()}`, {
+        const res = await fetch(`/api/blogs/read/?${params.toString()}`, {
           cache: "default",
         });
         if (!res.ok) throw new Error(`HTTP ${res.status}`);
@@ -74,14 +75,16 @@ export const useBlogsPaginated = ({
           setPosts(transformed);
           setTotalCount(data.totalCount);
         } else {
-          setPosts([]);
-          setTotalCount(0);
+          const fallback = withBlogListFallback([]);
+          setPosts(fallback);
+          setTotalCount(fallback.length);
         }
       } catch (err) {
         if (!cancelled) {
-          setError(err instanceof Error ? err.message : "Failed to load blogs");
-          setPosts([]);
-          setTotalCount(0);
+          const fallback = withBlogListFallback([]);
+          setPosts(fallback);
+          setTotalCount(fallback.length);
+          setError(null);
         }
       } finally {
         if (!cancelled) setLoading(false);

@@ -9,6 +9,7 @@ import {
 } from "@/features/exchange/slices/exchangeSlice";
 import { storage } from "@/features/auth/utils/storage";
 import { User } from "@/features/auth/types";
+import { formatUserDisplayName } from "@/lib/utils/userDisplayName";
 import { ExchangeDataProvider } from "../ExchangeDataProvider";
 import {
   CardSkeleton,
@@ -99,7 +100,10 @@ const ExchangeLayout = () => {
             <div className="lg:col-span-2 flex flex-col gap-4 lg:gap-6">
               <Suspense fallback={<UserProfileSkeleton />}>
                 <UserProfileCard
-                  name={currentUser?.first_name || ""}
+                  name={formatUserDisplayName(
+                    currentUser?.first_name,
+                    currentUser?.last_name
+                  )}
                   userId={currentUser?.user_id || ""}
                   userType={currentUser?.user_type || ""}
                   profileImage=""

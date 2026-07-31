@@ -23,6 +23,7 @@ import { selectPendingMatchedTradeNotificationCount } from "@/features/p2p/selec
 import { useMatchedTradesWsConnected } from "@/features/p2p/components/MatchedTradesWebSocketProvider";
 import { logger } from "@/lib/utils/logger";
 import { checkKYCStatus } from "@/features/kyc/slices/kycSlice";
+import { formatUserDisplayName } from "@/lib/utils/userDisplayName";
 
 function UserCard() {
   const [showHelpSupport, setShowHelpSupport] = useState(false);
@@ -248,9 +249,9 @@ function UserCard() {
                 {/* User Info */}
                 <div className="min-w-0 flex-1 overflow-hidden">
                   <div className="flex items-center gap-1 sm:gap-2 min-w-0 overflow-hidden">
-                    <h2 className="text-sm sm:text-base lg:text-lg font-semibold dark:text-[#FFFFFF] text-[#0D0D0D] truncate" title={user?.first_name || user?.last_name ? `Hello, ${user.first_name} ${user.last_name}!` : undefined}>
+                    <h2 className="text-sm sm:text-base lg:text-lg font-semibold dark:text-[#FFFFFF] text-[#0D0D0D] truncate" title={`Hello, ${formatUserDisplayName(user?.first_name, user?.last_name)}!`}>
                       {t("userCard.hello", "Hello, {{name}}!", {
-                        name: `${user?.first_name || ""} ${user?.last_name || ""}`.trim() || "User",
+                        name: formatUserDisplayName(user?.first_name, user?.last_name),
                       })}
                     </h2>
                   </div>

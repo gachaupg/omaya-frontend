@@ -25,8 +25,16 @@ const SANITY_TOKEN_ENV_KEYS = [
   "NEXT_PUBLIC_SANITY_READ_TOKEN",
 ] as const;
 
-const DEFAULT_DATASET = "production";
-const DEFAULT_API_VERSION = "2025-07-04";
+/**
+ * Same Sanity project/dataset as OmayaExchangeMobile (`lib/services/sanity_service.dart`).
+ * Env vars override these when set (ECS, .env.local, docker-compose).
+ */
+export const DEFAULT_SANITY_PROJECT_ID = "jhuegccg";
+export const DEFAULT_SANITY_DATASET = "development";
+export const DEFAULT_SANITY_API_VERSION = "2025-07-04";
+/** Public read token — same as mobile; override via SANITY_TOKEN / NEXT_PUBLIC_SANITY_READ_TOKEN. */
+export const DEFAULT_SANITY_READ_TOKEN =
+  "skZ87SpjtmlUxXRc7hNu09clf4tjUJ2dpyQohaTiWsYdlKCzH2czbxZNqq0zRTXEQm0qKElIdC8L9SapC0RCHXhq4qniC5O8GkfdjoCVvtgPzYF50A26N0ra3wkTA1GBZWzCHcRmNiJQnJNbHhaZvP9zgYvwfFQa8eDiD5rXIg6605wAFjaE";
 
 /**
  * Use indexed access so Next.js does not replace the value while building the
@@ -50,36 +58,49 @@ export interface SanityRuntimeConfig {
   token: string;
 }
 
+function withSanityDefaults(config: SanityRuntimeConfig): SanityRuntimeConfig {
+  return {
+    projectId: config.projectId || DEFAULT_SANITY_PROJECT_ID,
+    dataset: config.dataset || DEFAULT_SANITY_DATASET,
+    apiVersion: config.apiVersion || DEFAULT_SANITY_API_VERSION,
+    token: config.token || DEFAULT_SANITY_READ_TOKEN,
+  };
+}
+
 /**
  * Server-only Sanity config.
  * ECS injects SANITY_* (or NEXT_PUBLIC_SANITY_*) at container start (AWS Secrets Manager).
  */
 export function getSanityConfigFromEnv(): SanityRuntimeConfig {
-  return {
+  return withSanityDefaults({
     projectId: readEnvKeyFromProcessEnv(SANITY_PROJECT_ID_ENV_KEYS),
-    dataset: readEnvKeyFromProcessEnv(SANITY_DATASET_ENV_KEYS) || DEFAULT_DATASET,
-    apiVersion:
-      readEnvKeyFromProcessEnv(SANITY_API_VERSION_ENV_KEYS) || DEFAULT_API_VERSION,
+    dataset: readEnvKeyFromProcessEnv(SANITY_DATASET_ENV_KEYS),
+    apiVersion: readEnvKeyFromProcessEnv(SANITY_API_VERSION_ENV_KEYS),
     token: readEnvKeyFromProcessEnv(SANITY_TOKEN_ENV_KEYS),
-  };
+  });
 }
 
 /** Client-only: values injected by layout via window.__RUNTIME_CONFIG__. */
 function readRuntimeConfigSanity(): SanityRuntimeConfig {
   if (typeof window === "undefined") {
-    return { projectId: "", dataset: DEFAULT_DATASET, apiVersion: DEFAULT_API_VERSION, token: "" };
+    return withSanityDefaults({
+      projectId: "",
+      dataset: "",
+      apiVersion: "",
+      token: "",
+    });
   }
 
   const cfg = (
     window as unknown as { __RUNTIME_CONFIG__?: Record<string, string> }
   ).__RUNTIME_CONFIG__;
 
-  return {
+  return withSanityDefaults({
     projectId: cfg?.NEXT_PUBLIC_SANITY_PROJECT_ID || "",
-    dataset: cfg?.NEXT_PUBLIC_SANITY_DATASET || DEFAULT_DATASET,
-    apiVersion: cfg?.NEXT_PUBLIC_SANITY_API_VERSION || DEFAULT_API_VERSION,
+    dataset: cfg?.NEXT_PUBLIC_SANITY_DATASET || "",
+    apiVersion: cfg?.NEXT_PUBLIC_SANITY_API_VERSION || "",
     token: cfg?.NEXT_PUBLIC_SANITY_READ_TOKEN || "",
-  };
+  });
 }
 
 /**
@@ -94,3 +115,6 @@ export function resolveSanityConfig(): SanityRuntimeConfig {
 
   return readRuntimeConfigSanity();
 }
+
+/** GROQ filter aligned with OmayaExchangeMobile — all blog documents, any status. */
+export const SANITY_BLOG_TYPE_FILTER = `_type == "blog"`;

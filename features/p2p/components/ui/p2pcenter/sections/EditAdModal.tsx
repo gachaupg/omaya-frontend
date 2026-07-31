@@ -8,7 +8,7 @@ import type { PayloadAction } from "@reduxjs/toolkit";
 import { selectTransactionSummary } from "@/features/p2p/selectors";
 import { fetchTransactionSummary } from "@/features/p2p/slices/transactionSummarySlice";
 import { getP2PSellAvailableBalance } from "@/features/p2p/walletAmounts";
-import { formatLargeNumber } from "@/utils/formatters";
+import { formatP2PAdDisplayAmount } from "@/features/p2p/utils/p2pAdAmountFormat";
 
 import { logger } from '@/lib/utils/logger';
 // Edit modal should not modify payment methods (only the ad fields).
@@ -89,7 +89,7 @@ const EditAdModal: React.FC<EditAdModalProps> = ({
   const amountError =
     isSellOrder && formData.amount !== ""
       ? amountValue > maxSellAmount
-        ? `Amount cannot exceed available balance (${formatLargeNumber(maxSellAmount)} USDT)`
+        ? `Amount cannot exceed available balance (${formatP2PAdDisplayAmount(maxSellAmount)} USDT)`
         : null
       : null;
   const minOrderError =
@@ -209,7 +209,7 @@ const EditAdModal: React.FC<EditAdModalProps> = ({
                           onClick={applyMaxSellAmount}
                           disabled={maxSellAmount <= 0}
                           className="text-xs px-2 py-0.5 rounded bg-[#1D8751] text-white hover:bg-[#166b3e] transition-colors font-medium disabled:opacity-50 disabled:cursor-not-allowed"
-                          title={`Set maximum available balance: ${formatLargeNumber(maxSellAmount)} USDT`}
+                          title={`Set maximum available balance: ${formatP2PAdDisplayAmount(maxSellAmount)} USDT`}
                         >
                           Max
                         </button>
@@ -237,10 +237,10 @@ const EditAdModal: React.FC<EditAdModalProps> = ({
                     />
                     {isSellOrder && (
                       <p className="mt-1 text-xs text-gray-500 dark:text-[#8C8CA1]">
-                        Available: {formatLargeNumber(centerAvailable)} USDT
+                        Available: {formatP2PAdDisplayAmount(centerAvailable)} USDT
                         {maxSellAmount > centerAvailable && (
                           <span className="ml-1">
-                            (max for this ad: {formatLargeNumber(maxSellAmount)} USDT)
+                            (max for this ad: {formatP2PAdDisplayAmount(maxSellAmount)} USDT)
                           </span>
                         )}
                       </p>

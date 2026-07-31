@@ -16,6 +16,7 @@ import {
 import { useP2PWalletBalanceContext } from "@/features/p2p/context/P2PWalletBalanceProvider";
 import { getP2PEscrowDisplay } from "@/features/p2p/walletAmounts";
 import { mergeTransactionSummaries } from "@/lib/utils/normalizeTransactionSummary";
+import { formatUserDisplayName } from "@/lib/utils/userDisplayName";
 
 import { logger } from '@/lib/utils/logger';
 
@@ -208,7 +209,7 @@ const P2pProfile = ({
             </div>
             <div className="flex items-center gap-1.5">
               <span className="text-gray-900 dark:text-white text-base sm:text-lg font-semibold">
-                {user?.first_name && user?.last_name ? `${user.first_name} ${user.last_name}` : user?.first_name || 'User Name'}
+                {formatUserDisplayName(user?.first_name, user?.last_name, "User Name")}
               </span>
               {/* Edit Icon */}
               <button

@@ -10,17 +10,23 @@ export interface MoneyXPaymentProvider {
   logo: string | null;
   account_name?: string;
   account_number?: string;
-  admin_payment_details?: Array<{
-    id?: number;
-    account_name?: string;
-    account_number?: string;
-    mobile_number?: string;
-    wallet_address?: string;
-    how_to_send?: string;
-    payment_type?: string;
-    is_active?: boolean;
-  }>;
-  payment_details?: Array<Record<string, unknown>>;
+  mobile_number?: string;
+  wallet_address?: string;
+  how_to_send?: string;
+  admin_payment_details?: MoneyXPaymentProviderDetail[];
+  payment_details?: MoneyXPaymentProviderDetail[];
+}
+
+export interface MoneyXPaymentProviderDetail {
+  id?: number;
+  account_name?: string;
+  account_number?: string;
+  mobile_number?: string;
+  wallet_address?: string;
+  how_to_send?: string;
+  payment_type?: string;
+  is_active?: boolean;
+  [key: string]: unknown;
 }
 
 export async function getMoneyXPaymentProviders(

@@ -1,4 +1,7 @@
-import type { MoneyXPaymentProvider } from "../api";
+import type {
+  MoneyXPaymentProvider,
+  MoneyXPaymentProviderDetail,
+} from "../api";
 import { coercePaymentMethodText } from "@/features/express/utils/moneyXPaymentMethodUtils";
 
 const pickFirst = (...values: unknown[]): string => {
@@ -16,42 +19,35 @@ export function normalizeMoneyXPaymentProviders(
   if (!Array.isArray(providers)) return [];
 
   return providers.map((provider) => {
-    const raw = provider as Record<string, unknown>;
     const method = coercePaymentMethodText(provider.method);
     const methodDisplay =
       coercePaymentMethodText(provider.method_display) || method;
     const providerName = coercePaymentMethodText(provider.provider_name);
     const logo = coercePaymentMethodText(provider.logo);
 
-    const adminPaymentDetails = Array.isArray(raw.admin_payment_details)
-      ? raw.admin_payment_details
-      : [];
-    const paymentDetails = Array.isArray(raw.payment_details)
-      ? raw.payment_details
-      : [];
-    const firstDetail =
-      (paymentDetails[0] as Record<string, unknown> | undefined) ||
-      (adminPaymentDetails[0] as Record<string, unknown> | undefined) ||
-      {};
+    const adminPaymentDetails = provider.admin_payment_details ?? [];
+    const paymentDetails = provider.payment_details ?? [];
+    const firstDetail: MoneyXPaymentProviderDetail | undefined =
+      paymentDetails[0] ?? adminPaymentDetails[0];
 
-    const account_name = pickFirst(raw.account_name, firstDetail.account_name);
+    const account_name = pickFirst(provider.account_name, firstDetail?.account_name);
     const account_number = pickFirst(
-      raw.account_number,
-      firstDetail.account_number,
-      firstDetail.mobile_number,
-      raw.mobile_number
+      provider.account_number,
+      firstDetail?.account_number,
+      firstDetail?.mobile_number,
+      provider.mobile_number
     );
-    const mobile_number = pickFirst(raw.mobile_number, firstDetail.mobile_number);
+    const mobile_number = pickFirst(provider.mobile_number, firstDetail?.mobile_number);
     const wallet_address = pickFirst(
-      raw.wallet_address,
-      firstDetail.wallet_address
+      provider.wallet_address,
+      firstDetail?.wallet_address
     );
-    const how_to_send = pickFirst(raw.how_to_send, firstDetail.how_to_send);
+    const how_to_send = pickFirst(provider.how_to_send, firstDetail?.how_to_send);
 
     return {
-      id: raw.id,
+      id: provider.id,
       provider_id:
-        coercePaymentMethodText(provider.provider_id) || pickFirst(raw.id),
+        coercePaymentMethodText(provider.provider_id) || pickFirst(provider.id),
       provider_name: providerName,
       method,
       method_display: methodDisplay,

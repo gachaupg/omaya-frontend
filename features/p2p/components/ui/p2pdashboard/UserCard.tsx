@@ -20,6 +20,7 @@ import { selectPendingMatchedTradeNotificationCount } from "@/features/p2p/selec
 import { cookieUtils } from "@/lib/utils/cookieUtils";
 import VerifiedBadge from "@/components/ui/VerifiedBadge";
 import { checkKYCStatus } from "@/features/kyc/slices/kycSlice";
+import { formatUserDisplayName } from "@/lib/utils/userDisplayName";
 
 const UserCard = () => {
   const [showHelpSupport, setShowHelpSupport] = useState(false);
@@ -296,7 +297,7 @@ const UserCard = () => {
             <div>
               <div className="flex items-center gap-2">
                 <h2 className="text-base xl:text-sm font-bold dark:text-[#FFFFFF] text-[#1D1D23]">
-                  Hello, {user?.first_name}{user?.last_name ? ` ${user.last_name}` : ''} !
+                  Hello, {formatUserDisplayName(user?.first_name, user?.last_name)} !
                 </h2>
               </div>
               {isVerified ? (
