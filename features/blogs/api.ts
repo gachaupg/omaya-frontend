@@ -1,28 +1,15 @@
 import { BlogPost } from "./types";
-import { imageBuilder } from "@/sanity/lib/client";
 import { logger } from "@/lib/utils/logger";
-import { fetchAllBlogsFromSanity } from "@/lib/sanityService";
+import { fetchAllBlogsFromApi } from "./blogReadApi";
 import { withBlogListFallback, withNewsListFallback } from "./utils/blogPosts";
 
 export const blogApi = {
   async fetchAllPosts(): Promise<BlogPost[]> {
     try {
-      const blogs = await fetchAllBlogsFromSanity();
-
-      return withBlogListFallback(
-        blogs.map((blog, index) => ({
-          ...blog,
-          id: index + 1,
-          created_at:
-            blog.createdAt || (blog as BlogPost).created_at || new Date().toISOString(),
-          updated_at:
-            blog.createdAt || (blog as BlogPost).created_at || new Date().toISOString(),
-          image: imageBuilder(blog.image),
-          author_name: blog.author_name || "Anonymous",
-        })) as BlogPost[]
-      );
+      const blogs = await fetchAllBlogsFromApi();
+      return withBlogListFallback(blogs);
     } catch (error) {
-      logger.error("general", "Error fetching posts from Sanity:", error);
+      logger.error("general", "Error fetching posts from blog API:", error);
       return withBlogListFallback([]);
     }
   },
