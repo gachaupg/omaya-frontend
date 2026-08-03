@@ -1106,6 +1106,15 @@ export default function Navbar() {
               <span className="hidden lg:inline">{t("marketing.nav.contact", "Contact Us")}</span>
               <span className="lg:hidden">{t("marketing.nav.contactShort", "Contact")}</span>
             </NavLink>
+            {/* <NavLink
+              href="/image"
+              isTransparent={isTransparentNavbar}
+              pathname={pathname}
+            >
+             <span className="hidden lg:inline">Image</span>
+             <span className="lg:hidden">Image</span>
+
+            </NavLink> */}
           </div>
         </div>
 

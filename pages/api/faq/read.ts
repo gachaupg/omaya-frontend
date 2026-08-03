@@ -1,5 +1,6 @@
 import { NextApiRequest, NextApiResponse } from "next";
-import { client } from "@/sanity/lib/client";
+import { getSanityConfigFromEnv } from "@/config/sanity";
+import { fetchSanityGroq } from "@/lib/sanityQuery";
 
 export interface FAQ {
   _id: string;
@@ -10,24 +11,17 @@ export interface FAQ {
 }
 
 export const fetchFAQs = async (category?: string): Promise<FAQ[]> => {
-  try {
-    if (!client) {
-      throw new Error("Sanity client not configured");
-    }
+  const categoryFilter = category ? `&& category == "${category}"` : "";
+  const query = `*[_type == "faq" ${categoryFilter}] | order(createdAt desc) {
+    _id,
+    title,
+    content,
+    category,
+    createdAt
+  }`;
 
-    const query = `*[_type == "faq" ${category ? `&& category == "${category}"` : ""}] | order(createdAt desc) {
-      _id,
-      title,
-      content,
-      category,
-      createdAt
-    }`;
-
-    const data = await client.fetch(query);
-    return data || [];
-  } catch (err) {
-    throw new Error("Failed to load FAQs from Sanity");
-  }
+  const data = await fetchSanityGroq<FAQ[]>(query);
+  return data || [];
 };
 
 export default async function handler(
@@ -38,15 +32,20 @@ export default async function handler(
     return res.status(405).json({ message: "Method not allowed" });
   }
 
+  const sanityConfig = getSanityConfigFromEnv();
+  res.setHeader("X-Sanity-Project", sanityConfig.projectId);
+  res.setHeader("X-Sanity-Dataset", sanityConfig.dataset);
+  res.setHeader(
+    "Cache-Control",
+    "public, s-maxage=60, stale-while-revalidate=120"
+  );
+
   try {
     const { category } = req.query;
     const faqs = await fetchFAQs(category as string);
-
-
     res.status(200).json(faqs);
-  } catch (error) {
-    // Return fallback data instead of 500 error
-    const fallbackFaqs = [
+  } catch {
+    res.status(200).json([
       {
         _id: "fallback-faq-1",
         title: "Service Temporarily Unavailable",
@@ -55,7 +54,6 @@ export default async function handler(
         category: (req.query.category as string) || "general",
         createdAt: new Date().toISOString(),
       },
-    ];
-    res.status(200).json(fallbackFaqs);
+    ]);
   }
 }

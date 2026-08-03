@@ -27,7 +27,8 @@ const SANITY_TOKEN_ENV_KEYS = [
 
 /**
  * Same Sanity project/dataset as OmayaExchangeMobile (`lib/services/sanity_service.dart`).
- * Env vars override these when set (ECS, .env.local, docker-compose).
+ * Mobile queries `development` directly; web must use the same dataset via ECS env
+ * (SANITY_DATASET / NEXT_PUBLIC_SANITY_DATASET) or content will not match the app.
  */
 export const DEFAULT_SANITY_PROJECT_ID = "jhuegccg";
 export const DEFAULT_SANITY_DATASET = "development";

@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 
-import { logger } from '@/lib/utils/logger';
+import { logger } from "@/lib/utils/logger";
 
 export interface FAQItem {
   _id: string;
@@ -8,7 +8,6 @@ export interface FAQItem {
   content: string;
   category: string;
   createdAt?: string;
-  // Legacy fields for UI compatibility
   id?: number;
   question?: string;
   answer?: string;
@@ -26,8 +25,8 @@ export const useFAQ = (category?: string) => {
         setError(null);
 
         const url = category
-          ? `/api/faq/read?category=${encodeURIComponent(category)}`
-          : "/api/faq/read";
+          ? `/api/faq/read/?category=${encodeURIComponent(category)}`
+          : "/api/faq/read/";
 
         const response = await fetch(url);
         if (!response.ok) {
@@ -36,20 +35,18 @@ export const useFAQ = (category?: string) => {
 
         const data = await response.json();
 
-        // Transform Sanity data to match UI expectations
         const transformedFaqs = data.map((faq: FAQItem, index: number) => ({
           ...faq,
-          id: index + 1, // Generate numeric ID for UI compatibility
-          question: faq.title, // Map title to question
-          answer: faq.content, // Map content to answer
+          id: index + 1,
+          question: faq.title,
+          answer: faq.content,
         }));
 
         setFaqs(transformedFaqs);
       } catch (err) {
-        logger.error('general', "Error fetching FAQs:", err);
+        logger.error("general", "Error fetching FAQs:", err);
 
-        // Provide fallback data instead of showing error to user
-        const fallbackFaqs: FAQItem[] = [
+        setFaqs([
           {
             _id: "fallback-1",
             id: 1,
@@ -61,10 +58,7 @@ export const useFAQ = (category?: string) => {
               "Our FAQ service is currently experiencing technical difficulties. Please try again later or contact support for assistance.",
             category: category || "general",
           },
-        ];
-
-        setFaqs(fallbackFaqs);
-        // Set a user-friendly error message
+        ]);
         setError(
           "FAQ service is temporarily unavailable. Please try again later."
         );
