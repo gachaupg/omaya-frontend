@@ -1,57 +1,38 @@
-/**
- * api.ts – auto‑generated placeholder
- */
-
 import { BlogPost } from "./types";
 import { imageBuilder } from "@/sanity/lib/client";
-
-import { logger } from '@/lib/utils/logger';
+import { logger } from "@/lib/utils/logger";
+import { fetchAllBlogsFromSanity } from "@/lib/sanityService";
 import { withBlogListFallback, withNewsListFallback } from "./utils/blogPosts";
 
 export const blogApi = {
-  async fetchAllPosts(forceRefresh: boolean = false): Promise<BlogPost[]> {
+  async fetchAllPosts(): Promise<BlogPost[]> {
     try {
-      // Only add refresh parameter when explicitly requested
-      // Normal requests use cache for fast loading
-      const url = forceRefresh 
-        ? `/api/blogs/read/?refresh=true&_t=${Date.now()}&_r=${Math.random()}` 
-        : `/api/blogs/read/?_t=${Date.now()}`;
-      
-      const response = await fetch(url, {
-        cache: forceRefresh ? 'no-store' : 'default', // Only bypass browser cache when refreshing
-      });
-      if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`);
-      }
-      const blogs = await response.json();
+      const blogs = await fetchAllBlogsFromSanity();
 
-      // Transform Sanity data to match UI expectations
       return withBlogListFallback(
-        blogs.map((blog: BlogPost, index: number) => ({
+        blogs.map((blog, index) => ({
           ...blog,
           id: index + 1,
           created_at:
-            blog.createdAt || blog.created_at || new Date().toISOString(),
+            blog.createdAt || (blog as BlogPost).created_at || new Date().toISOString(),
           updated_at:
-            blog.createdAt || blog.created_at || new Date().toISOString(),
+            blog.createdAt || (blog as BlogPost).created_at || new Date().toISOString(),
           image: imageBuilder(blog.image),
           author_name: blog.author_name || "Anonymous",
-        }))
+        })) as BlogPost[]
       );
     } catch (error) {
-      logger.error('general', "Error fetching posts:", error);
+      logger.error("general", "Error fetching posts from Sanity:", error);
       return withBlogListFallback([]);
     }
   },
 
-
   async fetchBlogs(): Promise<BlogPost[]> {
     try {
       const allPosts = await this.fetchAllPosts();
-      logger.debug('general', "allPosts", allPosts);
-      const blogPosts = allPosts.filter((blog: BlogPost) => blog.category === "blog");
+      const blogPosts = allPosts.filter((blog) => blog.category === "blog");
       return blogPosts.length > 0 ? blogPosts : allPosts;
-    } catch (error) {
+    } catch {
       return withBlogListFallback([]);
     }
   },
@@ -59,9 +40,9 @@ export const blogApi = {
   async fetchNews(): Promise<BlogPost[]> {
     try {
       const allPosts = await this.fetchAllPosts();
-      const newsPosts = allPosts.filter((blog: BlogPost) => blog.category === "news");
+      const newsPosts = allPosts.filter((blog) => blog.category === "news");
       return withNewsListFallback(newsPosts);
-    } catch (error) {
+    } catch {
       return withNewsListFallback([]);
     }
   },

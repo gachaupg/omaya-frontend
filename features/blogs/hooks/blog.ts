@@ -1,180 +1,168 @@
-import { useEffect, useState, useMemo, useRef } from "react";
+import { useEffect, useState, useMemo, useRef, useCallback } from "react";
 import { BlogPost } from "../types";
-import { imageBuilder } from "@/sanity/lib/client";
 import { useLiveBlog } from "./useLiveBlog";
-import { logger } from '@/lib/utils/logger';
+import { logger } from "@/lib/utils/logger";
+import { fetchAllBlogsFromSanity } from "@/lib/sanityService";
 import { withBlogListFallback, withNewsListFallback } from "../utils/blogPosts";
 
+function transformBlogPosts(data: BlogPost[]): {
+  allPosts: BlogPost[];
+  blogPosts: BlogPost[];
+  newsPosts: BlogPost[];
+} {
+  const transformed = (data || []).map((blog, index) => ({
+    ...blog,
+    id: index + 1,
+    created_at:
+      blog.publishedAt ||
+      blog.createdAt ||
+      blog.created_at ||
+      new Date().toISOString(),
+    updated_at:
+      blog.statusChangedAt ||
+      blog.createdAt ||
+      blog.created_at ||
+      new Date().toISOString(),
+    image: blog.image,
+    author_name: blog.author_name || "Anonymous",
+  }));
+
+  const allPosts = withBlogListFallback(transformed);
+  const blogPosts =
+    transformed.filter((b) => b.category === "blog").length > 0
+      ? transformed.filter((b) => b.category === "blog")
+      : allPosts;
+  const newsPosts = withNewsListFallback(
+    transformed.filter((b) => b.category === "news")
+  );
+
+  return { allPosts, blogPosts, newsPosts };
+}
+
 /**
- * Main blog hook that uses live subscriptions for real-time updates
- * Falls back to API-based fetching if live subscriptions are unavailable.
- * Starts API fetch in parallel so the page can show data as soon as either source returns.
+ * Blog hook with live Sanity subscriptions and direct GROQ fetch (same as mobile).
  */
 export const useBlog = () => {
   const [blogs, setBlogs] = useState<BlogPost[]>([]);
   const [news, setNews] = useState<BlogPost[]>([]);
-  const [allPostsFromAPI, setAllPostsFromAPI] = useState<BlogPost[]>([]);
+  const [allPostsFromSanity, setAllPostsFromSanity] = useState<BlogPost[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [useLiveUpdates, setUseLiveUpdates] = useState(true);
-  const [initialApiLoading, setInitialApiLoading] = useState(true);
-  const initialApiFetchedRef = useRef(false);
+  const [initialSanityLoading, setInitialSanityLoading] = useState(true);
+  const initialFetchedRef = useRef(false);
 
-  // Try to use live updates first (runs in parallel with initial API fetch below)
-  const { blogs: liveBlogs, loading: liveLoading, error: liveError } = useLiveBlog();
+  const { blogs: liveBlogs, loading: liveLoading, error: liveError } =
+    useLiveBlog();
 
-  // Parallel initial API fetch: run once on mount so data appears as soon as API returns (often faster than Sanity client from browser)
-  useEffect(() => {
-    if (initialApiFetchedRef.current) return;
-    initialApiFetchedRef.current = true;
-
-    const url = `/api/blogs/read/?_t=${Date.now()}`;
-    fetch(url, { cache: 'default' })
-      .then((res) => {
-        if (!res.ok) throw new Error(`HTTP ${res.status}`);
-        return res.json();
-      })
-      .then((data: BlogPost[]) => {
-        const transformed = (data || []).map((blog: BlogPost, index: number) => ({
-          ...blog,
-          id: index + 1,
-          created_at: blog.publishedAt || blog.createdAt || blog.created_at || new Date().toISOString(),
-          updated_at: blog.statusChangedAt || blog.createdAt || blog.created_at || new Date().toISOString(),
-          image: blog.image,
-          author_name: blog.author_name || "Anonymous",
-        }));
-        const allPosts = withBlogListFallback(transformed);
-        const blogPosts =
-          transformed.filter((b: BlogPost) => b.category === "blog").length > 0
-            ? transformed.filter((b: BlogPost) => b.category === "blog")
-            : allPosts;
-        const newsPosts = withNewsListFallback(
-          transformed.filter((b: BlogPost) => b.category === "news")
-        );
-        setAllPostsFromAPI(allPosts);
-        setBlogs((prev) => (prev.length === 0 ? blogPosts : prev));
-        setNews((prev) => (prev.length === 0 ? newsPosts : prev));
-        logger.debug('general', "Initial API blogs loaded:", transformed.length);
-      })
-      .catch((err) => {
-        logger.debug('general', "Initial API blogs fetch failed (will use live or fallback):", err);
-      })
-      .finally(() => {
-        setInitialApiLoading(false);
-      });
-  }, []);
-
-  // Fallback API fetch function (used when live fails or for manual refresh)
-  const fetchBlogs = async (forceRefresh: boolean = false) => {
+  const fetchBlogs = useCallback(async () => {
     try {
       setLoading(true);
       setError(null);
 
-      // Only add refresh parameter when explicitly requested
-      // Normal requests use cache for fast loading
-      const url = forceRefresh 
-        ? `/api/blogs/read/?refresh=true&_t=${Date.now()}&_r=${Math.random()}` 
-        : `/api/blogs/read/?_t=${Date.now()}`;
-      
-      const response = await fetch(url, {
-        cache: forceRefresh ? 'no-store' : 'default', // Only bypass browser cache when refreshing
-      });
-      if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`);
-      }
-
-      const data = await response.json();
-      logger.debug('general', "Raw blog data:", data);
-
-      // Transform Sanity data to match UI expectations
-      const transformedBlogs = (data as BlogPost[]).map((blog: BlogPost, index: number) => ({
-        ...blog,
-        id: index + 1,
-        created_at: blog.publishedAt || blog.createdAt || blog.created_at || new Date().toISOString(),
-        updated_at: blog.statusChangedAt || blog.createdAt || blog.created_at || new Date().toISOString(),
-        image: blog.image,
-        author_name: blog.author_name || "Anonymous",
-      }));
-
-      const allPosts = withBlogListFallback(transformedBlogs);
-      const blogPosts =
-        transformedBlogs.filter((blog: BlogPost) => blog.category === "blog").length > 0
-          ? transformedBlogs.filter((blog: BlogPost) => blog.category === "blog")
-          : allPosts;
-      const newsPosts = withNewsListFallback(
-        transformedBlogs.filter((blog: BlogPost) => blog.category === "news")
+      const data = await fetchAllBlogsFromSanity();
+      const { allPosts, blogPosts, newsPosts } = transformBlogPosts(
+        data as BlogPost[]
       );
 
+      setAllPostsFromSanity(allPosts);
       setBlogs(blogPosts);
       setNews(newsPosts);
-      setAllPostsFromAPI(allPosts);
+      logger.debug("general", "Blogs loaded from Sanity:", data.length);
     } catch (err) {
+      logger.error("general", "Direct Sanity blog fetch failed:", err);
       const fallback = withBlogListFallback([]);
       setBlogs(fallback);
       setNews(withNewsListFallback([]));
-      setAllPostsFromAPI(fallback);
+      setAllPostsFromSanity(fallback);
     } finally {
       setLoading(false);
     }
-  };
+  }, []);
 
-  // Use live updates if available; loading is false as soon as either API or live has data
+  useEffect(() => {
+    if (initialFetchedRef.current) return;
+    initialFetchedRef.current = true;
+
+    fetchAllBlogsFromSanity()
+      .then((data) => {
+        const { allPosts, blogPosts, newsPosts } = transformBlogPosts(
+          data as BlogPost[]
+        );
+        setAllPostsFromSanity(allPosts);
+        setBlogs((prev) => (prev.length === 0 ? blogPosts : prev));
+        setNews((prev) => (prev.length === 0 ? newsPosts : prev));
+        logger.debug("general", "Initial Sanity blogs loaded:", data.length);
+      })
+      .catch((err) => {
+        logger.debug(
+          "general",
+          "Initial Sanity blogs fetch failed (will use live or fallback):",
+          err
+        );
+      })
+      .finally(() => {
+        setInitialSanityLoading(false);
+      });
+  }, []);
+
   useEffect(() => {
     if (useLiveUpdates) {
-      // Process all live blogs - filter by category for backward compatibility
-      const blogPosts = liveBlogs.filter((blog: BlogPost) => blog.category === "blog");
-      const newsPosts = liveBlogs.filter((blog: BlogPost) => blog.category === "news");
+      const blogPosts = liveBlogs.filter((blog) => blog.category === "blog");
+      const newsPosts = liveBlogs.filter((blog) => blog.category === "news");
 
       setBlogs(blogPosts);
       setNews(newsPosts);
       setError(liveError);
-      // Show content as soon as either source is ready (API or live)
-      setLoading(liveLoading && initialApiLoading);
+      setLoading(liveLoading && initialSanityLoading);
 
-      // If live updates fail after initial load, fall back to API
       if (liveError && liveBlogs.length === 0 && !liveLoading) {
-        logger.warn('general', "Live updates failed, falling back to API:", liveError);
+        logger.warn(
+          "general",
+          "Live updates failed, falling back to direct Sanity fetch:",
+          liveError
+        );
         setUseLiveUpdates(false);
         fetchBlogs();
       }
     } else {
-      // Use API-based fetching
       fetchBlogs();
     }
-  }, [liveBlogs, liveLoading, liveError, useLiveUpdates, initialApiLoading]);
+  }, [
+    liveBlogs,
+    liveLoading,
+    liveError,
+    useLiveUpdates,
+    initialSanityLoading,
+    fetchBlogs,
+  ]);
 
-  // Get all posts regardless of category (for homepage and blogs page)
-  // When live has resolved use liveBlogs; while live is still loading use API data if available for faster first paint
   const allPosts = useMemo(() => {
     if (useLiveUpdates && !liveLoading) {
       return liveBlogs;
     }
-    if (allPostsFromAPI.length > 0) {
-      return allPostsFromAPI;
+    if (allPostsFromSanity.length > 0) {
+      return allPostsFromSanity;
     }
     return [...blogs, ...news];
-  }, [liveBlogs, liveLoading, allPostsFromAPI, blogs, news, useLiveUpdates]);
+  }, [liveBlogs, liveLoading, allPostsFromSanity, blogs, news, useLiveUpdates]);
 
-  // Expose refresh function to allow manual cache invalidation
   const refresh = () => {
     if (useLiveUpdates) {
-      // Force a refetch by temporarily disabling live updates
       setUseLiveUpdates(false);
-      fetchBlogs(true);
-      // Re-enable live updates after a short delay
+      fetchBlogs();
       setTimeout(() => setUseLiveUpdates(true), 1000);
     } else {
-      fetchBlogs(true);
+      fetchBlogs();
     }
   };
 
   return {
     blogs,
     news,
-    allPosts, // All posts regardless of category
+    allPosts,
     loading,
     error,
     refresh,
   };
 };
-

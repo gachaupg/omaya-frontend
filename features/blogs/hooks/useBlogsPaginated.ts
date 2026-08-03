@@ -1,6 +1,10 @@
 import { useEffect, useState } from "react";
 import { BlogPost } from "../types";
-import { withBlogListFallback } from "../utils/blogPosts";
+import { fetchBlogsPaginatedFromSanity } from "@/lib/sanityService";
+import {
+  filterRealBlogPosts,
+  withBlogListFallback,
+} from "../utils/blogPosts";
 
 export interface UseBlogsPaginatedOptions {
   page: number;
@@ -15,9 +19,27 @@ export interface UseBlogsPaginatedResult {
   error: string | null;
 }
 
+function transformBlogPost(blog: BlogPost, index: number): BlogPost {
+  return {
+    ...blog,
+    id: index + 1,
+    created_at:
+      blog.publishedAt ||
+      blog.createdAt ||
+      blog.created_at ||
+      new Date().toISOString(),
+    updated_at:
+      blog.statusChangedAt ||
+      blog.createdAt ||
+      blog.created_at ||
+      new Date().toISOString(),
+    image: blog.image,
+    author_name: blog.author_name || "Anonymous",
+  };
+}
+
 /**
- * Fetches paginated blogs from the API (server-side pagination and search).
- * Use this for the blogs list page. Use useBlog for homepage, marketing, and detail pages.
+ * Paginated blogs via direct Sanity GROQ (same as mobile).
  */
 export const useBlogsPaginated = ({
   page,
@@ -36,50 +58,33 @@ export const useBlogsPaginated = ({
       setLoading(true);
       setError(null);
 
-      const params = new URLSearchParams({
-        page: String(page),
-        limit: String(limit),
-      });
-      if (searchTerm.trim()) {
-        params.set("search", searchTerm.trim());
-      }
-
       try {
-        const res = await fetch(`/api/blogs/read/?${params.toString()}`, {
-          cache: "default",
-        });
-        if (!res.ok) throw new Error(`HTTP ${res.status}`);
+        const { posts: rawPosts, totalCount: count } =
+          await fetchBlogsPaginatedFromSanity(
+            page,
+            limit,
+            searchTerm.trim() || undefined
+          );
 
-        const data = await res.json();
         if (cancelled) return;
 
-        if (data.posts != null && typeof data.totalCount === "number") {
-          const transformed = (data.posts as BlogPost[]).map(
-            (blog: BlogPost, index: number) => ({
-              ...blog,
-              id: index + 1,
-              created_at:
-                blog.publishedAt ||
-                blog.createdAt ||
-                blog.created_at ||
-                new Date().toISOString(),
-              updated_at:
-                blog.statusChangedAt ||
-                blog.createdAt ||
-                blog.created_at ||
-                new Date().toISOString(),
-              image: blog.image,
-              author_name: blog.author_name || "Anonymous",
-            })
-          );
-          setPosts(transformed);
-          setTotalCount(data.totalCount);
-        } else {
-          const fallback = withBlogListFallback([]);
-          setPosts(fallback);
-          setTotalCount(fallback.length);
+        const realPosts = filterRealBlogPosts(rawPosts as BlogPost[]);
+        if (realPosts.length > 0) {
+          setPosts(realPosts.map(transformBlogPost));
+          setTotalCount(count);
+          return;
         }
-      } catch (err) {
+
+        if (searchTerm.trim()) {
+          setPosts([]);
+          setTotalCount(0);
+          return;
+        }
+
+        const fallback = withBlogListFallback([]);
+        setPosts(fallback);
+        setTotalCount(fallback.length);
+      } catch {
         if (!cancelled) {
           const fallback = withBlogListFallback([]);
           setPosts(fallback);

@@ -240,7 +240,7 @@ export default function MarketingPage() {
       if (post.image?.asset?._ref) {
         const sanityConfig = resolveSanityConfig();
         const projectId = sanityConfig.projectId || "your-project-id";
-        const dataset = sanityConfig.dataset || "production";
+        const dataset = sanityConfig.dataset || "development";
         const imageId = post.image.asset._ref
           .replace("image-", "")
           .replace("-jpg", ".jpg")
@@ -492,10 +492,15 @@ export default function MarketingPage() {
                   {t("marketing.hero.cta.start", "Start Trading Now")}
                   <span className="text-lg">→</span>
                 </button>
-                <button className="rounded-xl px-5 sm:px-6 py-2.5 sm:py-2.5 text-gray-900 dark:text-white bg-gray-100 dark:bg-[#1D1D23] border-2 border-gray-300 dark:border-[#35353E] text-sm sm:text-base font-medium hover:bg-gray-200 dark:hover:bg-[#23232B] transition-colors min-h-[44px] flex items-center justify-center gap-2">
+                <a
+                  href="https://www.youtube.com/@OMAYAExchange"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="rounded-xl px-5 sm:px-6 py-2.5 sm:py-2.5 text-gray-900 dark:text-white bg-gray-100 dark:bg-[#1D1D23] border-2 border-gray-300 dark:border-[#35353E] text-sm sm:text-base font-medium hover:bg-gray-200 dark:hover:bg-[#23232B] transition-colors min-h-[44px] flex items-center justify-center gap-2"
+                >
                   {t("marketing.hero.cta.demo", "Watch us")}
                   <Play size={16} className="text-[#1D8751]" />
-                </button>
+                </a>
               </div>
 
               {/* Stats */}

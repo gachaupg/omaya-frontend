@@ -1,5 +1,6 @@
 import {
   getSanityConfigFromEnv,
+  resolveSanityConfig,
   type SanityRuntimeConfig,
 } from "@/config/sanity";
 
@@ -8,7 +9,10 @@ export async function fetchSanityGroq<T>(
   groqQuery: string,
   params: Record<string, unknown> = {}
 ): Promise<T> {
-  const config = getSanityConfigFromEnv();
+  const config =
+    typeof window === "undefined"
+      ? getSanityConfigFromEnv()
+      : resolveSanityConfig();
   return fetchSanityGroqWithConfig<T>(config, groqQuery, params);
 }
 
