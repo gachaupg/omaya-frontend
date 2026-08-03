@@ -59,10 +59,20 @@ export interface SanityRuntimeConfig {
   token: string;
 }
 
+function defaultDataset(): string {
+  if (
+    typeof process !== "undefined" &&
+    process.env.NODE_ENV === "production"
+  ) {
+    return "production";
+  }
+  return DEFAULT_SANITY_DATASET;
+}
+
 function withSanityDefaults(config: SanityRuntimeConfig): SanityRuntimeConfig {
   return {
     projectId: config.projectId || DEFAULT_SANITY_PROJECT_ID,
-    dataset: config.dataset || DEFAULT_SANITY_DATASET,
+    dataset: config.dataset || defaultDataset(),
     apiVersion: config.apiVersion || DEFAULT_SANITY_API_VERSION,
     token: config.token || DEFAULT_SANITY_READ_TOKEN,
   };

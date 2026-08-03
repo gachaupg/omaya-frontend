@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { BlogPost } from "../types";
-import { fetchBlogsPaginatedFromSanity } from "@/lib/sanityService";
+import { fetchBlogsPaginatedFromApi } from "../blogReadApi";
 import {
   filterRealBlogPosts,
   withBlogListFallback,
@@ -19,27 +19,8 @@ export interface UseBlogsPaginatedResult {
   error: string | null;
 }
 
-function transformBlogPost(blog: BlogPost, index: number): BlogPost {
-  return {
-    ...blog,
-    id: index + 1,
-    created_at:
-      blog.publishedAt ||
-      blog.createdAt ||
-      blog.created_at ||
-      new Date().toISOString(),
-    updated_at:
-      blog.statusChangedAt ||
-      blog.createdAt ||
-      blog.created_at ||
-      new Date().toISOString(),
-    image: blog.image,
-    author_name: blog.author_name || "Anonymous",
-  };
-}
-
 /**
- * Paginated blogs via direct Sanity GROQ (same as mobile).
+ * Paginated blogs via /api/blogs/read (server-side Sanity — works in live/production).
  */
 export const useBlogsPaginated = ({
   page,
@@ -60,7 +41,7 @@ export const useBlogsPaginated = ({
 
       try {
         const { posts: rawPosts, totalCount: count } =
-          await fetchBlogsPaginatedFromSanity(
+          await fetchBlogsPaginatedFromApi(
             page,
             limit,
             searchTerm.trim() || undefined
@@ -68,9 +49,9 @@ export const useBlogsPaginated = ({
 
         if (cancelled) return;
 
-        const realPosts = filterRealBlogPosts(rawPosts as BlogPost[]);
+        const realPosts = filterRealBlogPosts(rawPosts);
         if (realPosts.length > 0) {
-          setPosts(realPosts.map(transformBlogPost));
+          setPosts(realPosts);
           setTotalCount(count);
           return;
         }
@@ -84,12 +65,14 @@ export const useBlogsPaginated = ({
         const fallback = withBlogListFallback([]);
         setPosts(fallback);
         setTotalCount(fallback.length);
-      } catch {
+      } catch (err) {
         if (!cancelled) {
           const fallback = withBlogListFallback([]);
           setPosts(fallback);
           setTotalCount(fallback.length);
-          setError(null);
+          setError(
+            err instanceof Error ? err.message : "Failed to load blogs"
+          );
         }
       } finally {
         if (!cancelled) setLoading(false);
