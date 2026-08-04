@@ -5,6 +5,7 @@ export interface MoneyXPaymentProvider {
   id?: number;
   provider_id: string;
   provider_name: string;
+  short_name?: string;
   method: string | number;
   method_display: string | number;
   logo: string | null;

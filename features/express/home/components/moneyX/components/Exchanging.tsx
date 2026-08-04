@@ -30,7 +30,11 @@ import FailureStatusModal from "@/features/express/components/FailureStatusModal
 import { resolveExpressTransactionFailureMessage } from "@/lib/utils/websocketUtils";
 import { useScrollAppToTopWhen } from "@/hooks/useScrollAppToTopWhen";
 import { encodeQrScanData } from "@/lib/utils/ussdDial";
+import { getPaymentMethodDisplayTitle } from "@/lib/utils/paymentProviderLabel";
 import { isExpressDepositTransaction } from "@/features/express/utils/exchangeStatusMapping";
+const moneyXPaymentLabel = (pm: any): string =>
+  getPaymentMethodDisplayTitle(pm) || pm?.provider_name || pm?.provider || "";
+
 const formatDateTimeEastAfrica = (input: Date | number | string): string => {
   const d = input instanceof Date ? input : new Date(input);
   if (Number.isNaN(d.getTime())) return "";
@@ -1280,7 +1284,7 @@ export default function Exchanging({ transactionData, onBackToTransfer, isHomePa
                         effectiveTransactionData.fromPaymentMethod.provider_logo ||
                         effectiveTransactionData.fromPaymentMethod.logo
                       }
-                      alt={effectiveTransactionData.fromPaymentMethod.provider_name}
+                      alt={moneyXPaymentLabel(effectiveTransactionData.fromPaymentMethod)}
                       className="w-6 h-6 mr-2 rounded-md object-contain bg-white flex-shrink-0"
                       onError={(e) => {
                         e.currentTarget.src =
@@ -1293,7 +1297,7 @@ export default function Exchanging({ transactionData, onBackToTransfer, isHomePa
                       isDark ? "text-white" : "text-gray-900"
                     } text-sm font-semibold truncate`}
                   >
-                    {effectiveTransactionData.fromPaymentMethod.provider_name}
+                    {moneyXPaymentLabel(effectiveTransactionData.fromPaymentMethod)}
                   </span>
                 </div>
                 {fromPaymentAccountNumber && (
@@ -1340,7 +1344,7 @@ export default function Exchanging({ transactionData, onBackToTransfer, isHomePa
                         effectiveTransactionData.toPaymentMethod.provider_logo ||
                         effectiveTransactionData.toPaymentMethod.logo
                       }
-                      alt={effectiveTransactionData.toPaymentMethod.provider_name}
+                      alt={moneyXPaymentLabel(effectiveTransactionData.toPaymentMethod)}
                       className="w-6 h-6 mr-2 rounded-md object-contain bg-white flex-shrink-0"
                       onError={(e) => {
                         e.currentTarget.src =
@@ -1353,7 +1357,7 @@ export default function Exchanging({ transactionData, onBackToTransfer, isHomePa
                       isDark ? "text-white" : "text-gray-900"
                     } text-sm font-semibold truncate`}
                   >
-                    {effectiveTransactionData.toPaymentMethod.provider_name}
+                    {moneyXPaymentLabel(effectiveTransactionData.toPaymentMethod)}
                   </span>
                 </div>
                 {toPaymentAccountNumber && (
@@ -1901,7 +1905,7 @@ export default function Exchanging({ transactionData, onBackToTransfer, isHomePa
                       effectiveTransactionData.fromPaymentMethod.provider_logo ||
                       effectiveTransactionData.fromPaymentMethod.logo
                     }
-                    alt={effectiveTransactionData.fromPaymentMethod.provider_name}
+                    alt={moneyXPaymentLabel(effectiveTransactionData.fromPaymentMethod)}
                     className="w-8 h-8 rounded-md object-contain bg-white flex-shrink-0 mt-0.5"
                     onError={(e) => {
                       e.currentTarget.src =
@@ -1915,7 +1919,7 @@ export default function Exchanging({ transactionData, onBackToTransfer, isHomePa
                       isDark ? "text-white" : "text-gray-900"
                     } text-sm sm:text-base font-semibold truncate`}
                   >
-                    {effectiveTransactionData.fromPaymentMethod.provider_name}
+                    {moneyXPaymentLabel(effectiveTransactionData.fromPaymentMethod)}
                   </div>
                   {fromPaymentAccountNumber && (
                     <div
@@ -1949,7 +1953,7 @@ export default function Exchanging({ transactionData, onBackToTransfer, isHomePa
                       effectiveTransactionData.toPaymentMethod.provider_logo ||
                       effectiveTransactionData.toPaymentMethod.logo
                     }
-                    alt={effectiveTransactionData.toPaymentMethod.provider_name}
+                    alt={moneyXPaymentLabel(effectiveTransactionData.toPaymentMethod)}
                     className="w-8 h-8 rounded-md object-contain bg-white flex-shrink-0 mt-0.5"
                     onError={(e) => {
                       e.currentTarget.src =
@@ -1963,7 +1967,7 @@ export default function Exchanging({ transactionData, onBackToTransfer, isHomePa
                       isDark ? "text-white" : "text-gray-900"
                     } text-sm sm:text-base font-semibold truncate`}
                   >
-                    {effectiveTransactionData.toPaymentMethod.provider_name}
+                    {moneyXPaymentLabel(effectiveTransactionData.toPaymentMethod)}
                   </div>
                   {toPaymentAccountNumber && (
                     <div

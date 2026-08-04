@@ -22,6 +22,7 @@ export function coercePaymentMethodText(value: unknown): string {
 
 export function getMoneyXPaymentMethodSearchBlob(payment: any): string {
   return [
+    payment?.short_name,
     payment?.provider_name,
     payment?.provider,
     payment?.method,

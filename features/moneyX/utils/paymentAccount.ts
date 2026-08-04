@@ -1,5 +1,8 @@
 /** Resolve display account / wallet / mobile from a payment method payload. */
-import { getCleanPaymentProviderLabel } from "@/lib/utils/paymentProviderLabel";
+import {
+  getCleanPaymentProviderLabel,
+  getPaymentMethodDisplayTitle,
+} from "@/lib/utils/paymentProviderLabel";
 
 export const resolvePaymentAccountNumber = (pm: any): string => {
   if (!pm) return "";
@@ -28,6 +31,7 @@ export const resolvePaymentAccountNumber = (pm: any): string => {
 };
 
 export const resolvePaymentProviderName = (pm: any): string =>
+  getPaymentMethodDisplayTitle(pm) ||
   getCleanPaymentProviderLabel(pm) ||
   String(
     pm?.provider_name || pm?.provider || pm?.name || pm?.method_display || ""
