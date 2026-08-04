@@ -3,6 +3,7 @@ import type {
   MoneyXPaymentProviderDetail,
 } from "../api";
 import { coercePaymentMethodText } from "@/features/express/utils/moneyXPaymentMethodUtils";
+import { getCleanPaymentProviderLabel } from "@/lib/utils/paymentProviderLabel";
 
 const pickFirst = (...values: unknown[]): string => {
   for (const value of values) {
@@ -23,6 +24,7 @@ export function normalizeMoneyXPaymentProviders(
     const methodDisplay =
       coercePaymentMethodText(provider.method_display) || method;
     const providerName = coercePaymentMethodText(provider.provider_name);
+    const shortName = coercePaymentMethodText(provider.short_name);
     const logo = coercePaymentMethodText(provider.logo);
 
     const adminPaymentDetails = provider.admin_payment_details ?? [];
@@ -49,6 +51,11 @@ export function normalizeMoneyXPaymentProviders(
       provider_id:
         coercePaymentMethodText(provider.provider_id) || pickFirst(provider.id),
       provider_name: providerName,
+      short_name: shortName,
+      provider: getCleanPaymentProviderLabel({
+        short_name: shortName,
+        provider_name: providerName,
+      }),
       method,
       method_display: methodDisplay,
       payment_method: methodDisplay || method,

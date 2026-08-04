@@ -31,6 +31,7 @@ import { pickDefaultMoneyXFromMethod } from "@/features/express/utils/defaultMon
 import {
   matchMoneyXMethodById,
   isMoneyXBankPaymentMethod,
+  getMoneyXPaymentMethodSearchBlob,
 } from "@/features/express/utils/moneyXPaymentMethodUtils";
 import { setAuthRedirectPath } from "@/lib/utils/authRedirect";
 import { ExpressLegalTermsLinks } from "@/features/express/components/legal/ExpressLegalTermsLinks";
@@ -44,6 +45,11 @@ import { BookmarkDropdown } from "@/features/express/components/forms/BookmarkDr
 import PaymentMethodsModal from "@/features/p2p/components/ui/p2pdashboard/sections/PaymentMethodsModal";
 import ProviderPaymentDetailsCard from "@/components/ui/ProviderPaymentDetailsCard";
 import { getHighResPaymentLogo } from "@/features/express/utils/imageHelpers";
+import {
+  getCleanPaymentProviderLabel,
+  getPaymentMethodDisplayTitle,
+  getPaymentMethodSelectLabels,
+} from "@/lib/utils/paymentProviderLabel";
 import {
   clampMoneyXAmountNumber,
   getMoneyXMaxAmountErrorMessage,
@@ -146,6 +152,7 @@ const MoneyXRates = ({
     const resolvedLogo = resolvePaymentMethodLogo(payment);
     return {
       ...payment,
+      short_name: payment.short_name || payment.provider?.short_name || "",
       logo: resolvedLogo || payment.logo || payment.provider_logo || undefined,
       provider_logo:
         resolvedLogo || payment.provider_logo || payment.logo || undefined,
@@ -406,30 +413,13 @@ const MoneyXRates = ({
     }
   }, [apiCommission, apiCommissionIsPercentage]);
 
-  // Helper function to get provider name
+  // Primary label — short_name first (matches Exchange payment method dropdowns)
   const getProviderName = useCallback((payment: any) => {
     if (!payment) return "";
-
-    let providerName =
-      payment?.provider_name ||
-      payment?.provider?.provider_name ||
-      payment?.provider ||
-      payment?.method?.method_name ||
-      payment?.payment_method_name ||
-      "";
-
-    // Convert to string if it's not already
-    providerName = String(providerName || "");
-
-    // Remove common method suffixes (case-insensitive)
-    providerName = providerName
-      .replace(
-        /\s*-\s*(Bank|Mobile|Crypto|Forex|Marchant|Money\s*Transfer|Merchant)\s*$/i,
-        ""
-      )
-      .trim();
-
-    return providerName;
+    return (
+      getPaymentMethodDisplayTitle(payment) ||
+      getCleanPaymentProviderLabel(payment)
+    );
   }, []);
 
   const handleFromPaymentChange = useCallback(
@@ -719,13 +709,13 @@ const MoneyXRates = ({
 
   // Filter payment methods based on search
   const filteredFromMethods = fromPaymentMethods.filter((method: any) => {
-    const providerName = getProviderName(method).toLowerCase();
-    return providerName.includes(fromSearchTerm.toLowerCase());
+    const blob = getMoneyXPaymentMethodSearchBlob(method);
+    return blob.includes(fromSearchTerm.toLowerCase());
   });
 
   const filteredToMethods = effectiveToPaymentMethods.filter((method: any) => {
-    const providerName = getProviderName(method).toLowerCase();
-    return providerName.includes(toSearchTerm.toLowerCase());
+    const blob = getMoneyXPaymentMethodSearchBlob(method);
+    return blob.includes(toSearchTerm.toLowerCase());
   });
 
   // Dropdown refs
@@ -1114,7 +1104,9 @@ const MoneyXRates = ({
                           No payment methods available
                         </p>
                       ) : (
-                        filteredFromMethods.map((method: any, index: number) => (
+                        filteredFromMethods.map((method: any, index: number) => {
+                          const { label, subtitle } = getPaymentMethodSelectLabels(method);
+                          return (
                           <button
                             key={index}
                             type="button"
@@ -1133,17 +1125,24 @@ const MoneyXRates = ({
                                   null,
                                   64
                                 )}
-                                alt={getProviderName(method)}
+                                alt={label}
                                 className="w-8 h-8 rounded-full object-cover"
                               />
                             ) : (
                               <div className="w-8 h-8 rounded-full bg-[#1D8751] flex items-center justify-center text-white text-xs font-semibold">
-                                {getProviderName(method)?.charAt(0) || "B"}
+                                {label?.charAt(0) || "B"}
                               </div>
                             )}
-                            <span className="text-[14px]">{getProviderName(method)}</span>
+                            <div className="flex flex-col items-start min-w-0">
+                              <span className="text-[14px] truncate">{label}</span>
+                              {subtitle ? (
+                                <span className={`text-xs truncate ${isDark ? "text-[#788099]" : "text-gray-500"}`}>
+                                  {subtitle}
+                                </span>
+                              ) : null}
+                            </div>
                           </button>
-                        ))
+                        );})
                       )}
                     </div>
                   </div>
@@ -1258,7 +1257,9 @@ const MoneyXRates = ({
                           No payment methods available
                         </p>
                       ) : (
-                        filteredToMethods.map((method: any, index: number) => (
+                        filteredToMethods.map((method: any, index: number) => {
+                          const { label, subtitle } = getPaymentMethodSelectLabels(method);
+                          return (
                           <button
                             key={index}
                             type="button"
@@ -1277,17 +1278,24 @@ const MoneyXRates = ({
                                   null,
                                   64
                                 )}
-                                alt={getProviderName(method)}
+                                alt={label}
                                 className="w-8 h-8 rounded-full object-cover"
                               />
                             ) : (
                               <div className="w-8 h-8 rounded-full bg-[#1D8751] flex items-center justify-center text-white text-xs font-semibold">
-                                {getProviderName(method)?.charAt(0) || "P"}
+                                {label?.charAt(0) || "P"}
                               </div>
                             )}
-                            <span className="text-[14px]">{getProviderName(method)}</span>
+                            <div className="flex flex-col items-start min-w-0">
+                              <span className="text-[14px] truncate">{label}</span>
+                              {subtitle ? (
+                                <span className={`text-xs truncate ${isDark ? "text-[#788099]" : "text-gray-500"}`}>
+                                  {subtitle}
+                                </span>
+                              ) : null}
+                            </div>
                           </button>
-                        ))
+                        );})
                       )}
                     </div>
                   </div>
