@@ -57,22 +57,12 @@ export const metadata: Metadata = {
   icons: {
     icon: [
       {
-        url: "/favicon.ico",
+        url: "/favicon.jpg",
         sizes: "32x32",
-        type: "image/x-icon",
-      },
-      {
-        url: "/assets/Omaya_green-logo_yva2ah_1_huqqlj.webp",
-        sizes: "32x32",
-        type: "image/webp",
-      },
-      {
-        url: "/assets/Omaya_green-logo_yva2ah_1_huqqlj.webp",
-        sizes: "16x16",
-        type: "image/webp",
+        type: "image/jpeg",
       },
     ],
-    shortcut: "/favicon.ico",
+    shortcut: "/favicon.jpg",
     apple: "/assets/Omaya_green-logo_yva2ah_1_huqqlj.webp",
   },
 };
