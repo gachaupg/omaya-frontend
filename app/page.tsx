@@ -7,7 +7,7 @@ import { useRouter } from "next/navigation";
 import { useSelector } from "react-redux";
 import type { RootState } from "@/store/rootReducer";
 import { tokens } from "@/styles/tokens";
-import { Play, MessageCircle, Plus, BarChart, Globe, Lock, DollarSign, Users, TrendingUp, Shield, Zap, Gift, UserPlus, ArrowRight, Building2, Calendar, Clock, MapPin, Phone, Mail, Send, ChevronDown, ChevronUp, ArrowLeftRight, HelpCircle, Wallet, BarChart3, Award, Rocket } from "lucide-react";
+import { Play, MessageCircle, Plus, BarChart, Globe, Lock, DollarSign, Users, TrendingUp, Shield, Zap, Gift, UserPlus, ArrowRight, Building2, Calendar, Clock, MapPin, Phone, Mail, Send, ChevronDown, ChevronUp, ArrowLeftRight, HelpCircle, Wallet, BarChart3, Award, Rocket, X } from "lucide-react";
 import ExchangeForm from "@/components/ExchangeForm";
 import { useBlog } from "@/features/blogs/hooks/blog";
 import { BlogPost } from "@/features/blogs/types";
@@ -25,6 +25,8 @@ import FloatingParticles from "@/components/ui/floating-particles";
 import { decodeHtml, stripLeadingImagesFromHtml } from "@/lib/utils/html";
 import KeyAchievementsSection from "@/components/marketing/KeyAchievementsSection";
 import { resolveSanityConfig } from "@/config/sanity";
+
+const WATCH_US_YOUTUBE_VIDEO_ID = "JlnYeDvFUG0";
 
 // Strip HTML tags for excerpt preview
 const stripHtmlTags = (html: string): string => {
@@ -164,6 +166,7 @@ export default function MarketingPage() {
   const [faqPage, setFaqPage] = useState(1);
   const FAQ_PER_PAGE = 5;
   const [showAllAssets, setShowAllAssets] = useState(false);
+  const [isWatchVideoOpen, setIsWatchVideoOpen] = useState(false);
   const { blogs, news, allPosts, loading, error } = useBlog();
   const { faqs: faqItems, loading: faqLoading, error: faqError } = useFAQ();
 
@@ -172,6 +175,15 @@ export default function MarketingPage() {
     const totalPages = Math.ceil((faqItems?.length ?? 0) / FAQ_PER_PAGE) || 1;
     setFaqPage((p) => Math.min(p, totalPages));
   }, [faqItems?.length]);
+
+  useEffect(() => {
+    if (!isWatchVideoOpen) return;
+    const onKeyDown = (event: KeyboardEvent) => {
+      if (event.key === "Escape") setIsWatchVideoOpen(false);
+    };
+    window.addEventListener("keydown", onKeyDown);
+    return () => window.removeEventListener("keydown", onKeyDown);
+  }, [isWatchVideoOpen]);
   const {
     markets: marketAssets,
     loading: marketsLoading,
@@ -492,15 +504,14 @@ export default function MarketingPage() {
                   {t("marketing.hero.cta.start", "Start Trading Now")}
                   <span className="text-lg">→</span>
                 </button>
-                <a
-                  href="https://www.youtube.com/@OMAYAExchange"
-                  target="_blank"
-                  rel="noopener noreferrer"
+                <button
+                  type="button"
+                  onClick={() => setIsWatchVideoOpen(true)}
                   className="rounded-xl px-5 sm:px-6 py-2.5 sm:py-2.5 text-gray-900 dark:text-white bg-gray-100 dark:bg-[#1D1D23] border-2 border-gray-300 dark:border-[#35353E] text-sm sm:text-base font-medium hover:bg-gray-200 dark:hover:bg-[#23232B] transition-colors min-h-[44px] flex items-center justify-center gap-2"
                 >
                   {t("marketing.hero.cta.demo", "Watch us")}
                   <Play size={16} className="text-[#1D8751]" />
-                </a>
+                </button>
               </div>
 
               {/* Stats */}
@@ -2133,6 +2144,39 @@ export default function MarketingPage() {
           </div>
         </div>
       </section>
+
+      {/* Watch us — in-app YouTube player */}
+      {isWatchVideoOpen && (
+        <div
+          className="fixed inset-0 z-[100] flex items-center justify-center bg-black/70 p-4"
+          onClick={() => setIsWatchVideoOpen(false)}
+          role="presentation"
+        >
+          <div
+            className="relative aspect-video w-[min(100%,80rem,calc((100vh-2rem)*16/9))] rounded-2xl overflow-hidden bg-black shadow-2xl"
+            onClick={(event) => event.stopPropagation()}
+            role="dialog"
+            aria-modal="true"
+            aria-label="OMAYA intro video"
+          >
+            <button
+              type="button"
+              onClick={() => setIsWatchVideoOpen(false)}
+              className="absolute top-3 right-1 z-10 rounded-full bg-black/60 p-2 text-white hover:bg-black/80 transition-colors"
+              aria-label="Close video"
+            >
+              <X size={20} />
+            </button>
+            <iframe
+              src={`https://www.youtube.com/embed/${WATCH_US_YOUTUBE_VIDEO_ID}?autoplay=1&rel=0`}
+              title="OMAYA intro video"
+              className="absolute inset-0 h-full w-full border-0"
+              allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share"
+              allowFullScreen
+            />
+          </div>
+        </div>
+      )}
 
       {/* KYC Verification Modal */}
       <KYCVerificationModal />
