@@ -27,7 +27,7 @@ import {
   cancelWithdrawalTransaction,
 } from "@/features/express/slices/transactionSlice";
 import FailureStatusModal from "@/features/express/components/FailureStatusModal";
-import { resolveExpressTransactionFailureMessage } from "@/lib/utils/websocketUtils";
+import { resolveExpressTransactionFailureMessage, normalizeWebSocketUrl } from "@/lib/utils/websocketUtils";
 import { useScrollAppToTopWhen } from "@/hooks/useScrollAppToTopWhen";
 import { encodeQrScanData } from "@/lib/utils/ussdDial";
 import { getPaymentMethodDisplayTitle } from "@/lib/utils/paymentProviderLabel";
@@ -494,10 +494,11 @@ export default function Exchanging({ transactionData, onBackToTransfer, isHomePa
       isMoneyXTransaction);
 
   // Extract WebSocket URL from transaction data (handle both camelCase and snake_case)
-  let websocketUrl =
+  let websocketUrl = normalizeWebSocketUrl(
     effectiveTransactionData?.websocketUrl ||
-    effectiveTransactionData?.websocket_url ||
-    undefined;
+      effectiveTransactionData?.websocket_url ||
+      ""
+  ) || undefined;
 
   // For MoneyX transactions, use the MoneyX WebSocket URL
   if (isMoneyXTransaction && moneyXTransactionId && !websocketUrl) {

@@ -18,7 +18,7 @@ import {
 import { fetchDepositStatus } from "../api";
 import SuccessPage from "./success";
 import FailureStatusModal from "@/features/express/components/FailureStatusModal";
-import { resolveExpressTransactionFailureMessage } from "@/lib/utils/websocketUtils";
+import { resolveExpressTransactionFailureMessage, normalizeWebSocketUrl } from "@/lib/utils/websocketUtils";
 import { useScrollAppToTopWhen } from "@/hooks/useScrollAppToTopWhen";
 import { encodeQrScanData } from "@/lib/utils/ussdDial";
 import { P2P_STATUS_SCROLL_FRACTION } from "@/lib/utils/scrollAppToTop";
@@ -583,10 +583,11 @@ export default function Exchanging({ transactionData }: ExchangingProps) {
 
 
   // Extract WebSocket URL from transaction data (handle both camelCase and snake_case)
-  let websocketUrl =
+  let websocketUrl = normalizeWebSocketUrl(
     effectiveTransactionData?.websocketUrl ||
-    effectiveTransactionData?.websocket_url ||
-    undefined;
+      effectiveTransactionData?.websocket_url ||
+      ""
+  ) || undefined;
 
   // Clean up malformed URLs (remove //http: or //https: from WebSocket URLs)
   if (websocketUrl && (websocketUrl.includes('//http:') || websocketUrl.includes('//https:'))) {

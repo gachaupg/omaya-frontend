@@ -2,6 +2,7 @@ import React, { useEffect, useState } from "react";
 import { useSelector } from "react-redux";
 import { CreateSwapResponse } from "../types";
 import { connectSwapStatusWebSocket } from "./websocket";
+import { normalizeWebSocketUrl } from "@/lib/utils/websocketUtils";
 import { cookieUtils } from "@/lib/utils/cookieUtils";
 import { API_CONFIG } from "@/lib/appConfig";
 import SuccessPage from "./success";
@@ -15,6 +16,14 @@ import {
   handleSwapAssetIconError,
   resolveSwapAssetIconSrc,
 } from "../utils/swapAssetIcon";
+import {
+  maskSwapWebSocketUrlForLog,
+  swapWebSocketLog,
+} from "@/lib/utils/swapWebSocketLog";
+import {
+  resolvePayinAddress,
+  resolveSwapId,
+} from "../utils/swapResponseUtils";
 
 interface CopyAddressStepProps {
   swapResponse: CreateSwapResponse | null;
@@ -122,11 +131,19 @@ const CopyAddressStep: React.FC<CopyAddressStepProps> = ({
   const maxReconnectAttempts = 5;
   const reconnectDelay = 3000; // 3 seconds
   const payinAddress =
-    swapResponse?.payinAddress ||
-    (swapResponse as any)?.payin_address ||
+    resolvePayinAddress(swapResponse) ||
     statusObj?.payinAddress ||
     statusObj?.payin_address ||
     "";
+  const swapId = resolveSwapId(swapResponse);
+
+  useEffect(() => {
+    swapWebSocketLog("CopyAddressStep mounted", {
+      swapId,
+      hasPayinAddress: Boolean(payinAddress),
+      swapResponse,
+    });
+  }, [swapId, payinAddress, swapResponse]);
 
   useEffect(() => {
     if (!payinAddress) {
@@ -165,31 +182,38 @@ const CopyAddressStep: React.FC<CopyAddressStepProps> = ({
   };
 
   useEffect(() => {
-    if (!swapResponse?.id) return;
+    if (!swapId) {
+      swapWebSocketLog("missing swap id — WebSocket not started", {
+        swapResponse,
+      });
+      return;
+    }
     let ws: WebSocket | null = null;
     let reconnectTimeout: NodeJS.Timeout | null = null;
     let closedByUser = false;
-    const wsUrl = API_CONFIG.SWAP.SWAP_STATUS_WS(swapResponse.id);
+    const wsUrl = normalizeWebSocketUrl(
+      API_CONFIG.SWAP.SWAP_STATUS_WS(swapId, token ?? undefined)
+    );
+    swapWebSocketLog("CopyAddressStep url", {
+      url: maskSwapWebSocketUrlForLog(wsUrl),
+    });
     logger.debug('swap', "WebSocket URL (actual):", wsUrl);
 
     function connect() {
-      if (!swapResponse?.id) return; // Ensure swapResponse is not null
-      ws = connectSwapStatusWebSocket(swapResponse.id, {
+      if (!swapId) return;
+      ws = connectSwapStatusWebSocket(swapId, {
         token: token ?? undefined,
-        onOpen: (event: Event) => {
-          logger.debug('swap', "WebSocket connection opened", event);
+        onOpen: () => {
+          swapWebSocketLog("connection opened", { swapId });
           setWsConnected(true);
           setReconnectAttempts(0); // Reset on successful connect
         },
         onClose: (event: CloseEvent) => {
-          logger.debug('swap', 
-            "WebSocket closed",
-            event,
-            "code:",
-            event.code,
-            "reason:",
-            event.reason
-          );
+          swapWebSocketLog("connection closed", {
+            swapId,
+            code: event.code,
+            reason: event.reason,
+          });
           setWsConnected(false);
           if (
             !closedByUser &&
@@ -199,26 +223,24 @@ const CopyAddressStep: React.FC<CopyAddressStepProps> = ({
             // Abnormal closure, try to reconnect
             const nextAttempt = reconnectAttempts + 1;
             setReconnectAttempts(nextAttempt);
-            logger.debug('swap', 
-              `Attempting to reconnect WebSocket (#${nextAttempt}) in ${
-                reconnectDelay / 1000
-              }s...`
-            );
+            swapWebSocketLog("reconnect scheduled", {
+              swapId,
+              attempt: nextAttempt,
+              delaySeconds: reconnectDelay / 1000,
+            });
             reconnectTimeout = setTimeout(connect, reconnectDelay);
           }
         },
-        onError: (event: Event) => {
-          logger.debug('swap', "WebSocket error", event);
+        onError: () => {
+          swapWebSocketLog("connection error", { swapId });
           setWsConnected(false);
         },
         onMessage: (event: MessageEvent) => {
-          logger.debug('swap', status);
-
-          logger.debug('swap', "WebSocket message received:", event.data);
+          swapWebSocketLog("raw message", { swapId, data: event.data });
           try {
             const msg = JSON.parse(event.data);
             const sts = msg.data?.status;
-            logger.debug('swap', "new data check", sts, msg);
+            swapWebSocketLog("parsed message", { swapId, status: sts, type: msg.type });
 
             const statusCandidates = [
               msg?.data?.status,
@@ -264,8 +286,7 @@ const CopyAddressStep: React.FC<CopyAddressStepProps> = ({
               
               // Auto-navigate to success page when status is completed
               if (backendStatus === "completed") {
-                logger.debug('swap', "✅ Swap completed, automatically showing success page");
-                logger.debug('swap', "Status changed to completed, triggering success page");
+                swapWebSocketLog("swap completed", { swapId, backendStatus });
                 // Keep the status as "completed" to trigger success page
                 setStatus("completed");
               }
@@ -283,9 +304,12 @@ const CopyAddressStep: React.FC<CopyAddressStepProps> = ({
       if (ws) ws.close();
       if (reconnectTimeout) clearTimeout(reconnectTimeout);
     };
-  }, [swapResponse && swapResponse.id, reconnectAttempts]);
+  }, [swapId, reconnectAttempts, token]);
 
-  if (!swapResponse?.payinAddress) return null;
+  if (!payinAddress) {
+    swapWebSocketLog("waiting for payin address", { swapId, swapResponse });
+    return null;
+  }
 
   // Always map the status before using it in the stepper
   const mappedStatus = mapBackendStatusToStepperStatus(status);
@@ -571,11 +595,11 @@ const CopyAddressStep: React.FC<CopyAddressStepProps> = ({
           </div>
           <div className="flex items-center gap-2">
             <span className="text-gray-900 dark:text-white text-xs sm:text-base font-mono font-semibold break-all">
-              {swapResponse.id}
+              {swapId}
             </span>
             <button
               className="ml-2 p-1 rounded transition flex-shrink-0"
-              onClick={() => navigator.clipboard.writeText(swapResponse.id)}
+              onClick={() => navigator.clipboard.writeText(swapId)}
               title="Copy Transaction ID"
             >
             <Copy className="w-4 h-4 text-[#F79330]" />

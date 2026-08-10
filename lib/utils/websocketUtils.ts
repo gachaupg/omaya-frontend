@@ -2,6 +2,12 @@
  * WebSocket URL utilities - append auth token to WebSocket URLs
  */
 
+/** Backend responses may include dev hostnames; production clients should use backend.omaya.io. */
+export function normalizeWebSocketUrl(url: string): string {
+  if (!url || typeof url !== "string") return url;
+  return url.replace(/\/\/dev\.backend\.omaya\.io/gi, "//backend.omaya.io");
+}
+
 /**
  * Appends ?token= or &token= to a WebSocket URL when token is provided.
  * Safe to call with null/undefined token - returns original URL unchanged.
@@ -18,15 +24,16 @@ export function appendTokenToWebSocketUrl(
   token: string | null | undefined
 ): string {
   if (!url || typeof url !== "string") return url;
-  if (!token || typeof token !== "string" || token.length < 10) return url;
-  if (/[?&]token=/.test(url)) return url;
+  const normalizedUrl = normalizeWebSocketUrl(url);
+  if (!token || typeof token !== "string" || token.length < 10) return normalizedUrl;
+  if (/[?&]token=/.test(normalizedUrl)) return normalizedUrl;
 
   try {
-    const separator = url.includes("?") ? "&" : "?";
+    const separator = normalizedUrl.includes("?") ? "&" : "?";
     const encodedToken = encodeURIComponent(token);
-    return `${url}${separator}token=${encodedToken}`;
+    return `${normalizedUrl}${separator}token=${encodedToken}`;
   } catch {
-    return url;
+    return normalizedUrl;
   }
 }
 

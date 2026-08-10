@@ -23,6 +23,7 @@ import {
   resolveExpressMinAmountDisplayError,
 } from "@/lib/utils/expressMinAmount";
 import { sliceCache } from "@/lib/utils/sliceCache";
+import { normalizeCreateSwapResponse } from "../utils/swapResponseUtils";
 import {
   clearSupportedTokensCachesOnReload,
   consumeSupportedTokensReloadRefetch,
@@ -414,7 +415,9 @@ const swapSlice = createSlice({
       state.hasShownErrorToast = false; // Reset error toast flag
     },
     setSwapResponse: (state, action: { payload: CreateSwapResponse | null }) => {
-      state.swapResponse = action.payload;
+      state.swapResponse = action.payload
+        ? normalizeCreateSwapResponse(action.payload)
+        : null;
       state.swapError = null;
     },
     resetErrorToastFlag: (state) => {
@@ -564,7 +567,7 @@ const swapSlice = createSlice({
       })
       .addCase(createSwapTransaction.fulfilled, (state, action) => {
         state.swapLoading = false;
-        state.swapResponse = action.payload;
+        state.swapResponse = normalizeCreateSwapResponse(action.payload);
       })
       .addCase(createSwapTransaction.rejected, (state, action) => {
         state.swapLoading = false;

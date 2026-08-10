@@ -1,6 +1,20 @@
 import React from "react";
 import { API_CONFIG } from "@/lib/appConfig";
-import { appendTokenToWebSocketUrl } from "@/lib/utils/websocketUtils";
+import { appendTokenToWebSocketUrl, normalizeWebSocketUrl } from "@/lib/utils/websocketUtils";
+
+type ExchangeWebSocketKind = "deposit" | "withdrawal";
+
+function maskWebSocketUrlForLog(url: string): string {
+  return url.replace(/([?&]token=)[^&]+/gi, "$1***");
+}
+
+function logExchangeWebSocket(
+  kind: ExchangeWebSocketKind,
+  event: string,
+  payload?: Record<string, unknown>
+): void {
+  console.log(`[Exchange ${kind} WebSocket] ${event}`, payload ?? "");
+}
 
 export interface TransactionStatusMessage {
   type: "status_update" | "error" | "connection_established" | "final_status";
@@ -94,6 +108,7 @@ export class BaseTransactionStatusWebSocket {
   protected reconnectAttempts = 0;
   protected maxReconnectAttempts = 5;
   protected reconnectDelay = 1000;
+  protected exchangeWsKind: ExchangeWebSocketKind = "withdrawal";
   protected onMessageCallback?: (data: TransactionStatusMessage) => void;
   protected onErrorCallback?: (error: Event) => void;
   protected onCloseCallback?: () => void;
@@ -132,18 +147,31 @@ export class BaseTransactionStatusWebSocket {
         }
 
         const finalUrl = appendTokenToWebSocketUrl(this.wsUrl, this.options.token);
-                this.ws = new WebSocket(finalUrl);
+        logExchangeWebSocket(this.exchangeWsKind, "connecting", {
+          transactionId: this.transactionId,
+          sourceUrl: maskWebSocketUrlForLog(this.wsUrl),
+          finalUrl: maskWebSocketUrlForLog(finalUrl),
+          reconnectAttempt: this.reconnectAttempts,
+        });
+        this.ws = new WebSocket(finalUrl);
 
         // Add connection timeout
         const connectionTimeout = setTimeout(() => {
           if (this.ws && this.ws.readyState !== WebSocket.OPEN) {
+            logExchangeWebSocket(this.exchangeWsKind, "connection timeout", {
+              transactionId: this.transactionId,
+              url: maskWebSocketUrlForLog(finalUrl),
+            });
             this.ws.close();
           }
         }, 10000); // 10 second timeout
 
         this.ws.onopen = () => {
           clearTimeout(connectionTimeout);
-        
+          logExchangeWebSocket(this.exchangeWsKind, "connected", {
+            transactionId: this.transactionId,
+            url: maskWebSocketUrlForLog(finalUrl),
+          });
           this.reconnectAttempts = 0;
           resolve();
         };
@@ -151,6 +179,12 @@ export class BaseTransactionStatusWebSocket {
         this.ws.onmessage = (event) => {
           try {
             const data: TransactionStatusMessage = JSON.parse(event.data);
+            logExchangeWebSocket(this.exchangeWsKind, "message", {
+              transactionId: this.transactionId,
+              type: data.type,
+              status: data.data?.status ?? data.status,
+              message: data.data?.message ?? data.error,
+            });
 
             // Handle database errors gracefully
             if (
@@ -158,35 +192,30 @@ export class BaseTransactionStatusWebSocket {
                 data.data?.message?.includes("database")) ||
               data.data?.message?.includes("column")
             ) {
-              
+              logExchangeWebSocket(this.exchangeWsKind, "ignored database error message", {
+                transactionId: this.transactionId,
+              });
               // Don't crash the frontend, just log the error
               return;
             }
 
             this.onMessageCallback?.(data);
           } catch (error) {
+            logExchangeWebSocket(this.exchangeWsKind, "message parse error", {
+              transactionId: this.transactionId,
+              error: error instanceof Error ? error.message : String(error),
+            });
           }
         };
 
         this.ws.onerror = (error) => {
           const target = error.target as WebSocket | null;
-          
-          // Simple, focused error logging
-          
-          if (target?.readyState !== undefined) {
-            const states = ['CONNECTING', 'OPEN', 'CLOSING', 'CLOSED'];
-            
-          }
-          
-          if (this.wsUrl) {
-          }
-          
-        
-          
-          // Only log additional details if this is a repeated failure
-          if (this.reconnectAttempts > 2) {
-            
-          }
+          logExchangeWebSocket(this.exchangeWsKind, "error", {
+            transactionId: this.transactionId,
+            url: maskWebSocketUrlForLog(finalUrl),
+            readyState: target?.readyState,
+            reconnectAttempt: this.reconnectAttempts,
+          });
 
           // Don't reject immediately on error - let the onclose handler deal with reconnection
           // Only call error callback for logging purposes
@@ -198,7 +227,13 @@ export class BaseTransactionStatusWebSocket {
 
         this.ws.onclose = (event) => {
           clearTimeout(connectionTimeout);
-          
+          logExchangeWebSocket(this.exchangeWsKind, "closed", {
+            transactionId: this.transactionId,
+            code: event.code,
+            reason: event.reason || undefined,
+            wasClean: event.wasClean,
+            reconnectAttempt: this.reconnectAttempts,
+          });
 
           this.onCloseCallback?.();
 
@@ -208,18 +243,32 @@ export class BaseTransactionStatusWebSocket {
             this.reconnectAttempts < this.maxReconnectAttempts
           ) {
             this.reconnectAttempts++;
-          
+            logExchangeWebSocket(this.exchangeWsKind, "reconnect scheduled", {
+              transactionId: this.transactionId,
+              attempt: this.reconnectAttempts,
+              maxAttempts: this.maxReconnectAttempts,
+              delayMs: this.reconnectDelay * this.reconnectAttempts,
+            });
 
             setTimeout(() => {
               this.connect().catch((error) => {
-                
+                logExchangeWebSocket(this.exchangeWsKind, "reconnect failed", {
+                  transactionId: this.transactionId,
+                  error: error instanceof Error ? error.message : String(error),
+                });
               });
             }, this.reconnectDelay * this.reconnectAttempts);
           } else if (this.reconnectAttempts >= this.maxReconnectAttempts) {
-           
+            logExchangeWebSocket(this.exchangeWsKind, "max reconnect attempts reached", {
+              transactionId: this.transactionId,
+            });
           }
         };
       } catch (error) {
+        logExchangeWebSocket(this.exchangeWsKind, "connect exception", {
+          transactionId: this.transactionId,
+          error: error instanceof Error ? error.message : String(error),
+        });
         reject(error);
       }
     });
@@ -304,10 +353,18 @@ export class WithdrawalStatusWebSocket extends BaseTransactionStatusWebSocket {
   ) {
     // Use provided WebSocket URL or fall back to default
     // Only use provided URL if it's not empty or undefined
-    const finalWsUrl = (wsUrl && wsUrl.trim() !== "") 
-      ? wsUrl 
-      : API_CONFIG.EXCHANGE.SOCKETS.TRANSACTION_STATUS(transactionId);
-        super(transactionId, finalWsUrl, options);
+    const finalWsUrl = normalizeWebSocketUrl(
+      wsUrl && wsUrl.trim() !== ""
+        ? wsUrl
+        : API_CONFIG.EXCHANGE.SOCKETS.TRANSACTION_STATUS(transactionId)
+    );
+    logExchangeWebSocket("withdrawal", "constructor", {
+      transactionId,
+      wsUrl: wsUrl ? maskWebSocketUrlForLog(wsUrl) : undefined,
+      finalWsUrl: maskWebSocketUrlForLog(finalWsUrl),
+    });
+    super(transactionId, finalWsUrl, options);
+    this.exchangeWsKind = "withdrawal";
   }
 }
 
@@ -325,10 +382,18 @@ export class DepositStatusWebSocket extends BaseTransactionStatusWebSocket {
   ) {
     // Use provided WebSocket URL or fall back to default
     // Only use provided URL if it's not empty or undefined
-    const finalWsUrl = (wsUrl && wsUrl.trim() !== "") 
-      ? wsUrl 
-      : API_CONFIG.EXCHANGE.SOCKETS.DEPOSIT_STATUS(transactionId);
+    const finalWsUrl = normalizeWebSocketUrl(
+      wsUrl && wsUrl.trim() !== ""
+        ? wsUrl
+        : API_CONFIG.EXCHANGE.SOCKETS.DEPOSIT_STATUS(transactionId)
+    );
+    logExchangeWebSocket("deposit", "constructor", {
+      transactionId,
+      wsUrl: wsUrl ? maskWebSocketUrlForLog(wsUrl) : undefined,
+      finalWsUrl: maskWebSocketUrlForLog(finalWsUrl),
+    });
     super(transactionId, finalWsUrl, options);
+    this.exchangeWsKind = "deposit";
   }
 }
 
@@ -360,7 +425,11 @@ export const useTransactionStatusWebSocket = (
   React.useEffect(() => {
     if (!transactionId) return;
 
-  
+    logExchangeWebSocket(transactionType, "hook init", {
+      transactionId,
+      wsUrl: wsUrl ? maskWebSocketUrlForLog(wsUrl) : undefined,
+      hasToken: Boolean(options.token),
+    });
 
     // Create appropriate WebSocket class based on transaction type
     const WebSocketClass =
@@ -387,10 +456,19 @@ export const useTransactionStatusWebSocket = (
     wsRef.current = ws;
 
     ws.connect()
-      .then(() => setIsConnected(true))
-      .catch(() => {});
+      .then(() => {
+        logExchangeWebSocket(transactionType, "hook connected", { transactionId });
+        setIsConnected(true);
+      })
+      .catch((error) => {
+        logExchangeWebSocket(transactionType, "hook connect failed", {
+          transactionId,
+          error: error instanceof Error ? error.message : String(error),
+        });
+      });
 
     return () => {
+      logExchangeWebSocket(transactionType, "hook cleanup disconnect", { transactionId });
       ws.disconnect();
       wsRef.current = null;
     };

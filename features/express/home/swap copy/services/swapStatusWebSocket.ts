@@ -1,4 +1,5 @@
 import { API_CONFIG } from "@/lib/appConfig";
+import { normalizeWebSocketUrl } from "@/lib/utils/websocketUtils";
 import {
   SingletonWebSocket,
   WebSocketMessage as BaseWebSocketMessage,
@@ -25,6 +26,17 @@ type MessageHandler = (message: WebSocketMessage) => void;
 type ErrorHandler = (error: Event) => void;
 type CloseHandler = () => void;
 type OpenHandler = () => void;
+
+function maskWebSocketUrlForLog(url: string): string {
+  return url.replace(/([?&]token=)[^&]+/gi, "$1***");
+}
+
+function logSwapWebSocket(
+  event: string,
+  payload?: Record<string, unknown>
+): void {
+  console.log(`[Swap WebSocket] ${event}`, payload ?? "");
+}
 
 /**
  * SwapStatusWebSocket - Production-ready WebSocket for swap status updates
@@ -62,18 +74,36 @@ export class SwapStatusWebSocket extends SingletonWebSocket<{
     // Bridge base handlers to Swap-specific handlers
     super.onMessage((baseMessage) => {
       const swapMessage = baseMessage as unknown as WebSocketMessage;
+      logSwapWebSocket("message", {
+        swapId: this.lastSwapId,
+        type: swapMessage.type,
+        status: swapMessage.data?.status,
+        message: swapMessage.data?.message,
+      });
       this.swapMessageHandlers.forEach((handler) => handler(swapMessage));
     });
 
     super.onError((error) => {
+      logSwapWebSocket("error", {
+        swapId: this.lastSwapId,
+        url: maskWebSocketUrlForLog(this.url),
+      });
       this.swapErrorHandlers.forEach((handler) => handler(error));
     });
 
     super.onClose(() => {
+      logSwapWebSocket("closed", {
+        swapId: this.lastSwapId,
+        url: maskWebSocketUrlForLog(this.url),
+      });
       this.swapCloseHandlers.forEach((handler) => handler());
     });
 
     super.onOpen(() => {
+      logSwapWebSocket("connected", {
+        swapId: this.lastSwapId,
+        url: maskWebSocketUrlForLog(this.url),
+      });
       this.swapOpenHandlers.forEach((handler) => handler());
     });
   }
@@ -82,8 +112,9 @@ export class SwapStatusWebSocket extends SingletonWebSocket<{
    * Build WebSocket URL from swap ID and optional token
    */
   protected buildUrl(params: { swapId: string; token?: string }): string {
-    const url = API_CONFIG.SWAP.SWAP_STATUS_WS(params.swapId, params.token);
-        return url;
+    return normalizeWebSocketUrl(
+      API_CONFIG.SWAP.SWAP_STATUS_WS(params.swapId, params.token)
+    );
   }
 
   /**
@@ -127,8 +158,22 @@ export class SwapStatusWebSocket extends SingletonWebSocket<{
     const tokenParam = typeof swapIdOrParams === "object" && swapIdOrParams.token
       ? swapIdOrParams.token
       : token;
+    const builtUrl = this.buildUrl({ swapId, token: tokenParam });
+    logSwapWebSocket("connecting", {
+      swapId,
+      url: maskWebSocketUrlForLog(builtUrl),
+      hasToken: Boolean(tokenParam),
+    });
     this.lastSwapId = swapId;
     super.connect({ swapId, token: tokenParam });
+  }
+
+  disconnect(): void {
+    logSwapWebSocket("disconnect", {
+      swapId: this.lastSwapId,
+      url: maskWebSocketUrlForLog(this.url),
+    });
+    super.disconnect();
   }
 
   // Override handler methods to use Swap-specific types

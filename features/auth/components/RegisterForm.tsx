@@ -1348,11 +1348,11 @@ export default function RegistrationPage() {
                       "By clicking Register, you agree to our Terms of Services and that you have read our Privacy Policy, including our Cookie Policy"
                     ).split(/(Terms of Services|Privacy Policy|Cookie Policy)/).map((part, i) =>
                       part === "Terms of Services" ? (
-                        <Link key={i} href="/legal/terms-of-service" target="_blank" rel="noopener noreferrer" className="text-[#1D8751] hover:underline">{part}</Link>
+                        <Link key={i} href="/legal/terms-of-service" className="text-[#1D8751] hover:underline" onClick={(e) => e.stopPropagation()}>{part}</Link>
                       ) : part === "Privacy Policy" ? (
-                        <Link key={i} href="/legal/privacy-policy" target="_blank" rel="noopener noreferrer" className="text-[#1D8751] hover:underline">{part}</Link>
+                        <Link key={i} href="/legal/privacy-policy" className="text-[#1D8751] hover:underline" onClick={(e) => e.stopPropagation()}>{part}</Link>
                       ) : part === "Cookie Policy" ? (
-                        <Link key={i} href="/legal/cookies-policy" target="_blank" rel="noopener noreferrer" className="text-[#1D8751] hover:underline">{part}</Link>
+                        <Link key={i} href="/legal/cookies-policy" className="text-[#1D8751] hover:underline" onClick={(e) => e.stopPropagation()}>{part}</Link>
                       ) : (
                         part
                       )

@@ -2,6 +2,7 @@ import React, { useEffect, useState } from "react";
 import { useSelector } from "react-redux";
 import { CreateSwapResponse } from "../types";
 import { connectSwapStatusWebSocket } from "./websocket";
+import { normalizeWebSocketUrl } from "@/lib/utils/websocketUtils";
 import { cookieUtils } from "@/lib/utils/cookieUtils";
 import { API_CONFIG } from "@/lib/appConfig";
 import SuccessPage from "./success";
@@ -155,7 +156,10 @@ const CopyAddressStep: React.FC<CopyAddressStepProps> = ({
     let ws: WebSocket | null = null;
     let reconnectTimeout: NodeJS.Timeout | null = null;
     let closedByUser = false;
-    const wsUrl = API_CONFIG.SWAP.SWAP_STATUS_WS(swapResponse.id);
+    const wsUrl = normalizeWebSocketUrl(
+      API_CONFIG.SWAP.SWAP_STATUS_WS(swapResponse.id, token ?? undefined)
+    );
+    console.log("[Swap WebSocket] CopyAddressStep url", wsUrl.replace(/([?&]token=)[^&]+/gi, "$1***"));
     logger.debug('swap', "WebSocket URL (actual):", wsUrl);
 
     function connect() {
