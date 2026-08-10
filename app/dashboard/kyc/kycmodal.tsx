@@ -1,5 +1,6 @@
 "use client";
 import React, { useState, useEffect, useRef, useMemo } from "react";
+import { createPortal } from "react-dom";
 import { useDispatch, useSelector } from "react-redux";
 import { useRouter } from "next/navigation";
 import { AppDispatch } from "@/store";
@@ -15,6 +16,7 @@ import {
 import { verifyKYCStatus } from "@/features/kyc/slices/kycSlice";
 import { showToast } from "@/lib/utils/toast";
 import { FaceDetectionKYC } from "@/features/kyc/components";
+import { countries } from "@/features/auth/components/countries";
 import {
   isPassportDocumentType,
   requiresDocumentBackSide,
@@ -30,6 +32,11 @@ import {
   resolveKycUserId,
   setKycApprovedOverlayDismissed,
 } from "@/features/kyc/utils/kycStatusOverlay";
+
+const KYC_INPUT_CLASS =
+  "w-full h-10 px-3 text-sm bg-white dark:bg-[var(--card-color)] border border-[#35353E] rounded-lg text-gray-900 dark:text-white focus:outline-none focus:border-[#1D8751] dark:[color-scheme:dark]";
+const KYC_READONLY_INPUT_CLASS =
+  "w-full h-10 px-3 text-sm bg-white dark:bg-[var(--card-color)] border border-[#35353E] rounded-lg text-gray-700 dark:text-[#9EA7BE] focus:outline-none";
 
 const KYCVerificationModal: React.FC = () => {
   const dispatch = useDispatch<AppDispatch>();
@@ -76,6 +83,10 @@ const KYCVerificationModal: React.FC = () => {
   const [documentBackPreview, setDocumentBackPreview] = useState<string | null>(null);
   const [facePreview, setFacePreview] = useState<string | null>(null);
   const [kycSubmitMessage, setKycSubmitMessage] = useState<string | null>(null);
+  const [showCountryDropdown, setShowCountryDropdown] = useState(false);
+  const [countrySearchTerm, setCountrySearchTerm] = useState("");
+  const countryTriggerRef = useRef<HTMLDivElement>(null);
+  const [countryDropdownRect, setCountryDropdownRect] = useState({ top: 0, left: 0, width: 0 });
   const normalizedKycStatus = String(kycStatus?.status || "")
     .trim()
     .toLowerCase();
@@ -456,6 +467,54 @@ const KYCVerificationModal: React.FC = () => {
 
   const documentRequiresBack = requiresDocumentBackSide(verificationData.documentType);
   const isPassportDoc = isPassportDocumentType(verificationData.documentType);
+  const selectedCountryEntry =
+    countries.find((country) => country.name === verificationData.country) ??
+    countries.find((country) => country.name === "Somalia")!;
+  const filteredCountries = useMemo(
+    () =>
+      countries.filter(
+        (country) =>
+          country.name.toLowerCase().includes(countrySearchTerm.toLowerCase()) ||
+          country.code.toLowerCase().includes(countrySearchTerm.toLowerCase())
+      ),
+    [countrySearchTerm]
+  );
+
+  useEffect(() => {
+    if (!showCountryDropdown || !countryTriggerRef.current) return;
+    const updateRect = () => {
+      const rect = countryTriggerRef.current?.getBoundingClientRect();
+      if (!rect) return;
+      setCountryDropdownRect({
+        top: rect.bottom + 6,
+        left: rect.left,
+        width: rect.width,
+      });
+    };
+    updateRect();
+    window.addEventListener("resize", updateRect);
+    window.addEventListener("scroll", updateRect, true);
+    return () => {
+      window.removeEventListener("resize", updateRect);
+      window.removeEventListener("scroll", updateRect, true);
+    };
+  }, [showCountryDropdown]);
+
+  useEffect(() => {
+    if (!showCountryDropdown) return;
+    const handleClickOutside = (event: MouseEvent) => {
+      const target = event.target as HTMLElement;
+      if (
+        !target.closest(".kyc-country-dropdown-container") &&
+        !target.closest(".kyc-country-dropdown-panel")
+      ) {
+        setShowCountryDropdown(false);
+        setCountrySearchTerm("");
+      }
+    };
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, [showCountryDropdown]);
 
   const validateStep = (step: number) => {
     switch (step) {
@@ -845,6 +904,8 @@ const KYCVerificationModal: React.FC = () => {
     setOtpSent(false);
     setOtpSuccessMessage(null);
     setResendTimer(0);
+    setShowCountryDropdown(false);
+    setCountrySearchTerm("");
     setVerificationData({
       country: defaultCountry,
       documentType: '',
@@ -988,7 +1049,7 @@ const KYCVerificationModal: React.FC = () => {
 
       {/* Step-by-Step Verification Form */}
       {kycModalOpen && showManualVerification && !kycStatusOverlay && (
-        <div className="bg-white dark:bg-[var(--card-color)] rounded-[24px] p-0 max-w-5xl w-full mx-4 border border-[#35353E] max-h-[90vh] overflow-y-auto shadow-xl">
+        <div className={`bg-white dark:bg-[var(--card-color)] rounded-[24px] p-0 max-w-4xl w-full mx-4 border border-[#35353E] overflow-y-auto shadow-xl transition-[max-height] duration-200 ${showCountryDropdown ? "max-h-[95vh]" : "max-h-[90vh]"}`}>
           <div className="px-4 sm:px-6 pt-3 sm:pt-4 pb-3 border-b border-[#35353E]">
             <div className="flex justify-between items-center mb-3">
             <h2 className="text-2xl font-semibold text-gray-900 dark:text-white">
@@ -1051,7 +1112,7 @@ const KYCVerificationModal: React.FC = () => {
                         type="text"
                         value={verificationData.firstName}
                         readOnly
-                        className="w-full px-3 py-2 text-sm bg-white dark:bg-[var(--card-color)] border border-[#35353E] rounded-xl text-gray-700 dark:text-[#9EA7BE] focus:outline-none"
+                        className={KYC_READONLY_INPUT_CLASS}
                       />
                     </div>
                     <div>
@@ -1060,7 +1121,7 @@ const KYCVerificationModal: React.FC = () => {
                         type="text"
                         value={verificationData.lastName}
                         readOnly
-                        className="w-full px-3 py-2 text-sm bg-white dark:bg-[var(--card-color)] border border-[#35353E] rounded-xl text-gray-700 dark:text-[#9EA7BE] focus:outline-none"
+                        className={KYC_READONLY_INPUT_CLASS}
                       />
                     </div>
                   </div>
@@ -1071,7 +1132,7 @@ const KYCVerificationModal: React.FC = () => {
                       type="email"
                       value={verificationData.email || user?.email || ""}
                       readOnly
-                      className="w-full px-3 py-2 text-sm bg-white dark:bg-[var(--card-color)] border border-[#35353E] rounded-xl text-gray-700 dark:text-[#9EA7BE] focus:outline-none"
+                      className={KYC_READONLY_INPUT_CLASS}
                     />
                   </div>
                 </>
@@ -1101,7 +1162,7 @@ const KYCVerificationModal: React.FC = () => {
                       onChange={(e) => setOtp(e.target.value.replace(/\D/g, "").slice(0, 6))}
                       placeholder="Enter 6-digit OTP"
                       maxLength={6}
-                      className="w-full px-3 py-2 text-sm bg-white dark:bg-[var(--card-color)] border border-[#35353E] rounded-xl text-gray-900 dark:text-white text-center text-base tracking-widest focus:outline-none focus:border-[#1D8751]"
+                      className={`${KYC_READONLY_INPUT_CLASS} text-center tracking-widest`}
                       disabled={verifyingOTP}
                     />
                   </div>
@@ -1148,7 +1209,7 @@ const KYCVerificationModal: React.FC = () => {
 
           {/* Step 1: Document Information */}
           {currentStep === 1 && (
-            <div className="space-y-3 rounded-2xl border border-[#35353E] bg-[#F8FAFC] dark:bg-[var(--card-color)] p-4">
+            <div className="space-y-3 rounded-2xl border border-[#35353E] bg-transparent p-4">
               <div className="text-center mb-4">
                 <div className="w-12 h-12 bg-[#1D8751]/20 rounded-full flex items-center justify-center mx-auto mb-2">
                   <svg className="w-6 h-6 text-[#1D8751]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -1162,22 +1223,84 @@ const KYCVerificationModal: React.FC = () => {
               <div className="space-y-3">
                  <div>
                    <label className="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1.5">Country *</label>
-                   <select
-                     value={verificationData.country}
-                     onChange={(e) => handleInputChange('country', e.target.value)}
-                     className="w-full px-3 py-1.5 text-sm bg-gray-50 dark:bg-[#2A2A2A] border border-[#35353E] rounded-lg text-gray-900 dark:text-white focus:outline-none focus:border-[#1D8751]"
-                   >
-                     <option value="Somalia">Somalia</option>
-                     <option value="Kenya">Kenya</option>
-                     <option value="Ethiopia">Ethiopia</option>
-                     <option value="Djibouti">Djibouti</option>
-                     <option value="Uganda">Uganda</option>
-                     <option value="Tanzania">Tanzania</option>
-                     <option value="Sudan">Sudan</option>
-                     <option value="South Sudan">South Sudan</option>
-                     <option value="Eritrea">Eritrea</option>
-                     <option value="Other">Other</option>
-                   </select>
+                   <div ref={countryTriggerRef} className="relative kyc-country-dropdown-container">
+                     <button
+                       type="button"
+                       onClick={() => setShowCountryDropdown((open) => !open)}
+                       className={`${KYC_INPUT_CLASS} flex items-center justify-between gap-2`}
+                     >
+                       <span className="flex items-center gap-2 min-w-0">
+                         <img
+                           src={`https://flagcdn.com/16x12/${selectedCountryEntry.code.toLowerCase()}.png`}
+                           alt=""
+                           className="w-4 h-3 object-cover rounded-sm flex-shrink-0"
+                           onError={(event) => {
+                             event.currentTarget.style.display = "none";
+                           }}
+                         />
+                         <span className="truncate">{selectedCountryEntry.name}</span>
+                       </span>
+                       <svg width="12" height="12" viewBox="0 0 24 24" fill="none" className="flex-shrink-0 text-gray-500">
+                         <path d="M6 9L12 15L18 9" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" />
+                       </svg>
+                     </button>
+                     {showCountryDropdown &&
+                       typeof document !== "undefined" &&
+                       createPortal(
+                         <div
+                           className="kyc-country-dropdown-panel fixed z-[10000] overflow-hidden bg-white/95 dark:bg-[#1A1A1A]/95 backdrop-blur-sm border border-[#35353E] rounded-lg shadow-xl"
+                           style={{
+                             top: countryDropdownRect.top,
+                             left: countryDropdownRect.left,
+                             width: countryDropdownRect.width,
+                           }}
+                         >
+                           <div className="p-2 border-b border-[#35353E]">
+                             <input
+                               type="text"
+                               placeholder="Search countries..."
+                               value={countrySearchTerm}
+                               onChange={(event) => setCountrySearchTerm(event.target.value)}
+                               className={KYC_INPUT_CLASS}
+                               autoFocus
+                             />
+                           </div>
+                           <div className="max-h-80 overflow-y-auto">
+                             {filteredCountries.length > 0 ? (
+                               filteredCountries.map((country) => (
+                                 <button
+                                   key={country.code}
+                                   type="button"
+                                   onClick={() => {
+                                     handleInputChange("country", country.name);
+                                     setShowCountryDropdown(false);
+                                     setCountrySearchTerm("");
+                                   }}
+                                   className={`w-full px-3 py-2.5 text-left flex items-center gap-2 hover:bg-[#1D8751]/10 text-gray-900 dark:text-white border-b border-[#35353E]/40 last:border-b-0 ${
+                                     country.name === verificationData.country ? "bg-[#1D8751]/10" : ""
+                                   }`}
+                                 >
+                                   <img
+                                     src={`https://flagcdn.com/16x12/${country.code.toLowerCase()}.png`}
+                                     alt=""
+                                     className="w-4 h-3 object-cover rounded-sm flex-shrink-0"
+                                     onError={(event) => {
+                                       event.currentTarget.style.display = "none";
+                                     }}
+                                   />
+                                   <span className="text-sm truncate">{country.name}</span>
+                                 </button>
+                               ))
+                             ) : (
+                               <div className="px-3 py-4 text-center text-sm text-gray-500 dark:text-[#788099]">
+                                 No countries found
+                               </div>
+                             )}
+                           </div>
+                         </div>,
+                         document.body
+                       )}
+                   </div>
                  </div>
 
                 <div>
@@ -1185,7 +1308,7 @@ const KYCVerificationModal: React.FC = () => {
                   <select
                     value={verificationData.documentType}
                     onChange={(e) => handleDocumentTypeChange(e.target.value)}
-                    className="w-full px-3 py-1.5 text-sm bg-gray-50 dark:bg-[#2A2A2A] border border-[#35353E] rounded-lg text-gray-900 dark:text-white focus:outline-none focus:border-[#1D8751]"
+                    className={KYC_INPUT_CLASS}
                   >
                     <option value="">Select document type</option>
                     <option value="passport">Passport</option>
@@ -1200,7 +1323,7 @@ const KYCVerificationModal: React.FC = () => {
                     type="text"
                     value={verificationData.documentNumber}
                     onChange={(e) => handleInputChange('documentNumber', e.target.value)}
-                    className="w-full px-3 py-1.5 text-sm bg-gray-50 dark:bg-[#2A2A2A] border border-[#35353E] rounded-lg text-gray-900 dark:text-white focus:outline-none focus:border-[#1D8751]"
+                    className={KYC_INPUT_CLASS}
                     placeholder="Enter your document number"
                   />
                 </div>
