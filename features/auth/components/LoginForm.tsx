@@ -462,9 +462,9 @@ export default function LoginPage() {
         </div>
       </div>
 
-      {/* Right Side - Login Form (card like register + shadow) */}
+      {/* Right Side - Login Form */}
       <div className="w-full md:flex-1 relative z-10 px-0 sm:px-2 md:px-8 lg:px-10 flex justify-center">
-        <div className="max-w-md w-full rounded-2xl p-6 sm:p-8 bg-white dark:bg-transparent shadow-[0_4px_6px_-1px_rgba(0,0,0,0.1),0_10px_20px_-5px_rgba(0,0,0,0.1)] dark:shadow-[0_4px_20px_rgba(0,0,0,0.7),0_20px_60px_rgba(0,0,0,0.8),0_40px_100px_rgba(0,0,0,0.6)]">
+        <div className="max-w-md w-full rounded-2xl p-6 sm:p-8 bg-white dark:bg-transparent">
           <div className="mb-6">
             <h1 className="text-gray-900 dark:text-white text-2xl sm:text-3xl font-bold">
               {t("auth.login.title", "Welcome")}
