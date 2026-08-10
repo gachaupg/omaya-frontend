@@ -6,7 +6,7 @@
  */
 
 import { showToast } from "@/lib/utils/toast";
-import { appendTokenToWebSocketUrl } from "@/lib/utils/websocketUtils";
+import { appendTokenToWebSocketUrl, normalizeWebSocketUrl } from "@/lib/utils/websocketUtils";
 
 export interface WebSocketCallbacks {
   onStatusUpdate: (status: string) => void;
@@ -49,7 +49,7 @@ export const connectDepositWebSocket = (
     const retryDelay = config.retryDelay ?? 2000;
 
     // Clean up malformed URLs (remove //http: or //https: from WebSocket URLs)
-    let cleanedUrl = websocketUrl;
+    let cleanedUrl = normalizeWebSocketUrl(websocketUrl);
     if (websocketUrl.includes('//http:') || websocketUrl.includes('//https:')) {
       cleanedUrl = websocketUrl.replace('//http:', '').replace('//https:', '');
     }

@@ -19,7 +19,10 @@ const nextConfig: NextConfig = {
   trailingSlash: true,
   reactStrictMode: true,
   compiler: {
-    removeConsole: true,
+    // Keep warn/error for WebSocket and other operational debugging in production.
+    removeConsole: {
+      exclude: ["error", "warn"],
+    },
   },
   outputFileTracingIncludes: {
     '/legal/[slug]': ['./content/legal/**/*'],

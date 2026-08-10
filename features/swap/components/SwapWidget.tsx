@@ -33,6 +33,7 @@ import { SwapWidgetSkeleton } from "@/components/ui/Skeletons";
 import InfoModal from "@/features/express/components/forms/info";
 
 import { logger } from "@/lib/utils/logger";
+import { swapWebSocketLog } from "@/lib/utils/swapWebSocketLog";
 import { useScrollAppToTopWhen } from "@/hooks/useScrollAppToTopWhen";
 import { scrollAppToTop } from "@/lib/utils/scrollAppToTop";
 import {
@@ -323,6 +324,9 @@ const SwapWidget = () => {
     }
 
     if (handoff?.swapResponse) {
+      swapWebSocketLog("resume handoff — opening copy-address step", {
+        handoff: handoff.swapResponse,
+      });
       setCurrentStep("copy-address");
       scrollAppToTop();
     }
@@ -859,6 +863,9 @@ const SwapWidget = () => {
       ).unwrap();
       logger.debug("swap", "Swap created successfully");
       setLocalSwapError("");
+      swapWebSocketLog("swap created — opening copy-address step", {
+        swapResponse,
+      });
       setCurrentStep("copy-address");
     } catch (error: any) {
             const sameCoinMsg = resolveSwapCreateErrorMessage(error);

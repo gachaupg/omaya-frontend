@@ -30,6 +30,7 @@ import HowToSendDialBlock from "@/components/ui/HowToSendDialBlock";
 import { useDispatch, useSelector } from "react-redux";
 import { AppDispatch } from "@/store/rootReducer";
 import { logger } from '@/lib/utils/logger';
+import { normalizeWebSocketUrl } from "@/lib/utils/websocketUtils";
 
 import {
   cancelDepositTransaction,
@@ -627,10 +628,11 @@ export default function Exchanging({ transactionData, isHomePage = false }: Exch
       effectiveTransactionData?.type === "deposit");
 
   // Extract WebSocket URL from transaction data (handle both camelCase and snake_case)
-  let websocketUrl =
+  let websocketUrl = normalizeWebSocketUrl(
     effectiveTransactionData?.websocketUrl ||
-    effectiveTransactionData?.websocket_url ||
-    undefined;
+      effectiveTransactionData?.websocket_url ||
+      ""
+  ) || undefined;
 
   // Fix protocol mismatch: ensure WebSocket URL matches the API base URL protocol
   if (websocketUrl) {

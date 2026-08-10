@@ -1,11 +1,12 @@
 import { resolveApiBaseUrl } from "@/config/api";
+import { normalizeWebSocketUrl } from "@/lib/utils/websocketUtils";
 
 function getWebSocketBaseUrl() {
   const apiBase = resolveApiBaseUrl();
-  if (apiBase.startsWith("https")) {
-    return apiBase.replace(/^https/, "wss");
-  }
-  return apiBase.replace(/^http/, "ws");
+  const wsBase = apiBase.startsWith("https")
+    ? apiBase.replace(/^https/, "wss")
+    : apiBase.replace(/^http/, "ws");
+  return normalizeWebSocketUrl(wsBase);
 }
 // Create lib/apiConfig.ts
 export const API_CONFIG = {
@@ -160,7 +161,9 @@ export const API_CONFIG = {
     SWAP_HISTORY: "/api/changenow/user/history/",
     VALIDATE_ADDRESS: "/api/changenow/validate-address/",
     SWAP_STATUS_WS: (swapId: string, token?: string) => {
-      const base = `${getWebSocketBaseUrl()}/ws/changenow/status/${swapId}/`;
+      const base = normalizeWebSocketUrl(
+        `${getWebSocketBaseUrl()}/ws/changenow/status/${swapId}/`
+      );
       return token ? `${base}?token=${encodeURIComponent(token)}` : base;
     },
   },

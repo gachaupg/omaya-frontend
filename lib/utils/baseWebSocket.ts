@@ -16,6 +16,11 @@
  */
 
 import { logger } from "@/lib/utils/logger";
+import { normalizeWebSocketUrl } from "@/lib/utils/websocketUtils";
+import {
+  maskSwapWebSocketUrlForLog,
+  swapWebSocketLog,
+} from "@/lib/utils/swapWebSocketLog";
 
 export interface WebSocketMessage<T = any> {
   type: string;
@@ -164,7 +169,14 @@ export abstract class BaseWebSocket<TParams = any> {
     this.connectionParams = params;
 
     try {
-      this.url = this.buildUrl(params);
+      this.url = normalizeWebSocketUrl(this.buildUrl(params));
+
+      if (this.config.loggerModule === "swap") {
+        swapWebSocketLog("opening connection", {
+          url: maskSwapWebSocketUrlForLog(this.url),
+          reconnectAttempt: this.reconnectAttempts,
+        });
+      }
 
       // Only log on first connection attempt
       if (this.reconnectAttempts === 0) {
@@ -197,6 +209,11 @@ export abstract class BaseWebSocket<TParams = any> {
     if (!this.ws) return;
 
     this.ws.onopen = () => {
+      if (this.config.loggerModule === "swap") {
+        swapWebSocketLog("socket open", {
+          url: maskSwapWebSocketUrlForLog(this.url),
+        });
+      }
       if (this.reconnectAttempts === 0) {
         logger.debug(this.config.loggerModule, "✅ WebSocket connected");
       }
@@ -211,6 +228,9 @@ export abstract class BaseWebSocket<TParams = any> {
     this.ws.onmessage = (event) => {
       try {
         const message: WebSocketMessage = JSON.parse(event.data);
+        if (this.config.loggerModule === "swap") {
+          swapWebSocketLog("message", message);
+        }
         // Silent message handling - only log errors
         this.messageHandlers.forEach((handler) => handler(message));
       } catch (error) {
