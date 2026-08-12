@@ -46,11 +46,22 @@ export const getCurrentIPAddress = async (): Promise<string> => {
     const response = await fetch("https://api.ipify.org?format=json");
     if (response.ok) {
       const data = await response.json();
-      return data.ip;
+      if (data.ip) return data.ip;
     }
   } catch (error) {
-    logger.warn('dashboard', "Failed to get IP address:", error);
+    logger.warn('dashboard', "Failed to get IP address from ipify:", error);
   }
+
+  try {
+    const response = await fetch("https://ipapi.co/json/");
+    if (response.ok) {
+      const data = await response.json();
+      if (data.ip) return data.ip;
+    }
+  } catch (error) {
+    logger.warn('dashboard', "Failed to get IP address from ipapi:", error);
+  }
+
   return "Unknown";
 };
 
@@ -279,6 +290,26 @@ export const getIPGeoData = async (): Promise<IPGeoData> => {
     isp: "Unknown",
     is_vpn: false,
   };
+
+  try {
+    const directRes = await fetch("https://ipapi.co/json/");
+    if (directRes.ok) {
+      const geo = await directRes.json();
+      if (geo.ip) {
+        return {
+          ip_address: geo.ip,
+          ip_country: geo.country_name || "Unknown",
+          ip_region: geo.region || "Unknown",
+          ip_city: geo.city || "Unknown",
+          isp: geo.org || "Unknown",
+          is_vpn: false,
+        };
+      }
+    }
+  } catch (error) {
+    logger.warn('dashboard', "Failed to get IP geo from ipapi direct:", error);
+  }
+
   try {
     const ipRes = await fetch("https://api.ipify.org?format=json");
     if (!ipRes.ok) return fallback;

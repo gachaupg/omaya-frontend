@@ -539,12 +539,24 @@ export const collectDeviceInfo = async (): Promise<DeviceInfo> => {
   })().catch((error) => {
     inFlightCollection = null;
     logger.warn("api", "collectDeviceInfo failed:", error);
-    const fallback: DeviceInfo = {
+    const fallback = collectSyncDeviceInfo();
+    cachedDeviceInfo = fallback;
+    cachedAt = Date.now();
+    return fallback;
+  });
+
+  return inFlightCollection;
+};
+
+/** Synchronous device snapshot (browser APIs + cached GPS/IP coords). */
+export const collectSyncDeviceInfo = (): DeviceInfo => {
+  if (typeof window === "undefined") {
+    return {
       device_type: "Unknown",
       device_model: "Unknown",
       os_version: "Unknown",
       app_version: process.env.NEXT_PUBLIC_APP_VERSION || "1.0.0",
-      device_id: getOrCreateDeviceId(),
+      device_id: "server",
       latitude: null,
       longitude: null,
       location_permission: "unsupported",
@@ -554,12 +566,31 @@ export const collectDeviceInfo = async (): Promise<DeviceInfo> => {
       fingerprint_data: {},
       browser_capabilities: {},
     };
-    cachedDeviceInfo = fallback;
-    cachedAt = Date.now();
-    return fallback;
-  });
+  }
 
-  return inFlightCollection;
+  const stored = readStoredCoords();
+  const deviceData = getDeviceData();
+
+  return {
+    device_type: String(deviceData.device_type || "Unknown"),
+    device_model: parseDeviceModel(),
+    os_version: parseOsVersion(),
+    app_version: process.env.NEXT_PUBLIC_APP_VERSION || "1.0.0",
+    device_id: getOrCreateDeviceId(),
+    latitude: stored?.latitude ?? null,
+    longitude: stored?.longitude ?? null,
+    location_permission:
+      stored?.source === "gps"
+        ? "granted"
+        : stored?.source === "ip"
+          ? "prompt"
+          : "unsupported",
+    location: "Unknown",
+    device_data: buildDeviceData(),
+    network_data: buildNetworkData(),
+    fingerprint_data: buildFingerprintData(),
+    browser_capabilities: buildBrowserCapabilities(),
+  };
 };
 
 export const mergeDeviceInfoIntoRequestData = (
