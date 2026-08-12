@@ -2,7 +2,7 @@
  * RegisterForm.tsx – auto‑generated placeholder
  */
 "use client";
-import React, { useState, useRef, useEffect } from "react";
+import React, { useState, useRef, useEffect, useLayoutEffect } from "react";
 import { createPortal } from "react-dom";
 import Link from "next/link";
 import Image from "next/image";
@@ -20,16 +20,189 @@ import { useI18n } from "@/lib/useI18n";
 import { countries } from "./countries";
 import { EmailVerificationModal } from "./EmailVerificationModal";
 import { renderTextWithEmailLinks } from "@/lib/utils/renderTextWithEmailLinks";
+import {
+  clearRegisterLegalReturnFlag,
+  finalizeRegisterLegalReturnState,
+  peekRegisterLegalReturnState,
+  setRegisterLegalReturnState,
+  type RegisterLegalReturnState,
+} from "@/lib/utils/authRedirect";
 
 const REGISTER_FORM_DRAFT_KEY = "registerFormDraft";
 
-// The register form intentionally does NOT persist any draft anymore - a
-// reload (or navigating away and back) should always start from a blank
-// form. This just wipes out any leftover draft written by older builds.
+type RegisterFormDraft = {
+  firstName: string;
+  lastName: string;
+  email: string;
+  phone: string;
+  password: string;
+  confirmPassword: string;
+  referralCode: string;
+  agreeToTerms: boolean;
+  selectedCountry: string;
+};
+
+const readRegisterDraft = (): RegisterFormDraft | null => {
+  if (typeof window === "undefined") return null;
+  try {
+    const raw = window.sessionStorage.getItem(REGISTER_FORM_DRAFT_KEY);
+    if (!raw) return null;
+    const parsed = JSON.parse(raw) as Partial<RegisterFormDraft>;
+    return {
+      firstName: String(parsed.firstName ?? ""),
+      lastName: String(parsed.lastName ?? ""),
+      email: String(parsed.email ?? ""),
+      phone: String(parsed.phone ?? ""),
+      password: String(parsed.password ?? ""),
+      confirmPassword: String(parsed.confirmPassword ?? ""),
+      referralCode: String(parsed.referralCode ?? ""),
+      agreeToTerms: Boolean(parsed.agreeToTerms),
+      selectedCountry: String(parsed.selectedCountry ?? "SO"),
+    };
+  } catch {
+    return null;
+  }
+};
+
+const saveRegisterDraft = (draft: RegisterFormDraft) => {
+  if (typeof window === "undefined") return;
+  const hasContent =
+    draft.firstName.trim() ||
+    draft.lastName.trim() ||
+    draft.email.trim() ||
+    draft.phone.trim() ||
+    draft.password ||
+    draft.confirmPassword ||
+    draft.referralCode.trim() ||
+    draft.agreeToTerms;
+
+  if (!hasContent) {
+    window.sessionStorage.removeItem(REGISTER_FORM_DRAFT_KEY);
+    return;
+  }
+
+  window.sessionStorage.setItem(REGISTER_FORM_DRAFT_KEY, JSON.stringify(draft));
+};
+
 const clearRegisterDraft = () => {
   if (typeof window === "undefined") return;
   window.sessionStorage.removeItem(REGISTER_FORM_DRAFT_KEY);
   window.localStorage.removeItem(REGISTER_FORM_DRAFT_KEY);
+  finalizeRegisterLegalReturnState();
+  clearRegisterLegalReturnFlag();
+};
+
+const isRegisterPageReload = (): boolean => {
+  if (typeof window === "undefined") return false;
+  const nav = performance.getEntriesByType("navigation")[0] as
+    | PerformanceNavigationTiming
+    | undefined;
+  return nav?.type === "reload";
+};
+
+const normalizeRegisterDraft = (
+  draft: Partial<RegisterLegalReturnState>,
+  refCodeFromUrl: string
+): RegisterFormDraft => ({
+  firstName: String(draft.firstName ?? ""),
+  lastName: String(draft.lastName ?? ""),
+  email: String(draft.email ?? ""),
+  phone: String(draft.phone ?? ""),
+  password: String(draft.password ?? ""),
+  confirmPassword: String(draft.confirmPassword ?? ""),
+  referralCode: refCodeFromUrl || String(draft.referralCode ?? ""),
+  agreeToTerms: Boolean(draft.agreeToTerms),
+  selectedCountry: String(draft.selectedCountry ?? "SO"),
+});
+
+const hasRegisterDraftContent = (draft: RegisterFormDraft) =>
+  Boolean(
+    draft.firstName.trim() ||
+      draft.lastName.trim() ||
+      draft.email.trim() ||
+      draft.phone.trim() ||
+      draft.password ||
+      draft.confirmPassword ||
+      draft.referralCode.trim() ||
+      draft.agreeToTerms
+  );
+
+const resolveInitialRegisterDraft = (
+  refCodeFromUrl: string
+): {
+  draft: RegisterFormDraft;
+  clearOnMount: boolean;
+  fromLegal: boolean;
+} => {
+  const empty = normalizeRegisterDraft({}, refCodeFromUrl);
+  if (typeof window === "undefined") {
+    return { draft: empty, clearOnMount: false, fromLegal: false };
+  }
+
+  const legal = peekRegisterLegalReturnState();
+  if (legal) {
+    return {
+      draft: normalizeRegisterDraft(legal, refCodeFromUrl),
+      clearOnMount: false,
+      fromLegal: true,
+    };
+  }
+
+  if (isRegisterPageReload()) {
+    return { draft: empty, clearOnMount: true, fromLegal: false };
+  }
+
+  const saved = readRegisterDraft();
+  return {
+    draft: saved ? normalizeRegisterDraft(saved, refCodeFromUrl) : empty,
+    clearOnMount: false,
+    fromLegal: false,
+  };
+};
+
+const REGISTER_TERMS_LINKS = [
+  { label: "Terms of Services", href: "/legal/terms-of-service" },
+  { label: "Data Use Policy", href: "/legal/privacy-policy" },
+  { label: "Cookie Use", href: "/legal/cookies-policy" },
+  { label: "Privacy Policy", href: "/legal/privacy-policy" },
+  { label: "Cookie Policy", href: "/legal/cookies-policy" },
+  { label: "Shuruudahayaga adeegga", href: "/legal/terms-of-service" },
+  { label: "Siyaasadda Isticmaalka Xogta", href: "/legal/privacy-policy" },
+  { label: "Isticmaalka Cookies", href: "/legal/cookies-policy" },
+] as const;
+
+const renderRegisterTermsText = (
+  text: string,
+  onLegalNavigate: () => void
+): React.ReactNode[] => {
+  const pattern = new RegExp(
+    `(${REGISTER_TERMS_LINKS.map(({ label }) =>
+      label.replace(/[.*+?^${}()|[\]\\]/g, "\\$&")
+    ).join("|")})`
+  );
+
+  return text.split(pattern).map((part, index) => {
+    const link = REGISTER_TERMS_LINKS.find(({ label }) => label === part);
+    if (!link) return part;
+
+    return (
+      <Link
+        key={`${link.href}-${index}`}
+        href={link.href}
+        className="text-[#1D8751] hover:underline"
+        onPointerDown={(event) => {
+          event.stopPropagation();
+          onLegalNavigate();
+        }}
+        onClick={(event) => {
+          event.stopPropagation();
+          onLegalNavigate();
+        }}
+      >
+        {part}
+      </Link>
+    );
+  });
 };
 
 /** Expected national number length (digits only) by country code for phone validation */
@@ -67,21 +240,77 @@ export default function RegistrationPage() {
   // Get referral code from URL parameter
   const refCodeFromUrl = searchParams?.get("ref") ?? "";
 
-  // Form state
-  const [firstName, setFirstName] = useState("");
-  const [lastName, setLastName] = useState("");
-  const [email, setEmail] = useState("");
-  const [phone, setPhone] = useState("");
-  const [password, setPassword] = useState("");
-  const [confirmPassword, setConfirmPassword] = useState("");
-  const [referralCode, setReferralCode] = useState(refCodeFromUrl);
-  const [agreeToTerms, setAgreeToTerms] = useState(false);
+  const mountStateRef = useRef<ReturnType<typeof resolveInitialRegisterDraft> | null>(
+    null
+  );
+  if (mountStateRef.current === null) {
+    mountStateRef.current = resolveInitialRegisterDraft(refCodeFromUrl);
+  }
+  const {
+    draft: mountDraft,
+    clearOnMount,
+    fromLegal,
+  } = mountStateRef.current;
+
+  const [firstName, setFirstName] = useState(mountDraft.firstName);
+  const [lastName, setLastName] = useState(mountDraft.lastName);
+  const [email, setEmail] = useState(mountDraft.email);
+  const [phone, setPhone] = useState(mountDraft.phone);
+  const [password, setPassword] = useState(mountDraft.password);
+  const [confirmPassword, setConfirmPassword] = useState(mountDraft.confirmPassword);
+  const [referralCode, setReferralCode] = useState(mountDraft.referralCode);
+  const [agreeToTerms, setAgreeToTerms] = useState(mountDraft.agreeToTerms);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [showVerificationModal, setShowVerificationModal] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [submitAttempted, setSubmitAttempted] = useState(false);
-  const [selectedCountry, setSelectedCountry] = useState("SO"); // Default to Somalia
+  const [selectedCountry, setSelectedCountry] = useState(mountDraft.selectedCountry);
+  const skipPersistRef = useRef(true);
+  const draftRef = useRef(mountDraft);
+
+  const getCurrentRegisterDraft = (): RegisterFormDraft => ({
+    firstName,
+    lastName,
+    email,
+    phone,
+    password,
+    confirmPassword,
+    referralCode,
+    agreeToTerms,
+    selectedCountry,
+  });
+
+  draftRef.current = getCurrentRegisterDraft();
+
+  const persistBeforeLegalNavigation = () => {
+    const draft = draftRef.current;
+    saveRegisterDraft(draft);
+    setRegisterLegalReturnState(draft);
+  };
+
+  useLayoutEffect(() => {
+    if (clearOnMount) {
+      clearRegisterDraft();
+    }
+    if (fromLegal) {
+      clearRegisterLegalReturnFlag();
+      window.setTimeout(() => finalizeRegisterLegalReturnState(), 1000);
+    }
+  }, [clearOnMount, fromLegal]);
+
+  useEffect(() => {
+    return () => {
+      const draft = draftRef.current;
+      if (!hasRegisterDraftContent(draft)) return;
+      saveRegisterDraft(draft);
+      setRegisterLegalReturnState(draft);
+    };
+  }, []);
+
+  const persistRegisterDraft = () => {
+    saveRegisterDraft(getCurrentRegisterDraft());
+  };
   const [showCountryDropdown, setShowCountryDropdown] = useState(false);
   const [countrySearchTerm, setCountrySearchTerm] = useState("");
   const countryTriggerRef = useRef<HTMLDivElement>(null);
@@ -203,10 +432,28 @@ export default function RegistrationPage() {
   });
 
   useEffect(() => {
-    // The form never persists a draft - purge any leftover draft from older
-    // builds so a reload (or navigating back to this page) always starts blank.
-    clearRegisterDraft();
-  }, []);
+    if (skipPersistRef.current) {
+      skipPersistRef.current = false;
+      return;
+    }
+    persistRegisterDraft();
+  }, [
+    firstName,
+    lastName,
+    email,
+    phone,
+    password,
+    confirmPassword,
+    referralCode,
+    agreeToTerms,
+    selectedCountry,
+  ]);
+
+  useEffect(() => {
+    if (refCodeFromUrl) {
+      setReferralCode(refCodeFromUrl);
+    }
+  }, [refCodeFromUrl]);
 
   const parseApiErrors = (errorData: unknown): string[] => {
     if (
@@ -1343,19 +1590,12 @@ export default function RegistrationPage() {
                     htmlFor="terms"
                     className="text-xs sm:text-sm text-gray-600 dark:text-[#9CA3AF] cursor-pointer break-words leading-relaxed flex-1"
                   >
-                    {t(
-                      "auth.register.terms",
-                      "By clicking Register, you agree to our Terms of Services and that you have read our Privacy Policy, including our Cookie Policy"
-                    ).split(/(Terms of Services|Privacy Policy|Cookie Policy)/).map((part, i) =>
-                      part === "Terms of Services" ? (
-                        <Link key={i} href="/legal/terms-of-service" className="text-[#1D8751] hover:underline" onClick={(e) => e.stopPropagation()}>{part}</Link>
-                      ) : part === "Privacy Policy" ? (
-                        <Link key={i} href="/legal/privacy-policy" className="text-[#1D8751] hover:underline" onClick={(e) => e.stopPropagation()}>{part}</Link>
-                      ) : part === "Cookie Policy" ? (
-                        <Link key={i} href="/legal/cookies-policy" className="text-[#1D8751] hover:underline" onClick={(e) => e.stopPropagation()}>{part}</Link>
-                      ) : (
-                        part
-                      )
+                    {renderRegisterTermsText(
+                      t(
+                        "auth.register.terms",
+                        "By clicking Register, you agree to our Terms of Services and that you have read our Data Use Policy, including our Cookie Use"
+                      ),
+                      persistBeforeLegalNavigation
                     )}
                   </label>
                 </div>

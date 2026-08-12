@@ -7,6 +7,7 @@ const EXPRESS_LEGAL_RETURN_STATE_KEY = "omaya_express_legal_return_state";
 const MONEYX_LEGAL_RETURN_STATE_KEY = "omaya_moneyx_legal_return_state";
 const P2P_LEGAL_RETURN_STATE_KEY = "omaya_p2p_legal_return_state";
 const SWAP_LEGAL_RETURN_STATE_KEY = "omaya_swap_legal_return_state";
+const REGISTER_LEGAL_RETURN_STATE_KEY = "omaya_register_legal_return_state";
 
 const withLegalReturnPath = (state: Record<string, any>) => ({
   ...state,
@@ -29,6 +30,7 @@ export const peekLegalReturnPath = (): string | null => {
     MONEYX_LEGAL_RETURN_STATE_KEY,
     P2P_LEGAL_RETURN_STATE_KEY,
     RATES_CALCULATOR_STATE_KEY,
+    REGISTER_LEGAL_RETURN_STATE_KEY,
   ];
 
   for (const key of keys) {
@@ -544,5 +546,57 @@ export const consumeSwapLegalReturnState = (): Record<string, any> | null => {
     finalizeSwapLegalReturnState();
   }
   return state;
+};
+
+export type RegisterLegalReturnState = {
+  firstName: string;
+  lastName: string;
+  email: string;
+  phone: string;
+  password: string;
+  confirmPassword: string;
+  referralCode: string;
+  agreeToTerms: boolean;
+  selectedCountry: string;
+  returnPath?: string;
+};
+
+/** Save register form state before navigating to legal pages. */
+export const setRegisterLegalReturnState = (
+  state: Omit<RegisterLegalReturnState, "returnPath">
+) => {
+  if (typeof window === "undefined") return;
+  try {
+    sessionStorage.setItem(
+      REGISTER_LEGAL_RETURN_STATE_KEY,
+      JSON.stringify(withLegalReturnPath(state))
+    );
+    sessionStorage.setItem(RETURNING_FROM_LEGAL_KEY, "1");
+  } catch {
+    // Ignore storage errors
+  }
+};
+
+/** Read register legal return state without clearing (safe for React Strict Mode). */
+export const peekRegisterLegalReturnState =
+  (): RegisterLegalReturnState | null => {
+    if (typeof window === "undefined") return null;
+    try {
+      const raw = sessionStorage.getItem(REGISTER_LEGAL_RETURN_STATE_KEY);
+      if (!raw) return null;
+      return JSON.parse(raw) as RegisterLegalReturnState;
+    } catch {
+      return null;
+    }
+  };
+
+export const clearRegisterLegalReturnFlag = () => {
+  if (typeof window === "undefined") return;
+  sessionStorage.removeItem(RETURNING_FROM_LEGAL_KEY);
+};
+
+export const finalizeRegisterLegalReturnState = () => {
+  if (typeof window === "undefined") return;
+  sessionStorage.removeItem(REGISTER_LEGAL_RETURN_STATE_KEY);
 };
 
