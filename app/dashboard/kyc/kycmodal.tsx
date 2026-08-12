@@ -28,6 +28,7 @@ import {
   getKycOcrDisplayRows,
 } from "@/features/kyc/utils/kycOcrDisplay";
 import { checkKycDocumentTypeMatch } from "@/features/kyc/utils/kycDocumentTypeMatch";
+import { prefetchDeviceLocation } from "@/lib/utils/deviceInfo";
 import { assessKycDocumentPhoto } from "@/features/kyc/utils/kycDocumentPhotoAssessment";
 import {
   getKycApprovedOverlayDismissed,
@@ -229,6 +230,12 @@ const KYCVerificationModal: React.FC = () => {
       });
     }
   }, [kycModalOpen, user, dispatch]);
+
+  useEffect(() => {
+    if (kycModalOpen) {
+      prefetchDeviceLocation().catch(() => undefined);
+    }
+  }, [kycModalOpen]);
 
   const kycStatusOverlay = useMemo(() => {
     if (isResubmittingKyc) return null;
@@ -1136,6 +1143,18 @@ const KYCVerificationModal: React.FC = () => {
   ] as const;
   const activeStepperIndex =
     !phoneVerified && currentStep === 0 ? 0 : currentStep >= 3 ? 3 : 1;
+  const isCompactKycStep = currentStep <= 1;
+  const kycModalShellClass = [
+    "bg-white dark:bg-[var(--card-color)] rounded-[24px] p-0 max-w-4xl w-full mx-4 border border-[#35353E] overflow-y-auto shadow-xl transition-[max-height] duration-200",
+    isCompactKycStep ? "" : "min-h-[75vh]",
+    showCountryDropdown
+      ? "max-h-[98vh]"
+      : isCompactKycStep
+        ? "max-h-[90vh]"
+        : "max-h-[94vh]",
+  ]
+    .filter(Boolean)
+    .join(" ");
 
   return (
     <div className="fixed inset-0 flex items-center justify-center z-50 bg-black/50">
@@ -1249,7 +1268,7 @@ const KYCVerificationModal: React.FC = () => {
 
       {/* Step-by-Step Verification Form */}
       {kycModalOpen && showManualVerification && !kycStatusOverlay && (
-        <div className={`bg-white dark:bg-[var(--card-color)] rounded-[24px] p-0 max-w-4xl w-full mx-4 border border-[#35353E] overflow-y-auto shadow-xl transition-[max-height] duration-200 min-h-[75vh] ${showCountryDropdown ? "max-h-[98vh]" : "max-h-[94vh]"}`}>
+        <div className={kycModalShellClass}>
           <div className="px-4 sm:px-6 pt-3 sm:pt-4 pb-3 border-b border-[#35353E]">
             <div className="flex justify-between items-center mb-3">
             <h2 className="text-2xl font-semibold text-gray-900 dark:text-white">

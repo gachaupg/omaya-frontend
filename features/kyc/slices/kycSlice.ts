@@ -5,7 +5,10 @@ import { createSlice, PayloadAction, createAsyncThunk } from "@reduxjs/toolkit";
 import { API_CONFIG } from "@/lib/appConfig";
 import { get, post, put, AxiosError } from "@/lib/apiClient";
 import { logger } from '@/lib/utils/logger';
-import { getKYCContextData } from "@/features/settings/utils/sessionUtils";
+import {
+  collectKycDeviceDetails,
+  defaultKycFormContext,
+} from "@/features/kyc/utils/kycDeviceDetails";
 
 import {
   KYCStatusResponse,
@@ -27,27 +30,39 @@ const initialState: KYCState = {
 
 /** Multipart KYC submit (documents + selfie) needs longer than default 20s. */
 const KYC_SUBMIT_TIMEOUT_MS = 120_000;
-const KYC_CONTEXT_COLLECT_TIMEOUT_MS = 8_000;
 
-const defaultKycContextFields = (): Record<string, string> => ({
-  device_type: "Unknown",
-  device_model: "Unknown",
-  browser_type: "Unknown",
-  screen_resolution: "Unknown",
-  device_timezone: "Unknown",
-  ip_address: "Unknown",
-  ip_country: "Unknown",
-  ip_region: "Unknown",
-  ip_city: "Unknown",
-  is_vpn: "false",
-  isp: "Unknown",
-  device_fingerprint: "unknown",
-  unique_device_id: "unknown",
-  login_patterns: "{}",
-  session_duration: "0",
-  failed_login_attempts: "0",
-  suspicious_behavior_detected: "false",
-});
+const defaultKycContextFields = (): Record<string, string> => {
+  const context = defaultKycFormContext();
+  return {
+    device_type: String(context.device_type ?? "Unknown"),
+    device_model: String(context.device_model ?? "Unknown"),
+    browser_type: String(context.browser_type ?? "Unknown"),
+    screen_resolution: String(context.screen_resolution ?? "Unknown"),
+    device_timezone: String(context.device_timezone ?? "Unknown"),
+    os_version: String(context.os_version ?? "Unknown"),
+    device_id: String(context.device_id ?? "unknown"),
+    latitude: String(context.latitude ?? ""),
+    longitude: String(context.longitude ?? ""),
+    precise_location: String(context.precise_location ?? "Unknown"),
+    location_source: String(context.location_source ?? "unknown"),
+    gps_accuracy_meters: String(context.gps_accuracy_meters ?? ""),
+    location_permission: String(context.location_permission ?? "unsupported"),
+    ip_address: String(context.ip_address ?? "Unknown"),
+    ip_country: String(context.ip_country ?? "Unknown"),
+    ip_region: String(context.ip_region ?? "Unknown"),
+    ip_city: String(context.ip_city ?? "Unknown"),
+    is_vpn: String(context.is_vpn ?? false),
+    isp: String(context.isp ?? "Unknown"),
+    device_fingerprint: String(context.device_fingerprint ?? "unknown"),
+    unique_device_id: String(context.unique_device_id ?? "unknown"),
+    login_patterns: JSON.stringify(context.login_patterns ?? {}),
+    session_duration: String(context.session_duration ?? 0),
+    failed_login_attempts: String(context.failed_login_attempts ?? 0),
+    suspicious_behavior_detected: String(
+      context.suspicious_behavior_detected ?? false
+    ),
+  };
+};
 
 // Helper to handle API errors
 const handleApiError = (error: unknown): string => {
@@ -115,9 +130,10 @@ export const verifyKYCStatus = createAsyncThunk<KYCVerificationResponse, KYCVeri
       if (payload.document_number) {
         formData.append("document_number", payload.document_number);
       }
-      if (payload.user_details && Object.keys(payload.user_details).length > 0) {
-        formData.append("user_details", JSON.stringify(payload.user_details));
-      }
+
+      let mergedUserDetails: Record<string, unknown> = {
+        ...(payload.user_details || {}),
+      };
 
       // Map kyc_images to API fields: [front, back?, selfie] for card IDs; [front, selfie] for passport
       const images = (payload.kyc_images || []).filter(
@@ -176,56 +192,69 @@ export const verifyKYCStatus = createAsyncThunk<KYCVerificationResponse, KYCVeri
         imageTypes.forEach((type) => formData.append("image_types", type));
       }
 
-      // Append device/context data for KYC (cap wait so IP lookup cannot block submit indefinitely)
+      // Collect device/GPS/network/fingerprint for user_details and flat FormData fields
       try {
-        const kycContextFallback = {
-          device_type: "Unknown",
-          device_model: "Unknown",
-          browser_type: "Unknown",
-          screen_resolution: "Unknown",
-          device_timezone: "Unknown",
-          ip_address: "Unknown",
-          ip_country: "Unknown",
-          ip_region: "Unknown",
-          ip_city: "Unknown",
-          is_vpn: false,
-          isp: "Unknown",
-          device_fingerprint: "unknown",
-          unique_device_id: "unknown",
-          login_patterns: {},
-          session_duration: 0,
-          failed_login_attempts: 0,
-          suspicious_behavior_detected: false,
+        const deviceBundle = await collectKycDeviceDetails();
+
+        mergedUserDetails = {
+          ...mergedUserDetails,
+          ...deviceBundle.userDetails,
         };
-        const kycContext = await Promise.race([
-          getKYCContextData().catch(() => kycContextFallback),
-          new Promise<typeof kycContextFallback>((resolve) =>
-            setTimeout(() => resolve(kycContextFallback), KYC_CONTEXT_COLLECT_TIMEOUT_MS)
-          ),
-        ]);
+
+        const kycContext = deviceBundle.formContext;
         formData.append("device_type", String(kycContext.device_type ?? "Unknown"));
         formData.append("device_model", String(kycContext.device_model ?? "Unknown"));
         formData.append("browser_type", String(kycContext.browser_type ?? "Unknown"));
         formData.append("screen_resolution", String(kycContext.screen_resolution ?? "Unknown"));
         formData.append("device_timezone", String(kycContext.device_timezone ?? "Unknown"));
+        formData.append("os_version", String(kycContext.os_version ?? "Unknown"));
+        formData.append("device_id", String(kycContext.device_id ?? "unknown"));
+        formData.append("latitude", String(kycContext.latitude ?? ""));
+        formData.append("longitude", String(kycContext.longitude ?? ""));
+        formData.append("precise_location", String(kycContext.precise_location ?? "Unknown"));
+        formData.append("location_source", String(kycContext.location_source ?? "unknown"));
+        formData.append(
+          "gps_accuracy_meters",
+          String(kycContext.gps_accuracy_meters ?? "")
+        );
+        formData.append(
+          "location_permission",
+          String(kycContext.location_permission ?? "unsupported")
+        );
         formData.append("ip_address", String(kycContext.ip_address ?? "Unknown"));
         formData.append("ip_country", String(kycContext.ip_country ?? "Unknown"));
         formData.append("ip_region", String(kycContext.ip_region ?? "Unknown"));
         formData.append("ip_city", String(kycContext.ip_city ?? "Unknown"));
         formData.append("is_vpn", String(kycContext.is_vpn ?? false));
         formData.append("isp", String(kycContext.isp ?? "Unknown"));
-        formData.append("device_fingerprint", String(kycContext.device_fingerprint ?? "unknown"));
-        formData.append("unique_device_id", String(kycContext.unique_device_id ?? "unknown"));
+        formData.append(
+          "device_fingerprint",
+          String(kycContext.device_fingerprint ?? "unknown")
+        );
+        formData.append(
+          "unique_device_id",
+          String(kycContext.unique_device_id ?? "unknown")
+        );
         formData.append("login_patterns", JSON.stringify(kycContext.login_patterns ?? {}));
         formData.append("session_duration", String(kycContext.session_duration ?? 0));
-        formData.append("failed_login_attempts", String(kycContext.failed_login_attempts ?? 0));
-        formData.append("suspicious_behavior_detected", String(kycContext.suspicious_behavior_detected ?? false));
+        formData.append(
+          "failed_login_attempts",
+          String(kycContext.failed_login_attempts ?? 0)
+        );
+        formData.append(
+          "suspicious_behavior_detected",
+          String(kycContext.suspicious_behavior_detected ?? false)
+        );
       } catch (err) {
         logger.warn('kyc', "Failed to collect KYC context data:", err);
         const fallback = defaultKycContextFields();
         Object.entries(fallback).forEach(([key, value]) => {
           formData.append(key, value);
         });
+      }
+
+      if (Object.keys(mergedUserDetails).length > 0) {
+        formData.append("user_details", JSON.stringify(mergedUserDetails));
       }
 
       const response = await put<any>(API_CONFIG.AUTH.KYC_SUBMIT, formData, {
