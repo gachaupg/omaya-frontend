@@ -2,6 +2,10 @@ import React from "react";
 import { API_CONFIG } from "@/lib/appConfig";
 import { appendTokenToWebSocketUrl } from "@/lib/utils/websocketUtils";
 import { logger } from '@/lib/utils/logger';
+import {
+  maskP2pDepositWebSocketUrl,
+  p2pDepositWebSocketLog,
+} from "@/features/p2p/utils/p2pDepositWebSocketLog";
 
 export interface TransactionStatusMessage {
   type: "status_update" | "error" | "connection_established" | "final_status";
@@ -89,6 +93,7 @@ export class BaseTransactionStatusWebSocket {
   protected onMessageCallback?: (data: TransactionStatusMessage) => void;
   protected onErrorCallback?: (error: Event) => void;
   protected onCloseCallback?: () => void;
+  protected logAsP2pDeposit = false;
 
   constructor(
     protected transactionId: string,
@@ -126,6 +131,12 @@ export class BaseTransactionStatusWebSocket {
         }
 
         const finalUrl = appendTokenToWebSocketUrl(this.wsUrl, this.options.token);
+        if (this.logAsP2pDeposit) {
+          p2pDepositWebSocketLog("opening connection", {
+            transactionId: this.transactionId,
+            url: maskP2pDepositWebSocketUrl(finalUrl),
+          });
+        }
                 logger.debug('p2p', "WebSocket connecting:", { transactionId: this.transactionId, url: finalUrl });
         
         this.ws = new WebSocket(finalUrl);
@@ -139,6 +150,12 @@ export class BaseTransactionStatusWebSocket {
 
         this.ws.onopen = () => {
           clearTimeout(connectionTimeout);
+          if (this.logAsP2pDeposit) {
+            p2pDepositWebSocketLog("connected", {
+              transactionId: this.transactionId,
+              url: maskP2pDepositWebSocketUrl(this.wsUrl),
+            });
+          }
           logger.debug('p2p', 
             `WebSocket connected for transaction: ${this.transactionId}`
           );
@@ -336,11 +353,18 @@ export class DepositStatusWebSocket extends BaseTransactionStatusWebSocket {
       ? wsUrl 
       : API_CONFIG.EXCHANGE.SOCKETS.DEPOSIT_STATUS(transactionId);
     
+    p2pDepositWebSocketLog("DepositStatusWebSocket resolved url", {
+      transactionId,
+      providedUrl: wsUrl ? maskP2pDepositWebSocketUrl(wsUrl) : null,
+      finalUrl: maskP2pDepositWebSocketUrl(finalWsUrl),
+      usingFallback: !wsUrl || wsUrl.trim() === "",
+    });
     logger.debug('p2p', "DEBUG: DepositStatusWebSocket constructor - wsUrl:", wsUrl);
     logger.debug('p2p', "DEBUG: DepositStatusWebSocket constructor - finalWsUrl:", finalWsUrl);
     logger.debug('p2p', "DEBUG: Using provided URL:", !!wsUrl);
     logger.debug('p2p', "DEBUG: URL is empty/undefined:", !wsUrl || wsUrl.trim() === "");
     super(transactionId, finalWsUrl, options);
+    this.logAsP2pDeposit = true;
   }
 }
 

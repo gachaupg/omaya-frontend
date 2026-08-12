@@ -68,11 +68,49 @@ export const getLocationFromIP = async (ipAddress: string): Promise<string> => {
     const response = await fetch(`https://ipapi.co/${ipAddress}/json/`);
     if (response.ok) {
       const data = await response.json();
-      return `${data.city || "Unknown"}, ${data.country_name || "Unknown"}`;
+      const city = data.city || data.region || "Unknown";
+      const country = data.country_name || "Unknown";
+      return `${city}, ${country}`;
     }
   } catch (error) {
     logger.warn('dashboard', "Failed to get location from IP:", error);
   }
+  return "Unknown";
+};
+
+/** Reverse geocode GPS coordinates into a readable city/country label. */
+export const getLocationFromCoordinates = async (
+  latitude: number,
+  longitude: number
+): Promise<string> => {
+  if (!Number.isFinite(latitude) || !Number.isFinite(longitude)) {
+    return "Unknown";
+  }
+
+  try {
+    const params = new URLSearchParams({
+      latitude: String(latitude),
+      longitude: String(longitude),
+      localityLanguage: "en",
+    });
+    const response = await fetch(
+      `https://api.bigdatacloud.net/data/reverse-geocode-client?${params.toString()}`
+    );
+    if (!response.ok) return "Unknown";
+
+    const data = await response.json();
+    const city =
+      data.city ||
+      data.locality ||
+      data.localityInfo?.administrative?.[0]?.name ||
+      data.principalSubdivision;
+    const country = data.countryName;
+    if (city && country) return `${city}, ${country}`;
+    if (country) return country;
+  } catch (error) {
+    logger.warn("dashboard", "Failed to reverse geocode coordinates:", error);
+  }
+
   return "Unknown";
 };
 

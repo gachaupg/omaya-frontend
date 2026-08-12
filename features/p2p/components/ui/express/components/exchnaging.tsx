@@ -19,6 +19,10 @@ import { fetchDepositStatus } from "../api";
 import SuccessPage from "./success";
 import FailureStatusModal from "@/features/express/components/FailureStatusModal";
 import { resolveExpressTransactionFailureMessage, normalizeWebSocketUrl } from "@/lib/utils/websocketUtils";
+import {
+  maskP2pDepositWebSocketUrl,
+  p2pDepositWebSocketLog,
+} from "@/features/p2p/utils/p2pDepositWebSocketLog";
 import { useScrollAppToTopWhen } from "@/hooks/useScrollAppToTopWhen";
 import { encodeQrScanData } from "@/lib/utils/ussdDial";
 import { P2P_STATUS_SCROLL_FRACTION } from "@/lib/utils/scrollAppToTop";
@@ -616,6 +620,28 @@ export default function Exchanging({ transactionData }: ExchangingProps) {
     effectiveTransactionData?.asset?.symbol?.toLowerCase().includes("usdt") ||
     effectiveTransactionData?.asset?.name?.toLowerCase().includes("usdt");
   const finalWebsocketUrl = websocketUrl;
+
+  useEffect(() => {
+    if (effectiveTransactionData?.type !== "deposit") return;
+    const fallbackUrl = effectiveTransactionData?.transactionId
+      ? API_CONFIG.EXCHANGE.SOCKETS.DEPOSIT_STATUS(
+          effectiveTransactionData.transactionId
+        )
+      : "";
+    p2pDepositWebSocketLog("deposit status page url", {
+      transactionId: effectiveTransactionData?.transactionId,
+      url: finalWebsocketUrl
+        ? maskP2pDepositWebSocketUrl(finalWebsocketUrl)
+        : fallbackUrl
+          ? maskP2pDepositWebSocketUrl(fallbackUrl)
+          : "(no url — WebSocket will not connect)",
+      source: finalWebsocketUrl ? "api" : fallbackUrl ? "fallback" : "missing",
+    });
+  }, [
+    effectiveTransactionData?.type,
+    effectiveTransactionData?.transactionId,
+    finalWebsocketUrl,
+  ]);
 
   const { isConnected, lastMessage, disconnect, sendMessage } =
     useTransactionStatusWebSocket(

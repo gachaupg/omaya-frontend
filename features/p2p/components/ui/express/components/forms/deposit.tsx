@@ -40,6 +40,10 @@ import { ExpressDepositResponse } from "../../types";
 
 import { logger } from '@/lib/utils/logger';
 import { appendTokenToWebSocketUrl } from "@/lib/utils/websocketUtils";
+import {
+  maskP2pDepositWebSocketUrl,
+  p2pDepositWebSocketLog,
+} from "@/features/p2p/utils/p2pDepositWebSocketLog";
 import { cookieUtils } from "@/lib/utils/cookieUtils";
 import {
   setP2PLegalReturnState,
@@ -473,6 +477,11 @@ export default function DepositForm({
       }
 
       finalUrl = appendTokenToWebSocketUrl(finalUrl, token);
+      p2pDepositWebSocketLog("deposit form connecting", {
+        url: maskP2pDepositWebSocketUrl(finalUrl),
+        isRetry,
+        retryCount: websocketRetryCount,
+      });
       logger.debug('p2p', `Attempting WebSocket connection to: ${finalUrl}${isRetry ? ' (retry attempt)' : ''}`);
             // Pre-connection validation and logging
       logger.debug('p2p', "WebSocket connection attempt details:", {

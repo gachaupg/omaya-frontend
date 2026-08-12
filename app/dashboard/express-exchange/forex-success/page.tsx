@@ -6,6 +6,7 @@ import { useSelector } from "react-redux";
 import { useTheme } from "@/context/theme";
 import CopyButton from "@/components/ui/CopyButton";
 import DownloadReceiptButton from "@/components/ui/DownloadReceiptButton";
+import { buildForexExchangeReceiptRows } from "@/lib/utils/forexExchangeReceipt";
 import { useRouteProtection } from "@/features/auth/hooks/useRouteProtection";
 import Loader from "@/features/p2p/components/Common/Loader";
 import { useScrollAppToTopWhen } from "@/hooks/useScrollAppToTopWhen";
@@ -68,16 +69,25 @@ function ForexSuccessContent() {
     );
   }
 
+  const receiptRows = buildForexExchangeReceiptRows(exchangeData);
+  const receiptReference =
+    exchangeData.transaction_reference ||
+    exchangeData.transaction_id ||
+    exchangeData.forex_transaction_id;
+
   return (
     <div className={`container mx-auto px-4 sm:px-6 md:px-8 min-h-screen flex flex-col items-center justify-center pt-8 pb-8 overflow-x-hidden ${isDark ? 'bg-[#18181D]' : 'bg-transparent'}`}>
       {/* Success Animation Card */}
       <div className="w-full max-w-2xl mb-6">
         <div
-          ref={receiptRef}
           className={`${
             isDark ? "bg-[#23232B] border-[#35353E]" : "bg-white border-gray-200"
           } border-2 rounded-2xl p-8 shadow-lg flex flex-col items-center`}
         >
+          <div
+            ref={receiptRef}
+            className="w-full flex flex-col items-center"
+          >
           {/* Success Check Animation */}
           <div className="relative mb-6">
             <div className="w-32 h-32 rounded-full bg-[#1D8751] bg-opacity-10 flex items-center justify-center">
@@ -189,20 +199,21 @@ function ForexSuccessContent() {
               Scan to view transaction details
             </p>
           </div>
+          </div>
 
           <DownloadReceiptButton
-            receiptRef={receiptRef}
+            receiptRows={receiptRows}
+            receiptTitle="Forex Exchange Receipt"
+            receiptPdfOptions={{
+              subtitle: "Your forex exchange has been successfully processed",
+            }}
             fileNamePrefix="OMAYA_Forex_Receipt"
-            transactionId={
-              exchangeData.transaction_reference ||
-              exchangeData.transaction_id ||
-              exchangeData.forex_transaction_id
-            }
+            transactionId={receiptReference}
             className="mb-3"
           />
 
           {/* Action Buttons */}
-          <div className="w-full space-y-3">
+          <div className="w-full space-y-3" data-receipt-exclude>
             <button
               onClick={() => router.push("/dashboard/express-exchange")}
               className="w-full py-3 bg-[#1D8751] text-white rounded-2xl font-semibold hover:bg-[#166b3e] transition-colors"

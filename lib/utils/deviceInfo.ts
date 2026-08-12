@@ -4,6 +4,7 @@ import {
   getCurrentIPAddress,
   getDeviceData,
   getFingerprintData,
+  getLocationFromCoordinates,
   getLocationFromIP,
   getNetworkData,
   getScreenResolution,
@@ -13,7 +14,10 @@ import { logger } from "@/lib/utils/logger";
 const DEVICE_ID_STORAGE_KEY = "omaya_device_id";
 const DEVICE_COORDS_STORAGE_KEY = "omaya_device_coords";
 const DEVICE_INFO_CACHE_MS = 60_000;
-const GEOLOCATION_TIMEOUT_MS = 15_000;
+const GEOLOCATION_TIMEOUT_MS = 25_000;
+const GPS_CACHE_MAX_AGE_MS = 5 * 60_000;
+const IP_CACHE_MAX_AGE_MS = 30 * 60_000;
+const GPS_GOOD_ACCURACY_METERS = 150;
 
 export type LocationPermissionState =
   | "granted"
@@ -134,29 +138,76 @@ const getGeolocationPermission =
   };
 
 type GeoCoords = { latitude: number; longitude: number };
+type CoordsSource = "gps" | "ip";
 
-const readStoredCoords = (): GeoCoords | null => {
+type StoredCoordsPayload = GeoCoords & {
+  source: CoordsSource;
+  accuracy?: number;
+  storedAt: number;
+};
+
+type StoredCoords = StoredCoordsPayload & {
+  ageMs: number;
+};
+
+const readStoredCoords = (): StoredCoords | null => {
   if (typeof sessionStorage === "undefined") return null;
   try {
     const raw = sessionStorage.getItem(DEVICE_COORDS_STORAGE_KEY);
     if (!raw) return null;
-    const parsed = JSON.parse(raw) as GeoCoords;
+    const parsed = JSON.parse(raw) as Partial<StoredCoordsPayload>;
     if (
-      Number.isFinite(parsed.latitude) &&
-      Number.isFinite(parsed.longitude)
+      !Number.isFinite(parsed.latitude) ||
+      !Number.isFinite(parsed.longitude)
     ) {
-      return parsed;
+      return null;
     }
+
+    const storedAt =
+      typeof parsed.storedAt === "number" ? parsed.storedAt : 0;
+    const source: CoordsSource =
+      parsed.source === "gps" ? "gps" : "ip";
+
+    return {
+      latitude: parsed.latitude as number,
+      longitude: parsed.longitude as number,
+      source,
+      accuracy:
+        typeof parsed.accuracy === "number" ? parsed.accuracy : undefined,
+      storedAt,
+      ageMs: storedAt > 0 ? Date.now() - storedAt : Number.POSITIVE_INFINITY,
+    };
+  } catch {
+    return null;
+  }
+};
+
+const storeCoords = (
+  coords: GeoCoords,
+  source: CoordsSource,
+  accuracy?: number
+): void => {
+  if (typeof sessionStorage === "undefined") return;
+  try {
+    const payload: StoredCoordsPayload = {
+      ...coords,
+      source,
+      accuracy,
+      storedAt: Date.now(),
+    };
+    sessionStorage.setItem(
+      DEVICE_COORDS_STORAGE_KEY,
+      JSON.stringify(payload)
+    );
   } catch {
     // ignore
   }
-  return null;
 };
 
-const storeCoords = (coords: GeoCoords): void => {
+const clearStoredCoords = (): void => {
   if (typeof sessionStorage === "undefined") return;
   try {
-    sessionStorage.setItem(DEVICE_COORDS_STORAGE_KEY, JSON.stringify(coords));
+    sessionStorage.removeItem(DEVICE_COORDS_STORAGE_KEY);
   } catch {
     // ignore
   }
@@ -188,11 +239,11 @@ const getCoordinatesFromIP = async (
 };
 
 const getBrowserGeolocation = (
-  timeoutMs = GEOLOCATION_TIMEOUT_MS,
-  options?: { enableHighAccuracy?: boolean; maximumAge?: number }
+  timeoutMs = GEOLOCATION_TIMEOUT_MS
 ): Promise<{
   coords: GeoCoords | null;
   permission: LocationPermissionState;
+  accuracy?: number;
 }> =>
   new Promise((resolve) => {
     if (typeof navigator === "undefined" || !navigator.geolocation) {
@@ -200,40 +251,68 @@ const getBrowserGeolocation = (
       return;
     }
 
+    let settled = false;
+    let watchId: number | null = null;
+    let best: { coords: GeoCoords; accuracy: number } | null = null;
+
+    const finish = (permission: LocationPermissionState) => {
+      if (settled) return;
+      settled = true;
+      if (watchId != null) navigator.geolocation.clearWatch(watchId);
+      window.clearTimeout(timer);
+
+      if (best) {
+        storeCoords(best.coords, "gps", best.accuracy);
+        resolve({
+          coords: best.coords,
+          permission: "granted",
+          accuracy: best.accuracy,
+        });
+        return;
+      }
+
+      resolve({ coords: null, permission });
+    };
+
     const timer = window.setTimeout(
-      () => resolve({ coords: null, permission: "prompt" }),
+      () => finish("prompt"),
       timeoutMs + 500
     );
 
-    navigator.geolocation.getCurrentPosition(
+    watchId = navigator.geolocation.watchPosition(
       (position) => {
-        window.clearTimeout(timer);
+        const accuracy = position.coords.accuracy ?? Number.POSITIVE_INFINITY;
         const coords = {
           latitude: position.coords.latitude,
           longitude: position.coords.longitude,
         };
-        storeCoords(coords);
-        resolve({ coords, permission: "granted" });
+
+        if (!best || accuracy < best.accuracy) {
+          best = { coords, accuracy };
+        }
+
+        if (accuracy <= GPS_GOOD_ACCURACY_METERS) {
+          finish("granted");
+        }
       },
       (error) => {
-        window.clearTimeout(timer);
         const permission: LocationPermissionState =
           error.code === error.PERMISSION_DENIED
             ? "denied"
             : error.code === error.POSITION_UNAVAILABLE
               ? "prompt"
               : "prompt";
-        resolve({ coords: null, permission });
+        finish(permission);
       },
       {
-        enableHighAccuracy: options?.enableHighAccuracy ?? true,
-        maximumAge: options?.maximumAge ?? 0,
+        enableHighAccuracy: true,
+        maximumAge: 0,
         timeout: timeoutMs,
       }
     );
   });
 
-/** Resolve lat/long for API payloads (no browser permission prompt on POST). */
+/** Resolve lat/long for API payloads. Prefers precise GPS over IP estimates. */
 const resolveDeviceCoordinates = async (
   ipAddress: string,
   { requestBrowserLocation = false }: { requestBrowserLocation?: boolean } = {}
@@ -243,9 +322,13 @@ const resolveDeviceCoordinates = async (
   location_permission: LocationPermissionState;
 }> => {
   const stored = readStoredCoords();
-  if (stored) {
+  if (
+    stored?.source === "gps" &&
+    stored.ageMs < GPS_CACHE_MAX_AGE_MS
+  ) {
     return {
-      ...stored,
+      latitude: stored.latitude,
+      longitude: stored.longitude,
       location_permission: "granted",
     };
   }
@@ -253,24 +336,44 @@ const resolveDeviceCoordinates = async (
   let permission = await getGeolocationPermission();
 
   if (requestBrowserLocation || permission === "granted") {
-    const attempt = await getBrowserGeolocation(GEOLOCATION_TIMEOUT_MS, {
-      enableHighAccuracy: requestBrowserLocation,
-      maximumAge: requestBrowserLocation ? 0 : 60_000,
-    });
+    const attempt = await getBrowserGeolocation();
 
     if (attempt.coords) {
       return {
         ...attempt.coords,
-        location_permission: attempt.permission,
+        location_permission: "granted",
       };
     }
 
     permission = attempt.permission || permission;
   }
 
+  if (
+    stored?.source === "gps" &&
+    Number.isFinite(stored.latitude) &&
+    Number.isFinite(stored.longitude)
+  ) {
+    return {
+      latitude: stored.latitude,
+      longitude: stored.longitude,
+      location_permission: permission === "denied" ? permission : "granted",
+    };
+  }
+
+  if (
+    stored?.source === "ip" &&
+    stored.ageMs < IP_CACHE_MAX_AGE_MS
+  ) {
+    return {
+      latitude: stored.latitude,
+      longitude: stored.longitude,
+      location_permission: permission,
+    };
+  }
+
   const ipCoords = await getCoordinatesFromIP(ipAddress);
   if (ipCoords) {
-    storeCoords(ipCoords);
+    storeCoords(ipCoords, "ip");
     return {
       latitude: ipCoords.latitude,
       longitude: ipCoords.longitude,
@@ -288,7 +391,15 @@ const resolveDeviceCoordinates = async (
 /** Ask for browser location once when the user enters the site (not on POST). */
 export const prefetchDeviceLocation = async (): Promise<void> => {
   if (typeof window === "undefined") return;
-  if (readStoredCoords()) return;
+
+  const stored = readStoredCoords();
+  if (stored?.source === "gps" && stored.ageMs < GPS_CACHE_MAX_AGE_MS) {
+    return;
+  }
+
+  if (stored?.source === "ip") {
+    clearStoredCoords();
+  }
 
   try {
     const ipAddress = await getCurrentIPAddress();
@@ -388,10 +499,21 @@ export const collectDeviceInfo = async (): Promise<DeviceInfo> => {
   inFlightCollection = (async () => {
     const deviceData = getDeviceData();
     const ipAddress = await getCurrentIPAddress();
-    const [locationFromIp, coordinates] = await Promise.all([
+    const permission = await getGeolocationPermission();
+    const [coordinates, locationFromIp] = await Promise.all([
+      resolveDeviceCoordinates(ipAddress, {
+        requestBrowserLocation: permission === "granted",
+      }),
       getLocationFromIP(ipAddress),
-      resolveDeviceCoordinates(ipAddress, { requestBrowserLocation: false }),
     ]);
+
+    const locationLabel =
+      coordinates.latitude != null && coordinates.longitude != null
+        ? await getLocationFromCoordinates(
+            coordinates.latitude,
+            coordinates.longitude
+          )
+        : locationFromIp;
 
     const info: DeviceInfo = {
       device_type: String(deviceData.device_type || "Unknown"),
@@ -402,7 +524,8 @@ export const collectDeviceInfo = async (): Promise<DeviceInfo> => {
       latitude: coordinates.latitude,
       longitude: coordinates.longitude,
       location_permission: coordinates.location_permission,
-      location: locationFromIp,
+      location:
+        locationLabel !== "Unknown" ? locationLabel : locationFromIp,
       device_data: buildDeviceData(),
       network_data: buildNetworkData(),
       fingerprint_data: buildFingerprintData(),
@@ -450,13 +573,6 @@ export const mergeDeviceInfoIntoRequestData = (
     return data;
   }
 
-  // On axios retries, `config.data` has already been JSON-stringified by the
-  // previous attempt (axios mutates `config.data` in-place during
-  // `dispatchRequest`, and the retry interceptor replays the same config
-  // through all request interceptors, including this one). The string already
-  // contains the original body + device_info from the first attempt, so it
-  // must be returned as-is — treating it as "no data" here would silently
-  // drop every field (e.g. email/otp) and send only `{ device_info }`.
   if (typeof data === "string") {
     return data;
   }
