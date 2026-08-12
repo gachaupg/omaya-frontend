@@ -107,6 +107,15 @@ interface DropdownItem {
   description: string;
 }
 
+const isMoneyXDepositItem = (href: string) => href === "/dashboard/exchange";
+
+const getDepositItemIconClasses = (href: string) => ({
+  box: "w-8 h-8 sm:w-10 sm:h-10",
+  img: isMoneyXDepositItem(href)
+    ? "w-6 h-6 sm:w-8 sm:h-8"
+    : "w-4 h-4 sm:w-5 sm:h-5",
+});
+
 const AuthButton = ({
   variant,
   children,
@@ -502,18 +511,18 @@ export default function Navbar() {
       href: "/dashboard/express-exchange",
       icon: "/assets/Vector_2_xauedx.png",
       title: (
-        <span className="flex items-start font-bold uppercase leading-none">
+        <span className="flex items-center font-bold uppercase leading-none">
           E
-          <span className="inline-flex shrink-0 mt-[2px]">
+          <span className="inline-flex shrink-0 items-center">
             <img
               src="/images/Group_9_momvgo.png"
               alt="XCHANGE"
-              className="h-5 w-auto object-contain object-top dark:hidden block"
+              className="h-4 w-auto object-contain object-center dark:hidden block"
             />
             <img
               src="/images/Group_5_gkxzdz.png"
               alt="XCHANGE"
-              className="h-5 w-auto object-contain object-top hidden dark:block"
+              className="h-4 w-auto object-contain object-center hidden dark:block"
             />
           </span>
         </span>
@@ -524,11 +533,20 @@ export default function Navbar() {
       href: "/dashboard/exchange",
       icon: "/assets/uil_exchange_1_okxkvb.png",
       title: (
-        <span className="flex items-center text-[#76777B] dark:text-white font-bold uppercase">
+        <span className="flex items-center font-bold uppercase leading-none">
           Money{" "}
-          <span className="inline-flex">
-            <img src="/images/moneyx-x-light.png" alt="" aria-hidden className="dark:hidden inline-block" />
-            <img src="/images/xwhite.png" alt="X" className="hidden dark:inline-block" />
+          <span className="inline-flex items-center">
+            <img
+              src="/images/moneyx-x-light.png"
+              alt=""
+              aria-hidden
+              className="h-4 w-auto object-contain dark:hidden inline-block"
+            />
+            <img
+              src="/images/xwhite.png"
+              alt="X"
+              className="h-4 w-auto object-contain hidden dark:inline-block"
+            />
           </span>
         </span>
       ),
@@ -537,19 +555,19 @@ export default function Navbar() {
     {
       href: "/dashboard/p2p",
       icon: "/assets/users-profiles-left_e2oejc.png",
-      title: <span className="font-bold uppercase">P2P</span>,
+      title: <span className="font-bold uppercase leading-none">P2P</span>,
       description: "Buy and sell cryptocurrencies directly with flexible payment methods",
     },
     {
       href: "/dashboard/swap",
       icon: "/assets/Group_164002_fgt2kf.png",
-      title: <span className="font-bold uppercase">Swap</span>,
+      title: <span className="font-bold uppercase leading-none">Swap</span>,
       description: "Exchange one cryptocurrency for another instantly and securely within your wallet",
     },
     {
       href: "/dashboard/account?tab=referral",
       icon: "/assets/users-profiles-left_e2oejc.png",
-      title: <span className="font-bold uppercase">Referral</span>,
+      title: <span className="font-bold uppercase leading-none">Referral</span>,
       description: "Share your referral link and earn rewards from your referrals",
     },
   ];
@@ -1136,6 +1154,7 @@ export default function Navbar() {
                     <div className="p-3 sm:p-4">
                       {depositItems.map((item, index) => {
                         const isActive = pathname === item.href || pathname?.startsWith(item.href + "/");
+                        const iconClasses = getDepositItemIconClasses(item.href);
                         return (
                           <Link
                             key={index}
@@ -1152,15 +1171,15 @@ export default function Navbar() {
                                 : "dark:hover:bg-[#35353E] hover:bg-gray-50"
                                 }`}
                             >
-                              <div className="w-8 h-8 sm:w-10 sm:h-10 flex items-center justify-center mr-2 sm:mr-4 shrink-0">
+                              <div className={`${iconClasses.box} flex items-center justify-center mr-2 sm:mr-4 shrink-0`}>
                                 <img
-                                  className="w-6 h-6 sm:w-8 sm:h-8 object-contain"
+                                  className={`${iconClasses.img} object-contain`}
                                   src={item.icon}
                                   alt=""
                                 />
                               </div>
                               <div className="flex-1 min-w-0">
-                                <h4 className="dark:text-white flex flex-row items-center text-[#727272] font-semibold text-sm sm:text-base mb-0.5">
+                                <h4 className="dark:text-white flex flex-row items-center text-[#727272] font-semibold text-sm sm:text-base mb-0.5 min-h-[1.25rem] sm:min-h-[1.5rem]">
                                   {item.title}
                                 </h4>
                                 <p className="dark:text-gray-400 text-gray-500 text-xs leading-relaxed">
@@ -1521,6 +1540,7 @@ export default function Navbar() {
                       <div className="p-3 sm:p-4">
                         {depositItems.map((item, index) => {
                           const isActive = pathname === item.href || pathname?.startsWith(item.href + "/");
+                          const iconClasses = getDepositItemIconClasses(item.href);
                           return (
                             <Link
                               key={index}
@@ -1538,15 +1558,15 @@ export default function Navbar() {
                                   : "dark:hover:bg-[#35353E] hover:bg-gray-50"
                                   }`}
                               >
-                                <div className="w-8 h-8 sm:w-10 sm:h-10 flex items-center justify-center mr-2 sm:mr-4 shrink-0">
+                                <div className={`${iconClasses.box} flex items-center justify-center mr-2 sm:mr-4 shrink-0`}>
                                   <img
-                                    className="w-6 h-6 sm:w-8 sm:h-8 object-contain"
+                                    className={`${iconClasses.img} object-contain`}
                                     src={item.icon}
                                     alt=""
                                   />
                                 </div>
                                 <div className="flex-1 min-w-0">
-                                  <h4 className="dark:text-white flex flex-row items-center text-gray-900 font-medium text-sm sm:text-base mb-0.5 sm:mb-1">
+                                  <h4 className="dark:text-white flex flex-row items-center text-gray-900 font-medium text-sm sm:text-base mb-0.5 sm:mb-1 min-h-[1.25rem] sm:min-h-[1.5rem]">
                                     {item.title}
                                   </h4>
                                   <p className="dark:text-gray-400 text-gray-600 text-xs sm:text-sm leading-relaxed">

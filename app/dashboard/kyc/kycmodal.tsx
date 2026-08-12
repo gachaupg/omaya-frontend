@@ -21,6 +21,14 @@ import {
   isPassportDocumentType,
   requiresDocumentBackSide,
 } from "@/features/kyc/utils/kycDocumentUtils";
+import { runIdDocumentOcr } from "@/lib/ocr/runIdDocumentOcr";
+import { EMPTY_ID_DOCUMENT_DETAILS } from "@/lib/ocr/types";
+import {
+  buildKycUserDetails,
+  getKycOcrDisplayRows,
+} from "@/features/kyc/utils/kycOcrDisplay";
+import { checkKycDocumentTypeMatch } from "@/features/kyc/utils/kycDocumentTypeMatch";
+import { assessKycDocumentPhoto } from "@/features/kyc/utils/kycDocumentPhotoAssessment";
 import {
   getKycApprovedOverlayDismissed,
   isKycApproved,
@@ -83,6 +91,17 @@ const KYCVerificationModal: React.FC = () => {
   const [documentBackPreview, setDocumentBackPreview] = useState<string | null>(null);
   const [facePreview, setFacePreview] = useState<string | null>(null);
   const [kycSubmitMessage, setKycSubmitMessage] = useState<string | null>(null);
+  const [userDetails, setUserDetails] = useState<Record<string, unknown>>({});
+  const [ocrLoading, setOcrLoading] = useState(false);
+  const [ocrProgress, setOcrProgress] = useState(0);
+  const [ocrStatus, setOcrStatus] = useState("");
+  const [ocrManualFallback, setOcrManualFallback] = useState(false);
+  const [ocrTypeMismatchMessage, setOcrTypeMismatchMessage] = useState<string | null>(null);
+  const [ocrForceReupload, setOcrForceReupload] = useState<{
+    title: string;
+    message: string;
+  } | null>(null);
+  const documentFrontInputRef = useRef<HTMLInputElement>(null);
   const [showCountryDropdown, setShowCountryDropdown] = useState(false);
   const [countrySearchTerm, setCountrySearchTerm] = useState("");
   const countryTriggerRef = useRef<HTMLDivElement>(null);
@@ -374,6 +393,13 @@ const KYCVerificationModal: React.FC = () => {
     setDocumentFrontPreview(null);
     setDocumentBackPreview(null);
     setFacePreview(null);
+    setUserDetails({});
+    setOcrLoading(false);
+    setOcrProgress(0);
+    setOcrStatus("");
+    setOcrManualFallback(false);
+    setOcrTypeMismatchMessage(null);
+    setOcrForceReupload(null);
     
     // Check if email OTP is already verified
     if (
@@ -455,15 +481,141 @@ const KYCVerificationModal: React.FC = () => {
       ...prev,
       [field]: value
     }));
+    if (field === "documentNumber") {
+      setUserDetails((prev) => ({
+        ...prev,
+        documentNumber: value,
+        document_number: value,
+      }));
+    }
   };
 
   const handleDocumentTypeChange = (value: string) => {
     handleInputChange("documentType", value);
+    setUserDetails({});
+    setOcrProgress(0);
+    setOcrStatus("");
+    setOcrManualFallback(false);
+    setOcrTypeMismatchMessage(null);
+    setOcrForceReupload(null);
     if (isPassportDocumentType(value)) {
       setDocumentBackImage(null);
       setDocumentBackPreview(null);
     }
   };
+
+  const runDocumentOcr = async (file: File) => {
+    setOcrLoading(true);
+    setOcrProgress(0);
+    setOcrStatus("Reading document...");
+    setOcrManualFallback(false);
+    setOcrTypeMismatchMessage(null);
+    setOcrForceReupload(null);
+    setError(null);
+    try {
+      const extracted = await runIdDocumentOcr(file, {
+        onProgress: ({ status, progress }) => {
+          setOcrStatus(status);
+          setOcrProgress(progress);
+        },
+      });
+      const typeMatch = checkKycDocumentTypeMatch(
+        verificationData.documentType,
+        extracted
+      );
+      const detailsPayload = buildKycUserDetails(extracted, {
+        country: verificationData.country,
+        documentType: verificationData.documentType,
+      });
+      detailsPayload.detected_document_kind = typeMatch.detected;
+      detailsPayload.detected_document_confidence = typeMatch.confidence;
+      detailsPayload.document_type_mismatch = typeMatch.mismatch;
+      setUserDetails(detailsPayload);
+
+      if (typeMatch.mismatch && typeMatch.message) {
+        setOcrTypeMismatchMessage(typeMatch.message);
+        setOcrManualFallback(true);
+        handleInputChange("documentNumber", "");
+        setOcrStatus("");
+        showToast.error("Wrong document type", typeMatch.message);
+        return;
+      }
+
+      setOcrTypeMismatchMessage(null);
+      const hasDocumentNumber = Boolean(extracted.documentNumber?.trim());
+
+      if (hasDocumentNumber) {
+        handleInputChange("documentNumber", extracted.documentNumber);
+        setOcrManualFallback(false);
+        setOcrForceReupload(null);
+        setOcrStatus("Done");
+      } else {
+        const photoAssessment = assessKycDocumentPhoto(extracted);
+        const enrichedDetails = {
+          ...detailsPayload,
+          likely_dummy_image:
+            photoAssessment.likelyDummy && photoAssessment.confidence === "high",
+          photo_assessment_confidence: photoAssessment.confidence,
+        };
+        setUserDetails(enrichedDetails);
+
+        if (photoAssessment.likelyDummy && photoAssessment.confidence === "high") {
+          setOcrForceReupload({
+            title: "Not a valid ID photo",
+            message:
+              photoAssessment.message ??
+              "We couldn't detect an ID in this image. Please upload a clear photo of your real document.",
+          });
+        } else {
+          setOcrForceReupload({
+            title: "Couldn't auto-read this photo",
+            message:
+              "If this is your real ID, please upload a clearer photo so we can read your details automatically.",
+          });
+        }
+        setOcrManualFallback(false);
+        handleInputChange("documentNumber", "");
+        setOcrStatus("");
+        setError(null);
+      }
+    } catch {
+      setOcrForceReupload({
+        title: "Couldn't auto-read this photo",
+        message:
+          "Please upload a clearer image of your ID so we can read your details automatically.",
+      });
+      setOcrManualFallback(false);
+      setOcrStatus("");
+      setError(null);
+    } finally {
+      setOcrLoading(false);
+    }
+  };
+
+  const clearDocumentFront = () => {
+    setDocumentFrontImage(null);
+    setDocumentFrontPreview(null);
+    setUserDetails({});
+    handleInputChange("documentNumber", "");
+    setOcrProgress(0);
+    setOcrStatus("");
+    setOcrManualFallback(false);
+    setOcrTypeMismatchMessage(null);
+    setOcrForceReupload(null);
+    if (documentFrontInputRef.current) {
+      documentFrontInputRef.current.value = "";
+    }
+  };
+
+  const triggerDocumentFrontReupload = () => {
+    documentFrontInputRef.current?.click();
+  };
+
+  const ocrDisplayRows = useMemo(
+    () => getKycOcrDisplayRows(userDetails),
+    [userDetails]
+  );
+  const ocrProgressPercent = Math.min(100, Math.round(ocrProgress * 100));
 
   const documentRequiresBack = requiresDocumentBackSide(verificationData.documentType);
   const isPassportDoc = isPassportDocumentType(verificationData.documentType);
@@ -526,8 +678,8 @@ const KYCVerificationModal: React.FC = () => {
         }
         return true;
       case 1:
-        if (!verificationData.country || !verificationData.documentType || !verificationData.documentNumber) {
-          setError("Please fill in all required fields");
+        if (!verificationData.country || !verificationData.documentType) {
+          setError("Please select your country and document type");
           return false;
         }
         return true;
@@ -543,6 +695,23 @@ const KYCVerificationModal: React.FC = () => {
         if (documentRequiresBack && !documentBackImage) {
           setError("Please upload the back side of your document");
           showToast.error("Please upload the back side of your document");
+          return false;
+        }
+        if (ocrLoading) {
+          setError("Please wait while we read your document");
+          return false;
+        }
+        if (ocrForceReupload) {
+          setError("Please upload a clearer photo of your ID to continue");
+          showToast.error("Please upload a clearer photo of your ID to continue");
+          return false;
+        }
+        if (!verificationData.documentNumber.trim()) {
+          setError(
+            ocrManualFallback
+              ? "Enter your document number below if you are sure the photo is correct"
+              : "Enter your document number or upload a clearer photo of your ID"
+          );
           return false;
         }
         return true;
@@ -610,8 +779,9 @@ const KYCVerificationModal: React.FC = () => {
     );
   };
 
-  const handleDocumentFrontUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
+  const handleDocumentFrontUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
     const file = event.target.files?.[0];
+    event.target.value = "";
     if (file) {
       if (file.size > 5 * 1024 * 1024) { // 5MB limit
         setError("File size must be less than 5MB");
@@ -624,6 +794,11 @@ const KYCVerificationModal: React.FC = () => {
         return;
       }
       setDocumentFrontImage(file);
+      setUserDetails({});
+      setOcrManualFallback(false);
+      setOcrTypeMismatchMessage(null);
+      setOcrForceReupload(null);
+      handleInputChange("documentNumber", "");
       
       // Create preview URL
       const reader = new FileReader();
@@ -633,6 +808,7 @@ const KYCVerificationModal: React.FC = () => {
       reader.readAsDataURL(file);
       
       setError(null);
+      await runDocumentOcr(file);
     }
   };
 
@@ -756,6 +932,22 @@ const KYCVerificationModal: React.FC = () => {
       }
       
      
+      const resolvedUserDetails: Record<string, unknown> = {
+        ...(Object.keys(userDetails).length > 0
+          ? userDetails
+          : buildKycUserDetails(EMPTY_ID_DOCUMENT_DETAILS, {
+              country: verificationData.country,
+              documentType: verificationData.documentType,
+            })),
+        documentNumber: verificationData.documentNumber,
+        document_number: verificationData.documentNumber,
+        country: verificationData.country,
+        selected_document_type: verificationData.documentType,
+        manual_entry: ocrManualFallback || !getKycOcrDisplayRows(userDetails).length,
+        document_type_mismatch: Boolean(ocrTypeMismatchMessage),
+        likely_dummy_image: Boolean(userDetails.likely_dummy_image),
+      };
+
       const result = await dispatch(verifyKYCStatus({
         user_id: user.user_id,
         status: true,
@@ -771,6 +963,7 @@ const KYCVerificationModal: React.FC = () => {
         country: verificationData.country,
         document_type: verificationData.documentType,
         document_number: verificationData.documentNumber,
+        user_details: resolvedUserDetails,
       })).unwrap();
 
       // Store backend message to show in the modal
@@ -900,6 +1093,13 @@ const KYCVerificationModal: React.FC = () => {
     setDocumentFrontPreview(null);
     setDocumentBackPreview(null);
     setFacePreview(null);
+    setUserDetails({});
+    setOcrLoading(false);
+    setOcrProgress(0);
+    setOcrStatus("");
+    setOcrManualFallback(false);
+    setOcrTypeMismatchMessage(null);
+    setOcrForceReupload(null);
     setOtp("");
     setOtpSent(false);
     setOtpSuccessMessage(null);
@@ -1049,7 +1249,7 @@ const KYCVerificationModal: React.FC = () => {
 
       {/* Step-by-Step Verification Form */}
       {kycModalOpen && showManualVerification && !kycStatusOverlay && (
-        <div className={`bg-white dark:bg-[var(--card-color)] rounded-[24px] p-0 max-w-4xl w-full mx-4 border border-[#35353E] overflow-y-auto shadow-xl transition-[max-height] duration-200 ${showCountryDropdown ? "max-h-[95vh]" : "max-h-[90vh]"}`}>
+        <div className={`bg-white dark:bg-[var(--card-color)] rounded-[24px] p-0 max-w-4xl w-full mx-4 border border-[#35353E] overflow-y-auto shadow-xl transition-[max-height] duration-200 min-h-[75vh] ${showCountryDropdown ? "max-h-[98vh]" : "max-h-[94vh]"}`}>
           <div className="px-4 sm:px-6 pt-3 sm:pt-4 pb-3 border-b border-[#35353E]">
             <div className="flex justify-between items-center mb-3">
             <h2 className="text-2xl font-semibold text-gray-900 dark:text-white">
@@ -1207,20 +1407,10 @@ const KYCVerificationModal: React.FC = () => {
             </div>
           )}
 
-          {/* Step 1: Document Information */}
+          {/* Step 1: Country & document type */}
           {currentStep === 1 && (
-            <div className="space-y-3 rounded-2xl border border-[#35353E] bg-transparent p-4">
-              <div className="text-center mb-4">
-                <div className="w-12 h-12 bg-[#1D8751]/20 rounded-full flex items-center justify-center mx-auto mb-2">
-                  <svg className="w-6 h-6 text-[#1D8751]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-                  </svg>
-                </div>
-                <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-1">Document Information</h3>
-                <p className="text-gray-500 dark:text-gray-400 text-xs">Please provide your document details</p>
-              </div>
-
-              <div className="space-y-3">
+            <div className="space-y-3">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                  <div>
                    <label className="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1.5">Country *</label>
                    <div ref={countryTriggerRef} className="relative kyc-country-dropdown-container">
@@ -1316,37 +1506,18 @@ const KYCVerificationModal: React.FC = () => {
                     <option value="drivers_license">Driver's License</option>
                   </select>
                 </div>
-
-                <div>
-                  <label className="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1.5">Document Number *</label>
-                  <input
-                    type="text"
-                    value={verificationData.documentNumber}
-                    onChange={(e) => handleInputChange('documentNumber', e.target.value)}
-                    className={KYC_INPUT_CLASS}
-                    placeholder="Enter your document number"
-                  />
-                </div>
               </div>
             </div>
           )}
 
-          {/* Step 2: Document Upload */}
+          {/* Step 2: Document Upload + OCR */}
           {currentStep === 2 && (
-            <div className="space-y-3 rounded-2xl border border-[#35353E] bg-[#F8FAFC] dark:bg-[var(--card-color)] p-4">
-              <div className="text-center mb-4">
-                <div className="w-12 h-12 bg-[#1D8751]/20 rounded-full flex items-center justify-center mx-auto mb-2">
-                  <svg className="w-6 h-6 text-[#1D8751]" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
-                  </svg>
-                </div>
-                <h3 className="text-lg font-semibold text-gray-900 dark:text-white mb-1">Document Photos</h3>
-                <p className="text-gray-500 dark:text-gray-400 text-xs">
-                  {isPassportDoc
-                    ? "Upload a clear photo of your passport photo page"
-                    : "Upload clear photos of both sides of your document"}
-                </p>
-              </div>
+            <div className="space-y-3">
+              <p className="text-xs text-gray-500 dark:text-gray-400">
+                {isPassportDoc
+                  ? "Upload a clear photo of your passport — we will read the details automatically."
+                  : "Upload clear photos of your document — we will read the details from the front."}
+              </p>
 
               <div className={`grid gap-3 ${documentRequiresBack ? "grid-cols-1 md:grid-cols-2" : "grid-cols-1 max-w-md mx-auto"}`}>
               <div>
@@ -1355,6 +1526,14 @@ const KYCVerificationModal: React.FC = () => {
                   {isPassportDoc ? "Passport Photo Page *" : "Front Side *"}
                 </h4>
                 <div className="border-2 border-dashed border-[#35353E] rounded-lg p-3 text-center">
+                  <input
+                    ref={documentFrontInputRef}
+                    type="file"
+                    accept="image/*"
+                    onChange={handleDocumentFrontUpload}
+                    className="hidden"
+                    id="document-front-upload"
+                  />
                   {documentFrontImage && documentFrontPreview ? (
                     <div className="space-y-2">
                       <div className="relative inline-block">
@@ -1364,26 +1543,26 @@ const KYCVerificationModal: React.FC = () => {
                           className="max-w-full max-h-32 rounded-lg border border-[#35353E]"
                         />
                         <button
-                          onClick={() => {
-                            setDocumentFrontImage(null);
-                            setDocumentFrontPreview(null);
-                          }}
+                          type="button"
+                          onClick={clearDocumentFront}
                           className="absolute -top-1 -right-1 w-5 h-5 bg-red-500 hover:bg-red-600 text-white rounded-full flex items-center justify-center text-xs font-bold transition-colors duration-200"
                         >
                           ×
                         </button>
                       </div>
-                      <p className="text-green-600 dark:text-green-400 text-xs font-medium">✓ Uploaded</p>
+                      <div className="flex flex-wrap items-center justify-center gap-2">
+                        <p className="text-green-600 dark:text-green-400 text-xs font-medium">✓ Uploaded</p>
+                        <button
+                          type="button"
+                          onClick={triggerDocumentFrontReupload}
+                          className="cursor-pointer text-xs text-[#1D8751] hover:underline font-medium"
+                        >
+                          Re-upload photo
+                        </button>
+                      </div>
                     </div>
                   ) : (
                     <div className="space-y-2">
-                      <input
-                        type="file"
-                        accept="image/*"
-                        onChange={handleDocumentFrontUpload}
-                        className="hidden"
-                        id="document-front-upload"
-                      />
                       <label
                         htmlFor="document-front-upload"
                         className="cursor-pointer inline-flex items-center px-3 py-1.5 bg-[#1D8751] hover:bg-[#167a47] text-white text-sm rounded-lg transition-colors duration-200"
@@ -1450,7 +1629,105 @@ const KYCVerificationModal: React.FC = () => {
                 </div>
                </div>
               )}
-               </div>
+
+              </div>
+
+              {ocrLoading && (
+                <div className="space-y-2 rounded-lg border border-[#35353E] p-3">
+                  <div className="h-1.5 rounded-full bg-gray-200 dark:bg-[#35353E] overflow-hidden">
+                    <div
+                      className="h-full bg-[#1D8751] transition-all duration-200"
+                      style={{ width: `${ocrProgressPercent}%` }}
+                    />
+                  </div>
+                  <p className="text-xs text-gray-500 dark:text-gray-400">
+                    {ocrStatus}
+                    {ocrProgressPercent > 0 ? ` (${ocrProgressPercent}%)` : ""}
+                  </p>
+                </div>
+              )}
+
+              {ocrForceReupload && documentFrontImage && !ocrLoading && (
+                <div className="rounded-lg border border-red-500/40 bg-red-500/10 px-3 py-2.5 text-xs text-red-900 dark:text-red-200">
+                  <p className="font-semibold mb-1">{ocrForceReupload.title}</p>
+                  <p>{ocrForceReupload.message}</p>
+                  <button
+                    type="button"
+                    onClick={triggerDocumentFrontReupload}
+                    className="inline-block mt-2 text-[#1D8751] font-semibold underline cursor-pointer"
+                  >
+                    Upload a clearer photo
+                  </button>
+                </div>
+              )}
+
+              {ocrTypeMismatchMessage && documentFrontImage && !ocrLoading && !ocrForceReupload && (
+                <div className="rounded-lg border border-red-500/40 bg-red-500/10 px-3 py-2.5 text-xs text-red-900 dark:text-red-200">
+                  <p className="font-semibold mb-1">Wrong document type</p>
+                  <p>{ocrTypeMismatchMessage}</p>
+                  <button
+                    type="button"
+                    onClick={triggerDocumentFrontReupload}
+                    className="inline-block mt-2 text-[#1D8751] font-semibold underline cursor-pointer"
+                  >
+                    Re-upload the correct document
+                  </button>
+                </div>
+              )}
+
+              {ocrDisplayRows.length > 0 && !ocrLoading && !ocrTypeMismatchMessage && !ocrForceReupload && (
+                <div className="rounded-lg border border-[#35353E] overflow-hidden">
+                  <div className="px-3 py-2 bg-[#1D8751]/10 border-b border-[#35353E]">
+                    <p className="text-xs font-semibold text-gray-900 dark:text-white">
+                      Extracted document details
+                    </p>
+                  </div>
+                  <div className="divide-y divide-[#35353E]/60">
+                    {ocrDisplayRows.map((row) => (
+                      <div
+                        key={row.label}
+                        className="flex items-start justify-between gap-3 px-3 py-2 text-xs sm:text-sm"
+                      >
+                        <span className="text-gray-500 dark:text-gray-400 shrink-0">{row.label}</span>
+                        <span className="text-gray-900 dark:text-white text-right break-all font-medium">
+                          {row.value}
+                        </span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {documentFrontImage && !ocrForceReupload && (
+                <div>
+                  <label className="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1.5">
+                    Document Number *
+                  </label>
+                  <input
+                    type="text"
+                    value={verificationData.documentNumber}
+                    onChange={(e) => handleInputChange("documentNumber", e.target.value)}
+                    className={KYC_INPUT_CLASS}
+                    placeholder={
+                      ocrLoading
+                        ? "Reading document..."
+                        : ocrForceReupload
+                          ? "Upload a clearer ID photo to continue"
+                          : ocrTypeMismatchMessage
+                          ? "Re-upload recommended — or enter number if you are sure"
+                          : ocrManualFallback
+                            ? "Enter your ID / passport number manually"
+                            : "Auto-filled from document or enter manually"
+                    }
+                    disabled={ocrLoading || Boolean(ocrForceReupload)}
+                  />
+                  {ocrManualFallback && !ocrLoading && !ocrForceReupload && (
+                    <p className="mt-1 text-[11px] text-gray-500 dark:text-gray-400">
+                      Required when details could not be read automatically from your ID.
+                    </p>
+                  )}
+                </div>
+              )}
             </div>
           )}
 

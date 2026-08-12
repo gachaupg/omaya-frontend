@@ -115,6 +115,9 @@ export const verifyKYCStatus = createAsyncThunk<KYCVerificationResponse, KYCVeri
       if (payload.document_number) {
         formData.append("document_number", payload.document_number);
       }
+      if (payload.user_details && Object.keys(payload.user_details).length > 0) {
+        formData.append("user_details", JSON.stringify(payload.user_details));
+      }
 
       // Map kyc_images to API fields: [front, back?, selfie] for card IDs; [front, selfie] for passport
       const images = (payload.kyc_images || []).filter(

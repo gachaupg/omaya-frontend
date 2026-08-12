@@ -25,6 +25,7 @@ export interface KYCVerificationPayload {
   country?: string;
   document_type?: string;
   document_number?: string;
+  user_details?: Record<string, unknown>;
 }
 
 export interface KYCVerificationResponse {

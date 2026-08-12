@@ -94,20 +94,51 @@ export const getCurrentSession = async (): Promise<BrowserSession> => {
   const browserInfo = getBrowserInfo();
 
   try {
-    // Get IP address and location
     const ipResponse = await fetch("https://api.ipify.org?format=json");
     const ipData = await ipResponse.json();
     browserInfo.ip = ipData.ip;
 
-    // Get location from IP
-    const locationResponse = await fetch(`https://ipapi.co/${ipData.ip}/json/`);
-    const locationData = await locationResponse.json();
+    let locationLabel = "Unknown";
 
-    if (locationData.city && locationData.country_name) {
-      browserInfo.location = `${locationData.city}, ${locationData.country_name}`;
+    if (typeof sessionStorage !== "undefined") {
+      try {
+        const raw = sessionStorage.getItem("omaya_device_coords");
+        if (raw) {
+          const parsed = JSON.parse(raw) as {
+            latitude?: number;
+            longitude?: number;
+          };
+          if (
+            Number.isFinite(parsed.latitude) &&
+            Number.isFinite(parsed.longitude)
+          ) {
+            const { getLocationFromCoordinates } = await import(
+              "@/features/settings/utils/sessionUtils"
+            );
+            locationLabel = await getLocationFromCoordinates(
+              parsed.latitude as number,
+              parsed.longitude as number
+            );
+          }
+        }
+      } catch {
+        // fall back to IP below
+      }
     }
+
+    if (locationLabel === "Unknown") {
+      const locationResponse = await fetch(
+        `https://ipapi.co/${ipData.ip}/json/`
+      );
+      const locationData = await locationResponse.json();
+
+      if (locationData.city && locationData.country_name) {
+        locationLabel = `${locationData.city}, ${locationData.country_name}`;
+      }
+    }
+
+    browserInfo.location = locationLabel;
   } catch (error) {
-    // Fallback to local data
     browserInfo.ip = "Local Network";
     browserInfo.location = "Local Network";
   }
