@@ -34,6 +34,12 @@ interface FiltersProps {
   onUnreadMessagesClick?: () => void;
   showUnreadMessages?: boolean;
   totalUnreadCount?: number;
+  /** When "embedded", renders compact filter row for inside the orders table card. */
+  variant?: "standalone" | "embedded";
+  /** When true, only render the status tabs (not the filter dropdown row). */
+  statusTabsOnly?: boolean;
+  /** When true, only render the filter dropdown row. */
+  filterBarOnly?: boolean;
 }
 
 /**
@@ -45,9 +51,13 @@ const Filters: React.FC<FiltersProps> = ({
   filters,
   onFilterChange,
   loading = false,
+  orderStatusTabs,
   onUnreadMessagesClick,
   showUnreadMessages = false,
   totalUnreadCount = 0,
+  variant = "standalone",
+  statusTabsOnly = false,
+  filterBarOnly = false,
 }) => {
   const [showCustomDatePicker, setShowCustomDatePicker] = useState(false);
   const [customDateFrom, setCustomDateFrom] = useState(filters.customDateFrom || "");
@@ -93,13 +103,17 @@ const Filters: React.FC<FiltersProps> = ({
   logger.debug("p2p", "Order Status Tabs:", orderStatusTabs);
 
   const filterCardBase =
-    "flex w-full min-h-[42px] items-center rounded-[22px] border px-2.5 py-1.5 transition-all duration-200 bg-white dark:bg-transparent";
+    variant === "embedded"
+      ? "flex w-full min-h-[36px] items-center rounded-[14px] border px-2 py-1 transition-all duration-200 bg-gray-50 dark:bg-[#35353E]/40"
+      : "flex w-full min-h-[42px] items-center rounded-[22px] border px-2.5 py-1.5 transition-all duration-200 bg-white dark:bg-transparent";
   const activeCardClasses =
     "border-[#1D8751] dark:border-[#1D8751] bg-[#1D8751]/10 shadow-[0_12px_30px_rgba(29,135,81,0.12)]";
   const inactiveCardClasses =
     "bg-white dark:bg-transparent border-gray-300 dark:border-[#272B3F] group-hover:border-[#1D8751]/60";
   const iconWrapper =
-    "flex h-8 w-8 items-center justify-center rounded-full border bg-[#F5F7FB]/80 border-gray-200 dark:bg-[#1B1E2B]/80 dark:border-white/10 flex-shrink-0";
+    variant === "embedded"
+      ? "flex h-7 w-7 items-center justify-center rounded-full border bg-white border-gray-200 dark:bg-[#1B1E2B]/80 dark:border-white/10 flex-shrink-0"
+      : "flex h-8 w-8 items-center justify-center rounded-full border bg-[#F5F7FB]/80 border-gray-200 dark:bg-[#1B1E2B]/80 dark:border-white/10 flex-shrink-0";
   const valueStyleActive =
     "text-[15px] font-semibold text-gray-900 dark:text-white";
   const valueStyleInactive =
@@ -167,66 +181,43 @@ const Filters: React.FC<FiltersProps> = ({
   const isStatusActive = filters.status !== "all" && filters.status !== "";
   const isDateActive = filters.date !== "all" && filters.date !== "";
 
-  return (
-    <div className="w-full flex flex-col">
-      {/* ───────────────────────── Tabs */}
-      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2">
-        <div className="flex items-center gap-0 bg-white dark:bg-[var(--card-color)] rounded-[14px] border border-[#1D8751]/60 dark:border-[#1D8751]/60 w-full sm:w-fit px-1.5 py-1.5 overflow-x-auto snap-x snap-mandatory scrollbar-none shadow-[0_6px_24px_rgba(4,10,7,0.35)]">
-          {orderStatusTabs.map((tab) => (
-            <Button
-              key={tab.id}
-              variant={filters.status === tab.id ? "primary" : "ghost"}
-              size="md"
-              borderRadius={10}
-              disabled={loading}
-              className={`px-4 py-2 font-semibold text-[13px] md:text-sm transition-all flex items-center gap-1 shadow-none border-none min-w-[120px] snap-start shrink-0 ${filters.status === tab.id
-                  ? "bg-[#1D8751] text-white"
-                  : "bg-transparent text-gray-700 dark:text-[#9AA3BC] hover:bg-[#1D8751]/10"
-                } ${loading ? "opacity-50 cursor-not-allowed" : ""}`}
-              onClick={() => handleStatusChange(tab.id)}
-            >
-              {tab.label}
-              {tab.count && (
-                <span className="ml-1 text-[11px] font-semibold text-warning px-2 py-0.5 rounded-full bg-warning/10">
-                  ({tab.count})
-                </span>
-              )}
-            </Button>
-          ))}
-        </div>
-
-        {/* unread button */}
-        {/* <button
-          className={`w-full sm:w-auto rounded-[28px] flex items-center justify-center gap-2 border border-[#1D8751] text-[#1D8751] px-5 py-3 font-semibold text-sm hover:bg-[#1D8751]/10 transition-all relative ${
-            showUnreadMessages
-              ? " text-white border border-[#1D8751]"
-              : "bg-white dark:bg-[var(--bg-color)]"
-          } ${loading ? "opacity-50 cursor-not-allowed" : ""}`}
-          disabled={loading}
-          onClick={onUnreadMessagesClick}
-        >
-          <svg width="20" height="20" viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg" className="shrink-0">
-            <rect width="100" height="100" fill="currentColor" className="text-gray-800 dark:text-[#1A1A1D]"/>
-            <path d="M20 10 H80 V70 H35 L25 95 L25 70 H20 Z" fill="#F79330"/>
-            <rect x="35" y="25" width="40" height="10" fill="currentColor" className="text-gray-800 dark:text-[#1A1A1D]"/>
-            <rect x="35" y="45" width="40" height="10" fill="currentColor" className="text-gray-800 dark:text-[#1A1A1D]"/>
-          </svg>
-
-          <span className={`text-sm ${showUnreadMessages ? "text-white" : "text-[#1D8751]"}`}>
-            Unread Message(s)
-          </span>
-          
-         
-          {totalUnreadCount > 0 && (
-            <span className="absolute -top-2 -right-2 bg-red-500 text-white text-xs font-bold rounded-full h-5 w-5 flex items-center justify-center min-w-[20px]">
-              {totalUnreadCount > 99 ? '99+' : totalUnreadCount}
-            </span>
-          )}
-        </button> */}
+  const statusTabsSection = (
+    <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2">
+      <div className="flex items-center gap-0 bg-white dark:bg-[var(--card-color)] rounded-[14px] border border-[#1D8751]/60 dark:border-[#1D8751]/60 w-full sm:w-fit px-1.5 py-1.5 overflow-x-auto snap-x snap-mandatory scrollbar-none shadow-[0_6px_24px_rgba(4,10,7,0.35)]">
+        {orderStatusTabs.map((tab) => (
+          <Button
+            key={tab.id}
+            variant={filters.status === tab.id ? "primary" : "ghost"}
+            size="md"
+            borderRadius={10}
+            disabled={loading}
+            className={`px-4 py-2 font-semibold text-[13px] md:text-sm transition-all flex items-center gap-1 shadow-none border-none min-w-[120px] snap-start shrink-0 ${filters.status === tab.id
+                ? "bg-[#1D8751] text-white"
+                : "bg-transparent text-gray-700 dark:text-[#9AA3BC] hover:bg-[#1D8751]/10"
+              } ${loading ? "opacity-50 cursor-not-allowed" : ""}`}
+            onClick={() => handleStatusChange(tab.id)}
+          >
+            {tab.label}
+            {tab.count && (
+              <span className="ml-1 text-[11px] font-semibold text-warning px-2 py-0.5 rounded-full bg-warning/10">
+                ({tab.count})
+              </span>
+            )}
+          </Button>
+        ))}
       </div>
+    </div>
+  );
 
-      {/* ───────────────────────── Filter bar */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 xl:grid-cols-4 gap-2 sm:gap-3 mt-3">
+  const filterBarSection = (
+    <>
+      <div
+        className={
+          variant === "embedded"
+            ? "grid grid-cols-2 lg:grid-cols-4 gap-2 px-4 py-3"
+            : "grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 xl:grid-cols-4 gap-2 sm:gap-3 mt-3"
+        }
+      >
         {/* Coin selector */}
         <div className="relative group">
           <div
@@ -238,12 +229,33 @@ const Filters: React.FC<FiltersProps> = ({
                 <Image
                   src={currencyInfo.logo}
                   alt={currencyInfo.name}
-                  width={26}
-                  height={26}
+                  width={variant === "embedded" ? 22 : 26}
+                  height={variant === "embedded" ? 22 : 26}
                   className="object-contain"
                 />
               </div>
               <div className="flex flex-col min-w-0 flex-1">
+                {variant === "embedded" ? (
+                  <div className="flex min-w-0 flex-1 items-center justify-between gap-2">
+                    <span className="text-sm font-medium text-gray-900 dark:text-white truncate">
+                      {currencyInfo.code}
+                    </span>
+                    <svg
+                      className="h-4 w-4 text-gray-400 dark:text-[#6F768D] flex-shrink-0"
+                      fill="none"
+                      stroke="currentColor"
+                      viewBox="0 0 24 24"
+                      xmlns="http://www.w3.org/2000/svg"
+                    >
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth={2}
+                        d="M19 9l-7 7-7-7"
+                      />
+                    </svg>
+                  </div>
+                ) : (
                 <div className="flex items-center justify-between gap-1 sm:gap-3 w-full">
                   <span className="text-xs sm:text-[15px] font-medium text-gray-500 dark:text-[#9AA3BC] tracking-[0.01em] truncate">
                     {currencyInfo.name}
@@ -268,6 +280,7 @@ const Filters: React.FC<FiltersProps> = ({
                     </svg>
                   </div>
                 </div>
+                )}
               </div>
             </div>
           </div>
@@ -451,7 +464,13 @@ const Filters: React.FC<FiltersProps> = ({
 
       {/* Custom Date Range Picker */}
       {showCustomDatePicker && (
-        <div className="mt-3 p-0 rounded-xl bg-white dark:bg-[var(--card-color)] border border-gray-200 dark:border-[#35353E] shadow-lg">
+        <div
+          className={
+            variant === "embedded"
+              ? "px-4 py-3 border-b border-gray-200 dark:border-[#35353E] bg-white dark:bg-[var(--card-color)]"
+              : "mt-3 p-0 rounded-xl bg-white dark:bg-[var(--card-color)] border border-gray-200 dark:border-[#35353E] shadow-lg"
+          }
+        >
           <div className="flex flex-col sm:flex-row gap-3 items-end">
             <div className="flex-1">
               <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">
@@ -493,6 +512,21 @@ const Filters: React.FC<FiltersProps> = ({
           </div>
         </div>
       )}
+    </>
+  );
+
+  if (filterBarOnly) {
+    return filterBarSection;
+  }
+
+  if (statusTabsOnly) {
+    return <div className="w-full flex flex-col">{statusTabsSection}</div>;
+  }
+
+  return (
+    <div className="w-full flex flex-col">
+      {statusTabsSection}
+      {filterBarSection}
     </div>
   );
 };

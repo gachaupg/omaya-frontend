@@ -366,7 +366,7 @@ const P2PCenter: React.FC = () => {
 
   return (
     <ErrorBoundary>
-      <div className="flex flex-col gap-4 sm:gap-5 md:gap-6 w-full h-full min-h-screen pl-1 sm:pl-2 md:pl-4 pr-2 sm:pr-0">
+      <div className="flex flex-col gap-4 sm:gap-5 md:gap-6 w-full h-full min-h-screen">
         <P2pProfile wallets={safeWallets} summary={safeSummary} loading={loading} />
         <Stats summary={safeSummary} />
         <FiterTabs

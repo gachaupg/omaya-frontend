@@ -471,7 +471,7 @@ const FinalSell: React.FC<FinalSellProps> = ({ orderData }) => {
         ]}
         className="mt-1 overflow-x-auto pb-2"
       />
-      <div className="grid grid-cols-1 mt-6 sm:mt-10 min-[900px]:grid-cols-3 gap-4 sm:gap-6 p-3 sm:p-4 min-[900px]:p-6 min-h-screen bg-[#EEF1F4] dark:bg-[var(--bg-color)]">
+      <div className="grid grid-cols-1 mt-6 sm:mt-10 min-[900px]:grid-cols-3 gap-4 sm:gap-6 p-1 sm:p-2 min-[900px]:p-3 min-h-screen bg-[#EEF1F4] dark:bg-[var(--bg-color)]">
         {/* Left: Timeline/Steps */}
         <div className="min-[900px]:col-span-2 flex flex-col gap-4">
           {/* Title row with Chat button (small screens) */}
@@ -490,7 +490,7 @@ const FinalSell: React.FC<FinalSellProps> = ({ orderData }) => {
             </button>
           </div>
           {/* Step 1: Order Created */}
-          <div className="relative pl-6 sm:pl-8 pb-4 border-l-2 border-gray-200 dark:border-[#35353E]">
+          <div className="relative pl-4 sm:pl-5 pb-4 border-l-2 border-gray-200 dark:border-[#35353E]">
             <div className="absolute -left-3 sm:-left-4 top-0 w-6 h-6 sm:w-8 sm:h-8 rounded-full bg-gray-100 dark:bg-[var(--card-color)] border-2 border-[#1D8751] flex items-center justify-center text-[#1D8751] font-bold text-sm sm:text-lg">
               1
             </div>
@@ -617,7 +617,7 @@ const FinalSell: React.FC<FinalSellProps> = ({ orderData }) => {
           </div>
 
           {/* Step 2: Confirm Payment From Buyer */}
-          <div className="relative pl-6 sm:pl-8 pb-4 border-l-2 border-gray-200 dark:border-[#35353E]">
+          <div className="relative pl-4 sm:pl-5 pb-4 border-l-2 border-gray-200 dark:border-[#35353E]">
             <div className="absolute -left-3 sm:-left-4 top-0 w-6 h-6 sm:w-8 sm:h-8 rounded-full bg-gray-100 dark:bg-[var(--card-color)] border-2 border-[#1D8751] flex items-center justify-center text-[#1D8751] font-bold text-sm sm:text-lg">
               2
             </div>
@@ -745,7 +745,7 @@ const FinalSell: React.FC<FinalSellProps> = ({ orderData }) => {
           </div>
 
           {/* Step 3: Confirm Payment Received */}
-          <div className="relative pl-6 sm:pl-8">
+          <div className="relative pl-4 sm:pl-5">
             <div className="absolute -left-3 sm:-left-4 top-0 w-6 h-6 sm:w-8 sm:h-8 rounded-full bg-gray-100 dark:bg-[var(--card-color)] border-2 border-[#1D8751] flex items-center justify-center text-[#1D8751] font-bold text-sm sm:text-lg">
               3
             </div>

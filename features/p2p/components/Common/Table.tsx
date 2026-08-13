@@ -42,6 +42,8 @@ type TableProps = {
   hideP2PSearch?: boolean;
   /** When hideToolbar is true, use this for export search filter */
   externalSearchQuery?: string;
+  /** Optional slot rendered inside the table card above column headers (e.g. Orders filter row). */
+  headerSlot?: React.ReactNode;
 };
 
 export interface TableExportRef {
@@ -70,6 +72,7 @@ export const Table = forwardRef<TableExportRef, TableProps>(({
   hideP2PDateFilter = false,
   hideP2PSearch = false,
   externalSearchQuery,
+  headerSlot,
 }, ref) => {
   const [searchQuery, setSearchQuery] = useState("");
   const [showExportOptions, setShowExportOptions] = useState(false);
@@ -476,7 +479,7 @@ export const Table = forwardRef<TableExportRef, TableProps>(({
     };
   }, [isDateDropdownOpen]);
 
-  if (loading) {
+  if (loading && !headerSlot) {
     return (
       <div className="w-full text-center py-8 text-gray-500 dark:text-[#788099]">
         Loading...
@@ -484,7 +487,7 @@ export const Table = forwardRef<TableExportRef, TableProps>(({
     );
   }
 
-  if (error) {
+  if (error && !headerSlot) {
     return (
       <div className="w-full text-center py-8">
         <div className="flex flex-col items-center justify-center border border-gray-200 dark:border-[#35353E] rounded-[24px] p-8 bg-white dark:bg-[var(--card-color)]">
@@ -531,7 +534,7 @@ export const Table = forwardRef<TableExportRef, TableProps>(({
     );
   }
 
-  if (data.length === 0) {
+  if (data.length === 0 && !headerSlot) {
     return (
       <div className="w-full text-center py-2">
         <div className="flex flex-col items-center justify-center border border-gray-200 dark:border-[#35353E] rounded-xl sm:rounded-2xl md:rounded-[24px] p-4 sm:p-6 md:p-8 bg-white dark:bg-[var(--card-color)]">
@@ -738,12 +741,20 @@ export const Table = forwardRef<TableExportRef, TableProps>(({
 
         <div ref={tableContainerRef} className={`w-full pb-4 scroll-smooth ${hideToolbar ? "" : "mt-3"}`}>
           <div className="overflow-x-auto md:overflow-visible">
-            <div
-              className={`w-full md:min-w-0 border-2 bg-white dark:bg-[var(--card-color)] border-gray-200 dark:border-[#35353E] shadow-lg rounded-[24px] overflow-hidden`}
-            >
+            <div className="w-full md:min-w-0 overflow-hidden border-2 border-gray-200 dark:border-[#35353E] bg-white dark:bg-[var(--card-color)] rounded-[24px] shadow-sm">
+              {headerSlot}
+
+              <div
+                className={
+                  headerSlot
+                    ? "mx-3 mt-1 mb-3 sm:mx-4 sm:mt-2 sm:mb-4 border border-gray-200 dark:border-[#35353E] rounded-[16px] overflow-hidden bg-white dark:bg-[var(--card-color)]"
+                    : ""
+                }
+              >
+
               {/* Desktop Table Header - Hidden on mobile */}
               <div
-                className={`hidden md:grid grid-cols-6 ${desktopGridCols} py-2 px-4 border-b bg-gray-50 dark:bg-[#35353E] border-gray-200 dark:border-[#35353E] rounded-t-[24px]`}
+                className={`hidden md:grid grid-cols-6 ${desktopGridCols} py-2.5 px-4 border-b bg-gray-50 dark:bg-[#35353E] border-gray-200 dark:border-[#35353E] ${headerSlot ? "rounded-t-[16px]" : "rounded-t-[24px]"}`}
               >
                 <div
                   className={`text-sm font-medium text-gray-900 dark:text-white`}
@@ -791,8 +802,26 @@ export const Table = forwardRef<TableExportRef, TableProps>(({
               </div>
 
               {/* Table Body */}
-              <div className={`bg-white dark:bg-[var(--card-color)] ${totalPages <= 1 ? 'rounded-b-[24px]' : ''}`}>
-                {filteredData.length === 0 && data.length > 0 ? (
+              <div className={`bg-white dark:bg-[var(--card-color)] ${totalPages <= 1 && !headerSlot ? 'rounded-b-[24px]' : totalPages <= 1 && headerSlot ? 'rounded-b-[16px]' : ''}`}>
+                {loading ? (
+                  <div className="w-full flex items-center justify-center py-10">
+                    <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-[#1D8751]" />
+                  </div>
+                ) : error ? (
+                  <div className="w-full text-center py-10 px-4">
+                    <p className="text-red-500 mb-2">Error loading orders</p>
+                    <p className="dark:text-gray-400 text-gray-500 text-sm">{error}</p>
+                  </div>
+                ) : filteredData.length === 0 && data.length === 0 ? (
+                  <div className="w-full text-center py-10 px-4">
+                    <h3 className="text-base sm:text-lg font-semibold text-gray-500 dark:text-[#788099] mb-2">
+                      No Orders Found
+                    </h3>
+                    <p className="text-xs sm:text-sm text-gray-400 dark:text-[#8C8CA1] text-center max-w-md mx-auto">
+                      There are currently no orders to display. Try adjusting your filters or check back later.
+                    </p>
+                  </div>
+                ) : filteredData.length === 0 && data.length > 0 ? (
                   <div className="w-full text-center py-12 px-4 bg-white dark:bg-[var(--card-color)]">
                     <div className="flex flex-col items-center justify-center">
                       <div className="w-16 h-16 mb-4 rounded-full bg-gray-100 dark:bg-[#35353E] flex items-center justify-center">
@@ -861,7 +890,7 @@ export const Table = forwardRef<TableExportRef, TableProps>(({
                       <React.Fragment key={idx}>
                         {/* Desktop Grid View */}
                         <div
-                          className={`hidden md:grid ${desktopGridCols} mx-2 py-2 px-2 items-center hover:bg-gray-50 dark:hover:bg-gray-900 transition-colors duration-200 bg-white dark:bg-[var(--card-color)] relative`}
+                          className={`hidden md:grid ${desktopGridCols} py-2.5 px-4 items-center hover:bg-gray-50 dark:hover:bg-gray-900 transition-colors duration-200 bg-white dark:bg-[var(--card-color)] relative`}
                         >
                           <AssetDirectionCell row={row} />
                           {type === "p2p" && (
@@ -938,7 +967,7 @@ export const Table = forwardRef<TableExportRef, TableProps>(({
 
                         {/* Mobile Card View */}
                         <div
-                          className={`md:hidden flex flex-col gap-2 p-3 mx-2 relative hover:bg-gray-50 dark:hover:bg-gray-900 transition-colors duration-200 bg-white dark:bg-[var(--card-color)]`}
+                          className={`md:hidden flex flex-col gap-2 p-3 relative hover:bg-gray-50 dark:hover:bg-gray-900 transition-colors duration-200 bg-white dark:bg-[var(--card-color)]`}
                         >
                           {/* Top Row: Asset and Type */}
                           <div className="flex items-center justify-between gap-2">
@@ -1028,7 +1057,7 @@ export const Table = forwardRef<TableExportRef, TableProps>(({
               </div>
               {/* Pagination */}
               {totalPages > 1 && (
-                <div className="flex justify-center items-center gap-1.5 sm:gap-2 py-4 pb-6 bg-white dark:bg-[var(--card-color)] rounded-b-[24px] overflow-x-auto px-2">
+                <div className={`flex justify-center items-center gap-1.5 sm:gap-2 py-4 pb-6 bg-white dark:bg-[var(--card-color)] overflow-x-auto px-2 ${headerSlot ? "rounded-b-[16px]" : "rounded-b-[24px]"}`}>
                   <button
                     onClick={() => {
                       logger.debug('p2p', "Previous page clicked, current:", currentPage);
@@ -1153,6 +1182,7 @@ export const Table = forwardRef<TableExportRef, TableProps>(({
                   </button>
                 </div>
               )}
+              </div>
             </div>
           </div>
         </div>

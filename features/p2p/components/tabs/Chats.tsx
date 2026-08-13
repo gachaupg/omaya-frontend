@@ -2247,9 +2247,9 @@ export const Chats: React.FC = () => {
   }
 
   return (
-    <div className="w-full h-full min-h-0 flex-1 flex flex-col overflow-hidden">
+    <div className="w-full mb-4 h-full min-h-0 flex-1 flex flex-col overflow-hidden">
       {/* Header */}
-      <div className="flex-shrink-0 px-1 sm:px-2 md:px-4 pt-0 pb-2">
+      <div className="flex-shrink-0 px-1 sm:px-1 md:px-1 pt-0 pb-2">
         <h1 className="text-xl sm:text-2xl font-bold text-gray-900 dark:text-white">
           P2P Trading Chat
         </h1>

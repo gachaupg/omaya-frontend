@@ -388,7 +388,7 @@ const FinalSell: React.FC<FinalSellProps> = ({ orderData }) => {
           { label: "View order" },
         ]}
       />
-      <div className="final-buy-container grid grid-cols-1 md:grid-cols-[minmax(0,1fr)_minmax(0,1fr)_minmax(0,1fr)] gap-2 sm:gap-4 md:gap-6 p-1 sm:p-2 md:p-6 min-h-screen bg-[#EEF1F4] dark:bg-[var(--bg-color)] overflow-x-hidden">
+      <div className="final-buy-container grid grid-cols-1 md:grid-cols-[minmax(0,1fr)_minmax(0,1fr)_minmax(0,1fr)] gap-2 sm:gap-4 md:gap-6 p-0 sm:p-1 md:p-3 min-h-screen bg-[#EEF1F4] dark:bg-[var(--bg-color)] overflow-x-hidden">
         {/* Left Column: Main Info */}
         <div className="md:col-span-2 flex flex-col gap-6 min-w-0">
           <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
@@ -429,7 +429,7 @@ const FinalSell: React.FC<FinalSellProps> = ({ orderData }) => {
             </div>
           </div>
           {/* Advertiser Info */}
-          <section className="advertiser-info rounded-[18px] p-3 sm:p-4 flex flex-col sm:flex-row sm:items-center gap-3 sm:gap-4 border-2 border-gray-200 dark:border-[#35353E] bg-gray-50 dark:bg-[var(--card-color)]">
+          <section className="advertiser-info rounded-[18px] p-3 sm:p-4 flex flex-col sm:flex-row sm:items-center gap-3 sm:gap-4 border-2 border-gray-200 dark:border-[#35353E] bg-transparent">
             <div className="flex items-center gap-3 sm:gap-4 flex-shrink-0">
               <div className="icon rounded-full w-8 h-8 sm:w-10 sm:h-10 flex items-center justify-center text-lg sm:text-xl font-bold bg-[#1D8751] text-white flex-shrink-0 overflow-hidden">
                 {(tradeDataJson?.buy_photo ||

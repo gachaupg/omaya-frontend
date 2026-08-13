@@ -534,7 +534,7 @@ function FinalBuy({ orderData }: FinalBuyProps) {
         ]}
         className="mt-1"
       />
-      <div className="final-buy-container grid grid-cols-1 lg:grid-cols-3 gap-2 sm:gap-4 lg:gap-6 p-1 sm:p-2 lg:p-6 min-h-screen bg-[#EEF1F4] dark:bg-[var(--bg-color)]">
+      <div className="final-buy-container grid grid-cols-1 lg:grid-cols-3 gap-2 sm:gap-4 lg:gap-6 p-0 sm:p-1 lg:p-3 min-h-screen bg-[#EEF1F4] dark:bg-[var(--bg-color)]">
         {/* Left Column: Main Info */}
         <div className="lg:col-span-2 flex flex-col mt-2 gap-1">
           {confirmOrderError && (
@@ -596,7 +596,7 @@ function FinalBuy({ orderData }: FinalBuyProps) {
             </div>
           </div>
           {/* Advertiser Info - Image, Name, Live */}
-          <section className="rounded-[18px] p-4 flex flex-col md:flex-row md:items-center gap-4 border-2 border-[#E8EFF5] dark:border-[#35353E] bg-gray-50 dark:bg-[var(--bg-color)] mb-2">
+          <section className="rounded-[18px] p-4 flex flex-col md:flex-row md:items-center gap-4 border-2 border-[#E8EFF5] dark:border-[#35353E] bg-transparent mb-2">
             <div className="flex flex-col justify-start gap-2 flex-1 min-w-0">
               <div className="flex items-center gap-2 sm:gap-3 flex-wrap">
                 <div className="icon rounded-full w-8 h-8 flex-shrink-0 flex items-center justify-center overflow-hidden bg-[#1D8751] text-white">
