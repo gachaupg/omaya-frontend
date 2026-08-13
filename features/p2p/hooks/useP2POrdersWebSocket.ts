@@ -12,8 +12,7 @@ import {
   WebSocketMessage,
 } from "../services/p2pOrdersWebSocket";
 import { cookieUtils } from "@/lib/utils/cookieUtils";
-import { API_BASE_URL } from "@/config/api";
-import axios from "axios";
+import { refreshAccessToken } from "@/lib/utils/tokenRefresh";
 
 import { logger } from '@/lib/utils/logger';
 
@@ -61,60 +60,6 @@ export const useP2POrdersWebSocket = (
       return;
     }
 
-    // Function to refresh the access token
-    const refreshAccessToken = async (): Promise<string | null> => {
-      try {
-        // Get refresh token from localStorage
-        const profileStr = localStorage.getItem("profile");
-        if (!profileStr) {
-          logger.error('p2p', "❌ [Auth] No profile found in localStorage");
-          return null;
-        }
-
-        const profile = JSON.parse(profileStr);
-        const refreshToken = profile?.tokens?.refresh;
-
-        if (!refreshToken) {
-          logger.error('p2p', "❌ [Auth] No refresh token found");
-          return null;
-        }
-
-        logger.debug('p2p', "🔄 [Auth] Refreshing access token...");
-        const response = await axios.post(
-          `${API_BASE_URL}/api/token/refresh/`,
-          { refresh: refreshToken }
-        );
-
-        const newAccessToken = response.data.access;
-        logger.debug('p2p', "✅ [Auth] Token refreshed successfully");
-
-        // Update profile in localStorage
-        profile.tokens.access = newAccessToken;
-        localStorage.setItem("profile", JSON.stringify(profile));
-
-        // Update cookie
-        cookieUtils.setCookie("access_token", newAccessToken, {
-          maxAge: 86400,
-          secure: true,
-          sameSite: 'strict'
-        });
-
-        // Also update standalone token in localStorage for backward compatibility
-        localStorage.setItem("access_token", newAccessToken);
-
-        return newAccessToken;
-      } catch (error) {
-                // Redirect to login if refresh fails
-        if (typeof window !== "undefined") {
-          localStorage.removeItem("profile");
-          localStorage.removeItem("access_token");
-          cookieUtils.removeCookie("access_token");
-          window.location.href = "/auth/login";
-        }
-        return null;
-      }
-    };
-
     const getAccessToken = async (): Promise<string | null> => {
       // First try to get from cookies (primary storage)
       let token = cookieUtils.getCookie("access_token");
@@ -153,12 +98,13 @@ export const useP2POrdersWebSocket = (
         });
 
         if (isExpired) {
-                    const newToken = await refreshAccessToken();
+          logger.debug('p2p', "🔄 [Auth] Token expired, refreshing via shared mutex...");
+          const newToken = await refreshAccessToken();
           if (newToken) {
             logger.debug('p2p', "✅ [Auth] Using refreshed token");
             return newToken;
           }
-                    return null;
+          return null;
         }
       } catch (e) {
               }

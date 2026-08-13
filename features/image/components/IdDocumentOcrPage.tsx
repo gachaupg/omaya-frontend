@@ -21,6 +21,7 @@ const FIELD_LABELS: Array<{ key: keyof IdDocumentDetails; label: string }> = [
   { key: "issueDate", label: "Issue date" },
   { key: "placeOfBirth", label: "Place of birth" },
   { key: "placeOfIssue", label: "Place of issue" },
+  { key: "occupation", label: "Occupation" },
   { key: "address", label: "Address" },
 ];
 

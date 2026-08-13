@@ -18,7 +18,7 @@ const ID_TEXT_SIGNALS: RegExp[] = [
   /\d{1,2}[\/.\-]\d{1,2}[\/.\-]\d{2,4}/,
   /\b\d{7,12}\b/,
   /(?:MALE|FEMALE|SEX)/i,
-  /KITAMBULISHO|JAMHURI|MAISHA/i,
+  /KITAMBULISHO|JAMHURI|MAISHA|SOOMAALIYA|SOMALIA|SOMALILAND|AQOONSIGA|KAARKA|KAADHKA|TIRSIGA|MUWAADINKA|BAASABOOR|P<[A-Z]{3}/i,
 ];
 
 function countIdTextSignals(text: string): number {

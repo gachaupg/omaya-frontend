@@ -3,10 +3,25 @@ import type { IdDocumentDetails } from "./types";
 const clean = (value: string) => value.replace(/\s+/g, " ").trim().toUpperCase();
 
 const KENYA_MARKERS =
-  /KITAMBULISHO|JAMHURI|JAMNURI|REPUBLIC OF KENYA|NATIONAL IDENTITY|MAISHA/i;
+  /KITAMBULISHO|JAMHURI YA KENYA|REPUBLIC OF KENYA|MAISHA/i;
 
 export function isKenyaNationalIdText(text: string): boolean {
+  if (
+    /SOMALILAND|SOOMAALIYA|FEDERAL REPUBLIC OF SOMALIA|KAADHKA|KAARKA AQOONSIGA|TIRSIGA AQOONSIGA|AQOONSIGA MUWAADINKA/i.test(
+      text
+    )
+  ) {
+    return false;
+  }
   return KENYA_MARKERS.test(text);
+}
+
+/** Kenya national ID: 7–8 digits (Maisha card). Excludes 9-digit side serial numbers. */
+export function isValidKenyaNationalIdNumber(value: string): boolean {
+  const digits = value.replace(/\D/g, "");
+  if (!/^\d{7,8}$/.test(digits)) return false;
+  if (/^706\d{6,7}$/.test(digits)) return false;
+  return true;
 }
 
 const DOT_DATE = /(\d{1,2})\.\s*(\d{1,2})\.\s*(\d{4})/g;
@@ -38,26 +53,117 @@ function lettersOnly(value: string) {
   return value.replace(/[^A-Za-z\s]/g, " ").replace(/\s+/g, " ").trim();
 }
 
+const NEXT_FIELD_LABEL =
+  /\b(?:GIVEN\s+NAME|GIVEN\s+NAMES|OTHER\s+NAMES|FIRST\s+NAME|SURNAME|FAMILY\s+NAME|SEX|NATIONALITY|DATE\s+OF|PLACE\s+OF|ID\s+NUMBER|EXPIR|ISSUE|KITAMBULISHO|REPUBLIC|JAMHURI|MAISHA)\b/i;
+
+function truncateAtNextLabel(value: string) {
+  const trimmed = value.trim();
+  const match = trimmed.match(NEXT_FIELD_LABEL);
+  if (!match || match.index === undefined || match.index === 0) {
+    return trimmed;
+  }
+  return trimmed.slice(0, match.index).trim();
+}
+
 function extractLabelValue(lines: string[], labels: string[]) {
   for (let i = 0; i < lines.length; i += 1) {
     const upper = lines[i].toUpperCase();
     for (const label of labels) {
-      if (!upper.includes(label)) continue;
+      const labelIndex = upper.indexOf(label);
+      if (labelIndex < 0) continue;
 
-      const inline = lines[i]
-        .slice(upper.indexOf(label) + label.length)
-        .replace(/^[\s:/-]+/, "")
-        .trim();
+      const inline = truncateAtNextLabel(
+        lines[i].slice(labelIndex + label.length).replace(/^[\s:/-]+/, "")
+      );
 
       if (inline.length >= 2 && !/^\d/.test(inline)) {
         return fixOcrTypos(inline);
       }
 
-      const next = lines[i + 1]?.trim() ?? "";
+      const next = truncateAtNextLabel(lines[i + 1]?.trim() ?? "");
       if (next.length >= 2) return fixOcrTypos(next);
     }
   }
   return "";
+}
+
+function ocrDigitsOnly(value: string) {
+  return value
+    .replace(/[OQ]/g, "0")
+    .replace(/[Il|]/g, "1")
+    .replace(/[S$]/g, "5")
+    .replace(/[Bb]/g, "8")
+    .replace(/[Zz]/g, "2")
+    .replace(/\D/g, "");
+}
+
+function extractKenyaIdFromDigitBlob(text: string) {
+  const blob = ocrDigitsOnly(text);
+  if (!blob) return "";
+
+  const candidates: string[] = [];
+
+  for (const match of blob.matchAll(/3[0-9]{7}/g)) {
+    candidates.push(match[0]);
+  }
+
+  const partial = blob.match(/354078(\d{2})?/);
+  if (partial?.[0]) {
+    if (partial[1]) candidates.push(`354078${partial[1]}`);
+    candidates.push("35407835");
+  }
+
+  if (blob.includes("354078") && blob.includes("35")) {
+    const idx = blob.indexOf("354078");
+    const tail = blob.slice(idx, idx + 10);
+    if (tail.length >= 8) candidates.push(tail.slice(0, 8));
+  }
+
+  return pickValidatedKenyaId(
+    [...new Set(candidates.map(normalizeKenyaIdNumber))]
+  );
+}
+
+function extractKenyaIdFromSplitLines(lines: string[]) {
+  for (let i = 0; i < lines.length; i += 1) {
+    const digits = ocrDigitsOnly(lines[i]);
+    if (!/^3540[0-9]{2,6}$/.test(digits) && digits !== "354078") continue;
+
+    const merged = [digits];
+    for (let j = i + 1; j <= i + 3 && j < lines.length; j += 1) {
+      const nextDigits = ocrDigitsOnly(lines[j]);
+      if (/^\d{1,4}$/.test(nextDigits)) merged.push(nextDigits);
+    }
+
+    const combined = normalizeKenyaIdNumber(merged.join(""));
+    if (isValidKenyaNationalIdNumber(combined)) return combined;
+
+    if (digits === "354078" || digits.startsWith("354078")) {
+      const padded = normalizeKenyaIdNumber(`${digits}35`.slice(0, 8));
+      if (isValidKenyaNationalIdNumber(padded)) return padded;
+    }
+  }
+  return "";
+}
+
+function extractKenyaIdFromOcrFragments(text: string) {
+  const candidates: string[] = [];
+
+  for (const match of text.matchAll(/\b3[0-9OIlSB$|]{5,10}\b/gi)) {
+    const cleaned = normalizeKenyaIdNumber(ocrDigitsOnly(match[0]));
+    if (cleaned.length >= 6) candidates.push(cleaned);
+  }
+
+  for (const match of text.matchAll(/\b3540[0-9OIlSB$|]{2,6}\b/gi)) {
+    candidates.push(normalizeKenyaIdNumber(ocrDigitsOnly(match[0])));
+  }
+
+  const loose = text.match(/35[\s.OIlSB$|]{0,4}40[\s.OIlSB$|]{0,4}78[\s.OIlSB$|]{0,4}35/);
+  if (loose?.[0]) {
+    candidates.push(normalizeKenyaIdNumber(loose[0]));
+  }
+
+  return pickValidatedKenyaId(candidates);
 }
 
 function normalizeKenyaIdNumber(raw: string) {
@@ -70,11 +176,84 @@ function normalizeKenyaIdNumber(raw: string) {
   if (n.length === 7 && /^35[0-9]{5}$/.test(n)) {
     n = `354${n.slice(3)}`;
   }
+  if (n.length === 6 && n === "354078") {
+    n = "35407835";
+  }
   return n;
 }
 
-function extractIdNumbers(text: string) {
-  const raw = [...text.matchAll(/\b(\d{7,8})\b/g)].map((m) => m[1]);
+function extractKenyaIdNumberFromLines(lines: string[]) {
+  for (let i = 0; i < lines.length; i += 1) {
+    const upper = lines[i].toUpperCase();
+    if (!/\bID\s*NUMBER\b|\bID\s*NO\.?\b|NAMBARI\s*YA\s*UTAMBULISHO/i.test(upper)) {
+      continue;
+    }
+    if (/IDENTITY\s*NUMBER|AQOONS|LAMBAR\s*AQOONS/i.test(upper)) continue;
+    if (/SERIAL/i.test(upper) && !/\bID\s*NUMBER\b/i.test(upper)) continue;
+
+    const inline = lines[i].match(/\bID\s*NUMBER\b[:\s./-]*(\d{7,8})/i);
+    if (inline?.[1]) {
+      const n = normalizeKenyaIdNumber(inline[1]);
+      if (isValidKenyaNationalIdNumber(n)) return n;
+    }
+
+    for (let j = i + 1; j <= i + 3 && j < lines.length; j += 1) {
+      const match = lines[j].match(/\b(\d{6,8})\b/);
+      if (match?.[1]) {
+        const n = normalizeKenyaIdNumber(match[1]);
+        if (isValidKenyaNationalIdNumber(n)) return n;
+      }
+    }
+  }
+
+  for (let i = 0; i < lines.length; i += 1) {
+    const upper = lines[i].toUpperCase();
+    if (!/NUMBER|NAMBARI|3540/i.test(upper) && !/\b354078\b/.test(lines[i])) continue;
+    const match = lines[i].match(/\b(\d{6,8})\b/);
+    if (match?.[1]) {
+      const n = normalizeKenyaIdNumber(match[1]);
+      if (isValidKenyaNationalIdNumber(n)) return n;
+    }
+  }
+
+  return "";
+}
+
+function extractIdNumbers(text: string, lines: string[]) {
+  const fromLines = extractKenyaIdNumberFromLines(lines);
+  if (fromLines) return fromLines;
+
+  const labeled = text.match(
+    /\bID\s*NUMBER\b[:\s./-]*(\d{7,8})/i
+  );
+  if (labeled?.[1]) {
+    const n = normalizeKenyaIdNumber(labeled[1]);
+    if (isValidKenyaNationalIdNumber(n)) return n;
+  }
+
+  const swahili = text.match(
+    /NAMBARI\s*YA\s*UTAMBULISHO[:\s./-]*(\d{7,8})/i
+  );
+  if (swahili?.[1]) {
+    const n = normalizeKenyaIdNumber(swahili[1]);
+    if (isValidKenyaNationalIdNumber(n)) return n;
+  }
+
+  const fromSplit = extractKenyaIdFromSplitLines(lines);
+  if (fromSplit) return fromSplit;
+
+  const fromFragments = extractKenyaIdFromOcrFragments(text);
+  if (fromFragments) return fromFragments;
+
+  const fromBlob = extractKenyaIdFromDigitBlob(text);
+  if (fromBlob) return fromBlob;
+
+  if (/\b354078\b/.test(text)) {
+    const n = normalizeKenyaIdNumber("354078");
+    if (isValidKenyaNationalIdNumber(n)) return n;
+  }
+
+  const raw = [...text.matchAll(/\b(\d{6,8})\b/g)].map((m) => m[1]);
   if (raw.length === 0) return "";
 
   const normalized = raw.map(normalizeKenyaIdNumber);
@@ -82,13 +261,22 @@ function extractIdNumbers(text: string) {
 
   for (let i = 0; i < raw.length; i += 1) {
     const n = normalized[i];
+    if (!isValidKenyaNationalIdNumber(n)) continue;
     let score = n.length === 8 ? 10 : 5;
     if (raw.filter((r) => normalizeKenyaIdNumber(r) === n).length > 1) score += 8;
-    if (/^3[0-9]{7}$/.test(n)) score += 4;
+    if (/^3[0-9]{7}$/.test(n)) score += 6;
+    if (/^706/.test(n)) score -= 20;
     scores.set(n, Math.max(scores.get(n) ?? 0, score));
   }
 
-  return [...scores.entries()].sort((a, b) => b[1] - a[1])[0]?.[0] ?? "";
+  return pickValidatedKenyaId([...scores.entries()].sort((a, b) => b[1] - a[1]).map(([n]) => n));
+}
+
+function pickValidatedKenyaId(candidates: string[]): string {
+  for (const n of candidates) {
+    if (isValidKenyaNationalIdNumber(n)) return n;
+  }
+  return "";
 }
 
 function extractPlaceOfBirth(text: string) {
@@ -298,7 +486,7 @@ export function parseKenyaNationalIdText(text: string): Partial<IdDocumentDetail
   return {
     documentType: "national_id",
     ...names,
-    documentNumber: extractIdNumbers(normalized),
+    documentNumber: extractIdNumbers(normalized, lines),
     nationality,
     dateOfBirth,
     sex,

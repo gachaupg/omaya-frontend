@@ -13,6 +13,7 @@ export type IdDocumentDetails = {
   issueDate: string;
   placeOfBirth: string;
   placeOfIssue: string;
+  occupation: string;
   address: string;
   rawText: string;
 };
@@ -30,6 +31,7 @@ export const EMPTY_ID_DOCUMENT_DETAILS: IdDocumentDetails = {
   issueDate: "",
   placeOfBirth: "",
   placeOfIssue: "",
+  occupation: "",
   address: "",
   rawText: "",
 };

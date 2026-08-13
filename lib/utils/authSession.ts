@@ -1,7 +1,30 @@
 import { cookieUtils } from "./cookieUtils";
+import { storage } from "@/features/auth/utils/storage";
 
 const AUTH_BOUNCE_KEY = "omaya_auth_bounce";
 const DEFAULT_ACCESS_COOKIE_MAX_AGE_SEC = 60 * 60;
+
+export interface AuthTokenPair {
+  access: string;
+  refresh: string;
+}
+
+/** Keep profile, localStorage keys, and middleware cookie in sync after refresh/login. */
+export function persistRefreshedTokens(tokens: AuthTokenPair): void {
+  if (typeof window === "undefined") return;
+
+  const existing = storage.getProfile();
+  if (existing) {
+    storage.setProfile({
+      ...existing,
+      tokens,
+    });
+  }
+
+  localStorage.setItem("access_token", tokens.access);
+  localStorage.setItem("refresh_token", tokens.refresh);
+  setMiddlewareAccessTokenCookie(tokens.access, 86400);
+}
 
 export function isSecureCookieContext(): boolean {
   if (typeof window === "undefined") return false;

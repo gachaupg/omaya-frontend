@@ -7,7 +7,7 @@ import { storage } from "@/features/auth/utils/storage";
 import {
   clearStoredAuthCredentials,
   authHardRedirect,
-  setMiddlewareAccessTokenCookie,
+  persistRefreshedTokens,
 } from "./authSession";
 import { logger } from "./logger";
 import { tokenRefreshMutex } from "./tokenRefreshMutex";
@@ -55,29 +55,33 @@ export const refreshAccessToken = async (): Promise<string | null> => {
         }
       );
 
-      const { access, refresh } = response.data;
+      const { access, refresh: newRefresh } = response.data;
 
-      logger.info("auth", "Access token refreshed successfully");
+      if (!access) {
+        throw new Error("Refresh response missing access token");
+      }
 
-      // Update storage
-      const updatedProfile = {
-        ...profile,
-        tokens: {
-          access,
-          refresh: refresh || profile.tokens.refresh, // Use new refresh token if provided
-        },
-      };
+      if (!newRefresh) {
+        logger.warn(
+          "auth",
+          "Refresh response missing refresh token; keeping previous refresh (rotation may fail on next refresh)"
+        );
+      }
 
-      storage.setProfile(updatedProfile);
+      const refreshToken = newRefresh || profile.tokens.refresh;
 
-      setMiddlewareAccessTokenCookie(access, 86400);
+      logger.info("auth", "Access token refreshed successfully", {
+        refreshRotated: Boolean(newRefresh && newRefresh !== profile.tokens.refresh),
+      });
+
+      persistRefreshedTokens({ access, refresh: refreshToken });
 
       // Dispatch Redux action if available
       if (storeDispatch && refreshTokensAction) {
         storeDispatch(
           refreshTokensAction({
             access,
-            refresh: refresh || undefined,
+            refresh: refreshToken,
           })
         );
       }
@@ -86,7 +90,7 @@ export const refreshAccessToken = async (): Promise<string | null> => {
       if (typeof window !== "undefined") {
         window.dispatchEvent(
           new CustomEvent("tokenRefreshed", {
-            detail: { access, refresh: refresh || profile.tokens.refresh },
+            detail: { access, refresh: refreshToken },
           })
         );
       }
@@ -95,9 +99,23 @@ export const refreshAccessToken = async (): Promise<string | null> => {
     } catch (error: any) {
       logger.error("auth", "Token refresh failed", error);
 
+      const detail =
+        error?.response?.data?.detail ||
+        error?.response?.data?.message ||
+        error?.message ||
+        "";
+      const isBlacklisted =
+        typeof detail === "string" &&
+        detail.toLowerCase().includes("blacklist");
+
       // Check if it's a 401 (refresh token expired) or other error
-      if (error?.response?.status === 401) {
-        logger.warn("auth", "Refresh token expired or invalid, user needs to login again");
+      if (error?.response?.status === 401 || isBlacklisted) {
+        logger.warn(
+          "auth",
+          isBlacklisted
+            ? "Refresh token blacklisted, user needs to login again"
+            : "Refresh token expired or invalid, user needs to login again"
+        );
       }
 
       // Clear invalid tokens (including loose localStorage keys checkAuth would re-hydrate)

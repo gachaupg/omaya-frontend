@@ -566,8 +566,8 @@ const authSlice = createSlice({
         if (action.payload.access) {
           localStorage.setItem("access_token", action.payload.access);
         }
-        if (action.payload.refresh) {
-          localStorage.setItem("refresh_token", action.payload.refresh);
+        if (nextTokens.refresh) {
+          localStorage.setItem("refresh_token", nextTokens.refresh);
         }
       }
 
@@ -688,17 +688,13 @@ const authSlice = createSlice({
         state.isAuthenticated = true;
         state.profile = authData.profile || null;
         
-        // Ensure access_token is in localStorage for WebSocket
-        if (typeof window !== 'undefined' && authData.tokens?.access) {
-          const storedToken = localStorage.getItem('access_token');
-          if (!storedToken) {
+        // Ensure access_token and refresh_token stay aligned with profile (rotation-safe)
+        if (typeof window !== 'undefined' && authData.tokens) {
+          if (authData.tokens.access) {
             localStorage.setItem('access_token', authData.tokens.access);
           }
           if (authData.tokens.refresh) {
-            const storedRefresh = localStorage.getItem('refresh_token');
-            if (!storedRefresh) {
-              localStorage.setItem('refresh_token', authData.tokens.refresh);
-            }
+            localStorage.setItem('refresh_token', authData.tokens.refresh);
           }
           // Ensure user is in localStorage
           const storedUser = localStorage.getItem('user');

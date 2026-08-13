@@ -29,17 +29,29 @@ type RunIdDocumentOcrOptions = {
 
 
 function scoreOcrText(text: string) {
-
-  const dates = (text.match(/\d{1,2}\.\s*\d{1,2}\.\s*\d{4}/g) ?? []).length;
-
-  const idNumbers = (text.match(/\b\d{7,8}\b/g) ?? []).length;
-
-  const labels = (text.match(/SURNAME|GIVEN NAME|ID NUMBER|MALE|FEMALE|KEN\b/gi) ?? []).length;
-
+  const dates = (text.match(/\d{1,2}[.\-/]\s*\d{1,2}[.\-/]\s*\d{4}/g) ?? []).length;
+  const monthDates = (text.match(/\d{1,2}\s+[A-Z]{3}\s+\d{4}/gi) ?? []).length;
+  const idNumbers = (text.match(/\b\d{7,14}\b/g) ?? []).length;
+  const labels = (
+    text.match(
+      /SURNAME|GIVEN NAME|ID NUMBER|IDENTITY NUMBER|NID|PASSPORT|NAME|MAGACA|LAMBAR|MALE|FEMALE|KEN\b|SOM\b|<<|P<[A-Z]{3}/gi
+    ) ?? []
+  ).length;
   const kenya = /KITAMBULISHO|JAMHURI|JAMNURI|MAISHA/i.test(text) ? 5 : 0;
-
-  return text.length * 0.05 + dates * 8 + idNumbers * 10 + labels * 6 + kenya;
-
+  const somalia = /SOOMAALIYA|SOMALIA|JAMHUURIYADDA|AQOONSIGA|KAARKA/i.test(text)
+    ? 8
+    : 0;
+  const passport = /PASSPORT|BAASABOOR|P<[A-Z]{3}|<<</i.test(text) ? 8 : 0;
+  return (
+    text.length * 0.05 +
+    dates * 8 +
+    monthDates * 8 +
+    idNumbers * 10 +
+    labels * 6 +
+    kenya +
+    somalia +
+    passport
+  );
 }
 
 
@@ -104,53 +116,53 @@ export async function runIdDocumentOcr(
 
 
 
-  try {
-
-    await worker.setParameters({
-
-      tessedit_pageseg_mode: PSM.SINGLE_BLOCK,
-
-    });
-
-
+    try {
+    const psmModes = [PSM.SINGLE_BLOCK, PSM.SPARSE_TEXT, PSM.AUTO];
 
     const variants = await preprocessIdImageForOcr(file);
-
     objectUrls.push(URL.createObjectURL(file));
-
     for (const variant of variants) {
-
       objectUrls.push(URL.createObjectURL(variant));
-
     }
-
-
 
     const texts: string[] = [];
+    const total = objectUrls.length * psmModes.length;
 
-    const total = objectUrls.length;
-
-
-
+    let step = 0;
     for (let i = 0; i < objectUrls.length; i += 1) {
+      for (const psm of psmModes) {
+        step += 1;
+        options.onProgress?.({
+          status: `recognizing text (${step}/${total})`,
+          progress: step / total,
+        });
 
-      options.onProgress?.({
+        await worker.setParameters({
+          tessedit_pageseg_mode: psm,
+        });
 
-        status: `recognizing text (${i + 1}/${total})`,
-
-        progress: i / total,
-
-      });
-
-
-
-      const { data } = await worker.recognize(objectUrls[i]);
-
-      if (data.text?.trim()) texts.push(data.text);
-
+        const { data } = await worker.recognize(objectUrls[i]);
+        if (data.text?.trim()) texts.push(data.text);
+      }
     }
 
-
+    if (objectUrls.length > 1) {
+      options.onProgress?.({
+        status: "recognizing ID number",
+        progress: 0.95,
+      });
+      await worker.setParameters({
+        tessedit_pageseg_mode: PSM.SPARSE_TEXT,
+        tessedit_char_whitelist: "0123456789",
+      });
+      for (let i = 1; i < Math.min(objectUrls.length, 3); i += 1) {
+        const { data } = await worker.recognize(objectUrls[i]);
+        if (data.text?.trim()) texts.push(data.text);
+      }
+      await worker.setParameters({
+        tessedit_char_whitelist: "",
+      });
+    }
 
     const combinedText = pickBestOcrText(texts);
 
