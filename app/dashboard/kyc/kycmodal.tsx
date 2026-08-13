@@ -30,6 +30,14 @@ import {
 import { checkKycDocumentTypeMatch } from "@/features/kyc/utils/kycDocumentTypeMatch";
 import { prefetchDeviceLocation } from "@/lib/utils/deviceInfo";
 import { assessKycDocumentPhoto } from "@/features/kyc/utils/kycDocumentPhotoAssessment";
+import { isTrustedOcrDocumentNumber } from "@/features/kyc/utils/kycOcrDocumentNumber";
+import {
+  getKycDocumentNumberFieldLabel,
+  getKycDocumentNumberPlaceholder,
+  getKycManualFallbackMessage,
+  detectKycIdDocumentCountry,
+  resolveKycEffectiveCountry,
+} from "@/features/kyc/utils/kycOcrManualFallback";
 import {
   getKycApprovedOverlayDismissed,
   isKycApproved,
@@ -526,14 +534,34 @@ const KYCVerificationModal: React.FC = () => {
           setOcrProgress(progress);
         },
       });
+      const detectedCountry = detectKycIdDocumentCountry(extracted.rawText, {
+        nationality: extracted.nationality,
+      });
+      const effectiveCountry =
+        detectedCountry ?? verificationData.country;
+
+      if (detectedCountry && detectedCountry !== verificationData.country) {
+        handleInputChange("country", detectedCountry);
+      }
+
       const typeMatch = checkKycDocumentTypeMatch(
         verificationData.documentType,
         extracted
       );
       const detailsPayload = buildKycUserDetails(extracted, {
-        country: verificationData.country,
+        country: effectiveCountry,
         documentType: verificationData.documentType,
       });
+      if (
+        !isTrustedOcrDocumentNumber(
+          verificationData.documentType,
+          effectiveCountry,
+          extracted.documentNumber ?? ""
+        )
+      ) {
+        detailsPayload.documentNumber = "";
+      }
+      detailsPayload.detected_country = detectedCountry ?? "";
       detailsPayload.detected_document_kind = typeMatch.detected;
       detailsPayload.detected_document_confidence = typeMatch.confidence;
       detailsPayload.document_type_mismatch = typeMatch.mismatch;
@@ -549,10 +577,16 @@ const KYCVerificationModal: React.FC = () => {
       }
 
       setOcrTypeMismatchMessage(null);
-      const hasDocumentNumber = Boolean(extracted.documentNumber?.trim());
+      const trustedDocumentNumber = isTrustedOcrDocumentNumber(
+        verificationData.documentType,
+        effectiveCountry,
+        extracted.documentNumber ?? ""
+      )
+        ? extracted.documentNumber.trim()
+        : "";
 
-      if (hasDocumentNumber) {
-        handleInputChange("documentNumber", extracted.documentNumber);
+      if (trustedDocumentNumber) {
+        handleInputChange("documentNumber", trustedDocumentNumber);
         setOcrManualFallback(false);
         setOcrForceReupload(null);
         setOcrStatus("Done");
@@ -573,25 +607,18 @@ const KYCVerificationModal: React.FC = () => {
               photoAssessment.message ??
               "We couldn't detect an ID in this image. Please upload a clear photo of your real document.",
           });
+          setOcrManualFallback(false);
         } else {
-          setOcrForceReupload({
-            title: "Couldn't auto-read this photo",
-            message:
-              "If this is your real ID, please upload a clearer photo so we can read your details automatically.",
-          });
+          setOcrForceReupload(null);
+          setOcrManualFallback(true);
         }
-        setOcrManualFallback(false);
         handleInputChange("documentNumber", "");
         setOcrStatus("");
         setError(null);
       }
     } catch {
-      setOcrForceReupload({
-        title: "Couldn't auto-read this photo",
-        message:
-          "Please upload a clearer image of your ID so we can read your details automatically.",
-      });
-      setOcrManualFallback(false);
+      setOcrForceReupload(null);
+      setOcrManualFallback(true);
       setOcrStatus("");
       setError(null);
     } finally {
@@ -621,6 +648,14 @@ const KYCVerificationModal: React.FC = () => {
   const ocrDisplayRows = useMemo(
     () => getKycOcrDisplayRows(userDetails),
     [userDetails]
+  );
+  const ocrEffectiveCountry = useMemo(
+    () =>
+      resolveKycEffectiveCountry(verificationData.country, {
+        rawText: String(userDetails.rawText ?? ""),
+        nationality: String(userDetails.nationality ?? ""),
+      }),
+    [verificationData.country, userDetails.rawText, userDetails.nationality]
   );
   const ocrProgressPercent = Math.min(100, Math.round(ocrProgress * 100));
 
@@ -709,15 +744,15 @@ const KYCVerificationModal: React.FC = () => {
           return false;
         }
         if (ocrForceReupload) {
-          setError("Please upload a clearer photo of your ID to continue");
-          showToast.error("Please upload a clearer photo of your ID to continue");
+          setError(ocrForceReupload.message ?? "Please upload a clear photo of your ID to continue");
+          showToast.error(ocrForceReupload.title ?? "Invalid ID photo");
           return false;
         }
         if (!verificationData.documentNumber.trim()) {
           setError(
             ocrManualFallback
-              ? "Enter your document number below if you are sure the photo is correct"
-              : "Enter your document number or upload a clearer photo of your ID"
+              ? "Enter your document number below to continue"
+              : "Enter your document number to continue"
           );
           return false;
         }
@@ -1666,6 +1701,25 @@ const KYCVerificationModal: React.FC = () => {
                 </div>
               )}
 
+              {ocrManualFallback && documentFrontImage && !ocrLoading && !ocrForceReupload && (
+                <div className="rounded-lg border border-amber-500/40 bg-amber-500/10 px-3 py-2.5 text-xs text-amber-950 dark:text-amber-100">
+                  <p className="font-semibold mb-1">Couldn&apos;t read all details automatically</p>
+                  <p>
+                    {getKycManualFallbackMessage(
+                      ocrEffectiveCountry,
+                      verificationData.documentType
+                    )}
+                  </p>
+                  <button
+                    type="button"
+                    onClick={triggerDocumentFrontReupload}
+                    className="inline-block mt-2 text-[#1D8751] font-semibold underline cursor-pointer"
+                  >
+                    Upload a clearer photo
+                  </button>
+                </div>
+              )}
+
               {ocrForceReupload && documentFrontImage && !ocrLoading && (
                 <div className="rounded-lg border border-red-500/40 bg-red-500/10 px-3 py-2.5 text-xs text-red-900 dark:text-red-200">
                   <p className="font-semibold mb-1">{ocrForceReupload.title}</p>
@@ -1717,10 +1771,14 @@ const KYCVerificationModal: React.FC = () => {
                 </div>
               )}
 
-              {documentFrontImage && !ocrForceReupload && (
+              {documentFrontImage && (
                 <div>
                   <label className="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1.5">
-                    Document Number *
+                    {getKycDocumentNumberFieldLabel(
+                      ocrEffectiveCountry,
+                      verificationData.documentType
+                    )}{" "}
+                    *
                   </label>
                   <input
                     type="text"
@@ -1730,15 +1788,15 @@ const KYCVerificationModal: React.FC = () => {
                     placeholder={
                       ocrLoading
                         ? "Reading document..."
-                        : ocrForceReupload
-                          ? "Upload a clearer ID photo to continue"
-                          : ocrTypeMismatchMessage
+                        : ocrTypeMismatchMessage
                           ? "Re-upload recommended — or enter number if you are sure"
-                          : ocrManualFallback
-                            ? "Enter your ID / passport number manually"
-                            : "Auto-filled from document or enter manually"
+                          : getKycDocumentNumberPlaceholder(
+                              ocrEffectiveCountry,
+                              verificationData.documentType,
+                              ocrManualFallback
+                            )
                     }
-                    disabled={ocrLoading || Boolean(ocrForceReupload)}
+                    disabled={ocrLoading}
                   />
                   {ocrManualFallback && !ocrLoading && !ocrForceReupload && (
                     <p className="mt-1 text-[11px] text-gray-500 dark:text-gray-400">

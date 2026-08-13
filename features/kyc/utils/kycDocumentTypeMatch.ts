@@ -1,5 +1,6 @@
 import type { IdDocumentDetails, IdDocumentType } from "@/lib/ocr/types";
 import { isKenyaNationalIdText } from "@/lib/ocr/parseKenyaIdText";
+import { isSomaliaNationalIdText } from "@/lib/ocr/parseSomaliaIdText";
 
 export type KycDocumentKind =
   | "passport"
@@ -58,8 +59,11 @@ function detectDocumentKind(
   if (isKenyaNationalIdText(rawText)) {
     return { kind: "national_id", confidence: "high" };
   }
+  if (isSomaliaNationalIdText(rawText)) {
+    return { kind: "national_id", confidence: "high" };
+  }
   if (
-    /(?:NATIONAL IDENTITY|IDENTITY CARD|NATIONAL ID CARD|ID CARD|KITAMBULISHO|MAISHA CARD)/i.test(
+    /(?:NATIONAL IDENTITY|IDENTITY CARD|NATIONAL ID CARD|ID CARD|KITAMBULISHO|MAISHA CARD|KAARKA AQOONSIGA|AQOONSIGA)/i.test(
       upper
     )
   ) {

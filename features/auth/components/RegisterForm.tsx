@@ -42,6 +42,31 @@ type RegisterFormDraft = {
   selectedCountry: string;
 };
 
+type RegisterSubmissionSnapshot = {
+  email: string;
+  password: string;
+  confirmPassword: string;
+  firstName: string;
+  lastName: string;
+  phone: string;
+  referralCode: string;
+  selectedCountry: string;
+};
+
+const EMPTY_REGISTER_DRAFT = (
+  refCodeFromUrl = ""
+): RegisterFormDraft => ({
+  firstName: "",
+  lastName: "",
+  email: "",
+  phone: "",
+  password: "",
+  confirmPassword: "",
+  referralCode: refCodeFromUrl,
+  agreeToTerms: false,
+  selectedCountry: "SO",
+});
+
 const readRegisterDraft = (): RegisterFormDraft | null => {
   if (typeof window === "undefined") return null;
   try {
@@ -262,6 +287,8 @@ export default function RegistrationPage() {
   const [agreeToTerms, setAgreeToTerms] = useState(mountDraft.agreeToTerms);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [showVerificationModal, setShowVerificationModal] = useState(false);
+  const [verificationEmail, setVerificationEmail] = useState("");
+  const registrationSnapshotRef = useRef<RegisterSubmissionSnapshot | null>(null);
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [submitAttempted, setSubmitAttempted] = useState(false);
@@ -310,6 +337,34 @@ export default function RegistrationPage() {
 
   const persistRegisterDraft = () => {
     saveRegisterDraft(getCurrentRegisterDraft());
+  };
+
+  const resetRegisterFormFields = () => {
+    const empty = EMPTY_REGISTER_DRAFT(refCodeFromUrl);
+    setFirstName(empty.firstName);
+    setLastName(empty.lastName);
+    setEmail(empty.email);
+    setPhone(empty.phone);
+    setPassword(empty.password);
+    setConfirmPassword(empty.confirmPassword);
+    setReferralCode(empty.referralCode);
+    setAgreeToTerms(empty.agreeToTerms);
+    setSelectedCountry(empty.selectedCountry);
+    setShowPassword(false);
+    setShowConfirmPassword(false);
+    setSubmitAttempted(false);
+    setFormErrors([]);
+    setErrors({
+      firstName: "",
+      lastName: "",
+      email: "",
+      phone: "",
+      password: "",
+      confirmPassword: "",
+      terms: "",
+    });
+    clearRegisterDraft();
+    skipPersistRef.current = true;
   };
   const [showCountryDropdown, setShowCountryDropdown] = useState(false);
   const [countrySearchTerm, setCountrySearchTerm] = useState("");
@@ -676,9 +731,18 @@ export default function RegistrationPage() {
       );
 
       if (registerUser.fulfilled.match(result)) {
-        // Account is created at this point - stop persisting the draft so a
-        // reload/back-nav doesn't keep resurfacing already-submitted data.
-        clearRegisterDraft();
+        registrationSnapshotRef.current = {
+          email,
+          password,
+          confirmPassword,
+          firstName,
+          lastName,
+          phone,
+          referralCode,
+          selectedCountry,
+        };
+        setVerificationEmail(email);
+        resetRegisterFormFields();
         setShowVerificationModal(true);
         setFormErrors([]);
       } else if (registerUser.rejected.match(result) && result.payload) {
@@ -708,16 +772,25 @@ export default function RegistrationPage() {
 
   // Handle email verification
   const handleVerifyEmail = async (code: string) => {
+    const snapshot = registrationSnapshotRef.current;
+    const verifyEmail = snapshot?.email || verificationEmail;
+    if (!verifyEmail) {
+      throw new Error("Missing registration email. Please register again.");
+    }
+
     try {
       const result = await dispatch(
         verifyOTP({
-          email,
+          email: verifyEmail,
           otp: code,
         })
       );
 
       if (verifyOTP.fulfilled.match(result)) {
+        registrationSnapshotRef.current = null;
+        setVerificationEmail("");
         clearRegisterDraft();
+        resetRegisterFormFields();
         setShowVerificationModal(false);
         router.push("/auth/login");
       } else if (verifyOTP.rejected.match(result)) {
@@ -732,24 +805,28 @@ export default function RegistrationPage() {
 
   // Handle resend verification code
   const handleResendCode = async () => {
+    const snapshot = registrationSnapshotRef.current;
+    if (!snapshot) {
+      throw new Error("Missing registration details. Please register again.");
+    }
+
     try {
-      // Re-register to get a new OTP
       const selectedCountryData = countries.find(
-        (c) => c.code === selectedCountry
+        (c) => c.code === snapshot.selectedCountry
       );
-      const phoneNumber = `${selectedCountryData?.dialCode}${phone}`;
+      const phoneNumber = `${selectedCountryData?.dialCode}${snapshot.phone}`;
 
       const result = await dispatch(
         registerUser({
-          email,
-          password,
-          confirm_password: confirmPassword,
-          first_name: firstName,
-          last_name: lastName,
+          email: snapshot.email,
+          password: snapshot.password,
+          confirm_password: snapshot.confirmPassword,
+          first_name: snapshot.firstName,
+          last_name: snapshot.lastName,
           user_type: "individual",
           phone_number: phoneNumber,
-          referred_by: referralCode || undefined,
-          country: selectedCountryData?.name || selectedCountry,
+          referred_by: snapshot.referralCode || undefined,
+          country: selectedCountryData?.name || snapshot.selectedCountry,
         })
       );
 
@@ -1718,7 +1795,7 @@ export default function RegistrationPage() {
       <EmailVerificationModal
         isOpen={showVerificationModal}
         onClose={handleCloseModal}
-        email={email}
+        email={verificationEmail}
         onVerify={handleVerifyEmail}
         onResendCode={handleResendCode}
         title={t("auth.modal.emailCode.title", "Email Verification Code")}

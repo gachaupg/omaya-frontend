@@ -8,6 +8,7 @@ export async function preprocessIdImageForOcr(file: File): Promise<Blob[]> {
     variants.push(await renderProcessedImage(image, { cropTextRegion: false, threshold: false }));
     variants.push(await renderProcessedImage(image, { cropTextRegion: true, threshold: false }));
     variants.push(await renderProcessedImage(image, { cropTextRegion: true, threshold: true }));
+    variants.push(await renderProcessedImage(image, { cropTextRegion: false, threshold: true }));
 
     return variants;
   } finally {
@@ -25,6 +26,7 @@ function loadImage(src: string): Promise<HTMLImageElement> {
 }
 
 type RenderOptions = {
+  /** Crop to the text panel (skip photo on left, logo margin on right). */
   cropTextRegion: boolean;
   threshold: boolean;
 };
@@ -33,13 +35,17 @@ async function renderProcessedImage(
   image: HTMLImageElement,
   options: RenderOptions
 ): Promise<Blob> {
-  const isLandscape = image.width >= image.height * 1.2;
-  const cropX = options.cropTextRegion && isLandscape ? image.width * 0.3 : 0;
+  const isLandscape = image.width >= image.height * 1.05;
+  const cropX =
+    options.cropTextRegion && isLandscape ? image.width * 0.22 : 0;
   const cropY = 0;
-  const cropW = options.cropTextRegion && isLandscape ? image.width * 0.68 : image.width;
+  const cropW =
+    options.cropTextRegion && isLandscape
+      ? image.width * 0.68
+      : image.width;
   const cropH = image.height;
 
-  const scale = Math.max(1.5, Math.min(2.5, 2200 / Math.max(cropW, cropH)));
+  const scale = Math.max(2, Math.min(3, 2600 / Math.max(cropW, cropH)));
   const canvas = document.createElement("canvas");
   canvas.width = Math.round(cropW * scale);
   canvas.height = Math.round(cropH * scale);

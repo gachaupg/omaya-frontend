@@ -280,18 +280,20 @@ const addRefreshTokenInterceptor = (instance: AxiosInstance): AxiosInstance => {
           }
 
           // Verify the token was actually updated in storage
-          // Double-check and force update if needed
           let updatedProfile = storage.getProfile();
-          if (!updatedProfile?.tokens?.access || updatedProfile.tokens.access !== newAccessToken) {
+          if (
+            !updatedProfile?.tokens?.access ||
+            updatedProfile.tokens.access !== newAccessToken
+          ) {
             logger.warn("api", "Token not properly updated in storage, forcing update now");
-            storage.setProfile({
-              ...(updatedProfile || profile),
-              tokens: {
-                access: newAccessToken,
-                refresh: updatedProfile?.tokens?.refresh || profile.tokens.refresh,
-              },
+            const latestProfile = storage.getProfile() || profile;
+            const refreshToken =
+              latestProfile?.tokens?.refresh || profile.tokens.refresh;
+            const { persistRefreshedTokens } = await import("./utils/authSession");
+            persistRefreshedTokens({
+              access: newAccessToken,
+              refresh: refreshToken,
             });
-            // Re-read to verify
             updatedProfile = storage.getProfile();
           }
 
