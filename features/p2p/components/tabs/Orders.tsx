@@ -250,13 +250,13 @@ const Orders = memo(() => {
   }
 
   return (
-    <div className="flex flex-col gap-2 sm:gap-3 md:gap-4 w-full h-full mx-auto max-w-[1400px] px-1 sm:px-2 md:px-6 lg:px-8">
+    <div className="flex flex-col gap-2 sm:gap-3 md:gap-4 w-full h-full">
       <Filters
         filters={filters}
         onFilterChange={handleFilterChange}
         loading={loading}
         orderStatusTabs={orderStatusTabs}
-      
+        statusTabsOnly
       />
       <div className="flex flex-col w-full">
         {filters.status === "processing" ? (
@@ -270,6 +270,16 @@ const Orders = memo(() => {
             handlePageChange={handlePageChange}
             trades={trades}
             hasActiveLocalFilters={hasActiveLocalFilters}
+            filterBar={
+              <Filters
+                filters={filters}
+                onFilterChange={handleFilterChange}
+                loading={loading}
+                orderStatusTabs={orderStatusTabs}
+                variant="embedded"
+                filterBarOnly
+              />
+            }
           />
         )}
       </div>

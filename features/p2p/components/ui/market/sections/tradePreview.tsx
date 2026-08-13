@@ -1423,7 +1423,7 @@ const TradePreview: React.FC<TradePreviewProps> = ({
 
   return (
     <>
-      <div className="rounded-2xl pt-2 pb-3 px-3 sm:pt-3 sm:pb-4 sm:px-4 lg:pt-3 lg:pb-5 lg:px-6 w-full max-w-5xl mx-auto flex flex-col gap-2 sm:gap-3 border border-gray-300 dark:border-[#35353E] bg-white dark:bg-[var(--card-color)] text-gray-900 dark:text-white">
+      <div className="rounded-2xl pt-2 pb-3 px-1 sm:pt-3 sm:pb-4 sm:px-2 lg:pt-3 lg:pb-5 lg:px-3 w-full max-w-5xl mx-auto flex flex-col gap-2 sm:gap-3 border border-gray-300 dark:border-[#35353E] bg-white dark:bg-[var(--card-color)] text-gray-900 dark:text-white">
         {!isAuthenticated ? (
           <div className="text-center py-4 text-red-500">
             Please login to continue with the trade

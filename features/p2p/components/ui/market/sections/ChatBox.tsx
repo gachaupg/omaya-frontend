@@ -827,7 +827,7 @@ const ChatBox: React.FC<{
           )}
         </div>
       </div>
-      <div className="chat-container mt-4 sm:mt-6 flex flex-col mb-2 h-80 sm:h-96 bg-card border border-[#E8EFF5] dark:border-[#35353E] rounded-[18px] p-2 sm:p-4 relative">
+      <div className="chat-container mt-4 sm:mt-6 flex flex-col mb-2 h-80 sm:h-96 bg-transparent border border-[#E8EFF5] dark:border-[#35353E] rounded-[18px] p-2 sm:p-4 relative">
         <div className="flex-shrink-0">
           <div className="flex items-center justify-between gap-2">
             <div className="flex items-center gap-2 flex-1 min-w-0">
@@ -890,7 +890,7 @@ const ChatBox: React.FC<{
             return (
               <div
                 key={msg.id}
-                className={`flex gap-2 items-end ${isSender ? "flex-row-reverse" : "flex-row"}`}
+                className={`flex gap-2 mt-3 items-end ${isSender ? "flex-row-reverse" : "flex-row"}`}
               >
                 {/* Show photo only for receiver messages */}
                 {!isSender && (

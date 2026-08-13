@@ -34,7 +34,7 @@ export default function MatchedOrderLayout({
       </div>
 
       {/* Main Content */}
-      <div className="flex-1 w-full h-full max-w-full overflow-x-hidden pl-0 md:pl-4 lg:pl-6">
+      <div className="flex-1 w-full h-full max-w-full overflow-x-hidden pl-0 md:pl-2 lg:pl-3">
         <div className="w-full min-h-screen mt-[68px] sm:mt-[68px] md:mt-0 px-0 sm:px-1 md:px-0">
           {children}
         </div>

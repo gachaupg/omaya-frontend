@@ -1150,7 +1150,7 @@ const MarketTransactions = memo(({ activeTab }: { activeTab: string }) => {
           </Button> */}
         </div>
       </div>
-      <div className="w-full overflow-x-auto scrollbar-thin scroll-smooth">
+      <div className="w-full mt-2 sm:mt-3 overflow-x-auto scrollbar-thin scroll-smooth">
         <MarketTable
           data={displayData}
           currentPage={currentPage}
