@@ -1,11 +1,15 @@
 "use client";
 
-import React, { useEffect, useState, Suspense } from "react";
+import React, { useEffect, useRef, useState, Suspense } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
 import { useSelector, useDispatch } from "react-redux";
 import { useTheme } from "@/context/theme";
 import CopyButton from "@/components/ui/CopyButton";
-import { fetchForexExchangeThunk, setForexExchangeFromCache } from "@/features/express/slices/forexSlice";
+import {
+  fetchForexExchangeThunk,
+  patchForexExchangeFromWs,
+  setForexExchangeFromCache,
+} from "@/features/express/slices/forexSlice";
 import { forexStatusWebSocket } from "@/features/express/services/forexStatusWebSocket";
 import type { AppDispatch } from "@/store";
 import { useRouteProtection } from "@/features/auth/hooks/useRouteProtection";
@@ -17,6 +21,11 @@ import HowToSendDialBlock from "@/components/ui/HowToSendDialBlock";
 import { resolveFormattedForexDepositHowToSend } from "@/features/moneyX/utils/howToSend";
 import { encodeQrScanData } from "@/lib/utils/ussdDial";
 import type { AdminPaymentInfo } from "@/features/express/types/forex";
+import {
+  forexExchangeMatchesId,
+  mapForexStatusToUiStep,
+  normalizeForexExchange,
+} from "@/features/express/utils/normalizeForexExchange";
 
 const FXP_LOGO = "/assets/FXPRIMUS-logo_2_k8ikwb.png";
 const BANK_LOGO_FALLBACK = "/assets/image_7_jijlik.png";
@@ -104,6 +113,7 @@ function ForexStatusContent() {
   const accessToken = authState?.tokens?.access || null;
 
   const [copySuccess, setCopySuccess] = useState(false);
+  const initialFetchAttemptedRef = useRef(false);
   const [failureModal, setFailureModal] = useState<{
     isOpen: boolean;
     status: string;
@@ -126,52 +136,93 @@ function ForexStatusContent() {
     return normalized;
   };
 
-  const extractFailureStatus = (message: any): string => {
+  const persistForexExchange = (payload: Record<string, unknown>) => {
+    const normalized = normalizeForexExchange(payload, transactionId || undefined);
+    dispatch(setForexExchangeFromCache(normalized));
+    localStorage.setItem("currentForexExchange", JSON.stringify(normalized));
+    return normalized;
+  };
+
+  const applyForexStatusMessage = (message: any) => {
+    const payload =
+      message?.data && typeof message.data === "object" ? message.data : null;
     const status = String(
-      message?.data?.status || message?.status || ""
-    ).toLowerCase();
+      payload?.status || message?.status || message?.data?.status || ""
+    ).trim();
+    const stages = payload?.stages || message?.stages || message?.data?.stages;
+
+    if (payload) {
+      persistForexExchange(payload);
+      return status;
+    }
+
+    if (status || stages) {
+      dispatch(
+        patchForexExchangeFromWs({
+          ...(status ? { status } : {}),
+          ...(stages ? { stages } : {}),
+          ...(message?.status_display
+            ? { status_display: message.status_display }
+            : {}),
+          ...(message?.stage_display
+            ? { stage_display: message.stage_display }
+            : {}),
+        })
+      );
+    }
+
     return status;
   };
 
-  // Fetch exchange details when page loads with a transactionId
+  // Fetch exchange details once when the page loads with a transactionId.
   useEffect(() => {
-    if (!transactionId) return;
+    if (!transactionId || initialFetchAttemptedRef.current) return;
 
-    // Check if we already have the correct exchange in Redux (from recent creation)
-    if (currentExchange?.forex_transaction_id === transactionId) {
-      // Keep data in localStorage for future reloads
-      localStorage.setItem('currentForexExchange', JSON.stringify(currentExchange));
+    if (forexExchangeMatchesId(currentExchange, transactionId)) {
+      initialFetchAttemptedRef.current = true;
+      localStorage.setItem(
+        "currentForexExchange",
+        JSON.stringify(currentExchange)
+      );
       return;
     }
 
-    // Check localStorage for cached data first
-    const cachedExchange = localStorage.getItem('currentForexExchange');
+    const cachedExchange = localStorage.getItem("currentForexExchange");
 
     if (cachedExchange) {
       try {
         const exchangeData = JSON.parse(cachedExchange);
-        // Verify it's the same transaction
-        if (exchangeData.forex_transaction_id === transactionId) {
-          // Load from localStorage and DON'T fetch from API
+        if (forexExchangeMatchesId(exchangeData, transactionId)) {
+          initialFetchAttemptedRef.current = true;
           dispatch(setForexExchangeFromCache(exchangeData));
-          // WebSocket will handle real-time updates, no need to fetch from API
           return;
-        } else {
-          // Different transaction, clear old data
-          localStorage.removeItem('currentForexExchange');
         }
-      } catch (e) {
-                localStorage.removeItem('currentForexExchange');
+        localStorage.removeItem("currentForexExchange");
+      } catch {
+        localStorage.removeItem("currentForexExchange");
       }
     }
 
+    initialFetchAttemptedRef.current = true;
     withTimeout(dispatch(fetchForexExchangeThunk(transactionId)).unwrap(), 15_000)
       .then((data) => {
-        localStorage.setItem('currentForexExchange', JSON.stringify(data));
+        localStorage.setItem("currentForexExchange", JSON.stringify(data));
       })
-      .catch((error) => {
-              });
-  }, [transactionId, currentExchange, dispatch]);
+      .catch(() => {});
+  }, [transactionId, dispatch]);
+
+  useEffect(() => {
+    if (
+      currentExchange &&
+      transactionId &&
+      forexExchangeMatchesId(currentExchange, transactionId)
+    ) {
+      localStorage.setItem(
+        "currentForexExchange",
+        JSON.stringify(currentExchange)
+      );
+    }
+  }, [currentExchange, transactionId]);
 
   // WebSocket connection for real-time status updates
   useEffect(() => {
@@ -188,43 +239,18 @@ function ForexStatusContent() {
 
     // Set up event handlers
     const unsubscribeMessage = forexStatusWebSocket.onMessage((message) => {
-
-      if (message.type === "initial_status" && message.data) {
-        // Initial status received on connection - use this data directly
-        dispatch(setForexExchangeFromCache(message.data));
-        localStorage.setItem('currentForexExchange', JSON.stringify(message.data));
-        const status = extractFailureStatus(message);
-        if (["rejected", "failed", "stopped"].includes(status)) {
+      if (
+        message.type === "initial_status" ||
+        message.type === "status_update"
+      ) {
+        const status = applyForexStatusMessage(message);
+        if (["rejected", "failed", "stopped"].includes(status.toLowerCase())) {
           setFailureModal({
             isOpen: true,
-            status,
+            status: status.toLowerCase(),
             message: extractFailureReason(message),
           });
         }
-      } else if (message.type === "status_update" && message.data) {
-        // Status update received - update with new data
-        dispatch(setForexExchangeFromCache(message.data));
-        localStorage.setItem('currentForexExchange', JSON.stringify(message.data));
-        const status = extractFailureStatus(message);
-        if (["rejected", "failed", "stopped"].includes(status)) {
-          setFailureModal({
-            isOpen: true,
-            status,
-            message: extractFailureReason(message),
-          });
-        }
-      } else if (message.type === "status_update") {
-        // Some backends send status updates without full data payload.
-        const status = extractFailureStatus(message);
-        if (["rejected", "failed", "stopped"].includes(status)) {
-          setFailureModal({
-            isOpen: true,
-            status,
-            message: extractFailureReason(message),
-          });
-        }
-      } else if (message.type === "connection_established") {
-      } else {
       }
     });
 
@@ -245,15 +271,10 @@ function ForexStatusContent() {
     setTimeout(() => setCopySuccess(false), 2000);
   };
 
-  // Map status to UI status
-  const getUIStatus = (status: string) => {
-    const statusLower = status?.toLowerCase() || 'pending';
-    if (statusLower === 'completed' || statusLower === 'success') return 'completed';
-    if (statusLower === 'processing' || statusLower === 'pending_review') return 'processing';
-    return 'pending';
-  };
-
-  const currentStatus = currentExchange ? getUIStatus(currentExchange.status) : 'pending';
+  // Map backend status to the 3-step progress UI (deposit-style).
+  const currentStatus = currentExchange
+    ? mapForexStatusToUiStep(currentExchange.status)
+    : "pending";
 
   const parseNumericValue = (value: unknown): number | null => {
     const parsed = Number.parseFloat(String(value ?? ""));
@@ -339,7 +360,7 @@ function ForexStatusContent() {
     return null; // Modal will be shown by the hook
   }
 
-  if (loading) {
+  if (loading && !currentExchange) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-white dark:bg-[#18181D]">
         <div className="flex flex-col items-center gap-4">
