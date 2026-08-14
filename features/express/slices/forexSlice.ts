@@ -6,6 +6,7 @@ import {
   ForexExchangeResponse,
   ForexState,
 } from "../types/forex";
+import { normalizeForexExchange } from "../utils/normalizeForexExchange";
 
 const initialState: ForexState = {
   currentExchange: null,
@@ -75,7 +76,42 @@ const forexSlice = createSlice({
       state.error = null;
     },
     setForexExchangeFromCache: (state, action) => {
-      state.currentExchange = action.payload;
+      const payload = action.payload;
+      state.currentExchange =
+        payload && typeof payload === "object"
+          ? normalizeForexExchange(
+              payload as Record<string, unknown>,
+              String(
+                (payload as ForexExchangeResponse).forex_transaction_id ||
+                  (payload as ForexExchangeResponse).transaction_id ||
+                  ""
+              )
+            )
+          : payload;
+      state.loading = false;
+      state.error = null;
+    },
+    patchForexExchangeFromWs: (
+      state,
+      action: {
+        payload: {
+          status?: string;
+          stages?: string;
+          status_display?: string;
+          stage_display?: string;
+          [key: string]: unknown;
+        };
+      }
+    ) => {
+      if (!state.currentExchange) return;
+      state.currentExchange = normalizeForexExchange(
+        {
+          ...state.currentExchange,
+          ...action.payload,
+        } as Record<string, unknown>,
+        state.currentExchange.forex_transaction_id ||
+          state.currentExchange.transaction_id
+      );
       state.loading = false;
       state.error = null;
     },
@@ -88,7 +124,10 @@ const forexSlice = createSlice({
       })
       .addCase(createForexExchangeThunk.fulfilled, (state, action) => {
         state.loading = false;
-        state.currentExchange = action.payload;
+        state.currentExchange = normalizeForexExchange(
+          action.payload as Record<string, unknown>,
+          action.payload.forex_transaction_id || action.payload.transaction_id
+        );
         state.error = null;
       })
       .addCase(createForexExchangeThunk.rejected, (state, action) => {
@@ -96,12 +135,17 @@ const forexSlice = createSlice({
         state.error = action.payload as string;
       })
       .addCase(fetchForexExchangeThunk.pending, (state) => {
-        state.loading = true;
+        if (!state.currentExchange) {
+          state.loading = true;
+        }
         state.error = null;
       })
       .addCase(fetchForexExchangeThunk.fulfilled, (state, action) => {
         state.loading = false;
-        state.currentExchange = action.payload;
+        state.currentExchange = normalizeForexExchange(
+          action.payload as Record<string, unknown>,
+          action.payload.forex_transaction_id || action.payload.transaction_id
+        );
         state.error = null;
       })
       .addCase(fetchForexExchangeThunk.rejected, (state, action) => {
@@ -111,5 +155,9 @@ const forexSlice = createSlice({
   },
 });
 
-export const { clearForexExchange, setForexExchangeFromCache } = forexSlice.actions;
+export const {
+  clearForexExchange,
+  setForexExchangeFromCache,
+  patchForexExchangeFromWs,
+} = forexSlice.actions;
 export default forexSlice.reducer;
