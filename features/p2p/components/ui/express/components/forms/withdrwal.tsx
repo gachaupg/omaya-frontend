@@ -44,6 +44,7 @@ import {
 import { scrollAppToTop } from "@/lib/utils/scrollAppToTop";
 import { useBookmarkedAddresses } from "@/features/express/hooks/useBookmarkedAddresses";
 import { BookmarkDropdown } from "@/features/express/components/forms/BookmarkDropdown";
+import { pickPreferredPaymentAccountForAutoSelect } from "@/features/express/utils/paymentAccountStatus";
 
 const formatUnknownError = (error: unknown): string => {
   if (!error) return "Unknown error";
@@ -170,7 +171,12 @@ const UserPaymentSelector = ({
       userPaymentDetails.length > 0 &&
       selectedDetails.length === 0
     ) {
-      onSelect(userPaymentDetails[0]);
+      const preferred = pickPreferredPaymentAccountForAutoSelect(
+        userPaymentDetails
+      );
+      if (preferred) {
+        onSelect(preferred);
+      }
     }
   }, [userPaymentDetails, selectedDetails.length, onSelect]);
 

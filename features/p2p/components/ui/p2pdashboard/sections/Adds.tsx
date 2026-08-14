@@ -32,6 +32,14 @@ import PaymentMethodsModal from "./PaymentMethodsModal";
 import UserPaymentSelector, { UserPaymentDetail } from "./UserPaymentSelector";
 import { selectP2PWalletAmounts, selectTransactionSummary } from "@/features/p2p/selectors";
 import { useUserPaymentDetailsWebSocket } from "@/features/p2p/hooks/useUserPaymentDetailsWebSocket";
+import {
+  getPaymentRejectionReason,
+  getPaymentStatusShortLabel,
+  hasPaymentDetailMeaningfulChange,
+  isApprovedPaymentStatus,
+  isRejectedPaymentStatus,
+} from "@/features/express/utils/paymentAccountStatus";
+import { paymentDetailIdsMatch } from "@/features/p2p/utils/normalizeUserPaymentDetail";
 
 import { logger } from '@/lib/utils/logger';
 import { MdCheckCircle } from "react-icons/md";
@@ -233,6 +241,25 @@ const Adds: React.FC<AddsProps> = ({ filterType }) => {
       dispatch(fetchAdminPaymentMethods() as any);
     }
   }, [dispatch, isAuthenticated]);
+
+  // Keep selected methods in sync when WebSocket refetches status (pending/rejected/approved).
+  useEffect(() => {
+    if (!userPaymentDetails?.length || selectedPaymentDetails.length === 0) {
+      return;
+    }
+
+    setSelectedPaymentDetails((prev) =>
+      prev.map((selected) => {
+        const fresh = userPaymentDetails.find((detail) =>
+          paymentDetailIdsMatch(detail.id, selected.id)
+        );
+        if (!fresh) return selected;
+        return hasPaymentDetailMeaningfulChange(selected, fresh)
+          ? { ...selected, ...fresh }
+          : selected;
+      })
+    );
+  }, [userPaymentDetails]);
 
   useEffect(() => {
     if (error) {
@@ -689,6 +716,21 @@ const Adds: React.FC<AddsProps> = ({ filterType }) => {
       return;
     }
 
+    const blockedDetail = selectedPaymentDetails.find(
+      (detail) => !isApprovedPaymentStatus(detail.status)
+    );
+    if (blockedDetail) {
+      const reason = getPaymentRejectionReason(blockedDetail);
+      const msg = isRejectedPaymentStatus(blockedDetail.status)
+        ? reason
+          ? `Payment method was rejected: ${reason}`
+          : "Selected payment method was rejected. Remove it or add another account."
+        : "Selected payment method is still pending verification.";
+      setErrors((prev) => ({ ...prev, paymentMethod: msg }));
+      showToast.error(msg);
+      return;
+    }
+
     const adData = {
       order_type: type,
       currency: "USDT",
@@ -722,8 +764,21 @@ const Adds: React.FC<AddsProps> = ({ filterType }) => {
   };
 
   const handleSelectPaymentDetail = (detail: UserPaymentDetail) => {
+    if (!isApprovedPaymentStatus(detail.status)) {
+      const reason = getPaymentRejectionReason(detail);
+      showToast.error(
+        isRejectedPaymentStatus(detail.status)
+          ? reason
+            ? `This payment method was rejected: ${reason}`
+            : "This payment method was rejected."
+          : "This payment method is pending verification."
+      );
+      return;
+    }
     setSelectedPaymentDetails((prev) =>
-      prev.some((d) => d.id === detail.id) ? prev : [...prev, detail]
+      prev.some((d) => paymentDetailIdsMatch(d.id, detail.id))
+        ? prev
+        : [...prev, detail]
     );
   };
 
@@ -1531,10 +1586,13 @@ const Adds: React.FC<AddsProps> = ({ filterType }) => {
                       </label>
                       <div className="space-y-2 sm:space-y-3">
                         {selectedPaymentDetails.map((detail) => {
-                          // Get logo URL with priority: logo_url > logo > provider_logo
                           const logoUrl = detail.logo_url || detail.logo || detail.provider_logo || "/default-provider-logo.svg";
-                          const status = detail.status?.toLowerCase() || "approved";
-                          const isPending = status === "pending";
+                          const isApproved = isApprovedPaymentStatus(detail.status);
+                          const isRejected = isRejectedPaymentStatus(detail.status);
+                          const statusLabel = isApproved
+                            ? "Approved"
+                            : getPaymentStatusShortLabel(detail.status);
+                          const rejectionReason = getPaymentRejectionReason(detail);
 
                           return (
                             <div
@@ -1586,12 +1644,16 @@ const Adds: React.FC<AddsProps> = ({ filterType }) => {
 
                               {/* Status Badge */}
                               <span
-                                className={`flex-shrink-0 px-2.5 py-1 rounded-md text-xs font-medium ${isPending
-                                    ? "bg-amber-500/20 dark:bg-amber-500/30 text-amber-700 dark:text-amber-400 border border-amber-500/40"
-                                    : "bg-[#1D8751]/20 dark:bg-[#1D8751]/30 text-[#1D8751] border border-[#1D8751]/40"
-                                  }`}
+                                className={`flex-shrink-0 px-2.5 py-1 rounded-md text-xs font-medium ${
+                                  isApproved
+                                    ? "bg-[#1D8751]/20 dark:bg-[#1D8751]/30 text-[#1D8751] border border-[#1D8751]/40"
+                                    : isRejected
+                                      ? "bg-red-500/15 dark:bg-red-500/20 text-red-700 dark:text-red-400 border border-red-500/40"
+                                      : "bg-amber-500/20 dark:bg-amber-500/30 text-amber-700 dark:text-amber-400 border border-amber-500/40"
+                                }`}
+                                title={rejectionReason ? `Reason: ${rejectionReason}` : undefined}
                               >
-                                {isPending ? "Pending" : "Approved"}
+                                {statusLabel}
                               </span>
 
                               {/* Remove Button */}
@@ -1635,6 +1697,9 @@ const Adds: React.FC<AddsProps> = ({ filterType }) => {
             onAdd={() => {
               setShowPaymentModal(false);
               dispatch(fetchUserPaymentDetails() as any);
+            }}
+            onAddSuccess={async () => {
+              await dispatch(fetchUserPaymentDetails() as any);
             }}
             filterByProviderName={selectedProviderInSelector || undefined}
           />

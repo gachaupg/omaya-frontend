@@ -76,9 +76,9 @@ export const formatHowToSend = (
     typeof amount === "number"
       ? amount
       : amount != null && String(amount).trim() !== ""
-        ? Number(String(amount))
+        ? Number(String(amount).replace(/,/g, ""))
         : NaN;
-  const amt = Number.isFinite(parsedAmt) ? String(parsedAmt) : "";
+  const amt = Number.isFinite(parsedAmt) ? normalizeAmount(parsedAmt) : "";
   if (!amt) return base;
 
   if (AMOUNT_PLACEHOLDER_PATTERN.test(base)) {
@@ -111,6 +111,29 @@ export const resolveFormattedHowToSendForTx = (
   const formatted = formatHowToSend(raw, amount);
   if (!formatted || isEvmWalletHowToSend(formatted)) return "";
   return formatted;
+};
+
+/** `{amount}` in admin `how_to_send` USSD templates is the FXP receive amount. */
+export const resolveForexDepositHowToSendAmount = (exchange: {
+  to_amount?: string | number | null;
+  from_amount?: string | number | null;
+}): string | number | undefined => {
+  const receive = pickNonEmpty(exchange?.to_amount);
+  if (receive) return receive;
+  const fallback = pickNonEmpty(exchange?.from_amount);
+  return fallback || undefined;
+};
+
+export const resolveFormattedForexDepositHowToSend = (exchange: {
+  admin_payment_info?: { how_to_send?: string | null } | null;
+  to_amount?: string | number | null;
+  from_amount?: string | number | null;
+} | null | undefined): string => {
+  if (!exchange) return "";
+  const raw = pickNonEmpty(exchange.admin_payment_info?.how_to_send);
+  if (!raw) return "";
+  const amount = resolveForexDepositHowToSendAmount(exchange);
+  return formatHowToSend(raw, amount);
 };
 
 export const fetchBankHowToSend = async (provider: string): Promise<string | null> => {

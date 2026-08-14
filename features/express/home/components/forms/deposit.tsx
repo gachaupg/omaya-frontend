@@ -81,6 +81,10 @@ import {
   type CommissionLookupResponse,
   type ExchangeCommissionLookupResponse,
 } from "@/features/express/api";
+import {
+  resolveFxpForwardReceiveAmount,
+  resolveFxpReversePayAmount,
+} from "@/features/express/utils/fxpCommission";
 import { withTimeout } from "@/features/express/utils/fetchWithTimeout";
 import { stripLeadingZerosFromDecimalInput } from "@/lib/utils/decimalAmountInput";
 import {
@@ -1618,14 +1622,22 @@ export default function DepositForm({
             setIsCalculatingReceive(false);
           }
           if (isForexAsset(selectedAsset)) {
-            const backendToAmount = Number(details?.to_amount);
-            const backendFromAmount = Number(details?.from_amount);
-            if (isCalculatingFromPay && Number.isFinite(backendToAmount)) {
-              setGetAmount(Math.max(0, backendToAmount));
-              setGetAmountInput(String(Math.max(0, backendToAmount)));
-            } else if (!isCalculatingFromPay && Number.isFinite(backendFromAmount)) {
-              setPayAmount(Math.max(0, backendFromAmount));
-              setPayAmountInput(String(Math.max(0, backendFromAmount)));
+            if (isCalculatingFromPay) {
+              const receive = resolveFxpForwardReceiveAmount(
+                details,
+                amount,
+                Number(details?.commission_rate ?? 0)
+              );
+              setGetAmount(receive);
+              setGetAmountInput(String(receive));
+            } else {
+              const pay = resolveFxpReversePayAmount(
+                details,
+                amount,
+                Number(details?.commission_rate ?? 0)
+              );
+              setPayAmount(pay);
+              setPayAmountInput(String(pay));
             }
           }
         })
@@ -1687,13 +1699,16 @@ export default function DepositForm({
     if (isCommissionApiAsset(selectedAsset) && apiCommission !== null) {
       if (isCalculatingFromPay && payAmount > 0) {
         if (isForexAsset(selectedAsset)) {
-          const backendToAmount = Number(apiCommissionDetails?.to_amount);
-          if (Number.isFinite(backendToAmount)) {
-            const safeAmount = Math.max(0, backendToAmount);
-            setGetAmount(safeAmount);
-            setGetAmountInput(String(safeAmount));
-            return;
+          if (isCalculatingFromPay && payAmount > 0) {
+            const receive = resolveFxpForwardReceiveAmount(
+              apiCommissionDetails,
+              payAmount,
+              apiCommission
+            );
+            setGetAmount(receive);
+            setGetAmountInput(String(receive));
           }
+          return;
         }
         const commissionAmount = (payAmount * apiCommission) / 100;
         setGetAmount(Math.max(0, payAmount - commissionAmount));
@@ -2856,29 +2871,9 @@ export default function DepositForm({
       return;
     }
 
-    // For FXP (forex), use commission-based calculation
+    // FXP amounts are driven by commission API effects — avoid conflicting local math.
     if (isForexAsset(selectedAsset)) {
-      if (fromPay) {
-        // Forward calculation: USD to FXP (divide by 1.06)
-        const calculatedGetAmount = fromAmount / FXP_EXCHANGE_RATE;
-        setGetAmount(calculatedGetAmount);
-        setGetAmountInput(calculatedGetAmount.toFixed(2));
-      } else {
-        // Reverse calculation: You Receive -> You Send using commission when available.
-        const commissionRate =
-          apiCommission != null &&
-          !Number.isNaN(Number(apiCommission)) &&
-          Number(apiCommission) < 100
-            ? Number(apiCommission)
-            : null;
-        const calculatedPayAmount = getFxpReversePayAmount(fromAmount);
-        setPayAmount(calculatedPayAmount);
-        setPayAmountInput(calculatedPayAmount.toFixed(2));
-      }
-
       setReceiveAmountError(null);
-
-      // For FXP, no loading states needed - calculation is instant
       return;
     }
 

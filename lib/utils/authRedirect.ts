@@ -18,6 +18,34 @@ const withLegalReturnPath = (state: Record<string, any>) => ({
       : "/"),
 });
 
+const isLegalPolicyPath = (path: string): boolean =>
+  path.startsWith("/legal/");
+
+const resolveRegisterLegalReturnPath = (
+  state: Record<string, unknown>,
+  existing: { returnPath?: string } | null
+): string => {
+  const currentPath =
+    typeof window !== "undefined"
+      ? `${window.location.pathname}${window.location.search}${window.location.hash}`
+      : "/";
+
+  const candidates = [
+    typeof state.returnPath === "string" ? state.returnPath : "",
+    existing?.returnPath ?? "",
+    isLegalPolicyPath(currentPath) ? "" : currentPath,
+    "/auth/register",
+  ];
+
+  for (const candidate of candidates) {
+    if (candidate && !isLegalPolicyPath(candidate)) {
+      return candidate;
+    }
+  }
+
+  return "/auth/register";
+};
+
 /** Path to restore when user taps Back on a legal policy page after leaving exchange/swap. */
 export const peekLegalReturnPath = (): string | null => {
   if (typeof window === "undefined") return null;
@@ -39,7 +67,10 @@ export const peekLegalReturnPath = (): string | null => {
     try {
       const state = JSON.parse(raw) as Record<string, any>;
       if (typeof state.returnPath === "string" && state.returnPath) {
-        return state.returnPath;
+        const returnPath = state.returnPath;
+        if (!isLegalPolicyPath(returnPath)) {
+          return returnPath;
+        }
       }
     } catch {
       // try next key
@@ -567,9 +598,11 @@ export const setRegisterLegalReturnState = (
 ) => {
   if (typeof window === "undefined") return;
   try {
+    const existing = peekRegisterLegalReturnState();
+    const returnPath = resolveRegisterLegalReturnPath(state, existing);
     sessionStorage.setItem(
       REGISTER_LEGAL_RETURN_STATE_KEY,
-      JSON.stringify(withLegalReturnPath(state))
+      JSON.stringify({ ...state, returnPath })
     );
     sessionStorage.setItem(RETURNING_FROM_LEGAL_KEY, "1");
   } catch {

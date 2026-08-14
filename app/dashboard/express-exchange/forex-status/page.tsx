@@ -13,6 +13,78 @@ import Loader from "@/features/p2p/components/Common/Loader";
 import { withTimeout } from "@/lib/utils/fetchWithTimeout";
 import FailureStatusModal from "@/features/express/components/FailureStatusModal";
 import { useScrollAppToTopWhen } from "@/hooks/useScrollAppToTopWhen";
+import HowToSendDialBlock from "@/components/ui/HowToSendDialBlock";
+import { resolveFormattedForexDepositHowToSend } from "@/features/moneyX/utils/howToSend";
+import { encodeQrScanData } from "@/lib/utils/ussdDial";
+import type { AdminPaymentInfo } from "@/features/express/types/forex";
+
+const FXP_LOGO = "/assets/FXPRIMUS-logo_2_k8ikwb.png";
+const BANK_LOGO_FALLBACK = "/assets/image_7_jijlik.png";
+
+const formatForexAmount = (value: unknown): string => {
+  const parsed = Number.parseFloat(String(value ?? "").replace(/,/g, ""));
+  if (!Number.isFinite(parsed)) return String(value ?? "0");
+  if (Number.isInteger(parsed)) return String(parsed);
+  return parsed.toFixed(8).replace(/\.?0+$/, "");
+};
+
+const normalizeForexCurrency = (currency: unknown): string => {
+  const normalized = String(currency ?? "").trim().toUpperCase();
+  if (normalized === "FXPRIMUS") return "FXP";
+  return normalized;
+};
+
+const isFxpCurrency = (currency: unknown): boolean => {
+  const normalized = String(currency ?? "").trim().toUpperCase();
+  return normalized === "FXP" || normalized === "FXPRIMUS";
+};
+
+const pickPaymentText = (...values: unknown[]): string => {
+  for (const value of values) {
+    const text = String(value ?? "").trim();
+    if (text) return text;
+  }
+  return "";
+};
+
+const resolvePaymentAccountNumber = (
+  info: AdminPaymentInfo | Record<string, unknown> | null | undefined
+): string =>
+  pickPaymentText(info?.account_number, info?.mobile_number, info?.wallet_address);
+
+function CopyableMonoRow({
+  label,
+  value,
+  isDark,
+}: {
+  label: string;
+  value: string;
+  isDark: boolean;
+}) {
+  if (!value) return null;
+  return (
+    <>
+      <div
+        className={`${
+          isDark ? "text-[#7B7B7B]" : "text-gray-600"
+        } text-xs font-semibold mb-0.5`}
+      >
+        {label}
+      </div>
+      <div className="flex items-center mb-2 p-2 rounded-lg border border-[#1D8751]/30 bg-[#1D8751]/5 gap-2">
+        <span
+          className={`${
+            isDark ? "text-white" : "text-gray-900"
+          } text-sm font-mono break-all flex-1 leading-relaxed`}
+          style={{ wordBreak: "break-all", lineHeight: "1.5" }}
+        >
+          {value}
+        </span>
+        <CopyButton value={value} className="ml-2 shrink-0" />
+      </div>
+    </>
+  );
+}
 
 function ForexStatusContent() {
   const { isChecking, isVerified } = useRouteProtection();
@@ -202,7 +274,7 @@ function ForexStatusContent() {
       fromAmountNum &&
       toAmountNum &&
       fromAmountNum > 0 &&
-      String(currentExchange.to_currency || "").toUpperCase() === "FXP"
+      isFxpCurrency(currentExchange.to_currency)
     ) {
       return (toAmountNum / fromAmountNum).toFixed(8);
     }
@@ -212,8 +284,21 @@ function ForexStatusContent() {
 
   const displayedExchangeRate = getDisplayedExchangeRate();
   const shouldHideExchangeRate =
-    String(currentExchange?.to_currency || "").toUpperCase() === "FXP" ||
-    String(currentExchange?.from_currency || "").toUpperCase() === "FXP";
+    isFxpCurrency(currentExchange?.to_currency) ||
+    isFxpCurrency(currentExchange?.from_currency);
+
+  const isForexDeposit =
+    String(currentExchange?.transaction_type || "").toLowerCase() === "deposit";
+
+  const howToSendDisplay = resolveFormattedForexDepositHowToSend(
+    isForexDeposit ? currentExchange : null
+  );
+
+  const qrPayload =
+    howToSendDisplay ||
+    currentExchange?.transaction_reference ||
+    currentExchange?.transaction_id ||
+    "";
 
   // Redirect to success page when transaction is completed
   useEffect(() => {
@@ -328,6 +413,29 @@ function ForexStatusContent() {
     );
   }
 
+  const referenceNumber =
+    currentExchange.transaction_reference ||
+    currentExchange.transaction_id ||
+    "";
+  const fromAmountDisplay = formatForexAmount(currentExchange.from_amount);
+  const toAmountDisplay = formatForexAmount(currentExchange.to_amount);
+  const fromCurrencyDisplay = normalizeForexCurrency(currentExchange.from_currency);
+  const toCurrencyDisplay = normalizeForexCurrency(currentExchange.to_currency);
+  const isDeposit =
+    String(currentExchange.transaction_type || "").toLowerCase() === "deposit";
+  const adminPayment = currentExchange.admin_payment_info;
+  const userPayment = currentExchange.user_payment_info as
+    | AdminPaymentInfo
+    | null
+    | undefined;
+  const receiveBankInfo = isDeposit ? null : userPayment;
+  const sendForexAccount = isDeposit ? null : currentExchange.user_forex_account;
+  const receiveForexAccount = isDeposit
+    ? currentExchange.user_forex_account
+    : null;
+  const labelMuted = isDark ? "text-[#7B7B7B]" : "text-gray-600";
+  const labelStrong = isDark ? "text-white" : "text-gray-900";
+
   return (
     <>
     <div className={`container mx-auto px-4 sm:px-6 md:px-8 min-h-screen flex flex-col items-center pt-2 overflow-x-hidden ${isDark ? 'bg-transparent' : 'bg-transparent'}`}>
@@ -338,114 +446,192 @@ function ForexStatusContent() {
             : "bg-white border-gray-200"
           } border-2 rounded-2xl p-4 shadow-lg w-full max-w-4xl mb-4 min-h-[180px]`}
       >
-        <div className="flex-1 flex flex-col justify-between py-2 pr-2">
+        <div className="flex-1 flex flex-col justify-between py-2 pr-2 min-w-0">
           <div>
-            <div
-              className={`${isDark ? "text-[#7B7B7B]" : "text-gray-600"
-                } text-xs font-semibold mb-0.5`}
-            >
-              Exchange Summary:
-            </div>
-            <div
-              className={`${isDark ? "text-white" : "text-gray-900"
-                } text-base font-semibold mb-1 flex items-center gap-2`}
-            >
-              <span>
-                {currentExchange.from_amount} {currentExchange.from_currency} → {currentExchange.to_amount} {currentExchange.to_currency}
-              </span>
-            </div>
-
-            {/* Reference Number */}
-            <div
-              className={`${isDark ? "text-[#7B7B7B]" : "text-gray-600"
-                } text-xs font-semibold mb-0.5 mt-3`}
-            >
-              Reference Number:
-            </div>
-            <div className="flex items-center mb-2">
-              <span
-                className={`${isDark ? "text-white" : "text-gray-900"
-                  } text-sm font-mono bg-gray-500/10 px-2 py-1 rounded text-xs`}
-              >
-                {currentExchange.transaction_reference || currentExchange.transaction_id}
-              </span>
-              <CopyButton
-                value={currentExchange.transaction_reference || currentExchange.transaction_id}
-                className="ml-2"
-              />
-            </div>
-
-            {!shouldHideExchangeRate && (
-              <>
-                <div
-                  className={`${isDark ? "text-[#7B7B7B]" : "text-gray-600"
-                    } text-xs font-semibold mb-0.5 mt-3`}
-                >
-                  Exchange Rate:
+            <div className="flex flex-row flex-wrap gap-x-6 gap-y-3 items-baseline mb-3">
+              <div>
+                <div className={`${labelMuted} text-xs font-semibold mb-0.5`}>
+                  {isDeposit ? "Amount you're sending:" : "You're sending:"}
                 </div>
-                <div
-                  className={`${isDark ? "text-white" : "text-gray-900"
-                    } text-sm`}
-                >
-                  1 {currentExchange.from_currency} = {displayedExchangeRate || currentExchange.exchange_rate} {currentExchange.to_currency}
+                <div className={`${labelStrong} text-base font-semibold`}>
+                  {fromAmountDisplay}{" "}
+                  <span className="uppercase">{fromCurrencyDisplay}</span>
                 </div>
-              </>
-            )}
-
-            {/* Bank Information */}
-            {currentExchange.admin_payment_info && (
-              <>
-                <div
-                  className={`${isDark ? "text-[#7B7B7B]" : "text-gray-600"
-                    } text-xs font-semibold mb-0.5 mt-3`}
-                >
-                  Bank:
+              </div>
+              <div>
+                <div className={`${labelMuted} text-xs font-semibold mb-0.5`}>
+                  {isDeposit ? "Amount you'll receive:" : "You'll receive:"}
                 </div>
-                <div className="flex items-center mb-1">
-                  <img
-                    src="/assets/image_7_jijlik.png"
-                    alt={currentExchange.admin_payment_info.provider_name}
-                    className="w-6 h-6 rounded-full mr-2"
-                  />
-                  <span
-                    className={`${isDark ? "text-white" : "text-gray-900"
-                      } text-sm font-semibold`}
+                <div className="text-[#1D8751] text-base font-semibold">
+                  {toAmountDisplay}{" "}
+                  <span className="uppercase">{toCurrencyDisplay}</span>
+                </div>
+              </div>
+              {referenceNumber ? (
+                <div>
+                  <div className={`${labelMuted} text-xs font-semibold mb-0.5`}>
+                    Reference Number
+                  </div>
+                  <div
+                    className={`${labelStrong} text-base font-semibold flex items-center gap-2`}
                   >
-                    {currentExchange.admin_payment_info.provider_name}
-                  </span>
+                    <code className="font-mono text-sm">{referenceNumber}</code>
+                    <CopyButton value={referenceNumber} className="shrink-0" />
+                  </div>
+                </div>
+              ) : null}
+            </div>
+
+            {!shouldHideExchangeRate && displayedExchangeRate ? (
+              <>
+                <div className={`${labelMuted} text-xs font-semibold mb-0.5 mt-1`}>
+                  Exchange Rate
+                </div>
+                <div className={`${labelStrong} text-sm mb-3`}>
+                  1 {fromCurrencyDisplay} = {displayedExchangeRate}{" "}
+                  {toCurrencyDisplay}
                 </div>
               </>
+            ) : null}
+
+            <div
+              className={`border-t border-dashed ${
+                isDark ? "border-[#7B7B7B]" : "border-gray-300"
+              } my-3`}
+            />
+
+            <div className={`${labelMuted} text-xs font-semibold mb-1`}>From</div>
+            <div className="flex items-center gap-2 mb-2">
+              <img
+                src={
+                  isDeposit
+                    ? BANK_LOGO_FALLBACK
+                    : FXP_LOGO
+                }
+                alt={isDeposit ? "Bank" : "FXPRIMUS"}
+                className="w-7 h-7 rounded-full object-cover shrink-0"
+                onError={(e) => {
+                  e.currentTarget.src = isDeposit
+                    ? BANK_LOGO_FALLBACK
+                    : FXP_LOGO;
+                }}
+              />
+              <div className="min-w-0">
+                <div className={`${labelStrong} text-sm font-semibold`}>
+                  {fromAmountDisplay}{" "}
+                  <span className="uppercase">{fromCurrencyDisplay}</span>
+                </div>
+                <div className={`${labelMuted} text-xs truncate`}>
+                  {isDeposit
+                    ? pickPaymentText(adminPayment?.provider_name, "Bank Transfer")
+                    : "Your FXPRIMUS Account"}
+                </div>
+              </div>
+            </div>
+            {isDeposit ? (
+              <>
+                {pickPaymentText(adminPayment?.account_name) ? (
+                  <>
+                    <div className={`${labelMuted} text-xs font-semibold mb-0.5`}>
+                      Account Name
+                    </div>
+                    <div className={`${labelStrong} text-sm mb-2`}>
+                      {adminPayment?.account_name}
+                    </div>
+                  </>
+                ) : null}
+                <CopyableMonoRow
+                  label="Account Number"
+                  value={resolvePaymentAccountNumber(adminPayment)}
+                  isDark={isDark}
+                />
+              </>
+            ) : (
+              <CopyableMonoRow
+                label="Forex Account Number"
+                value={pickPaymentText(sendForexAccount)}
+                isDark={isDark}
+              />
             )}
 
-            {/* Forex Account */}
-            {currentExchange.user_forex_account && (
+            <div className={`${labelMuted} text-xs font-semibold mb-1 mt-3`}>
+              To
+            </div>
+            <div className="flex items-center gap-2 mb-2">
+              <img
+                src={isDeposit ? FXP_LOGO : BANK_LOGO_FALLBACK}
+                alt={isDeposit ? "FXPRIMUS" : "Bank"}
+                className="w-7 h-7 rounded-full object-cover shrink-0"
+                onError={(e) => {
+                  e.currentTarget.src = isDeposit
+                    ? FXP_LOGO
+                    : BANK_LOGO_FALLBACK;
+                }}
+              />
+              <div className="min-w-0">
+                <div className={`${labelStrong} text-sm font-semibold`}>
+                  {toAmountDisplay}{" "}
+                  <span className="uppercase">{toCurrencyDisplay}</span>
+                </div>
+                <div className={`${labelMuted} text-xs truncate`}>
+                  {isDeposit
+                    ? "Your FXPRIMUS Account"
+                    : pickPaymentText(receiveBankInfo?.provider_name, "Bank Transfer")}
+                </div>
+              </div>
+            </div>
+            {isDeposit ? (
+              <CopyableMonoRow
+                label="Forex Account Number"
+                value={pickPaymentText(receiveForexAccount)}
+                isDark={isDark}
+              />
+            ) : (
               <>
-                <div
-                  className={`${isDark ? "text-[#7B7B7B]" : "text-gray-600"
-                    } text-xs font-semibold mb-0.5 mt-3`}
-                >
-                  Your Forex Account:
-                </div>
-                <div
-                  className={`${isDark ? "text-white" : "text-gray-900"
-                    } text-sm font-mono`}
-                >
-                  {currentExchange.user_forex_account}
-                </div>
+                {pickPaymentText(receiveBankInfo?.account_name) ? (
+                  <>
+                    <div className={`${labelMuted} text-xs font-semibold mb-0.5`}>
+                      Account Name
+                    </div>
+                    <div className={`${labelStrong} text-sm mb-2`}>
+                      {receiveBankInfo?.account_name}
+                    </div>
+                  </>
+                ) : null}
+                <CopyableMonoRow
+                  label="Account Number"
+                  value={resolvePaymentAccountNumber(receiveBankInfo)}
+                  isDark={isDark}
+                />
               </>
             )}
           </div>
         </div>
-        <div className="flex-shrink-0 ml-0 md:ml-6 flex items-center justify-center py-2">
-          {/* QR code */}
-          <div className="w-36 h-36 bg-white rounded-lg flex items-center justify-center">
-            <img
-              src={`https://api.qrserver.com/v1/create-qr-code/?size=180x180&data=${currentExchange.transaction_reference || currentExchange.transaction_id
-                }`}
-              alt="QR Code"
-              className="w-32 h-32"
+        <div className="flex-shrink-0 ml-0 md:ml-6 flex flex-col items-center justify-center py-2 gap-3 min-w-[9rem] max-w-[220px]">
+          {qrPayload ? (
+            <div className="w-36 h-36 bg-white rounded-lg flex items-center justify-center">
+              <img
+                src={`https://api.qrserver.com/v1/create-qr-code/?size=180x180&data=${encodeQrScanData(
+                  qrPayload
+                )}`}
+                alt="QR Code"
+                className="w-32 h-32"
+              />
+            </div>
+          ) : (
+            <div className="w-36 h-36 bg-white rounded-lg flex items-center justify-center">
+              <span className="text-gray-400 text-xs">No QR data</span>
+            </div>
+          )}
+          {howToSendDisplay ? (
+            <HowToSendDialBlock
+              value={howToSendDisplay}
+              isDark={isDark}
+              compact
+              dialOnMobileOnly
+              className="w-full"
             />
-          </div>
+          ) : null}
         </div>
       </div>
 
@@ -720,51 +906,107 @@ function ForexStatusContent() {
         </div>
 
         {/* From/To Content Row */}
-        <div className="flex items-center justify-between mt-2">
-          {/* From - Bank/USD */}
-          <div className="flex items-center gap-2">
-            <img
-              src="/assets/image_7_jijlik.png"
-              alt={currentExchange.admin_payment_info?.provider_name || "Bank"}
-              className="w-8 h-8 rounded-full"
-            />
-            <div>
-              <div
-                className={`${isDark ? "text-white" : "text-gray-900"
-                  } text-base font-semibold`}
-              >
-                {currentExchange.from_amount} {currentExchange.from_currency}
-              </div>
-              <div
-                className={`${isDark ? "text-[#7B7B7B]" : "text-gray-600"
-                  } text-sm`}
-              >
-                {currentExchange.admin_payment_info?.provider_name || "Bank Transfer"}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mt-2">
+          <div className="min-w-0">
+            <div className="flex items-center gap-2 mb-3">
+              <img
+                src={isDeposit ? BANK_LOGO_FALLBACK : FXP_LOGO}
+                alt={isDeposit ? "Bank" : "FXPRIMUS"}
+                className="w-8 h-8 rounded-full object-cover shrink-0"
+                onError={(e) => {
+                  e.currentTarget.src = isDeposit
+                    ? BANK_LOGO_FALLBACK
+                    : FXP_LOGO;
+                }}
+              />
+              <div className="min-w-0">
+                <div className={`${labelStrong} text-base font-semibold`}>
+                  {fromAmountDisplay}{" "}
+                  <span className="uppercase">{fromCurrencyDisplay}</span>
+                </div>
+                <div className={`${labelMuted} text-sm truncate`}>
+                  {isDeposit
+                    ? pickPaymentText(adminPayment?.provider_name, "Bank Transfer")
+                    : "Your FXPRIMUS Account"}
+                </div>
               </div>
             </div>
+            {isDeposit ? (
+              <>
+                {pickPaymentText(adminPayment?.account_name) ? (
+                  <>
+                    <div className={`${labelMuted} text-sm font-medium mb-1`}>
+                      Account Name
+                    </div>
+                    <div className={`${labelStrong} text-sm mb-3`}>
+                      {adminPayment?.account_name}
+                    </div>
+                  </>
+                ) : null}
+                <CopyableMonoRow
+                  label="Account Number"
+                  value={resolvePaymentAccountNumber(adminPayment)}
+                  isDark={isDark}
+                />
+              </>
+            ) : (
+              <CopyableMonoRow
+                label="Forex Account Number"
+                value={pickPaymentText(sendForexAccount)}
+                isDark={isDark}
+              />
+            )}
           </div>
 
-          {/* To - FXP */}
-          <div className="flex items-center gap-2">
-            <div className="text-right">
-              <div
-                className={`${isDark ? "text-white" : "text-gray-900"
-                  } text-base font-semibold`}
-              >
-                {currentExchange.to_amount} {currentExchange.to_currency}
+          <div className="min-w-0 md:text-right">
+            <div className="flex items-center gap-2 mb-3 md:justify-end">
+              <div className="min-w-0 md:text-right md:order-1">
+                <div className={`${labelStrong} text-base font-semibold`}>
+                  {toAmountDisplay}{" "}
+                  <span className="uppercase">{toCurrencyDisplay}</span>
+                </div>
+                <div className={`${labelMuted} text-sm truncate`}>
+                  {isDeposit
+                    ? "Your FXPRIMUS Account"
+                    : pickPaymentText(receiveBankInfo?.provider_name, "Bank Transfer")}
+                </div>
               </div>
-              <div
-                className={`${isDark ? "text-[#7B7B7B]" : "text-gray-600"
-                  } text-sm`}
-              >
-                FXPRIMUS Account
-              </div>
+              <img
+                src={isDeposit ? FXP_LOGO : BANK_LOGO_FALLBACK}
+                alt={isDeposit ? "FXPRIMUS" : "Bank"}
+                className="w-8 h-8 rounded-full object-cover shrink-0 md:order-2"
+                onError={(e) => {
+                  e.currentTarget.src = isDeposit
+                    ? FXP_LOGO
+                    : BANK_LOGO_FALLBACK;
+                }}
+              />
             </div>
-            <img
-              src="/images/asset-default.svg"
-              alt="FXPRIMUS"
-              className="w-8 h-8 rounded-full"
-            />
+            {isDeposit ? (
+              <CopyableMonoRow
+                label="Forex Account Number"
+                value={pickPaymentText(receiveForexAccount)}
+                isDark={isDark}
+              />
+            ) : (
+              <>
+                {pickPaymentText(receiveBankInfo?.account_name) ? (
+                  <>
+                    <div className={`${labelMuted} text-sm font-medium mb-1 md:text-right`}>
+                      Account Name
+                    </div>
+                    <div className={`${labelStrong} text-sm mb-3 md:text-right`}>
+                      {receiveBankInfo?.account_name}
+                    </div>
+                  </>
+                ) : null}
+                <CopyableMonoRow
+                  label="Account Number"
+                  value={resolvePaymentAccountNumber(receiveBankInfo)}
+                  isDark={isDark}
+                />
+              </>
+            )}
           </div>
         </div>
 

@@ -5,8 +5,9 @@ import {
   getUserPaymentDetailsWebSocket,
   WebSocketMessage,
 } from "../services/userPaymentDetailsWebSocket";
-import { fetchUserPaymentDetails as fetchP2PPaymentDetails } from "../slices/paymentMethodsSlice";
+import { fetchUserPaymentDetails as fetchP2PPaymentDetails, patchUserPaymentDetailFromWs } from "../slices/paymentMethodsSlice";
 import { fetchUserPaymentDetails as fetchExchangePaymentDetails } from "@/features/exchange/slices/paymentSlice";
+import { PaymentDetailUpdatedData } from "../services/userPaymentDetailsWebSocket";
 import { cookieUtils } from "@/lib/utils/cookieUtils";
 import { logger } from "@/lib/utils/logger";
 
@@ -66,6 +67,24 @@ export const useUserPaymentDetailsWebSocket = (
             "user-payment-details",
             `Payment detail ${message.type}, refetching user payment details`
           );
+
+          if (
+            message.type === "payment_detail_updated" ||
+            message.type === "payment_detail_added"
+          ) {
+            const payload = message.data as PaymentDetailUpdatedData | undefined;
+            if (payload && typeof payload === "object" && !Array.isArray(payload)) {
+              dispatch(patchUserPaymentDetailFromWs(payload as PaymentDetailUpdatedData));
+            }
+          } else if (message.type === "payment_details_list") {
+            const list = message.data as PaymentDetailUpdatedData[] | undefined;
+            if (Array.isArray(list)) {
+              list.forEach((item) => {
+                dispatch(patchUserPaymentDetailFromWs(item));
+              });
+            }
+          }
+
           // Refetch P2P payment methods (used by UserPaymentSelector, Adds, withdrawal form, etc.)
           dispatch(fetchP2PPaymentDetails() as any);
           // Refetch exchange payment details (with cache invalidation)

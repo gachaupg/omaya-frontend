@@ -192,7 +192,7 @@ function Cash({ sharedFeesError }: CashProps) {
     const withdrawalPayload = {
       requested_amount: amount,
       withdrawal_method: "cash",
-      user_payment_detail_id: selectedPaymentDetails[0]?.id
+      user_payment_detail_id: Number(selectedPaymentDetails[0].id),
     }
 
     dispatch(createCashWithdrawal(withdrawalPayload))
