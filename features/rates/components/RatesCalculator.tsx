@@ -33,6 +33,21 @@ import {
   type RegisteredAccountDetail,
 } from "@/features/express/utils/registeredAccountHelpers";
 import {
+  getPaymentRejectionReason,
+  getPaymentRestrictionMessage,
+  getPaymentStatusBannerLines,
+  getPaymentStatusBannerStyle,
+  getPaymentStatusBannerTitle,
+  getPaymentStatusShortLabel,
+  hasPaymentDetailMeaningfulChange,
+  isApprovedPaymentStatus,
+  normalizePaymentStatus,
+  notifyPaymentMethodAddResult,
+  pickPreferredPaymentAccountForAutoSelect,
+  resolvePaymentStatusBannerAccountForSelection,
+} from "@/features/express/utils/paymentAccountStatus";
+import PaymentAccountStatusBanner from "@/features/express/components/PaymentAccountStatusBanner";
+import {
   createExpressWithdrawal,
   fetchCommissionDetails,
   fetchExchangeCommissionLookup,
@@ -43,6 +58,10 @@ import {
   type CommissionLookupResponse,
   type ExchangeCommissionLookupResponse,
 } from "../../express/api";
+import {
+  resolveFxpForwardReceiveAmount,
+  resolveFxpReversePayAmount,
+} from "@/features/express/utils/fxpCommission";
 import { Asset, DepositResponse } from "../../exchange/types";
 import {
   resolvePaymentProviderId,
@@ -753,7 +772,7 @@ const RatesCalculator = ({ activeTab = 'crypto' }: RatesCalculatorProps) => {
       if (match) {
         setSelectedPaymentDetails([match]);
       }
-      showToast.success("Payment method added successfully!");
+      notifyPaymentMethodAddResult(match);
     } catch {
       if (!paymentAddRefreshErrorToastShownRef.current) {
         paymentAddRefreshErrorToastShownRef.current = true;
@@ -822,28 +841,6 @@ const RatesCalculator = ({ activeTab = 'crypto' }: RatesCalculatorProps) => {
     return ticker === "USDT Tether" ? "usdt" : ticker.toLowerCase();
   };
 
-const normalizePaymentStatus = (status?: string) =>
-  (status || "").toString().trim().toLowerCase();
-
-const isApprovedPaymentStatus = (status?: string) =>
-  ["approved", "verified"].includes(normalizePaymentStatus(status));
-
-const isFrozenPaymentStatus = (status?: string) => {
-  const normalized = normalizePaymentStatus(status);
-  return (
-    normalized.includes("frozen") ||
-    normalized.includes("freeze") ||
-    normalized.includes("blocked") ||
-    normalized.includes("suspend") ||
-    normalized.includes("disabled")
-  );
-};
-
-const getPaymentRestrictionMessage = (status?: string) =>
-  isFrozenPaymentStatus(status)
-    ? "This account is frozen. Please contact Customer Support."
-    : "Selected payment method is pending verification";
-
   const validationCurrency = selectedAsset ? getValidationCurrency(selectedAsset) : undefined;
   const validationNetwork = selectedAsset
     ? String(getAssetNetwork(selectedAsset) || "bsc").toLowerCase()
@@ -873,34 +870,12 @@ const getPaymentRestrictionMessage = (status?: string) =>
   /** FX Primus withdrawal: same as express withdrawal — ForexWithdrawal + forex create-exchange + forex-status WS (not createExpressWithdrawal / Exchanging). */
   const isRatesFxpWithdrawal =
     !isDepositMode && !!selectedAsset && isForexPrimusAsset(selectedAsset);
-  const getFxpReverseAmount = (receiveValue: number): number => {
-    if (!Number.isFinite(receiveValue)) return 0;
-    const backendFromAmount = Number(apiCommissionDetails?.from_amount);
-    const backendToAmount = Number(apiCommissionDetails?.to_amount);
-    if (
-      Number.isFinite(backendFromAmount) &&
-      Number.isFinite(backendToAmount) &&
-      backendFromAmount > 0 &&
-      backendToAmount > 0
-    ) {
-      return receiveValue * (backendFromAmount / backendToAmount);
-    }
-    const feeFromPayload = Number(apiCommissionDetails?.calculated_fee ?? apiCommissionDetails?.fee);
-    if (Number.isFinite(feeFromPayload) && feeFromPayload >= 0) {
-      return receiveValue + feeFromPayload;
-    }
-    const mode = (apiCommissionDetails?.commission_mode || "").toString().toLowerCase();
-    const isPercentageFlag = apiCommissionDetails?.is_percentage;
-    const treatAsFlatFee = mode === "flat_fee" || isPercentageFlag === false;
-    if (treatAsFlatFee) {
-      return receiveValue;
-    }
-    const rate = Number(apiCommissionDetails?.commission_rate ?? apiCommission ?? 0);
-    if (Number.isFinite(rate) && rate > 0 && rate < 100) {
-      return receiveValue / (1 - rate / 100);
-    }
-    return receiveValue;
-  };
+  const getFxpReverseAmount = (receiveValue: number): number =>
+    resolveFxpReversePayAmount(
+      apiCommissionDetails,
+      receiveValue,
+      apiCommission
+    );
 
   const sanitizeNumericInput = (raw: string): string => {
     if (!raw) return "";
@@ -966,21 +941,12 @@ const getPaymentRestrictionMessage = (status?: string) =>
           .then((details) => {
             setApiCommission(Number(details?.commission_rate ?? 0));
             setApiCommissionDetails(details);
-            const backendToAmount = Number(details?.to_amount);
-            const backendFromAmount = Number(details?.from_amount);
-            if (
-              Number.isFinite(backendFromAmount) &&
-              Number.isFinite(backendToAmount) &&
-              backendToAmount > 0
-            ) {
-              const normalizedFromAmount =
-                newAmount * (backendFromAmount / backendToAmount);
-              setAmount(Math.max(0, normalizedFromAmount).toFixed(2));
-            } else if (Number.isFinite(backendFromAmount)) {
-              setAmount(Math.max(0, backendFromAmount).toFixed(2));
-            } else {
-              setAmount(Math.max(0, getFxpReverseAmount(newAmount)).toFixed(2));
-            }
+            const pay = resolveFxpReversePayAmount(
+              details,
+              newAmount,
+              Number(details?.commission_rate ?? 0)
+            );
+            setAmount(Math.max(0, pay).toFixed(2));
           })
           .catch(() => {
             setAmount(Math.max(0, getFxpReverseAmount(newAmount)).toFixed(2));
@@ -1523,24 +1489,22 @@ const getPaymentRestrictionMessage = (status?: string) =>
           setApiCommission(Number(details?.commission_rate ?? 0));
           setApiCommissionDetails(details);
           if (isForexPrimusAsset(selectedAsset)) {
-            const backendToAmount = Number(details?.to_amount);
-            const backendFromAmount = Number(details?.from_amount);
-            if (isCalculatingFromPay && Number.isFinite(backendToAmount)) {
-              setReceiveAmount(String(Math.max(0, backendToAmount)));
-            } else if (!isCalculatingFromPay && Number.isFinite(backendFromAmount)) {
-              const requestedReceive = parseFloat(receiveAmount) || 0;
-              // Normalize reverse calc to the exact requested "You Get" amount using backend ratio.
-              if (
-                requestedReceive > 0 &&
-                Number.isFinite(backendToAmount) &&
-                backendToAmount > 0
-              ) {
-                const normalizedFromAmount =
-                  requestedReceive * (backendFromAmount / backendToAmount);
-                setAmount(String(Math.max(0, normalizedFromAmount)));
-              } else {
-                setAmount(String(Math.max(0, backendFromAmount)));
-              }
+            const payValue = parseFloat(amount) || 0;
+            const receiveValue = parseFloat(receiveAmount) || 0;
+            if (isCalculatingFromPay) {
+              const receive = resolveFxpForwardReceiveAmount(
+                details,
+                payValue,
+                Number(details?.commission_rate ?? 0)
+              );
+              setReceiveAmount(String(Math.max(0, receive)));
+            } else {
+              const pay = resolveFxpReversePayAmount(
+                details,
+                receiveValue,
+                Number(details?.commission_rate ?? 0)
+              );
+              setAmount(String(Math.max(0, pay)));
             }
           }
         })
@@ -1776,11 +1740,13 @@ const getPaymentRestrictionMessage = (status?: string) =>
     if (!usesLegacyPercentCommission(selectedAsset) || apiCommission === null) return;
     if (isCalculatingFromPay && parseFloat(amount) > 0) {
       if (isForexPrimusAsset(selectedAsset)) {
-        const backendToAmount = Number(apiCommissionDetails?.to_amount);
-        if (Number.isFinite(backendToAmount)) {
-          setReceiveAmount(Math.max(0, backendToAmount).toFixed(2));
-          return;
-        }
+        const receive = resolveFxpForwardReceiveAmount(
+          apiCommissionDetails,
+          parseFloat(amount) || 0,
+          apiCommission
+        );
+        setReceiveAmount(Math.max(0, receive).toFixed(2));
+        return;
       }
       const amt = parseFloat(amount) || 0;
       const calculatedReceive = Math.max(0, amt * (1 - apiCommission / 100));
@@ -1788,22 +1754,7 @@ const getPaymentRestrictionMessage = (status?: string) =>
     } else if (!isCalculatingFromPay && parseFloat(receiveAmount) > 0) {
       const recv = parseFloat(receiveAmount) || 0;
       const calculatedAmount = isForexPrimusAsset(selectedAsset)
-        ? (() => {
-            const backendFromAmount = Number(apiCommissionDetails?.from_amount);
-            const backendToAmount = Number(apiCommissionDetails?.to_amount);
-            if (
-              Number.isFinite(backendFromAmount) &&
-              Number.isFinite(backendToAmount) &&
-              backendFromAmount > 0 &&
-              backendToAmount > 0
-            ) {
-              return recv * (backendFromAmount / backendToAmount);
-            }
-            if (Number.isFinite(backendFromAmount) && backendFromAmount > 0) {
-              return backendFromAmount;
-            }
-            return getFxpReverseAmount(recv);
-          })()
+        ? getFxpReverseAmount(recv)
         : recv / (1 - apiCommission / 100);
       setAmount(calculatedAmount.toFixed(2));
     }
@@ -3137,12 +3088,17 @@ const getPaymentRestrictionMessage = (status?: string) =>
     const selectedId = selectedPaymentDetails[0]?.id;
     const selectedStillValid =
       selectedId != null &&
-      enhancedFilteredUserPaymentDetails.some((d: any) => d?.id === selectedId);
+      enhancedFilteredUserPaymentDetails.some(
+        (d: any) => String(d?.id) === String(selectedId)
+      );
 
     if (providerChanged) {
       lastRegisteredProviderRef.current = providerKey;
       if (hasAccounts) {
-        setSelectedPaymentDetails([enhancedFilteredUserPaymentDetails[0]]);
+        const preferred = pickPreferredPaymentAccountForAutoSelect(
+          enhancedFilteredUserPaymentDetails
+        );
+        setSelectedPaymentDetails(preferred ? [preferred] : []);
       } else {
         setSelectedPaymentDetails([]);
       }
@@ -3151,12 +3107,58 @@ const getPaymentRestrictionMessage = (status?: string) =>
 
     if (!selectedStillValid) {
       if (hasAccounts) {
-        setSelectedPaymentDetails([enhancedFilteredUserPaymentDetails[0]]);
+        const preferred = pickPreferredPaymentAccountForAutoSelect(
+          enhancedFilteredUserPaymentDetails
+        );
+        setSelectedPaymentDetails(preferred ? [preferred] : []);
       } else if (selectedPaymentDetails.length > 0) {
         setSelectedPaymentDetails([]);
       }
     }
   }, [payBank, enhancedFilteredUserPaymentDetails, selectedPaymentDetails]);
+
+  const selectedPaymentStatus = normalizePaymentStatus(
+    selectedPaymentDetails[0]?.status || ""
+  );
+  const selectedPaymentRejectionReason = getPaymentRejectionReason(
+    selectedPaymentDetails[0]
+  );
+  const selectedPaymentBannerStyle = getPaymentStatusBannerStyle(selectedPaymentStatus);
+  const selectedPaymentBannerLines = getPaymentStatusBannerLines(
+    selectedPaymentStatus,
+    selectedPaymentRejectionReason
+  );
+  const isSelectedPaymentRestricted = !!(
+    selectedPaymentDetails.length > 0 &&
+    selectedPaymentStatus &&
+    !isApprovedPaymentStatus(selectedPaymentStatus)
+  );
+
+  const paymentStatusBannerAccount = useMemo(
+    () =>
+      resolvePaymentStatusBannerAccountForSelection(
+        enhancedFilteredUserPaymentDetails,
+        selectedPaymentDetails[0]
+      ),
+    [enhancedFilteredUserPaymentDetails, selectedPaymentDetails]
+  );
+
+  // Sync selected payment account when WebSocket refetches and status changes.
+  useEffect(() => {
+    if (selectedPaymentDetails.length === 0 || enhancedFilteredUserPaymentDetails.length === 0) {
+      return;
+    }
+    const selectedId = selectedPaymentDetails[0].id;
+    const freshDetail = enhancedFilteredUserPaymentDetails.find(
+      (d: RegisteredAccountDetail) =>
+        d.id === selectedId || String(d.id) === String(selectedId)
+    );
+    const current = selectedPaymentDetails[0];
+    if (freshDetail && hasPaymentDetailMeaningfulChange(current, freshDetail)) {
+      setSelectedPaymentDetails([freshDetail]);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- sync when account list refreshes
+  }, [enhancedFilteredUserPaymentDetails]);
 
   const hasRegisteredAccountSelected =
     selectedPaymentDetails.length > 0 &&
@@ -3968,7 +3970,10 @@ const getPaymentRestrictionMessage = (status?: string) =>
       const status = selectedPaymentDetails[0]?.status;
       const isRestricted = status && !isApprovedPaymentStatus(status);
       if (isRestricted) {
-        const msg = getPaymentRestrictionMessage(status);
+        const msg = getPaymentRestrictionMessage(
+          status,
+          getPaymentRejectionReason(selectedPaymentDetails[0])
+        );
         setPaymentMethodError(msg);
         showToast.error(msg);
         return;
@@ -4589,16 +4594,9 @@ const getPaymentRestrictionMessage = (status?: string) =>
                           {t("rates.registeredAccount", "Registered Account")}
                         </label>
                         {(() => {
-                          const status = (
-                            selectedPaymentDetails[0]?.status || ""
-                          )
-                            .toString()
-                            .toLowerCase();
-                          const isPending =
-                            status !== "" &&
-                            status !== "approved" &&
-                            status !== "verified";
-                          if (!isPending) return null;
+                          const status = selectedPaymentDetails[0]?.status;
+                          const isRestricted = !!(status && !isApprovedPaymentStatus(status));
+                          if (!isRestricted) return null;
 
                           const accountNumber =
                             selectedPaymentDetails[0]?.account_number ||
@@ -4606,13 +4604,15 @@ const getPaymentRestrictionMessage = (status?: string) =>
                             "";
                           const accountName =
                             selectedPaymentDetails[0]?.account_name || "";
+                          const statusLabel = getPaymentStatusShortLabel(status);
+                          const badgeStyle = getPaymentStatusBannerStyle(status);
 
                           return (
                             <span
-                              className="inline-flex items-center px-3 py-1 rounded-full text-xs font-semibold border border-[#F79330]/40 bg-[#F79330]/10 text-[#F79330]"
-                              title="Account pending approval"
+                              className={`inline-flex items-center px-3 py-1 rounded-full text-xs font-semibold border ${badgeStyle.container} ${badgeStyle.accent}`}
+                              title={getPaymentStatusBannerTitle(status)}
                             >
-                              {accountNumber} - {accountName} (Pending)
+                              {accountNumber} - {accountName} ({statusLabel})
                             </span>
                           );
                         })()}
@@ -4649,12 +4649,19 @@ const getPaymentRestrictionMessage = (status?: string) =>
                                 >
                                   Refresh
                                 </button>
+                                <button
+                                  type="button"
+                                  onClick={() => setIsPaymentModalOpen(true)}
+                                  className="text-xs font-medium text-[#1D8751] hover:text-[#166b3e] underline"
+                                >
+                                  Add Account
+                                </button>
                               </div>
                               <CustomSelect
                                 options={(dropdownAccounts || []).map((detail) => {
                                   const status = detail?.status;
-                                  const isPending = !!(status && !isApprovedPaymentStatus(status));
-                                  const isFrozen = isFrozenPaymentStatus(status);
+                                  const isRestricted = !!(status && !isApprovedPaymentStatus(status));
+                                  const statusLabel = getPaymentStatusShortLabel(status);
                                   let providerName = detail.payment_provider_name || detail.provider_name || "Unknown Provider";
                                   let providerLogo = detail.provider_logo;
                                   if (sortedPublicPaymentProviders.length > 0) {
@@ -4678,12 +4685,12 @@ const getPaymentRestrictionMessage = (status?: string) =>
                                   const displayLabel = `${accountNumber} - ${accountName}`;
                                   return {
                                     value: detail.id.toString(),
-                                    label: isPending
-                                      ? `${displayLabel} (${isFrozen ? "Frozen" : "Pending"})`
+                                    label: isRestricted
+                                      ? `${displayLabel} (${statusLabel})`
                                       : displayLabel,
                                     logo: providerLogo || undefined,
                                     title: `Account Number: ${accountNumber} | Account Name: ${accountName}${providerName ? ` | Provider: ${providerName}` : ""}`,
-                                    disabled: isPending,
+                                    disabled: isRestricted,
                                   };
                                 })}
                                 value={selectedPaymentDetails.length > 0 ? selectedPaymentDetails[0].id.toString() : ""}
@@ -4705,6 +4712,10 @@ const getPaymentRestrictionMessage = (status?: string) =>
                                 sizeMode="card"
                                 triggerClassName={ratesSelectTriggerClass(isDark)}
                                 className="w-full min-w-0"
+                              />
+                              <PaymentAccountStatusBanner
+                                account={paymentStatusBannerAccount}
+                                className="mt-2"
                               />
                             </div>
                           );
@@ -4728,31 +4739,6 @@ const getPaymentRestrictionMessage = (status?: string) =>
                         }
                       })()}
 
-                      {isFieldsSwapped &&
-                        !isFirstCardSubmitted &&
-                        selectedPaymentDetails.length > 0 &&
-                        (() => {
-                          const status = selectedPaymentDetails[0]?.status;
-                          return !!(status && !isApprovedPaymentStatus(status));
-                        })() && (
-                          <div className="mb-3 flex items-start gap-3 p-4 rounded-2xl bg-[#F79330]/10 border border-[#F79330]/40">
-                            <svg className="w-5 h-5 text-[#F79330] flex-shrink-0 mt-0.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
-                            </svg>
-                            <div className="flex-1">
-                              <p className="text-sm font-semibold text-[#F79330]">
-                                {isFrozenPaymentStatus(selectedPaymentDetails[0]?.status)
-                                  ? "Account Frozen"
-                                  : "Account Pending Approval"}
-                              </p>
-                              <p className="text-xs text-[#F79330]/80 mt-1">
-                                {isFrozenPaymentStatus(selectedPaymentDetails[0]?.status)
-                                  ? "Your account is frozen. Please contact support for assistance."
-                                  : "Your account is pending approval. Please contact support to get it approved."}
-                              </p>
-                            </div>
-                          </div>
-                        )}
                     </div>
                   )}
                 </div>
@@ -5085,21 +5071,17 @@ const getPaymentRestrictionMessage = (status?: string) =>
                         </label>
                         {(() => {
                           const status = selectedPaymentDetails[0]?.status;
-                          const isPending = !!(status && !isApprovedPaymentStatus(status));
-                          if (!isPending) return null;
+                          const isRestricted = !!(status && !isApprovedPaymentStatus(status));
+                          if (!isRestricted) return null;
+                          const statusLabel = getPaymentStatusShortLabel(status);
+                          const badgeStyle = getPaymentStatusBannerStyle(status);
 
                           return (
                             <span
-                              className="inline-flex items-center px-3 py-1 rounded-full text-xs font-semibold border border-[#F79330]/40 bg-[#F79330]/10 text-[#F79330]"
-                              title={
-                                isFrozenPaymentStatus(status)
-                                  ? "Account frozen"
-                                  : "Account pending approval"
-                              }
+                              className={`inline-flex items-center px-3 py-1 rounded-full text-xs font-semibold border ${badgeStyle.container} ${badgeStyle.accent}`}
+                              title={getPaymentStatusBannerTitle(status)}
                             >
-                              {isFrozenPaymentStatus(status)
-                                ? "Frozen Registered Account"
-                                : "Pending Registered Account"}
+                              {statusLabel} Registered Account
                             </span>
                           );
                         })()}
@@ -5119,6 +5101,15 @@ const getPaymentRestrictionMessage = (status?: string) =>
                         if (hasFilteredAccounts) {
                           return (
                             <>
+                            <div className="flex items-center justify-end mb-2">
+                              <button
+                                type="button"
+                                onClick={() => setIsPaymentModalOpen(true)}
+                                className="text-xs font-medium text-[#1D8751] hover:text-[#166b3e] underline"
+                              >
+                                Add Account
+                              </button>
+                            </div>
                             <CustomSelect
                               options={dropdownAccounts.map((detail) => {
                                 const normalizeProviderName = (name: string | null | undefined): string => {
@@ -5159,6 +5150,10 @@ const getPaymentRestrictionMessage = (status?: string) =>
                               sizeMode="card"
                               triggerClassName={ratesSelectTriggerClass(isDark)}
                               className="w-full"
+                            />
+                            <PaymentAccountStatusBanner
+                              account={paymentStatusBannerAccount}
+                              className="mt-2"
                             />
                             </>
                           );

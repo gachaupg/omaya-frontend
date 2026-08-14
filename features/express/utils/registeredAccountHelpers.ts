@@ -15,6 +15,9 @@ export type RegisteredAccountDetail = {
   wallet_address?: string | null;
   provider_logo?: string | null;
   status?: string;
+  rejection_reason?: string | null;
+  rejectionReason?: string | null;
+  reason?: string | null;
   provider_name?: string;
   payment_provider?: string;
   created_at?: string;

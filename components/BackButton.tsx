@@ -9,7 +9,12 @@ export default function BackButton() {
 
     const handleBack = () => {
         const legalReturnPath = peekLegalReturnPath();
-        if (legalReturnPath) {
+        const currentPath =
+            typeof window !== "undefined"
+                ? `${window.location.pathname}${window.location.search}${window.location.hash}`
+                : "";
+
+        if (legalReturnPath && legalReturnPath !== currentPath) {
             router.push(legalReturnPath);
             return;
         }

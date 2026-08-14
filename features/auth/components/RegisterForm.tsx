@@ -331,7 +331,6 @@ export default function RegistrationPage() {
       const draft = draftRef.current;
       if (!hasRegisterDraftContent(draft)) return;
       saveRegisterDraft(draft);
-      setRegisterLegalReturnState(draft);
     };
   }, []);
 

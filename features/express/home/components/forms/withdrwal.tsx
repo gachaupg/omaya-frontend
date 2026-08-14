@@ -58,6 +58,11 @@ import {
   isForexPrimusAsset,
 } from "../../../api";
 import {
+  parseFxpBackendAmount,
+  resolveFxpForwardReceiveAmount,
+  resolveFxpReversePayAmount,
+} from "@/features/express/utils/fxpCommission";
+import {
   ExpressWithdrawalPayload,
   ExpressWithdrawalResponse,
 } from "../../../types";
@@ -114,6 +119,18 @@ import {
   refreshRegisteredAccountsAfterAdd,
   type RegisteredAccountDetail,
 } from "@/features/express/utils/registeredAccountHelpers";
+import {
+  getPaymentRejectionReason,
+  getPaymentRestrictionMessage,
+  getPaymentStatusShortLabel,
+  hasPaymentDetailMeaningfulChange,
+  isApprovedPaymentStatus,
+  normalizePaymentStatus,
+  notifyPaymentMethodAddResult,
+  pickPreferredPaymentAccountForAutoSelect,
+  resolvePaymentStatusBannerAccountForSelection,
+} from "@/features/express/utils/paymentAccountStatus";
+import PaymentAccountStatusBanner from "@/features/express/components/PaymentAccountStatusBanner";
 
 const MISSING_USDT_USD_RATE_ERROR =
   "No exchange rate configured for USDT to USD";
@@ -263,39 +280,6 @@ const extractApiErrorMessage = (error: any, fallback: string): string => {
 
   return toUserFacingMessage(fallback);
 };
-
-const FROZEN_ACCOUNT_MESSAGE =
-  "This account is frozen. Please contact Customer Support.";
-
-const normalizePaymentStatus = (status?: string) =>
-  (status || "").toString().trim().toLowerCase();
-
-const isApprovedPaymentStatus = (status?: string) =>
-  [
-    "approved",
-    "verified",
-    "active",
-    "enabled",
-    "accepted",
-    "completed",
-    "success",
-  ].includes(normalizePaymentStatus(status));
-
-const isFrozenPaymentStatus = (status?: string) => {
-  const normalized = normalizePaymentStatus(status);
-  return (
-    normalized.includes("frozen") ||
-    normalized.includes("freeze") ||
-    normalized.includes("blocked") ||
-    normalized.includes("suspend") ||
-    normalized.includes("disabled")
-  );
-};
-
-const getPaymentRestrictionMessage = (status?: string) =>
-  isFrozenPaymentStatus(status)
-    ? FROZEN_ACCOUNT_MESSAGE
-    : "Selected payment method is pending verification";
 
 // Add UserPaymentSelector component
 const UserPaymentSelector = ({
@@ -1106,7 +1090,7 @@ export default function WithdrawalForm({
       if (match) {
         setSelectedPaymentDetails([match as UserPaymentDetail]);
       }
-      showToast.success("Payment method added successfully!");
+      notifyPaymentMethodAddResult(match);
     } catch (error) {
             if (!paymentAddRefreshErrorToastShownRef.current) {
         paymentAddRefreshErrorToastShownRef.current = true;
@@ -1313,13 +1297,16 @@ export default function WithdrawalForm({
     const selectedStillValid =
       selectedId != null &&
       enhancedFilteredUserPaymentDetails.some(
-        (detail) => detail.id === selectedId
+        (detail) => String(detail.id) === String(selectedId)
       );
 
     if (providerChanged) {
       lastRegisteredProviderRef.current = providerKey;
       if (hasAccounts) {
-        setSelectedPaymentDetails([enhancedFilteredUserPaymentDetails[0]]);
+        const preferred = pickPreferredPaymentAccountForAutoSelect(
+          enhancedFilteredUserPaymentDetails
+        );
+        setSelectedPaymentDetails(preferred ? [preferred] : []);
       } else {
         setSelectedPaymentDetails([]);
       }
@@ -1328,20 +1315,26 @@ export default function WithdrawalForm({
 
     if (!selectedStillValid) {
       if (hasAccounts) {
-        setSelectedPaymentDetails([enhancedFilteredUserPaymentDetails[0]]);
+        const preferred = pickPreferredPaymentAccountForAutoSelect(
+          enhancedFilteredUserPaymentDetails
+        );
+        setSelectedPaymentDetails(preferred ? [preferred] : []);
       } else if (selectedPaymentDetails.length > 0) {
         setSelectedPaymentDetails([]);
       }
     }
   }, [payBank, enhancedFilteredUserPaymentDetails, selectedPaymentDetails]);
 
-  // Use selected account, or fallback to the first filtered one.
+  // Use selected account, or fallback to the best auto-select candidate.
   const effectiveSelectedPaymentDetails =
     selectedPaymentDetails.length > 0
       ? selectedPaymentDetails
-      : enhancedFilteredUserPaymentDetails.length > 0
-        ? [enhancedFilteredUserPaymentDetails[0]]
-        : [];
+      : (() => {
+          const preferred = pickPreferredPaymentAccountForAutoSelect(
+            enhancedFilteredUserPaymentDetails
+          );
+          return preferred ? [preferred] : [];
+        })();
 
   // Reset form if user changes asset, payment method, or amount after submission
   const selectedAssetKey = selectedAsset
@@ -1405,7 +1398,6 @@ export default function WithdrawalForm({
     selectedPaymentDetails[0]?.status || ""
   );
   const isSelectedPaymentApproved = isApprovedPaymentStatus(selectedPaymentStatus);
-  const isSelectedPaymentFrozen = isFrozenPaymentStatus(selectedPaymentStatus);
   const isSelectedPaymentPending = !!(
     payBank &&
     selectedPaymentDetails.length > 0 &&
@@ -1419,6 +1411,15 @@ export default function WithdrawalForm({
     );
   const isRegisteredAccountMissing = !!payBank && !hasRegisteredAccountSelected;
 
+  const paymentStatusBannerAccount = useMemo(
+    () =>
+      resolvePaymentStatusBannerAccountForSelection(
+        enhancedFilteredUserPaymentDetails,
+        selectedPaymentDetails[0]
+      ),
+    [enhancedFilteredUserPaymentDetails, selectedPaymentDetails]
+  );
+
   // Sync selectedPaymentDetails when accounts refresh and status changes (e.g. Pending → APPROVED)
   useEffect(() => {
     if (selectedPaymentDetails.length === 0 || enhancedFilteredUserPaymentDetails.length === 0) return;
@@ -1427,16 +1428,7 @@ export default function WithdrawalForm({
       (d: any) => d.id === selectedId || String(d.id) === String(selectedId)
     );
     const current = selectedPaymentDetails[0];
-    const hasMeaningfulChange =
-      !!freshDetail &&
-      (
-        String(current?.id) !== String(freshDetail.id) ||
-        (current?.status ?? "") !== (freshDetail.status ?? "") ||
-        (current?.account_name ?? "") !== (freshDetail.account_name ?? "") ||
-        (current?.account_number ?? "") !== (freshDetail.account_number ?? "") ||
-        (current?.wallet_address ?? "") !== (freshDetail.wallet_address ?? "")
-      );
-    if (hasMeaningfulChange) {
+    if (freshDetail && hasPaymentDetailMeaningfulChange(current, freshDetail)) {
       setSelectedPaymentDetails([freshDetail]);
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps -- only sync when source data changes
@@ -1983,22 +1975,26 @@ export default function WithdrawalForm({
           setIsCalculating(false);
           setIsCalculatingReceive(false);
           if (isForexAsset(selectedAsset)) {
-            const backendToAmount = Number(details?.to_amount);
-            const backendFromAmount = Number(details?.from_amount);
-            if (isCalculatingFromPay && Number.isFinite(backendToAmount)) {
-              const safeToAmount = capReceiveAmount(Math.max(0, backendToAmount));
+            if (isCalculatingFromPay) {
+              const receive = resolveFxpForwardReceiveAmount(
+                details,
+                commissionLookupAmount,
+                Number(details?.commission_rate ?? 0)
+              );
+              const safeToAmount = capReceiveAmount(Math.max(0, receive));
               setGetAmount(safeToAmount);
               setGetAmountInput(String(safeToAmount));
               setPreviousValidAmount(String(safeToAmount));
-            } else if (!isCalculatingFromPay && Number.isFinite(backendFromAmount)) {
+            } else {
               const requestedGetAmount =
                 parseLocalizedAmountString(getAmountInput) || getAmount;
-              const normalizedFromAmount =
-                Number.isFinite(backendToAmount) && backendToAmount > 0
-                  ? requestedGetAmount * (backendFromAmount / backendToAmount)
-                  : backendFromAmount;
-              setPayAmount(Math.max(0, normalizedFromAmount));
-              setPayAmountInput(String(Math.max(0, normalizedFromAmount)));
+              const pay = resolveFxpReversePayAmount(
+                details,
+                requestedGetAmount,
+                Number(details?.commission_rate ?? 0)
+              );
+              setPayAmount(Math.max(0, pay));
+              setPayAmountInput(String(Math.max(0, pay)));
             }
           }
         })
@@ -2062,14 +2058,18 @@ export default function WithdrawalForm({
       if (isCalculatingFromPay && payAmount > 0) {
         // Forward: You Send -> You Receive
         if (isForexAsset(selectedAsset)) {
-          const backendToAmount = Number(apiCommissionDetails?.to_amount);
-          if (Number.isFinite(backendToAmount)) {
-            const safeAmount = capReceiveAmount(Math.max(0, backendToAmount));
+          if (isCalculatingFromPay && payAmount > 0) {
+            const receive = resolveFxpForwardReceiveAmount(
+              apiCommissionDetails,
+              payAmount,
+              apiCommission
+            );
+            const safeAmount = capReceiveAmount(Math.max(0, receive));
             setGetAmount(safeAmount);
             setGetAmountInput(String(safeAmount));
             setPreviousValidAmount(String(safeAmount));
-            return;
           }
+          return;
         }
         const commissionAmount = (payAmount * apiCommission) / 100;
         const calculatedGetAmount = capReceiveAmount(Math.max(0, payAmount - commissionAmount));
@@ -3943,7 +3943,10 @@ export default function WithdrawalForm({
     // Check if selected payment is pending (not approved/verified)
     const selected = effectiveSelectedPaymentDetails[0];
     if (selected?.status && !isApprovedPaymentStatus(selected.status)) {
-      const restrictionMessage = getPaymentRestrictionMessage(selected.status);
+      const restrictionMessage = getPaymentRestrictionMessage(
+        selected.status,
+        getPaymentRejectionReason(selected)
+      );
       setPaymentMethodError(restrictionMessage);
       errors.push(restrictionMessage);
       showToast.error(restrictionMessage);
@@ -5155,43 +5158,48 @@ export default function WithdrawalForm({
 
                   {/* Registered Account Section */}
                   {payBank && (
-                    <div className="mt-3 w-full relative z-10">
-                      <label className="block text-[17px] text-[#475569] dark:text-[#9CA3AF] mb-2 font-semibold">
-                        Registered Account
-                      </label>
+                    <div className="mt-3 w-full relative z-10 space-y-2">
                       {!isAuthenticated ? (
-                        <p className="text-[#F79330] text-sm">
-                          Login to view your registered accounts.{" "}
-                          <button
-                            type="button"
-                            onClick={() => {
-                              try {
-                                setAuthRedirectPath("/?mode=withdrawal");
-                              } catch {}
-                              router.push("/auth/login");
-                            }}
-                            className="hover:underline cursor-pointer font-medium"
-                          >
-                            Login
-                          </button>
-                        </p>
-                      ) : (
                         <>
-                          {(() => {
-                            const allUserAccounts = resolveAllUserPaymentAccounts(
-                              userPaymentMethodsDisplay.displayData,
-                              effectiveUserPaymentMethods
-                            );
-                            const hasAnyAccounts = allUserAccounts.length > 0;
-                            const hasFilteredAccounts =
-                              enhancedFilteredUserPaymentDetails.length > 0;
-                            const dropdownAccounts = getRegisteredAccountDropdownList(
-                              allUserAccounts,
-                              enhancedFilteredUserPaymentDetails
-                            );
+                          <label className="block text-[17px] text-[#475569] dark:text-[#9CA3AF] font-semibold">
+                            Registered Account
+                          </label>
+                          <p className="text-[#F79330] text-sm">
+                            Login to view your registered accounts.{" "}
+                            <button
+                              type="button"
+                              onClick={() => {
+                                try {
+                                  setAuthRedirectPath("/?mode=withdrawal");
+                                } catch {}
+                                router.push("/auth/login");
+                              }}
+                              className="hover:underline cursor-pointer font-medium"
+                            >
+                              Login
+                            </button>
+                          </p>
+                        </>
+                      ) : (
+                        (() => {
+                          const allUserAccounts = resolveAllUserPaymentAccounts(
+                            userPaymentMethodsDisplay.displayData,
+                            effectiveUserPaymentMethods
+                          );
+                          const hasAnyAccounts = allUserAccounts.length > 0;
+                          const hasFilteredAccounts =
+                            enhancedFilteredUserPaymentDetails.length > 0;
+                          const dropdownAccounts = getRegisteredAccountDropdownList(
+                            allUserAccounts,
+                            enhancedFilteredUserPaymentDetails
+                          );
 
-                            if (!hasAnyAccounts) {
-                              return (
+                          if (!hasAnyAccounts) {
+                            return (
+                              <>
+                                <label className="block text-[17px] text-[#475569] dark:text-[#9CA3AF] font-semibold">
+                                  Registered Account
+                                </label>
                                 <p className="text-[#F79330] text-sm">
                                   <button
                                     type="button"
@@ -5201,29 +5209,25 @@ export default function WithdrawalForm({
                                     Don't have an account? Register Now
                                   </button>
                                 </p>
-                              );
-                            }
+                              </>
+                            );
+                          }
 
-                            return (
-                              <div className="relative w-full z-10">
-                                {!hasFilteredAccounts && (
-                                  <p className="text-[#F79330] text-sm mb-2">
-                                    No account found for this payment method.{" "}
-                                    <button
-                                      type="button"
-                                      onClick={() => setIsPaymentModalOpen(true)}
-                                      className="hover:underline cursor-pointer font-medium"
-                                    >
-                                      Add Account
-                                    </button>
-                                  </p>
-                                )}
-                                {hasFilteredAccounts && (
-                                  <>
-                                  <div className="flex items-center gap-2 mb-2">
-                                    <span className="text-sm text-gray-600 dark:text-gray-400">
+                          return (
+                            <>
+                              <div className="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
+                                <div className="min-w-0">
+                                  <label className="block text-[17px] text-[#475569] dark:text-[#9CA3AF] font-semibold">
+                                    Registered Account
+                                  </label>
+                                  {hasFilteredAccounts && (
+                                    <p className="mt-0.5 text-xs text-gray-500 dark:text-gray-400">
                                       {enhancedFilteredUserPaymentDetails.length} account(s) found
-                                    </span>
+                                    </p>
+                                  )}
+                                </div>
+                                {hasFilteredAccounts && (
+                                  <div className="flex flex-wrap items-center gap-x-3 gap-y-1 shrink-0">
                                     <button
                                       type="button"
                                       disabled={isRefreshingAccounts}
@@ -5232,190 +5236,160 @@ export default function WithdrawalForm({
                                           setIsRefreshingAccounts(true);
                                           await dispatch(fetchUserPaymentDetails(true)).unwrap();
                                           showToast.success("Accounts refreshed");
-                                        } catch (error) {
+                                        } catch {
                                           showToast.error("Failed to refresh payment details");
                                         } finally {
                                           setIsRefreshingAccounts(false);
                                         }
                                       }}
-                                      className="text-xs text-[#1D8751] hover:text-[#166b3e] underline disabled:opacity-50"
+                                      className="text-xs text-[#1D8751] hover:text-[#166b3e] underline disabled:opacity-50 whitespace-nowrap"
                                     >
                                       {isRefreshingAccounts ? "Refreshing..." : "Refresh"}
                                     </button>
+                                    <button
+                                      type="button"
+                                      onClick={() => setIsPaymentModalOpen(true)}
+                                      className="text-xs font-medium text-[#1D8751] hover:text-[#166b3e] underline whitespace-nowrap"
+                                    >
+                                      Add Account
+                                    </button>
                                   </div>
-                                <div className="w-full min-w-0 relative z-[100] isolate">
-                                <CustomSelect
-                                  options={(dropdownAccounts || []).map(
-                                    (detail) => {
-                                      // Try to get provider info from public payment methods first
-                                      let providerName = detail.payment_provider_name || detail.provider_name || "Unknown Provider";
+                                )}
+                              </div>
+
+                              {!hasFilteredAccounts && (
+                                <p className="text-[#F79330] text-sm">
+                                  No account found for this payment method.{" "}
+                                  <button
+                                    type="button"
+                                    onClick={() => setIsPaymentModalOpen(true)}
+                                    className="hover:underline cursor-pointer font-medium text-[#1D8751]"
+                                  >
+                                    Add Account
+                                  </button>
+                                </p>
+                              )}
+
+                              {hasFilteredAccounts && (
+                                <div className="w-full min-w-0 space-y-2">
+                                  <CustomSelect
+                                    sizeMode="card"
+                                    options={(dropdownAccounts || []).map((detail) => {
+                                      let providerName =
+                                        detail.payment_provider_name ||
+                                        detail.provider_name ||
+                                        "Unknown Provider";
                                       let providerLogo = detail.provider_logo;
 
                                       if (Array.isArray(publicPaymentMethods?.data?.providers)) {
-                                        const publicProvider = publicPaymentMethods.data.providers.find(
-                                          (provider: any) =>
-                                            (provider.provider_name || provider.payment_provider_name) === detail.payment_provider_name ||
-                                            (provider.provider_name || provider.payment_provider_name) === detail.provider_name
-                                        );
+                                        const publicProvider =
+                                          publicPaymentMethods.data.providers.find(
+                                            (provider: any) =>
+                                              (provider.provider_name ||
+                                                provider.payment_provider_name) ===
+                                                detail.payment_provider_name ||
+                                              (provider.provider_name ||
+                                                provider.payment_provider_name) ===
+                                                detail.provider_name
+                                          );
                                         if (publicProvider) {
-                                          providerName = publicProvider.provider_name || publicProvider.payment_provider_name || providerName;
-                                          providerLogo = publicProvider.logo || publicProvider.provider_logo || providerLogo;
+                                          providerName =
+                                            publicProvider.provider_name ||
+                                            publicProvider.payment_provider_name ||
+                                            providerName;
+                                          providerLogo =
+                                            publicProvider.logo ||
+                                            publicProvider.provider_logo ||
+                                            providerLogo;
                                         }
                                       }
 
-                                      // Fallback to admin detail if not found in public methods
                                       if (!providerLogo) {
-                                        const adminDetail = adminWalletListDisplay.displayData?.find(
-                                          (wallet: any) => wallet.admin_payment_detail?.provider_name === detail.payment_provider_name
-                                        )?.admin_payment_detail;
+                                        const adminDetail =
+                                          adminWalletListDisplay.displayData?.find(
+                                            (wallet: any) =>
+                                              wallet.admin_payment_detail?.provider_name ===
+                                              detail.payment_provider_name
+                                          )?.admin_payment_detail;
                                         if (adminDetail) {
-                                          providerName = adminDetail.provider_name || providerName;
-                                          providerLogo = adminDetail.provider_logo || providerLogo;
+                                          providerName =
+                                            adminDetail.provider_name || providerName;
+                                          providerLogo =
+                                            adminDetail.provider_logo || providerLogo;
                                         }
                                       }
 
-                                      // Display account name and account number
-                                      const accountName = detail.account_name || 'No Name';
-                                      const accountNumber = detail.account_number || detail.wallet_address || 'No Account';
+                                      const accountName = detail.account_name || "No Name";
+                                      const accountNumber =
+                                        detail.account_number ||
+                                        detail.wallet_address ||
+                                        "No Account";
                                       const displayLabel = `${accountNumber} - ${accountName}`;
-                                      // Create a full tooltip with all information (using separators since HTML title doesn't support newlines)
-                                      const fullInfo = `Account Number: ${accountNumber} | Account Name: ${accountName}${providerName ? ` | Provider: ${providerName}` : ''}`;
-                                      const isPending = !!(
+                                      const fullInfo = `Account Number: ${accountNumber} | Account Name: ${accountName}${providerName ? ` | Provider: ${providerName}` : ""}`;
+                                      const isRestricted = !!(
                                         detail.status &&
                                         !isApprovedPaymentStatus(detail.status)
                                       );
-                                      const isFrozen = isFrozenPaymentStatus(detail.status);
+                                      const statusLabel = getPaymentStatusShortLabel(
+                                        detail.status
+                                      );
 
                                       return {
-                                        value: detail.id.toString(),
-                                        label: isPending
-                                          ? `${displayLabel} (${isFrozen ? "Frozen" : "Pending"})`
+                                        value: String(detail.id),
+                                        label: isRestricted
+                                          ? `${displayLabel} (${statusLabel})`
                                           : displayLabel,
                                         logo: getHighResPaymentLogo(
                                           providerLogo || undefined,
                                           undefined,
                                           PAYMENT_LOGO_SIZE
                                         ),
-                                        // Add full information for tooltip on hover
                                         title: fullInfo,
-                                        disabled: isPending,
-                                        subtitle: isPending
-                                          ? isFrozen
-                                            ? "Frozen"
-                                            : "Pending"
-                                          : undefined,
+                                        disabled: isRestricted,
+                                        subtitle: isRestricted ? statusLabel : undefined,
                                       };
+                                    })}
+                                    value={
+                                      selectedPaymentDetails.length > 0
+                                        ? String(selectedPaymentDetails[0].id)
+                                        : ""
                                     }
-                                  )}
-                                  value={
-                                    selectedPaymentDetails.length > 0
-                                      ? selectedPaymentDetails[0].id.toString()
-                                      : ""
-                                  }
-                                  onChange={(value) => {
-                                    const selectedId = Number(value);
-                                    const selectedDetail = enhancedFilteredUserPaymentDetails.find(
-                                      (detail) => detail.id === selectedId
-                                    );
-                                    if (selectedDetail) {
-                                      setSelectedPaymentDetails([selectedDetail]);
-                                      setPaymentMethodError(null);
-                                    }
-                                  }}
-                                  placeholder={
-                                    userPaymentMethodsDisplay.isLoading
-                                      ? "Loading accounts..."
-                                      : "Select Registered Account"
-                                  }
-                                  disabled={userPaymentMethodsDisplay.isLoading}
-                                  loading={userPaymentMethodsDisplay.isLoading}
-                                  loadingText="Loading accounts..."
-                                  emptyText="No registered accounts available"
-                                  searchable={true}
-                                  dropdownTitle="Select a registered account from"
-                                  className="w-full min-w-0"
-                                  logoSize={PAYMENT_LOGO_SIZE}
-                                  logoClassName={`${PAYMENT_LOGO_BASE_CLASS} rounded-full`}
-                                  triggerClassName={`px-4 py-2 text-sm font-medium border rounded-2xl w-full min-w-0 bg-transparent ${isDark ? "text-white border-white/10" : "text-[#1F2937] border-gray-200"
-                                    }`}
-                                  largeDropdownItems={true}
-                                  dropdownMatchTriggerWidth={true}
-                                  dropdownMinWidth={460}
-                                  dropdownMaxWidth={460}
-                                />
-                                {(() => {
-                                  if (!payBank) return null;
-
-                                  const pendingAccount =
-                                    isSelectedPaymentPending &&
-                                    selectedPaymentDetails[0]
-                                      ? selectedPaymentDetails[0]
-                                      : enhancedFilteredUserPaymentDetails.find(
-                                          (detail) =>
-                                            detail.status &&
-                                            !isApprovedPaymentStatus(detail.status)
+                                    onChange={(value) => {
+                                      const selectedDetail =
+                                        enhancedFilteredUserPaymentDetails.find(
+                                          (detail) => String(detail.id) === String(value)
                                         );
+                                      if (selectedDetail) {
+                                        setSelectedPaymentDetails([selectedDetail]);
+                                        setPaymentMethodError(null);
+                                      }
+                                    }}
+                                    placeholder={
+                                      userPaymentMethodsDisplay.isLoading
+                                        ? "Loading accounts..."
+                                        : "Select Registered Account"
+                                    }
+                                    disabled={userPaymentMethodsDisplay.isLoading}
+                                    loading={userPaymentMethodsDisplay.isLoading}
+                                    loadingText="Loading accounts..."
+                                    emptyText="No registered accounts available"
+                                    searchable={true}
+                                    dropdownTitle="Select a registered account from"
+                                    className="w-full min-w-0"
+                                    logoSize={PAYMENT_LOGO_SIZE}
+                                    logoClassName={`${PAYMENT_LOGO_BASE_CLASS} rounded-full`}
+                                    triggerClassName={homeCardSelectTriggerClass(isDark)}
+                                    dropdownMatchTriggerWidth={true}
+                                  />
 
-                                  if (!pendingAccount) return null;
-
-                                  const accountFrozen = isFrozenPaymentStatus(
-                                    pendingAccount.status
-                                  );
-
-                                  return (
-                                    <div className="mt-2 flex items-start gap-3 rounded-2xl border border-[#F79330]/40 bg-[#F79330]/10 p-3">
-                                      <svg
-                                        className="mt-0.5 h-5 w-5 flex-shrink-0 text-[#F79330]"
-                                        fill="none"
-                                        viewBox="0 0 24 24"
-                                        stroke="currentColor"
-                                      >
-                                        <path
-                                          strokeLinecap="round"
-                                          strokeLinejoin="round"
-                                          strokeWidth={2}
-                                          d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"
-                                        />
-                                      </svg>
-                                      <div className="flex-1">
-                                        <p className="text-sm font-semibold text-[#F79330]">
-                                          {accountFrozen
-                                            ? "Account Frozen"
-                                            : "Account Pending Approval"}
-                                        </p>
-                                        <p className="mt-1 text-xs text-[#F79330]/80">
-                                          Your account
-                                          {pendingAccount.account_name
-                                            ? ` "${pendingAccount.account_name}"`
-                                            : ""}
-                                          {pendingAccount.account_number ||
-                                          pendingAccount.wallet_address
-                                            ? ` (${pendingAccount.account_number || pendingAccount.wallet_address})`
-                                            : ""}{" "}
-                                          {accountFrozen
-                                            ? "is frozen. Please "
-                                            : "is pending approval. Please "}
-                                          <a
-                                            href="/contactUs"
-                                            className="font-semibold text-[#1D8751] underline transition-colors hover:text-[#17693f]"
-                                          >
-                                            contact support
-                                          </a>{" "}
-                                          {accountFrozen
-                                            ? "for assistance."
-                                            : "to get your account approved."}
-                                        </p>
-                                      </div>
-                                    </div>
-                                  );
-                                })()}
-                              </div>
-                              </>
-                                )}
-                              </div>
-                            );
-                          })()}
-                        </>
+                                  <PaymentAccountStatusBanner
+                                    account={paymentStatusBannerAccount}
+                                  />
+                                </div>
+                              )}
+                            </>
+                          );
+                        })()
                       )}
                     </div>
                   )}

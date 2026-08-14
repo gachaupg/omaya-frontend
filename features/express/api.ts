@@ -3,6 +3,10 @@ import { API_CONFIG } from "@/lib/appConfig";
 import { API_BASE_URL } from "@/config/api";
 import axios from "axios";
 import { ForexExchangePayload, ForexExchangeResponse, ExpressWithdrawalPayload } from "./types";
+import {
+  buildFxpCommissionFallback,
+  parseFxpBackendAmount,
+} from "./utils/fxpCommission";
 
 // Map asset ticker to commission API asset name (usdt, usdc, fxprimus)
 export const getCommissionApiAsset = (ticker: string): string | null => {
@@ -196,23 +200,45 @@ export const fetchCommissionDetails = async (
       return hit.data;
     }
 
-    const response = await axios.get<ExchangeCommissionLookupResponse>(url);
-    const payload = response.data;
+    try {
+      const response = await axios.get<ExchangeCommissionLookupResponse>(url);
+      const payload = response.data;
 
-    const commissionMode = payload?.crypto_commission?.commission_mode || "percentage";
-    const mapped: CommissionLookupResponse = {
-      commission_rate: String(payload?.crypto_commission?.rate ?? "0"),
-      is_percentage: String(commissionMode).toLowerCase() !== "flat_fee",
-      calculated_fee: String(payload?.crypto_commission?.fee ?? "0"),
-      range_min: "0",
-      range_max: "0",
-      commission_mode: commissionMode,
-      fee: String(payload?.crypto_commission?.fee ?? "0"),
-      from_amount: String(payload?.from_amount ?? ""),
-      to_amount: String(payload?.to_amount ?? ""),
-    };
-    g.__omayaFxpCommissionCache.set(key, { ts: Date.now(), data: mapped });
-    return mapped;
+      const commissionMode = payload?.crypto_commission?.commission_mode || "percentage";
+      const mapped: CommissionLookupResponse = {
+        commission_rate: String(payload?.crypto_commission?.rate ?? "0"),
+        is_percentage: String(commissionMode).toLowerCase() !== "flat_fee",
+        calculated_fee: String(payload?.crypto_commission?.fee ?? "0"),
+        range_min: "0",
+        range_max: "0",
+        commission_mode: commissionMode,
+        fee: String(payload?.crypto_commission?.fee ?? "0"),
+        from_amount: (() => {
+          const from = parseFxpBackendAmount(payload?.from_amount);
+          if (from != null) return String(from);
+          return String(effectiveAmount);
+        })(),
+        to_amount: (() => {
+          const to = parseFxpBackendAmount(payload?.to_amount);
+          if (to != null) return String(to);
+          const from = parseFxpBackendAmount(payload?.from_amount);
+          if (from != null) return String(from);
+          return String(effectiveAmount);
+        })(),
+      };
+      g.__omayaFxpCommissionCache.set(key, { ts: Date.now(), data: mapped });
+      return mapped;
+    } catch (error) {
+      if (axios.isAxiosError(error)) {
+        const status = error.response?.status;
+        if (status === 404 || status === 400 || status === 500 || status === 502 || status === 503) {
+          const fallback = buildFxpCommissionFallback(effectiveAmount);
+          g.__omayaFxpCommissionCache.set(key, { ts: Date.now(), data: fallback });
+          return fallback;
+        }
+      }
+      throw error;
+    }
   }
 
   const url = `${API_BASE_URL}${API_CONFIG.COMMISSION_LOOKUP(effectiveAmount, type)}`;

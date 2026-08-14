@@ -14,6 +14,7 @@ import {
 } from "../api";
 import { AdminPaymentMethod } from "../types/paymentMethods";
 import { P2PResponse } from "../types";
+import { normalizeUserPaymentDetails, normalizeUserPaymentDetail, paymentDetailIdsMatch } from "../utils/normalizeUserPaymentDetail";
 
 export const fetchAdminPaymentMethods = createAsyncThunk<
   AdminPaymentMethod[],
@@ -444,6 +445,25 @@ const paymentMethodsSlice = createSlice({
       state.detailLoading = false;
       state.detailError = null;
     },
+    patchUserPaymentDetailFromWs(state, action) {
+      const incoming = normalizeUserPaymentDetail(
+        action.payload as Record<string, unknown>
+      );
+      if (!incoming.id) return;
+
+      const index = state.userPaymentDetails.findIndex((detail) =>
+        paymentDetailIdsMatch(detail.id, incoming.id)
+      );
+
+      if (index >= 0) {
+        state.userPaymentDetails[index] = {
+          ...state.userPaymentDetails[index],
+          ...incoming,
+        };
+      } else {
+        state.userPaymentDetails.push(incoming);
+      }
+    },
   },
   extraReducers: (builder) => {
     builder
@@ -479,7 +499,7 @@ const paymentMethodsSlice = createSlice({
       })
       .addCase(fetchUserPaymentDetails.fulfilled, (state, action) => {
         state.userDetailsLoading = false;
-        state.userPaymentDetails = action.payload;
+        state.userPaymentDetails = normalizeUserPaymentDetails(action.payload);
       })
       .addCase(fetchUserPaymentDetails.rejected, (state, action) => {
         state.userDetailsLoading = false;
@@ -557,5 +577,10 @@ const paymentMethodsSlice = createSlice({
   },
 });
 
-export const { clearPostStatus, clearPatchStatus, clearCurrentPaymentDetail } = paymentMethodsSlice.actions;
+export const {
+  clearPostStatus,
+  clearPatchStatus,
+  clearCurrentPaymentDetail,
+  patchUserPaymentDetailFromWs,
+} = paymentMethodsSlice.actions;
 export default paymentMethodsSlice.reducer;
