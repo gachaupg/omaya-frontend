@@ -23,10 +23,13 @@ export const forexExchangeMatchesId = (
 };
 
 export const normalizeForexExchange = (
-  payload: Record<string, unknown> | null | undefined,
+  payload: unknown,
   fallbackTransactionId?: string
 ): ForexExchangeResponse => {
-  const source = payload && typeof payload === "object" ? payload : {};
+  const source =
+    payload && typeof payload === "object"
+      ? (payload as Partial<ForexExchangeResponse> & Record<string, unknown>)
+      : {};
   const resolvedId = String(
     source.forex_transaction_id ||
       source.transaction_id ||

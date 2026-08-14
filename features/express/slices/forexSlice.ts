@@ -80,7 +80,7 @@ const forexSlice = createSlice({
       state.currentExchange =
         payload && typeof payload === "object"
           ? normalizeForexExchange(
-              payload as Record<string, unknown>,
+              payload,
               String(
                 (payload as ForexExchangeResponse).forex_transaction_id ||
                   (payload as ForexExchangeResponse).transaction_id ||
@@ -108,7 +108,7 @@ const forexSlice = createSlice({
         {
           ...state.currentExchange,
           ...action.payload,
-        } as Record<string, unknown>,
+        },
         state.currentExchange.forex_transaction_id ||
           state.currentExchange.transaction_id
       );
@@ -125,7 +125,7 @@ const forexSlice = createSlice({
       .addCase(createForexExchangeThunk.fulfilled, (state, action) => {
         state.loading = false;
         state.currentExchange = normalizeForexExchange(
-          action.payload as Record<string, unknown>,
+          action.payload,
           action.payload.forex_transaction_id || action.payload.transaction_id
         );
         state.error = null;
@@ -143,7 +143,7 @@ const forexSlice = createSlice({
       .addCase(fetchForexExchangeThunk.fulfilled, (state, action) => {
         state.loading = false;
         state.currentExchange = normalizeForexExchange(
-          action.payload as Record<string, unknown>,
+          action.payload,
           action.payload.forex_transaction_id || action.payload.transaction_id
         );
         state.error = null;
