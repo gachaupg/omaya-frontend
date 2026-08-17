@@ -20,7 +20,15 @@ interface EmailPhoneChangeModalProps {
   type: ChangeType;
   currentValue: string;
   initialValue?: string;
+  registeredEmail?: string;
 }
+
+const maskEmailFirstLast5 = (email: string): string => {
+  const trimmed = email.trim();
+  if (!trimmed) return "";
+  if (trimmed.length <= 10) return trimmed;
+  return `${trimmed.slice(0, 5)}...${trimmed.slice(-5)}`;
+};
 
 const EmailPhoneChangeModal: React.FC<EmailPhoneChangeModalProps> = ({
   isOpen,
@@ -28,6 +36,7 @@ const EmailPhoneChangeModal: React.FC<EmailPhoneChangeModalProps> = ({
   type,
   currentValue,
   initialValue,
+  registeredEmail = "",
 }) => {
   const dispatch = useDispatch<AppDispatch>();
   const isOpenRef = useRef(isOpen);
@@ -41,8 +50,13 @@ const EmailPhoneChangeModal: React.FC<EmailPhoneChangeModalProps> = ({
   const label = type === "email" ? "Email" : "Phone Number";
   const placeholder =
     type === "email" ? "newemail@example.com" : "+254712345678";
+  const maskedRegisteredEmail = maskEmailFirstLast5(registeredEmail);
   const otpDestinationText =
-    type === "email" ? "your new email address" : "your registered email address";
+    type === "email"
+      ? "your new email address"
+      : maskedRegisteredEmail
+        ? maskedRegisteredEmail
+        : "your registered email address";
 
   useEffect(() => {
     isOpenRef.current = isOpen;
@@ -281,10 +295,28 @@ const EmailPhoneChangeModal: React.FC<EmailPhoneChangeModalProps> = ({
         {step === "input" ? (
           <>
             <p className="text-sm text-gray-600 dark:text-[#9CA3AF] mb-4">
-              Enter your new {label.toLowerCase()}.
-              {type === "email"
-                ? " We’ll send a verification code to that email to confirm."
-                : " We’ll send a verification code to your registered email to confirm."}
+              {type === "email" ? (
+                <>
+                  Enter your new email. We&apos;ll send a verification code to that
+                  email to confirm.
+                </>
+              ) : (
+                <>
+                  Enter your new phone number.
+                  {maskedRegisteredEmail ? (
+                    <>
+                      {" "}
+                      We shall send an OTP to your email{" "}
+                      <span className="font-medium text-gray-800 dark:text-[#E5E7EB]">
+                        {maskedRegisteredEmail}
+                      </span>
+                      .
+                    </>
+                  ) : (
+                    <> We shall send an OTP to your registered email.</>
+                  )}
+                </>
+              )}
             </p>
             <input
               type={type === "email" ? "email" : "tel"}
@@ -300,7 +332,17 @@ const EmailPhoneChangeModal: React.FC<EmailPhoneChangeModalProps> = ({
         ) : (
           <>
             <p className="text-sm text-gray-600 dark:text-[#9CA3AF] mb-4">
-              Enter the verification code sent to {otpDestinationText}
+              Enter the verification code sent to{" "}
+              {type === "phone" && maskedRegisteredEmail ? (
+                <>
+                  your email{" "}
+                  <span className="font-medium text-gray-800 dark:text-[#E5E7EB]">
+                    {maskedRegisteredEmail}
+                  </span>
+                </>
+              ) : (
+                otpDestinationText
+              )}
             </p>
             <input
               type="text"

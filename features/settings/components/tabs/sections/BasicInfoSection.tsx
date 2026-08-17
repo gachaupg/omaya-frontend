@@ -313,6 +313,7 @@ const BasicInfoSection: React.FC<BasicInfoSectionProps> = ({ user }) => {
             : (user?.phone_number || "").replace(/^\+/, "")
         }
         initialValue={changeModal.initialValue}
+        registeredEmail={user?.email || ""}
       />
 
       <NameChangeOtpModal
