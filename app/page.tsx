@@ -1673,11 +1673,20 @@ export default function MarketingPage() {
                   </div>
                 </div>
               ))
-            ) : error ? (
-              // Error state
+            ) : error && filteredArticles.length === 0 ? (
+              // Error state — only when no fallback blog card is available
               <div className="col-span-full text-center py-12">
-                <p className="text-red-400 mb-4">
-                  Error loading blog posts: {error}
+                <p className="text-white font-semibold mb-2">
+                  {t(
+                    "marketing.blog.unavailableTitle",
+                    "Blog Service Temporarily Unavailable"
+                  )}
+                </p>
+                <p className="text-gray-400 text-sm mb-4">
+                  {t(
+                    "marketing.blog.unavailableBody",
+                    "Our blog service is currently experiencing technical difficulties. Please check back later for the latest updates and articles."
+                  )}
                 </p>
                 <button
                   onClick={() => window.location.reload()}
@@ -1969,11 +1978,20 @@ export default function MarketingPage() {
                   </div>
                 </div>
               ))
-            ) : faqError ? (
-              // Error state
+            ) : faqError && faqItems.length === 0 ? (
+              // Error state — only when no fallback FAQ card is available
               <div className="text-center py-8">
-                <p className="text-red-400 mb-4">
-                  Error loading FAQs: {faqError}
+                <p className="text-gray-900 dark:text-white font-semibold mb-2">
+                  {t(
+                    "marketing.faq.unavailableTitle",
+                    "Service Temporarily Unavailable"
+                  )}
+                </p>
+                <p className="text-gray-600 dark:text-gray-400 text-sm mb-4">
+                  {t(
+                    "marketing.faq.unavailableBody",
+                    "Our FAQ service is currently experiencing technical difficulties. Please try again later or contact support for assistance."
+                  )}
                 </p>
                 <button
                   onClick={() => window.location.reload()}

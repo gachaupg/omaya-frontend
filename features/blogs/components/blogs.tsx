@@ -125,17 +125,17 @@ const BlogPage = () => {
     );
   }
 
-  if (error) {
+  if (error && posts.length === 0) {
     return (
       <div className="bg-white dark:bg-[var(--bg-color)] text-gray-900 dark:text-white min-h-screen pt-20 sm:pt-24 px-4 pb-8 sm:px-6 md:px-8 flex items-center justify-center">
-        <div className="text-center">
-          <p className="text-red-400 mb-4">
-            {t("blogs.error.title", "Error:")} {error}
+        <div className="text-center max-w-md">
+          <p className="text-gray-900 dark:text-white font-semibold mb-2">
+            {t("blogs.unavailable.title", "Blog Service Temporarily Unavailable")}
           </p>
-          <p className="text-gray-400 mb-4 text-sm">
+          <p className="text-gray-600 dark:text-gray-400 mb-4 text-sm leading-relaxed">
             {t(
-              "blogs.error.hint",
-              "Please check your Sanity configuration and try again."
+              "blogs.unavailable.body",
+              "Our blog service is currently experiencing technical difficulties. Please check back later for the latest updates and articles."
             )}
           </p>
           <button

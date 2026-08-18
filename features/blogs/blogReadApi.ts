@@ -1,6 +1,6 @@
 import { BlogPost } from "./types";
 import { filterRealBlogPosts } from "./utils/blogPosts";
-import { resolveContentReadApiUrl } from "@/lib/utils/contentReadApiUrl";
+import { fetchContentReadApi } from "@/lib/utils/contentReadApiUrl";
 
 function transformBlogPost(blog: BlogPost, index: number): BlogPost {
   return {
@@ -34,7 +34,7 @@ export async function fetchAllBlogsFromApi(
 ): Promise<BlogPost[]> {
   const query = refresh ? "?refresh=true" : "";
   const data = await parseJsonResponse<BlogPost[]>(
-    await fetch(resolveContentReadApiUrl(`/api/blogs/read${query}`), {
+    await fetchContentReadApi(`/api/blogs/read${query}`, {
       cache: "no-store",
     })
   );
@@ -63,7 +63,7 @@ export async function fetchBlogsPaginatedFromApi(
   }
 
   const data = await parseJsonResponse<{ posts: BlogPost[]; totalCount: number }>(
-    await fetch(resolveContentReadApiUrl(`/api/blogs/read?${params.toString()}`), {
+    await fetchContentReadApi(`/api/blogs/read?${params.toString()}`, {
       cache: "no-store",
     })
   );
