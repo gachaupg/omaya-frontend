@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 
 import { logger } from "@/lib/utils/logger";
+import { resolveContentReadApiUrl } from "@/lib/utils/contentReadApiUrl";
 
 export interface FAQItem {
   _id: string;
@@ -24,9 +25,11 @@ export const useFAQ = (category?: string) => {
         setLoading(true);
         setError(null);
 
-        const url = category
-          ? `/api/faq/read/?category=${encodeURIComponent(category)}`
-          : "/api/faq/read/";
+        const url = resolveContentReadApiUrl(
+          category
+            ? `/api/faq/read/?category=${encodeURIComponent(category)}`
+            : "/api/faq/read/"
+        );
 
         const response = await fetch(url);
         if (!response.ok) {

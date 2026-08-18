@@ -135,17 +135,17 @@ export const API_CONFIG = {
     MERCHANT_APPLICATION: "/trading_engine/merchant/application/",
     SOCKETS: {
       MATCHED_TRADES: (token: string) =>
-        `${getWebSocketBaseUrl()}/ws/matched-trades/?token=${token}`,
+        `${getWebSocketBaseUrl()}/ws/matched-trades/?token=${encodeURIComponent(token)}`,
       TRADE_MESSAGES: (tradeId: string, token: string) =>
-        `${getWebSocketBaseUrl()}/ws/p2p-trade-messages/${tradeId}/?token=${token}`,
+        `${getWebSocketBaseUrl()}/ws/p2p-trade-messages/${encodeURIComponent(tradeId)}/?token=${encodeURIComponent(token)}`,
       TRADE_STATUS: (tradeId: string, token: string) =>
-        `${getWebSocketBaseUrl()}/ws/p2p-trade-confirm/${tradeId}/?token=${token}`,
+        `${getWebSocketBaseUrl()}/ws/p2p-trade-confirm/${encodeURIComponent(tradeId)}/?token=${encodeURIComponent(token)}`,
       P2P_ORDERS: (token: string) =>
-        `${getWebSocketBaseUrl()}/ws/p2p-orders/?token=${token}`,
+        `${getWebSocketBaseUrl()}/ws/p2p-orders/?token=${encodeURIComponent(token)}`,
       RECENT_MESSAGES: (token: string) =>
-        `${getWebSocketBaseUrl()}/ws/messages/?token=${token}`,
+        `${getWebSocketBaseUrl()}/ws/messages/?token=${encodeURIComponent(token)}`,
       P2P_WITHDRAWAL_STATUS: (token: string) =>
-        `${getWebSocketBaseUrl()}/ws/p2p-withdrawal-status/?token=${token}`,
+        `${getWebSocketBaseUrl()}/ws/p2p-withdrawal-status/?token=${encodeURIComponent(token)}`,
       WALLET_BALANCE: (token: string) =>
         `${getWebSocketBaseUrl()}/ws/wallet-balance/?token=${encodeURIComponent(token)}`,
     },

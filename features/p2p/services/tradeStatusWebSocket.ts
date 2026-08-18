@@ -1,6 +1,8 @@
 import { API_CONFIG } from "@/lib/appConfig";
 
 import { logger } from '@/lib/utils/logger';
+import { normalizeWebSocketUrl } from "@/lib/utils/websocketUtils";
+import { logP2pWebSocketUrl } from "@/features/p2p/utils/logP2pWebSocketUrl";
 
 export interface TradeStatus {
   id: string;
@@ -55,13 +57,22 @@ export class TradeStatusWebSocket {
     }
 
     // If already connecting or connected to same trade, skip
-    if (this.ws?.readyState === WebSocket.CONNECTING || 
-        (this.ws?.readyState === WebSocket.OPEN && this.lastTradeId === tradeId)) {
+    if (
+      this.ws?.readyState === WebSocket.CONNECTING &&
+      this.lastTradeId === tradeId
+    ) {
+      return;
+    }
+    if (this.ws?.readyState === WebSocket.OPEN && this.lastTradeId === tradeId) {
       return;
     }
 
-    // If connected to different trade, close existing connection
-    if (this.ws?.readyState === WebSocket.OPEN && this.lastTradeId !== tradeId) {
+    if (
+      this.ws &&
+      (this.ws.readyState === WebSocket.OPEN ||
+        this.ws.readyState === WebSocket.CONNECTING) &&
+      this.lastTradeId !== tradeId
+    ) {
       logger.debug('p2p', "🔄 Switching to different trade, closing current connection");
       this.disconnect();
     }
@@ -84,13 +95,15 @@ export class TradeStatusWebSocket {
     }
 
     try {
-      this.url = API_CONFIG.P2P.SOCKETS.TRADE_STATUS(tradeId, token);
-      
+      this.url = normalizeWebSocketUrl(
+        API_CONFIG.P2P.SOCKETS.TRADE_STATUS(tradeId, token)
+      );
+
+      logP2pWebSocketUrl("trade-status", this.url);
+
       // Only log on first connection attempt
       if (this.reconnectAttempts === 0) {
         logger.debug('p2p', "🔌 Connecting to Trade Status WebSocket...");
-        logger.debug('p2p', "📍 WebSocket URL:", this.url);
-        logger.debug('p2p', "🔑 Token length:", token?.length || 0);
         logger.debug('p2p', "🆔 Trade ID:", tradeId);
       }
 
@@ -240,6 +253,7 @@ export class TradeStatusWebSocket {
 
 // Create a map to store WebSocket instances per trade
 const tradeStatusWSInstances = new Map<string, TradeStatusWebSocket>();
+const tradeStatusWSSubscriberCounts = new Map<string, number>();
 
 export const getTradeStatusWebSocket = (tradeId: string): TradeStatusWebSocket => {
   if (!tradeStatusWSInstances.has(tradeId)) {
@@ -248,11 +262,31 @@ export const getTradeStatusWebSocket = (tradeId: string): TradeStatusWebSocket =
   return tradeStatusWSInstances.get(tradeId)!;
 };
 
+export const retainTradeStatusWebSocket = (tradeId: string): void => {
+  if (!tradeId?.trim()) return;
+  tradeStatusWSSubscriberCounts.set(
+    tradeId,
+    (tradeStatusWSSubscriberCounts.get(tradeId) ?? 0) + 1
+  );
+};
+
+export const releaseTradeStatusWebSocket = (tradeId: string): void => {
+  if (!tradeId?.trim()) return;
+  const next = (tradeStatusWSSubscriberCounts.get(tradeId) ?? 1) - 1;
+  if (next <= 0) {
+    tradeStatusWSSubscriberCounts.delete(tradeId);
+    cleanupTradeStatusWebSocket(tradeId);
+  } else {
+    tradeStatusWSSubscriberCounts.set(tradeId, next);
+  }
+};
+
 export const cleanupTradeStatusWebSocket = (tradeId: string): void => {
   const instance = tradeStatusWSInstances.get(tradeId);
   if (instance) {
     instance.disconnect();
     tradeStatusWSInstances.delete(tradeId);
   }
+  tradeStatusWSSubscriberCounts.delete(tradeId);
 };
 

@@ -287,3 +287,20 @@ export const dedupeMixedChatMessages = (
     currentUserEmail,
     currentUserId
   );
+
+/** Resolve a stable message id from WS/API payloads that may omit `id`. */
+export const resolveTradeMessageId = (
+  payload: Record<string, unknown>,
+  fallbackTradeId?: string
+): string => {
+  const direct =
+    payload.id ?? payload.message_id ?? payload.uuid;
+  if (direct != null && String(direct).trim()) {
+    return String(direct);
+  }
+  return `${String(
+    payload.trade_id ?? payload.trade ?? fallbackTradeId ?? "unknown"
+  )}-${String(payload.timestamp ?? new Date().toISOString())}-${String(
+    payload.sender_id ?? payload.sender ?? payload.sender_name ?? "unknown"
+  )}`;
+};
