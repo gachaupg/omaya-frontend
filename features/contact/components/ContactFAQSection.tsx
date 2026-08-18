@@ -61,9 +61,17 @@ export default function ContactFAQSection() {
             />
           ))
         ) : error && faqs.length === 0 ? (
-          <p className="text-center text-sm text-red-500 dark:text-red-400 py-6">
-            {error}
-          </p>
+          <div className="rounded-xl border border-gray-200 dark:border-gray-600 bg-white dark:bg-[#1a1a1f] px-5 py-6 text-center">
+            <p className="text-gray-900 dark:text-white font-medium mb-2">
+              {t("contact.faq.unavailableTitle", "Service Temporarily Unavailable")}
+            </p>
+            <p className="text-sm text-gray-600 dark:text-gray-400">
+              {t(
+                "contact.faq.unavailableBody",
+                "Our FAQ service is currently experiencing technical difficulties. Please try again later or contact support for assistance."
+              )}
+            </p>
+          </div>
         ) : faqs.length === 0 ? (
           <p className="text-center text-sm text-gray-500 dark:text-gray-400 py-6">
             {t("contact.faq.empty", "No FAQs available at the moment.")}

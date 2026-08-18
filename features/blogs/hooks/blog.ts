@@ -70,7 +70,7 @@ export const useBlog = () => {
       setBlogs(fallback);
       setNews(withNewsListFallback([]));
       setAllPostsFromApi(fallback);
-      setError(err instanceof Error ? err.message : "Failed to fetch blogs");
+      setError(null);
     } finally {
       setLoading(false);
     }

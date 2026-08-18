@@ -36,3 +36,29 @@ export function resolveContentReadApiUrl(path: string): string {
   const origin = override || PRODUCTION_APEX_ORIGIN;
   return `${origin}${normalized}`;
 }
+
+/**
+ * Fetch FAQ/blog read routes. Tries apex URL first (production www), then same-origin fallback.
+ */
+export async function fetchContentReadApi(
+  path: string,
+  init?: RequestInit
+): Promise<Response> {
+  const normalized = normalizePath(path);
+  const primary = resolveContentReadApiUrl(normalized);
+
+  if (primary === normalized) {
+    return fetch(primary, init);
+  }
+
+  try {
+    const response = await fetch(primary, init);
+    if (response.ok) {
+      return response;
+    }
+  } catch {
+    // CORS/network — fall back to same-origin route on www
+  }
+
+  return fetch(normalized, init);
+}

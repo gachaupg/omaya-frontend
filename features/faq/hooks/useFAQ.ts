@@ -1,18 +1,14 @@
 import { useEffect, useState } from "react";
 
 import { logger } from "@/lib/utils/logger";
-import { resolveContentReadApiUrl } from "@/lib/utils/contentReadApiUrl";
+import { fetchContentReadApi } from "@/lib/utils/contentReadApiUrl";
+import {
+  createServiceUnavailableFaqItem,
+  isSystemFallbackFaqItem,
+  type FAQItem,
+} from "@/features/faq/utils/faqFallback";
 
-export interface FAQItem {
-  _id: string;
-  title: string;
-  content: string;
-  category: string;
-  createdAt?: string;
-  id?: number;
-  question?: string;
-  answer?: string;
-}
+export type { FAQItem };
 
 export const useFAQ = (category?: string) => {
   const [faqs, setFaqs] = useState<FAQItem[]>([]);
@@ -25,46 +21,37 @@ export const useFAQ = (category?: string) => {
         setLoading(true);
         setError(null);
 
-        const url = resolveContentReadApiUrl(
-          category
-            ? `/api/faq/read/?category=${encodeURIComponent(category)}`
-            : "/api/faq/read/"
-        );
+        const path = category
+          ? `/api/faq/read/?category=${encodeURIComponent(category)}`
+          : "/api/faq/read/";
 
-        const response = await fetch(url);
+        const response = await fetchContentReadApi(path);
         if (!response.ok) {
           throw new Error(`HTTP error! status: ${response.status}`);
         }
 
         const data = await response.json();
 
-        const transformedFaqs = data.map((faq: FAQItem, index: number) => ({
-          ...faq,
-          id: index + 1,
-          question: faq.title,
-          answer: faq.content,
-        }));
+        const transformedFaqs = (Array.isArray(data) ? data : []).map(
+          (faq: FAQItem, index: number) => ({
+            ...faq,
+            id: index + 1,
+            question: faq.title,
+            answer: faq.content,
+          })
+        );
+
+        if (transformedFaqs.length === 0) {
+          setFaqs([createServiceUnavailableFaqItem(category || "general")]);
+          setError(null);
+          return;
+        }
 
         setFaqs(transformedFaqs);
       } catch (err) {
         logger.error("general", "Error fetching FAQs:", err);
-
-        setFaqs([
-          {
-            _id: "fallback-1",
-            id: 1,
-            title: "Service Temporarily Unavailable",
-            content:
-              "Our FAQ service is currently experiencing technical difficulties. Please try again later or contact support for assistance.",
-            question: "Service Temporarily Unavailable",
-            answer:
-              "Our FAQ service is currently experiencing technical difficulties. Please try again later or contact support for assistance.",
-            category: category || "general",
-          },
-        ]);
-        setError(
-          "FAQ service is temporarily unavailable. Please try again later."
-        );
+        setFaqs([createServiceUnavailableFaqItem(category || "general")]);
+        setError(null);
       } finally {
         setLoading(false);
       }
@@ -77,5 +64,6 @@ export const useFAQ = (category?: string) => {
     faqs,
     loading,
     error,
+    isFallback: faqs.length > 0 && faqs.every(isSystemFallbackFaqItem),
   };
 };

@@ -34,8 +34,8 @@ export const useLiveBlog = () => {
       } catch (err) {
         if (cancelled) return;
         logger.error("general", "Error fetching blogs from API:", err);
-        setError(err instanceof Error ? err.message : "Failed to fetch blogs");
         setBlogs(withBlogListFallback([]));
+        setError(null);
       } finally {
         if (!cancelled) {
           setLoading(false);

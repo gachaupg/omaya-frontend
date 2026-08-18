@@ -70,9 +70,7 @@ export const useBlogsPaginated = ({
           const fallback = withBlogListFallback([]);
           setPosts(fallback);
           setTotalCount(fallback.length);
-          setError(
-            err instanceof Error ? err.message : "Failed to load blogs"
-          );
+          setError(null);
         }
       } finally {
         if (!cancelled) setLoading(false);
