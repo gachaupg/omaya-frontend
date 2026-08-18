@@ -1,6 +1,8 @@
 import { API_CONFIG } from "@/lib/appConfig";
 
 import { logger } from '@/lib/utils/logger';
+import { normalizeWebSocketUrl } from "@/lib/utils/websocketUtils";
+import { logP2pWebSocketUrl } from "@/features/p2p/utils/logP2pWebSocketUrl";
 
 export interface TradeMessage {
   id: string;
@@ -68,13 +70,23 @@ export class TradeMessagesWebSocket {
     }
 
     // If already connecting or connected to same trade, skip
-    if (this.ws?.readyState === WebSocket.CONNECTING || 
-        (this.ws?.readyState === WebSocket.OPEN && this.lastTradeId === tradeId)) {
+    if (
+      this.ws?.readyState === WebSocket.CONNECTING &&
+      this.lastTradeId === tradeId
+    ) {
+      return;
+    }
+    if (this.ws?.readyState === WebSocket.OPEN && this.lastTradeId === tradeId) {
       return;
     }
 
-    // If connected to different trade, close existing connection
-    if (this.ws?.readyState === WebSocket.OPEN && this.lastTradeId !== tradeId) {
+    // If connecting or connected to different trade, close existing connection
+    if (
+      this.ws &&
+      (this.ws.readyState === WebSocket.OPEN ||
+        this.ws.readyState === WebSocket.CONNECTING) &&
+      this.lastTradeId !== tradeId
+    ) {
       logger.debug('p2p', "🔄 Switching to different trade, closing current connection");
       this.disconnect();
     }
@@ -97,10 +109,13 @@ export class TradeMessagesWebSocket {
     }
 
     try {
-      this.url = API_CONFIG.P2P.SOCKETS.TRADE_MESSAGES(tradeId, token);
-      
+      this.url = normalizeWebSocketUrl(
+        API_CONFIG.P2P.SOCKETS.TRADE_MESSAGES(tradeId, token)
+      );
+
+      logP2pWebSocketUrl("trade-messages", this.url);
       logger.debug('p2p', "🔌 Connecting to Trade Messages WebSocket...");
-            this.ws = new WebSocket(this.url);
+      this.ws = new WebSocket(this.url);
 
       this.ws.onopen = () => {
         if (this.reconnectAttempts === 0) {
@@ -288,6 +303,7 @@ export class TradeMessagesWebSocket {
 
 // Create a map to store WebSocket instances per trade
 const tradeWSInstances = new Map<string, TradeMessagesWebSocket>();
+const tradeWSSubscriberCounts = new Map<string, number>();
 
 export const getTradeMessagesWebSocket = (tradeId: string): TradeMessagesWebSocket => {
   if (!tradeWSInstances.has(tradeId)) {
@@ -296,11 +312,33 @@ export const getTradeMessagesWebSocket = (tradeId: string): TradeMessagesWebSock
   return tradeWSInstances.get(tradeId)!;
 };
 
+/** Increment shared-socket ref count (Chats tab + in-trade ChatBox may share one trade). */
+export const retainTradeMessagesWebSocket = (tradeId: string): void => {
+  if (!tradeId?.trim()) return;
+  tradeWSSubscriberCounts.set(
+    tradeId,
+    (tradeWSSubscriberCounts.get(tradeId) ?? 0) + 1
+  );
+};
+
+/** Decrement ref count; disconnect only when no subscribers remain. */
+export const releaseTradeMessagesWebSocket = (tradeId: string): void => {
+  if (!tradeId?.trim()) return;
+  const next = (tradeWSSubscriberCounts.get(tradeId) ?? 1) - 1;
+  if (next <= 0) {
+    tradeWSSubscriberCounts.delete(tradeId);
+    cleanupTradeMessagesWebSocket(tradeId);
+  } else {
+    tradeWSSubscriberCounts.set(tradeId, next);
+  }
+};
+
 export const cleanupTradeMessagesWebSocket = (tradeId: string): void => {
   const instance = tradeWSInstances.get(tradeId);
   if (instance) {
     instance.disconnect();
     tradeWSInstances.delete(tradeId);
   }
+  tradeWSSubscriberCounts.delete(tradeId);
 };
 

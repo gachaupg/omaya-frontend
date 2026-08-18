@@ -9,7 +9,8 @@ import {
 } from "../slices/messageSlice";
 import {
   getTradeMessagesWebSocket,
-  cleanupTradeMessagesWebSocket,
+  releaseTradeMessagesWebSocket,
+  retainTradeMessagesWebSocket,
 } from "../services/tradeMessagesWebSocket";
 import type { WebSocketMessage } from "../services/tradeMessagesWebSocket";
 import { cookieUtils } from "@/lib/utils/cookieUtils";
@@ -18,6 +19,7 @@ import { API_CONFIG } from "@/lib/appConfig";
 import { logger } from '@/lib/utils/logger';
 import { parseTradeMessagesCancelPayload } from "../utils/tradeMessagesCancelDetection";
 import { P2P_TRADE_CANCELED_EVENT } from "../constants/tradeSocketEvents";
+import { logP2pWebSocketUrl } from "../utils/logP2pWebSocketUrl";
 
 interface UseTradeMessagesWebSocketOptions {
   tradeId: string;
@@ -439,11 +441,9 @@ export const useTradeMessagesWebSocket = (options: UseTradeMessagesWebSocketOpti
       // Silent open handling
     });
 
-    // Log and connect to WebSocket (helps verify exact socket endpoint in runtime).
-    try {
-      const wsUrl = API_CONFIG.P2P.SOCKETS.TRADE_MESSAGES(tradeId, token);
-          } catch (e) {
-          }
+    const wsUrl = API_CONFIG.P2P.SOCKETS.TRADE_MESSAGES(tradeId, token);
+    logP2pWebSocketUrl("trade-messages-hook", wsUrl);
+    retainTradeMessagesWebSocket(tradeId);
     ws.connect(tradeId, token);
 
     // Cleanup function
@@ -452,7 +452,7 @@ export const useTradeMessagesWebSocket = (options: UseTradeMessagesWebSocketOpti
       unsubscribeError();
       unsubscribeClose();
       unsubscribeOpen();
-      cleanupTradeMessagesWebSocket(tradeId);
+      releaseTradeMessagesWebSocket(tradeId);
       dispatch(clearMessagesForTrade(tradeId));
     };
   }, [enabled, tradeId, dispatch]);

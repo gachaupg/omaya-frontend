@@ -20,8 +20,10 @@ import {
   deleteThreadMessage,
   type MessageDeleteType,
 } from "@/features/p2p/api";
-import { getTradeMessagesWebSocket, cleanupTradeMessagesWebSocket } from "@/features/p2p/services/tradeMessagesWebSocket";
+import { getTradeMessagesWebSocket, releaseTradeMessagesWebSocket, retainTradeMessagesWebSocket } from "@/features/p2p/services/tradeMessagesWebSocket";
 import { cookieUtils } from "@/lib/utils/cookieUtils";
+import { logP2pWebSocketUrl } from "@/features/p2p/utils/logP2pWebSocketUrl";
+import { API_CONFIG } from "@/lib/appConfig";
 import Link from "next/link";
 import TermsAndConditionsModal from "@/features/p2p/components/ui/TermsAndConditionsModal";
 import { showToast } from "@/lib/utils/toast";
@@ -39,6 +41,7 @@ import {
   isBlankMediaShell,
   isTempMessageId,
   normalizeTradeMessageForDedupe,
+  resolveTradeMessageId,
   tradeMessagesAreDuplicates,
 } from "@/features/p2p/utils/tradeMessageDedupe";
 import {
@@ -50,6 +53,14 @@ import {
   resolveThreadIdFromGroup,
 } from "@/features/p2p/utils/chatThreadIds";
 import { resolveGroupedChatSenderDisplayName } from "@/features/p2p/utils/chatMessageDisplay";
+import {
+  detectChatLifecycleFromText,
+  isClosedChatStatus,
+  isOpenChatStatus,
+  isTerminalChatStatusValue,
+  mergeConversationStatus,
+  resolveReopenedChatStatus,
+} from "@/features/p2p/utils/chatConversationStatus";
 import { ChevronRight, Camera, Mic } from "lucide-react";
 import { PresenceIndicator } from "@/features/p2p/components/ui/market/sections/UserStatusBadge";
 
@@ -252,19 +263,91 @@ export const Chats: React.FC = () => {
     refetchInterval: undefined,
   });
 
-  // Keep chat list/messages live from unread-messages socket updates.
-  // This updates conversation previews and new incoming messages without reload.
-  useUnreadMessagesWebSocket({
-    enabled: isAuthenticated,
-    onNewMessage: () => {
-      if (unreadRefetchTimeoutRef.current) {
-        clearTimeout(unreadRefetchTimeoutRef.current);
+  const [selectedUser, setSelectedUser] = useState<GroupedUser | null>(null);
+  const [liveGroupedUsers, setLiveGroupedUsers] = useState<GroupedUser[]>([]);
+
+  // State for terms acceptance - use localStorage for instant display, API for source of truth
+  const P2P_TERMS_KEY = "p2p_terms_accepted";
+  const getCachedTermsAccepted = () => {
+    if (typeof window === "undefined") return false;
+    return localStorage.getItem(P2P_TERMS_KEY) === "true";
+  };
+  const [termsAccepted, setTermsAccepted] = useState(getCachedTermsAccepted); // Instant from cache
+
+  useEffect(() => {
+    if (!isAuthenticated) {
+      setTermsAccepted(false);
+      return;
+    }
+    // Hydrate from localStorage immediately (no API wait)
+    setTermsAccepted(getCachedTermsAccepted());
+
+    let cancelled = false;
+    const load = async () => {
+      try {
+        const res = await getTermsAccepted();
+        if (!cancelled) {
+          const apiAccepted = res.terms_accepted === true;
+          setTermsAccepted(apiAccepted);
+          if (apiAccepted) {
+            localStorage.setItem(P2P_TERMS_KEY, "true");
+          }
+        }
+      } catch {
+        if (!cancelled) {
+          // On API error, keep cached value (if any) - don't force banner
+          setTermsAccepted((prev) => prev || getCachedTermsAccepted());
+        }
       }
-      unreadRefetchTimeoutRef.current = setTimeout(() => {
-        refetch();
-      }, 1200);
-    },
-    onRecentMessages: (messages: RecentMessage[]) => {
+    };
+    load();
+    return () => { cancelled = true; };
+  }, [isAuthenticated]);
+  
+  const [messageInput, setMessageInput] = useState("");
+  const [isSending, setIsSending] = useState(false);
+  const [hasLoadedOnce, setHasLoadedOnce] = useState(false);
+  const [uploadedImages, setUploadedImages] = useState<File[]>([]);
+  const [isRecording, setIsRecording] = useState(false);
+  const [recordingSeconds, setRecordingSeconds] = useState(0);
+  const [audioPreview, setAudioPreview] = useState<{ file: File; duration: number; url: string } | null>(null);
+  const mediaRecorderRef = useRef<MediaRecorder | null>(null);
+  const audioChunksRef = useRef<Blob[]>([]);
+  const recordingStartRef = useRef<number>(0);
+  const [showEmojiPicker, setShowEmojiPicker] = useState(false);
+  const [showTermsModal, setShowTermsModal] = useState(false);
+  const emojiPickerRef = useRef<HTMLDivElement>(null);
+  const [showChatView, setShowChatView] = useState(false); // For mobile/tablet: true = show conversation, false = show list
+  const [searchTerm, setSearchTerm] = useState("");
+  const wsRef = useRef<any>(null);
+  const mediaRefetchTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const unreadRefetchTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const [optimisticMessages, setOptimisticMessages] = useState<Map<string, any[]>>(new Map());
+  const [activeThreadId, setActiveThreadId] = useState("");
+  const [statusOverridesByEntity, setStatusOverridesByEntity] = useState<Map<string, string>>(new Map());
+  const justAddedOptimisticRef = useRef<boolean>(false);
+  const messagesEndRef = useRef<HTMLDivElement>(null);
+  const messagesContainerRef = useRef<HTMLDivElement>(null);
+  const prevSelectedUserIdRef = useRef<string | null>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const closedEntityIdsRef = useRef<Set<string>>(new Set());
+  const [tradeMessagesWsConnected, setTradeMessagesWsConnected] = useState(false);
+  const [unreadWsConnected, setUnreadWsConnected] = useState(false);
+  const tradeMessagesPollingRef = useRef<NodeJS.Timeout | null>(null);
+  const unreadListPollingRef = useRef<NodeJS.Timeout | null>(null);
+  const P2P_FALLBACK_POLL_MS = 1500;
+
+  const handleUnreadWsNewMessage = useCallback(() => {
+    if (unreadRefetchTimeoutRef.current) {
+      clearTimeout(unreadRefetchTimeoutRef.current);
+    }
+    unreadRefetchTimeoutRef.current = setTimeout(() => {
+      refetch();
+    }, 1200);
+  }, [refetch]);
+
+  const handleUnreadWsRecentMessages = useCallback(
+    (messages: RecentMessage[]) => {
       if (!Array.isArray(messages) || messages.length === 0) return;
 
       const latestByEntity = new Map<string, RecentMessage>();
@@ -355,6 +438,14 @@ export const Chats: React.FC = () => {
         return next;
       });
     },
+    [user?.email, user?.id]
+  );
+
+  useUnreadMessagesWebSocket({
+    enabled: isAuthenticated,
+    onNewMessage: handleUnreadWsNewMessage,
+    onRecentMessages: handleUnreadWsRecentMessages,
+    onConnectionChange: setUnreadWsConnected,
   });
 
   useEffect(() => {
@@ -364,75 +455,6 @@ export const Chats: React.FC = () => {
       }
     };
   }, []);
-
-  const [selectedUser, setSelectedUser] = useState<GroupedUser | null>(null);
-  const [liveGroupedUsers, setLiveGroupedUsers] = useState<GroupedUser[]>([]);
-
-  // State for terms acceptance - use localStorage for instant display, API for source of truth
-  const P2P_TERMS_KEY = "p2p_terms_accepted";
-  const getCachedTermsAccepted = () => {
-    if (typeof window === "undefined") return false;
-    return localStorage.getItem(P2P_TERMS_KEY) === "true";
-  };
-  const [termsAccepted, setTermsAccepted] = useState(getCachedTermsAccepted); // Instant from cache
-
-  useEffect(() => {
-    if (!isAuthenticated) {
-      setTermsAccepted(false);
-      return;
-    }
-    // Hydrate from localStorage immediately (no API wait)
-    setTermsAccepted(getCachedTermsAccepted());
-
-    let cancelled = false;
-    const load = async () => {
-      try {
-        const res = await getTermsAccepted();
-        if (!cancelled) {
-          const apiAccepted = res.terms_accepted === true;
-          setTermsAccepted(apiAccepted);
-          if (apiAccepted) {
-            localStorage.setItem(P2P_TERMS_KEY, "true");
-          }
-        }
-      } catch {
-        if (!cancelled) {
-          // On API error, keep cached value (if any) - don't force banner
-          setTermsAccepted((prev) => prev || getCachedTermsAccepted());
-        }
-      }
-    };
-    load();
-    return () => { cancelled = true; };
-  }, [isAuthenticated]);
-  
-  const [messageInput, setMessageInput] = useState("");
-  const [isSending, setIsSending] = useState(false);
-  const [hasLoadedOnce, setHasLoadedOnce] = useState(false);
-  const [uploadedImages, setUploadedImages] = useState<File[]>([]);
-  const [isRecording, setIsRecording] = useState(false);
-  const [recordingSeconds, setRecordingSeconds] = useState(0);
-  const [audioPreview, setAudioPreview] = useState<{ file: File; duration: number; url: string } | null>(null);
-  const mediaRecorderRef = useRef<MediaRecorder | null>(null);
-  const audioChunksRef = useRef<Blob[]>([]);
-  const recordingStartRef = useRef<number>(0);
-  const [showEmojiPicker, setShowEmojiPicker] = useState(false);
-  const [showTermsModal, setShowTermsModal] = useState(false);
-  const emojiPickerRef = useRef<HTMLDivElement>(null);
-  const [showChatView, setShowChatView] = useState(false); // For mobile/tablet: true = show conversation, false = show list
-  const [searchTerm, setSearchTerm] = useState("");
-  const wsRef = useRef<any>(null);
-  const mediaRefetchTimeoutRef = useRef<NodeJS.Timeout | null>(null);
-  const unreadRefetchTimeoutRef = useRef<NodeJS.Timeout | null>(null);
-  const [optimisticMessages, setOptimisticMessages] = useState<Map<string, any[]>>(new Map());
-  const [activeThreadId, setActiveThreadId] = useState("");
-  const [statusOverridesByEntity, setStatusOverridesByEntity] = useState<Map<string, string>>(new Map());
-  const justAddedOptimisticRef = useRef<boolean>(false);
-  const messagesEndRef = useRef<HTMLDivElement>(null);
-  const messagesContainerRef = useRef<HTMLDivElement>(null);
-  const prevSelectedUserIdRef = useRef<string | null>(null);
-  const fileInputRef = useRef<HTMLInputElement>(null);
-  const closedEntityIdsRef = useRef<Set<string>>(new Set());
 
   const [hiddenMessageIdsByEntity, setHiddenMessageIdsByEntity] = useState<
     Map<string, Set<string>>
@@ -744,11 +766,65 @@ export const Chats: React.FC = () => {
   }, []);
 
   const isTerminalChatStatus = useCallback(
-    (value: unknown): boolean => {
-      const s = normalizeChatStatus(value);
-      return s === "completed" || s === "resolved" || s === "cancelled";
+    (value: unknown): boolean => isTerminalChatStatusValue(value),
+    []
+  );
+
+  const applyConversationLifecycle = useCallback(
+    (
+      entityId: string,
+      lifecycle: "reopened" | "closed",
+      closedStatus?: string
+    ) => {
+      const trimmedId = String(entityId || "").trim();
+      if (!trimmedId) return;
+
+      const matchedGroup =
+        String(selectedUser?.entity_id ?? "").trim() === trimmedId
+          ? selectedUser
+          : liveGroupedUsers.find(
+              (g) => String(g?.entity_id ?? "").trim() === trimmedId
+            );
+      const messageType = matchedGroup?.message_type;
+
+      if (lifecycle === "reopened") {
+        const openStatus = resolveReopenedChatStatus(messageType);
+        setStatusOverridesByEntity((prev) => {
+          const next = new Map(prev);
+          next.set(trimmedId, openStatus);
+          return next;
+        });
+      } else {
+        const normalized =
+          normalizeChatStatus(closedStatus || "resolved") || "resolved";
+        setStatusOverridesByEntity((prev) => {
+          const next = new Map(prev);
+          next.set(trimmedId, normalized);
+          return next;
+        });
+      }
+
+      setSelectedUser((prev) => {
+        if (!prev || String(prev.entity_id).trim() !== trimmedId) return prev;
+        const nextStatus =
+          lifecycle === "reopened"
+            ? resolveReopenedChatStatus(prev.message_type)
+            : normalizeChatStatus(closedStatus || "resolved") || "resolved";
+        return { ...prev, status: nextStatus } as GroupedUser;
+      });
+
+      setLiveGroupedUsers((prev) =>
+        prev.map((g) => {
+          if (String(g?.entity_id ?? "").trim() !== trimmedId) return g;
+          const nextStatus =
+            lifecycle === "reopened"
+              ? resolveReopenedChatStatus(g.message_type)
+              : normalizeChatStatus(closedStatus || "resolved") || "resolved";
+          return { ...g, status: nextStatus } as GroupedUser;
+        })
+      );
     },
-    [normalizeChatStatus]
+    [liveGroupedUsers, normalizeChatStatus, selectedUser]
   );
 
   const getEffectiveChatStatus = useCallback(
@@ -807,26 +883,24 @@ export const Chats: React.FC = () => {
         setStatusOverridesByEntity((prev) => {
           const next = new Map(prev);
           const existing = normalizeChatStatus(next.get(currentEntityId));
-          // Never downgrade terminal states (completed/resolved/cancelled).
-          if (isTerminalChatStatus(existing) && !isTerminalChatStatus(normalized)) {
-            return prev;
-          }
-          next.set(currentEntityId, normalized);
+          next.set(
+            currentEntityId,
+            mergeConversationStatus(existing, normalized)
+          );
           return next;
         });
       }
 
       if (currentEntityId && isTerminalChatStatus(normalized)) {
         closeConversationInstantly(currentEntityId, normalized);
+      } else if (currentEntityId && isOpenChatStatus(normalized)) {
+        applyConversationLifecycle(currentEntityId, "reopened");
       }
 
       setSelectedUser((prev) => {
         if (!prev) return prev;
         const prevStatus = normalizeChatStatus((prev as any)?.status);
-        const mergedStatus =
-          isTerminalChatStatus(prevStatus) && !isTerminalChatStatus(normalized)
-            ? prevStatus
-            : normalized;
+        const mergedStatus = mergeConversationStatus(prevStatus, normalized);
         return {
           ...prev,
           status: mergedStatus,
@@ -837,6 +911,7 @@ export const Chats: React.FC = () => {
       closeConversationInstantly,
       isTerminalChatStatus,
       normalizeChatStatus,
+      applyConversationLifecycle,
       resolvedTradeId,
       selectedUser?.entity_id,
     ]
@@ -874,11 +949,13 @@ export const Chats: React.FC = () => {
     }
   }, [selectedUser, showEmojiPicker]);
 
-  // Compute if chat is closed (trade completed/cancelled)
+  // Compute if chat is closed (trade completed/cancelled, or support thread closed)
   const isChatClosed = useMemo(() => {
     const normalizedStatus = getEffectiveChatStatus(selectedUser);
-    return normalizedStatus === "complete" || normalizedStatus === "completed" || normalizedStatus === "resolved" || normalizedStatus === "cancelled";
+    return isClosedChatStatus(normalizedStatus, selectedUser?.message_type);
   }, [getEffectiveChatStatus, selectedUser]);
+
+  const lastLifecycleMessageIdRef = useRef<string | null>(null);
 
   // Close emoji picker when chat becomes closed
   useEffect(() => {
@@ -984,6 +1061,36 @@ export const Chats: React.FC = () => {
     user?.email,
   ]);
 
+  useEffect(() => {
+    lastLifecycleMessageIdRef.current = null;
+  }, [selectedUser?.entity_id]);
+
+  // Auto open/close UI when support/system messages announce lifecycle changes.
+  useEffect(() => {
+    if (!selectedUser?.entity_id || displayedMessages.length === 0) return;
+
+    const latest = displayedMessages[displayedMessages.length - 1];
+    const messageId = String(latest?.id ?? "").trim();
+    if (!messageId || messageId === lastLifecycleMessageIdRef.current) return;
+
+    const lifecycle = detectChatLifecycleFromText(
+      (latest as any)?.content ?? (latest as any)?.message
+    );
+    if (!lifecycle) return;
+
+    lastLifecycleMessageIdRef.current = messageId;
+    applyConversationLifecycle(
+      String(selectedUser.entity_id),
+      lifecycle,
+      getEffectiveChatStatus(selectedUser)
+    );
+  }, [
+    applyConversationLifecycle,
+    displayedMessages,
+    getEffectiveChatStatus,
+    selectedUser,
+  ]);
+
   const isAdminUser = useMemo(() => {
     const raw =
       (user as any)?.user_type ??
@@ -1019,6 +1126,29 @@ export const Chats: React.FC = () => {
       return next;
     });
   }, []);
+
+  const tradeMessagesWsContextRef = useRef({
+    selectedUser,
+    resolvedTradeId,
+    user,
+    refetch,
+    closeConversationInstantly,
+    hideMessageLocally,
+    normalizeChatStatus,
+    isTerminalChatStatus,
+    applyConversationLifecycle,
+  });
+  tradeMessagesWsContextRef.current = {
+    selectedUser,
+    resolvedTradeId,
+    user,
+    refetch,
+    closeConversationInstantly,
+    hideMessageLocally,
+    normalizeChatStatus,
+    isTerminalChatStatus,
+    applyConversationLifecycle,
+  };
 
   const handleDeleteMessage = useCallback(
     async (msg: any, deleteType: MessageDeleteType) => {
@@ -1160,11 +1290,10 @@ export const Chats: React.FC = () => {
             const incomingStatus =
               nextStatus || (updatedUser as any).status || (prev as any).status;
             const normalizedIncomingStatus = normalizeChatStatus(incomingStatus);
-            const mergedStatus =
-              isTerminalChatStatus(prevStatus) &&
-              !isTerminalChatStatus(normalizedIncomingStatus)
-                ? prevStatus
-                : incomingStatus;
+            const mergedStatus = mergeConversationStatus(
+              prevStatus,
+              normalizedIncomingStatus
+            );
             return {
               ...prev,
               messages: updatedUser.messages,
@@ -1205,12 +1334,27 @@ export const Chats: React.FC = () => {
     // Get WebSocket instance for this entity_id (trade_id)
     const ws = getTradeMessagesWebSocket(resolvedTradeId);
     wsRef.current = ws;
+    retainTradeMessagesWebSocket(resolvedTradeId);
+
+    const unsubscribeOpen = ws.onOpen(() => {
+      setTradeMessagesWsConnected(true);
+    });
+    const unsubscribeClose = ws.onClose(() => {
+      setTradeMessagesWsConnected(false);
+    });
+    setTradeMessagesWsConnected(ws.isConnected());
 
     // Connect WebSocket
+    logP2pWebSocketUrl(
+      "trade-messages-chats-tab",
+      API_CONFIG.P2P.SOCKETS.TRADE_MESSAGES(resolvedTradeId, token)
+    );
     ws.connect(resolvedTradeId, token);
 
     // Handle incoming messages immediately for instant UI updates.
     const unsubscribeMessage = ws.onMessage((wsMessage: any) => {
+      const ctx = tradeMessagesWsContextRef.current;
+      const activeTradeId = ctx.resolvedTradeId;
       const payload =
         wsMessage?.data && typeof wsMessage.data === "object"
           ? wsMessage.data
@@ -1218,12 +1362,12 @@ export const Chats: React.FC = () => {
       if (!payload) return;
 
       const incomingTradeId = String(
-        payload?.trade_id ?? payload?.trade ?? resolvedTradeId ?? ""
+        payload?.trade_id ?? payload?.trade ?? activeTradeId ?? ""
       ).trim();
       const isCurrentTrade =
         !incomingTradeId ||
-        !resolvedTradeId ||
-        incomingTradeId === String(resolvedTradeId);
+        !activeTradeId ||
+        incomingTradeId === String(activeTradeId);
 
       // Handle status updates (e.g. resolved/cancelled/completed) in real-time so
       // closed-state UI updates without requiring a manual page reload.
@@ -1234,43 +1378,48 @@ export const Chats: React.FC = () => {
         wsMessage?.status ??
         wsMessage?.trade_status ??
         wsMessage?.order_status;
-      const statusFromPayload = normalizeChatStatus(statusFromPayloadRaw);
+      const statusFromPayload = ctx.normalizeChatStatus(statusFromPayloadRaw);
       const isStatusEvent =
         wsMessage?.type === "status_update" || statusFromPayload.length > 0;
       if (isStatusEvent && isCurrentTrade) {
-        const currentEntityId = String(selectedUser?.entity_id || "").trim();
+        const currentEntityId = String(ctx.selectedUser?.entity_id || "").trim();
         if (currentEntityId && statusFromPayload) {
           setStatusOverridesByEntity((prev) => {
             const next = new Map(prev);
-            const existing = normalizeChatStatus(next.get(currentEntityId));
-            if (
-              isTerminalChatStatus(existing) &&
-              !isTerminalChatStatus(statusFromPayload)
-            ) {
-              return prev;
-            }
-            next.set(currentEntityId, statusFromPayload);
+            const existing = ctx.normalizeChatStatus(next.get(currentEntityId));
+            next.set(
+              currentEntityId,
+              mergeConversationStatus(existing, statusFromPayload)
+            );
             return next;
           });
         }
         setSelectedUser((prev) => {
           if (!prev) return prev;
-          const prevStatus = normalizeChatStatus((prev as any)?.status);
-          const mergedStatus =
-            isTerminalChatStatus(prevStatus) &&
-            !isTerminalChatStatus(statusFromPayload)
-              ? prevStatus
-              : statusFromPayload || (prev as any).status;
+          const prevStatus = ctx.normalizeChatStatus((prev as any)?.status);
+          const mergedStatus = mergeConversationStatus(
+            prevStatus,
+            statusFromPayload
+          );
           return {
             ...prev,
-            status: mergedStatus,
+            status: mergedStatus || (prev as any).status,
           } as GroupedUser;
         });
-        if (currentEntityId && isTerminalChatStatus(statusFromPayload)) {
-          closeConversationInstantly(currentEntityId, statusFromPayload);
+        if (
+          currentEntityId &&
+          ctx.isTerminalChatStatus(statusFromPayload) &&
+          !isOpenChatStatus(statusFromPayload)
+        ) {
+          ctx.closeConversationInstantly(currentEntityId, statusFromPayload);
+        } else if (
+          currentEntityId &&
+          isOpenChatStatus(statusFromPayload)
+        ) {
+          ctx.applyConversationLifecycle(currentEntityId, "reopened");
         }
         // Keep grouped conversations list in sync with latest status.
-        refetch();
+        ctx.refetch();
       }
 
       // Realtime delete propagation: remove deleted messages for both users immediately.
@@ -1288,9 +1437,9 @@ export const Chats: React.FC = () => {
         ""
       ).trim();
       if (deleteFlag && deletedMessageId && isCurrentTrade) {
-        const currentEntityId = String(selectedUser?.entity_id || "").trim();
+        const currentEntityId = String(ctx.selectedUser?.entity_id || "").trim();
         if (currentEntityId) {
-          hideMessageLocally(currentEntityId, deletedMessageId);
+          ctx.hideMessageLocally(currentEntityId, deletedMessageId);
           setSelectedUser((prev) => {
             if (!prev) return prev;
             const existing = Array.isArray((prev as any).messages) ? (prev as any).messages : [];
@@ -1311,7 +1460,7 @@ export const Chats: React.FC = () => {
           );
         }
         // Safety refetch in case backend sends tombstone/placeholder updates.
-        refetch();
+        ctx.refetch();
         return;
       }
 
@@ -1324,16 +1473,17 @@ export const Chats: React.FC = () => {
         Array.isArray(payload?.audios);
       if (!isMessageEvent) return;
 
-      if (!payload?.id) return;
+      const resolvedMessageId = resolveTradeMessageId(payload, activeTradeId);
+      if (!resolvedMessageId) return;
 
       const incomingTrade =
-        String(payload.trade_id ?? payload.trade ?? resolvedTradeId ?? "").trim();
-      if (incomingTrade && resolvedTradeId && incomingTrade !== String(resolvedTradeId)) {
+        String(payload.trade_id ?? payload.trade ?? activeTradeId ?? "").trim();
+      if (incomingTrade && activeTradeId && incomingTrade !== String(activeTradeId)) {
         return;
       }
 
       const normalizedMessage = {
-        id: String(payload.id),
+        id: resolvedMessageId,
         content: String(payload.content ?? payload.message ?? ""),
         message: String(payload.message ?? payload.content ?? ""),
         support_document: String(
@@ -1369,9 +1519,9 @@ export const Chats: React.FC = () => {
           return !tradeMessagesAreDuplicates(
             normalizeTradeMessageForDedupe(m),
             normalizedForDedupe,
-            user?.email,
+            ctx.user?.email,
             15000,
-            user?.id
+            ctx.user?.id
           );
         });
         const existingIndex = withoutReplacedTemps.findIndex(
@@ -1434,7 +1584,7 @@ export const Chats: React.FC = () => {
       // Keep conversation sidebar in sync immediately for incoming messages too.
       setLiveGroupedUsers((prev) => {
         const list = Array.isArray(prev) ? [...prev] : [];
-        const entityId = String(selectedUser?.entity_id ?? "").trim();
+        const entityId = String(ctx.selectedUser?.entity_id ?? "").trim();
         if (!entityId) return prev;
         const idx = list.findIndex(
           (g: any) => String(g?.entity_id ?? "").trim() === entityId
@@ -1490,6 +1640,14 @@ export const Chats: React.FC = () => {
         return list;
       });
 
+      const lifecycle = detectChatLifecycleFromText(
+        normalizedMessage.content || normalizedMessage.message
+      );
+      const lifecycleEntityId = String(ctx.selectedUser?.entity_id || "").trim();
+      if (lifecycle && lifecycleEntityId) {
+        ctx.applyConversationLifecycle(lifecycleEntityId, lifecycle);
+      }
+
       // Media can arrive delayed on backend processing; if socket payload is empty/blank,
       // force a quick API refetch so image/audio shows as soon as available.
       const hasText = normalizedMessage.content.trim().length > 0;
@@ -1500,29 +1658,81 @@ export const Chats: React.FC = () => {
           clearTimeout(mediaRefetchTimeoutRef.current);
         }
         mediaRefetchTimeoutRef.current = setTimeout(() => {
-          refetch();
+          ctx.refetch();
         }, 300);
       }
     });
 
     return () => {
       unsubscribeMessage();
+      unsubscribeOpen();
+      unsubscribeClose();
       if (mediaRefetchTimeoutRef.current) {
         clearTimeout(mediaRefetchTimeoutRef.current);
       }
-      // Don't cleanup WebSocket here as it might be used elsewhere
-      // cleanupTradeMessagesWebSocket(selectedUser.entity_id);
+      releaseTradeMessagesWebSocket(resolvedTradeId);
     };
   }, [
-    closeConversationInstantly,
-    isTerminalChatStatus,
-    selectedUser?.entity_id,
     resolvedTradeId,
     isAuthenticated,
-    normalizeChatStatus,
-    refetch,
-    user?.email,
+    selectedUser?.entity_id,
+    (selectedUser as any)?.message_type,
   ]);
+
+  // Poll when trade-messages WebSocket is down so chat still updates.
+  useEffect(() => {
+    if (tradeMessagesPollingRef.current) {
+      clearInterval(tradeMessagesPollingRef.current);
+      tradeMessagesPollingRef.current = null;
+    }
+    const isP2pConversation =
+      Boolean(selectedUser && resolvedTradeId && isAuthenticated) &&
+      String((selectedUser as any)?.message_type || "").toLowerCase() === "p2p";
+    if (!isP2pConversation || tradeMessagesWsConnected) {
+      return;
+    }
+    tradeMessagesPollingRef.current = setInterval(() => {
+      if (typeof document !== "undefined" && document.visibilityState !== "visible") {
+        return;
+      }
+      refetch();
+    }, P2P_FALLBACK_POLL_MS);
+    return () => {
+      if (tradeMessagesPollingRef.current) {
+        clearInterval(tradeMessagesPollingRef.current);
+        tradeMessagesPollingRef.current = null;
+      }
+    };
+  }, [
+    isAuthenticated,
+    refetch,
+    resolvedTradeId,
+    selectedUser,
+    tradeMessagesWsConnected,
+  ]);
+
+  // Poll conversation list when unread-messages WebSocket is down.
+  useEffect(() => {
+    if (unreadListPollingRef.current) {
+      clearInterval(unreadListPollingRef.current);
+      unreadListPollingRef.current = null;
+    }
+    if (!isAuthenticated || unreadWsConnected) {
+      return;
+    }
+    unreadListPollingRef.current = setInterval(() => {
+      if (typeof document !== "undefined" && document.visibilityState !== "visible") {
+        return;
+      }
+      refetch();
+    }, P2P_FALLBACK_POLL_MS);
+    return () => {
+      if (unreadListPollingRef.current) {
+        clearInterval(unreadListPollingRef.current);
+        unreadListPollingRef.current = null;
+      }
+    };
+  }, [isAuthenticated, refetch, unreadWsConnected]);
 
   const conversations = useMemo(() => {
     return liveGroupedUsers || [];
@@ -1978,9 +2188,10 @@ export const Chats: React.FC = () => {
     // Use displayedMessages which includes optimistic messages
     const allMessages = displayedMessages;
 
-    // Check if chat is closed - disable if status is complete/resolved/cancelled
     const normalizedStatus = getEffectiveChatStatus(selectedUser);
-    const isChatClosed = normalizedStatus === "complete" || normalizedStatus === "completed" || normalizedStatus === "resolved" || normalizedStatus === "cancelled";
+    const isSupportLike =
+      selectedUser.message_type === "support" ||
+      selectedUser.message_type === "appeal";
 
     if (allMessages.length === 0) {
       return (
@@ -2203,11 +2414,15 @@ export const Chats: React.FC = () => {
               <div className="flex-1">
                 <h3 className="text-sm font-semibold text-gray-900 dark:text-white mb-1">Chat Closed</h3>
                 <p className="text-xs text-gray-600 dark:text-gray-500 leading-relaxed">
-                  This chat is now closed as the trade has been {normalizedStatus === "cancelled" ? "cancelled" : normalizedStatus === "resolved" ? "resolved" : "completed"}.
+                  {isSupportLike
+                    ? "This support conversation is currently closed."
+                    : `This chat is now closed as the trade has been ${normalizedStatus === "cancelled" ? "cancelled" : normalizedStatus === "resolved" ? "resolved" : "completed"}.`}
                 </p>
-                <p className="text-xs text-gray-600 dark:text-gray-500 leading-relaxed mt-1">
-                  Please note that the chat will automatically reopen only when there is a new order between you and this user.
-                </p>
+                {!isSupportLike && (
+                  <p className="text-xs text-gray-600 dark:text-gray-500 leading-relaxed mt-1">
+                    Please note that the chat will automatically reopen only when there is a new order between you and this user.
+                  </p>
+                )}
               </div>
             </div>
           </div>
