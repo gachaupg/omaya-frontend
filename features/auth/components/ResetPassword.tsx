@@ -43,6 +43,14 @@ const ResetPassword = () => {
     e.preventDefault();
     setSubmitAttempted(true);
     setResetError("");
+    if (!token.trim()) {
+      setResetError("Reset link is invalid or expired. Please request a new password reset email.");
+      return;
+    }
+    if (!email.trim()) {
+      setResetError("Reset link is missing an email. Please use the link from your password reset email.");
+      return;
+    }
     if (!password) {
       setResetError("Password is required");
       return;
@@ -58,7 +66,12 @@ const ResetPassword = () => {
     setIsLoading(true);
     try {
       await dispatch(
-        resetPassword({ email, password, confirm_password: confirmPassword })
+        resetPassword({
+          token,
+          email,
+          password,
+          confirm_password: confirmPassword,
+        })
       ).unwrap();
       setSuccess(true);
     } catch (err: any) {
