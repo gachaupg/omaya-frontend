@@ -187,11 +187,12 @@ const SuccessPage: React.FC<SuccessPageProps> = ({
         const parsed = parseFloat(String(wsData.amount));
         if (!Number.isNaN(parsed)) paidAmount = parsed;
       }
-      if (wsData.net_amount != null) {
+      if (wsData.amount_to != null) {
+        const parsed = parseFloat(String(wsData.amount_to));
+        if (!Number.isNaN(parsed)) receivedAmount = parsed;
+      } else if (wsData.net_amount != null) {
         const parsed = parseFloat(String(wsData.net_amount));
         if (!Number.isNaN(parsed)) receivedAmount = parsed;
-      } else if (wsData.amount_to != null) {
-        receivedAmount = Number(wsData.amount_to);
       }
     }
 
@@ -408,16 +409,17 @@ const SuccessPage: React.FC<SuccessPageProps> = ({
       }
     }
     
-    // Net amount: prefer websocket net_amount, else estimatedAmount (actual processed)
+    // Net amount: prefer websocket amount_to (final payout), else net_amount / estimate
     let calculatedNetAmount = estimatedAmount;
     if (websocketData?.data) {
       const wsData = websocketData.data;
-      if (wsData.from_currency && wsData.to_currency &&
-          wsData.from_currency !== wsData.to_currency &&
-          wsData.amount_to != null) {
-        calculatedNetAmount = wsData.amount_to;
-      } else if (wsData.net_amount != null) {
-        const parsed = parseFloat(wsData.net_amount);
+      if (wsData.amount_to != null && wsData.amount_to !== undefined) {
+        calculatedNetAmount =
+          typeof wsData.amount_to === "number"
+            ? wsData.amount_to
+            : parseFloat(String(wsData.amount_to));
+      } else if (wsData.net_amount != null && wsData.net_amount !== undefined) {
+        const parsed = parseFloat(String(wsData.net_amount));
         if (!isNaN(parsed)) calculatedNetAmount = parsed;
       }
     }

@@ -229,27 +229,36 @@ export function resolveExpressChangeNowSendAmount(
   );
 }
 
-/** Read ChangeNow receive amount directly from socket net_amount (no scaling/conversion). */
+/** Live WS net receive — prefer `amount_to` (final payout); `net_amount` is fallback only. */
+export function resolveExpressSocketReceiveAmountTo(
+  wsPayload: Record<string, unknown>
+): number | null {
+  return (
+    parseExpressSocketNumberish(wsPayload.amount_to) ??
+    parseExpressSocketNumberish(wsPayload.amountTo) ??
+    parseExpressSocketNumberish(wsPayload.to_amount) ??
+    parseExpressSocketNumberish(wsPayload.toAmount) ??
+    parseExpressSocketNumberish(wsPayload.estimated_amount) ??
+    parseExpressSocketNumberish(wsPayload.amount_expected_to) ??
+    parseExpressSocketNumberish(wsPayload.you_receive) ??
+    parseExpressSocketNumberish(wsPayload.youReceive) ??
+    parseExpressSocketNumberish(wsPayload.net_amount) ??
+    parseExpressSocketNumberish(wsPayload.netAmount)
+  );
+}
+
+/** Read ChangeNow receive amount from socket — prefers amount_to over net_amount. */
 export function resolveExpressChangeNowSocketNetAmount(
   wsPayload: Record<string, unknown>
 ): number | null {
-  return parseExpressSocketNumberish(wsPayload.net_amount);
+  return resolveExpressSocketReceiveAmountTo(wsPayload);
 }
 
-/** Resolve ChangeNow receive amount from websocket — socket net_amount as-is when present. */
+/** Resolve ChangeNow receive amount from websocket — amount_to first, net_amount fallback. */
 export function resolveExpressChangeNowReceiveAmount(
   wsPayload: Record<string, unknown>
 ): number | null {
-  const fromNet = parseExpressSocketNumberish(wsPayload.net_amount);
-  if (fromNet != null) return fromNet;
-
-  const amountTo = parseExpressSocketNumberish(wsPayload.amount_to);
-  if (amountTo != null) return amountTo;
-
-  const estimated = parseExpressSocketNumberish(wsPayload.estimated_amount);
-  if (estimated != null) return estimated;
-
-  return parseExpressSocketNumberish(wsPayload.amount_expected_to);
+  return resolveExpressSocketReceiveAmountTo(wsPayload);
 }
 
 export function resolveExpressChangeNowSendCurrency(
@@ -336,7 +345,8 @@ export function unwrapExpressWsStatusPayload(
 
 /**
  * Resolve the receive amount from express websocket status updates.
- * Withdrawals and deposits display fiat net in USD: prefer `net_amount`.
+ * Withdrawals and crypto/ChangeNow deposits: prefer `amount_to`.
+ * Bank USD deposits: prefer `net_amount` when fiat-plausible.
  */
 export function resolveExpressSocketReceiveAmount(
   wsData: ExpressSocketReceiveFields | null | undefined,
@@ -344,21 +354,21 @@ export function resolveExpressSocketReceiveAmount(
 ): number | null {
   if (!wsData) return null;
 
+  const wsRecord = (wsData ?? {}) as Record<string, unknown>;
   const netAmount = parseExpressSocketNumberish(wsData.net_amount);
-  const amountTo = parseExpressSocketNumberish(wsData.amount_to);
+  const amountTo = resolveExpressSocketReceiveAmountTo(wsRecord);
   const estimatedAmount = parseExpressSocketNumberish(wsData.estimated_amount);
   const expectedAmountTo = parseExpressSocketNumberish(wsData.amount_expected_to);
 
   const type = String(transactionType ?? "").toLowerCase();
   if (type === "deposit") {
-    const wsRecord = (wsData ?? {}) as Record<string, unknown>;
     if (isExpressChangeNowWsPayload(wsRecord)) {
       return resolveExpressChangeNowReceiveAmount(wsRecord);
     }
-    return netAmount;
+    return amountTo ?? netAmount ?? estimatedAmount ?? expectedAmountTo;
   }
   if (type === "withdrawal") {
-    return netAmount ?? amountTo ?? estimatedAmount ?? expectedAmountTo;
+    return amountTo ?? netAmount ?? estimatedAmount ?? expectedAmountTo;
   }
 
   return amountTo ?? netAmount ?? estimatedAmount ?? expectedAmountTo;
@@ -422,7 +432,7 @@ export function resolveExpressDirectCryptoDepositReceiveDisplay(input: {
 }): ExpressStatusNetDisplay {
   const tx = input.transactionData ?? {};
   const wsPayload = unwrapExpressWsStatusPayload(input.websocketData);
-  const fromSocket = parseExpressSocketNumberish(wsPayload.net_amount);
+  const fromSocket = resolveExpressSocketReceiveAmountTo(wsPayload);
   const fromLive =
     input.liveNetAmount != null && input.liveNetAmount > 0
       ? input.liveNetAmount
@@ -477,7 +487,7 @@ export function resolveExpressDepositWsAmountUpdate(
     .toUpperCase();
 
   if (isExpressDirectCryptoDeposit(tx, wsPayload)) {
-    const receiveAmount = parseExpressSocketNumberish(wsPayload.net_amount);
+    const receiveAmount = resolveExpressSocketReceiveAmountTo(wsPayload);
     const asset = sendCurrencyRaw || assetTicker(tx) || "USDT";
     return {
       sendAmount,
@@ -511,7 +521,13 @@ export function resolveExpressDepositExchangingReceiveDisplay(input: {
 
   if (isExpressChangeNowDeposit(tx, wsPayload)) {
     const fromForm = parseExpressSocketNumberish(tx.receiveAmount);
-    const amount = resolveExpressChangeNowReceiveAmount(wsPayload) ?? fromForm ?? 0;
+    const amount =
+      resolveExpressChangeNowReceiveAmount(wsPayload) ??
+      fromForm ??
+      (input.liveNetAmount != null && input.liveNetAmount > 0
+        ? input.liveNetAmount
+        : null) ??
+      0;
     const currency = resolveExpressChangeNowReceiveCurrency(wsPayload, tx);
     return { amount, currency };
   }
@@ -931,13 +947,8 @@ export function resolveExpressDepositCryptoReceiveDisplay(input: {
   const changeNow = isExpressChangeNowDeposit(tx, wsPayload);
 
   const fromSocket = changeNow
-    ? resolveExpressChangeNowSocketNetAmount(wsPayload) ??
-      resolveExpressChangeNowReceiveAmount(wsPayload)
-    : parseExpressSocketNumberish(wsPayload.amount_to) ??
-      parseExpressSocketNumberish(wsPayload.estimated_amount) ??
-      parseExpressSocketNumberish(wsPayload.amount_expected_to) ??
-      parseExpressSocketNumberish(wsPayload.net_amount) ??
-      parseExpressSocketNumberish(wsPayload.netAmount);
+    ? resolveExpressChangeNowReceiveAmount(wsPayload)
+    : resolveExpressSocketReceiveAmountTo(wsPayload);
 
   const fromForm = parseExpressSocketNumberish(tx.receiveAmount);
   const fromTxNet =
@@ -1041,10 +1052,7 @@ export function resolveHomeWithdrawalSuccessPaidAmount(
   const tx = input.transactionData ?? {};
   const wsPayload = input.wsPayload ?? {};
 
-  const fromSocketNet = firstPositiveNumberish(
-    wsPayload.net_amount,
-    wsPayload.netAmount
-  );
+  const fromSocketNet = resolveExpressSocketReceiveAmountTo(wsPayload);
   if (fromSocketNet != null) return fromSocketNet;
 
   const fromProcessing = parseExpressSocketNumberish(

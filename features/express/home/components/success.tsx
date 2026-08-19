@@ -335,16 +335,17 @@ const SuccessPage: React.FC<SuccessPageProps> = ({
     let calculatedNetAmount = estimatedAmount;
     if (websocketData?.data) {
       const wsData = websocketData.data;
-      
-      // For conversion flows, use amount_to as net amount
-      if (wsData.from_currency && wsData.to_currency && 
-          wsData.from_currency !== wsData.to_currency &&
-          wsData.amount_to !== null && wsData.amount_to !== undefined) {
-        calculatedNetAmount = wsData.amount_to;
-      }
-      // For direct flows, use net_amount if available
-      else if (wsData.net_amount !== null && wsData.net_amount !== undefined) {
-        calculatedNetAmount = parseFloat(wsData.net_amount);
+
+      if (wsData.amount_to != null && wsData.amount_to !== undefined) {
+        calculatedNetAmount =
+          typeof wsData.amount_to === "number"
+            ? wsData.amount_to
+            : parseFloat(String(wsData.amount_to));
+      } else if (
+        wsData.net_amount !== null &&
+        wsData.net_amount !== undefined
+      ) {
+        calculatedNetAmount = parseFloat(String(wsData.net_amount));
       }
     }
     

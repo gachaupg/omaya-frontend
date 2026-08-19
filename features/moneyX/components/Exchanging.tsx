@@ -540,7 +540,7 @@ export default function Exchanging({ transactionData, onBackToTransfer }: Exchan
     if (data.type === "status_update" && data.data) {
       const wsData = data.data as any;
       const socketNetAmount =
-        parseNumberish(wsData.net_amount) ?? parseNumberish(wsData.amount_to);
+        parseNumberish(wsData.amount_to) ?? parseNumberish(wsData.net_amount);
       if (socketNetAmount !== null) {
         setLiveNetAmount(socketNetAmount);
         setLiveNetCurrency(
