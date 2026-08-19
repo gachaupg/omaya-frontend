@@ -31,7 +31,7 @@ const SANITY_TOKEN_ENV_KEYS = [
  * (SANITY_DATASET / NEXT_PUBLIC_SANITY_DATASET) or content will not match the app.
  */
 export const DEFAULT_SANITY_PROJECT_ID = "jhuegccg";
-export const DEFAULT_SANITY_DATASET = "development";
+export const DEFAULT_SANITY_DATASET = "production";
 export const DEFAULT_SANITY_API_VERSION = "2025-07-04";
 /** Public read token — same as mobile; override via SANITY_TOKEN / NEXT_PUBLIC_SANITY_READ_TOKEN. */
 export const DEFAULT_SANITY_READ_TOKEN =

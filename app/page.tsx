@@ -252,7 +252,7 @@ export default function MarketingPage() {
       if (post.image?.asset?._ref) {
         const sanityConfig = resolveSanityConfig();
         const projectId = sanityConfig.projectId || "your-project-id";
-        const dataset = sanityConfig.dataset || "development";
+        const dataset = sanityConfig.dataset || "production";
         const imageId = post.image.asset._ref
           .replace("image-", "")
           .replace("-jpg", ".jpg")
