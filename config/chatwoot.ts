@@ -2,6 +2,10 @@ function normalizeEnvValue(raw: string): string {
   return String(raw).trim();
 }
 
+/** Fallback when ECS / Secrets Manager env is missing — remove once secrets are wired. */
+export const DEFAULT_CHATWOOT_BASE_URL = "https://connect.omaya.io";
+export const DEFAULT_CHATWOOT_WEBSITE_TOKEN = "fH4XtymvHEZ4Pie5YcDaQjcy";
+
 /** Prefer plain keys so ECS / Secrets Manager can inject at container start. */
 const CHATWOOT_BASE_URL_ENV_KEYS = [
   "CHATWOOT_BASE_URL",
@@ -35,14 +39,18 @@ export interface ChatwootRuntimeConfig {
  * Live: AWS Secrets Manager → ECS env at container start.
  */
 export function getChatwootConfigFromEnv(): ChatwootRuntimeConfig {
-  const baseUrl = readEnvKeyFromProcessEnv(CHATWOOT_BASE_URL_ENV_KEYS).replace(
-    /\/+$/,
-    ""
-  );
+  const baseUrl = (
+    readEnvKeyFromProcessEnv(CHATWOOT_BASE_URL_ENV_KEYS) ||
+    DEFAULT_CHATWOOT_BASE_URL
+  ).replace(/\/+$/, "");
+
+  const websiteToken =
+    readEnvKeyFromProcessEnv(CHATWOOT_WEBSITE_TOKEN_ENV_KEYS) ||
+    DEFAULT_CHATWOOT_WEBSITE_TOKEN;
 
   return {
     baseUrl,
-    websiteToken: readEnvKeyFromProcessEnv(CHATWOOT_WEBSITE_TOKEN_ENV_KEYS),
+    websiteToken,
   };
 }
 
@@ -57,10 +65,14 @@ function readRuntimeConfigChatwoot(): ChatwootRuntimeConfig {
   ).__RUNTIME_CONFIG__;
 
   return {
-    baseUrl: String(cfg?.NEXT_PUBLIC_CHATWOOT_BASE_URL ?? "")
-      .trim()
-      .replace(/\/+$/, ""),
-    websiteToken: String(cfg?.NEXT_PUBLIC_CHATWOOT_WEBSITE_TOKEN ?? "").trim(),
+    baseUrl: (
+      String(cfg?.NEXT_PUBLIC_CHATWOOT_BASE_URL ?? "").trim() ||
+      DEFAULT_CHATWOOT_BASE_URL
+    ).replace(/\/+$/, ""),
+    websiteToken: (
+      String(cfg?.NEXT_PUBLIC_CHATWOOT_WEBSITE_TOKEN ?? "").trim() ||
+      DEFAULT_CHATWOOT_WEBSITE_TOKEN
+    ),
   };
 }
 
