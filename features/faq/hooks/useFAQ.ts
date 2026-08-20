@@ -3,7 +3,6 @@ import { useEffect, useState } from "react";
 import { logger } from "@/lib/utils/logger";
 import { fetchContentReadApi } from "@/lib/utils/contentReadApiUrl";
 import {
-  createServiceUnavailableFaqItem,
   isSystemFallbackFaqItem,
   type FAQItem,
 } from "@/features/faq/utils/faqFallback";
@@ -41,16 +40,10 @@ export const useFAQ = (category?: string) => {
           })
         );
 
-        if (transformedFaqs.length === 0) {
-          setFaqs([createServiceUnavailableFaqItem(category || "general")]);
-          setError(null);
-          return;
-        }
-
         setFaqs(transformedFaqs);
       } catch (err) {
         logger.error("general", "Error fetching FAQs:", err);
-        setFaqs([createServiceUnavailableFaqItem(category || "general")]);
+        setFaqs([]);
         setError(null);
       } finally {
         setLoading(false);

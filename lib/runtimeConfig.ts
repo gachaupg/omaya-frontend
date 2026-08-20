@@ -1,5 +1,6 @@
 import { resolveApiBaseUrl } from '@/config/api';
 import { getSanityConfigFromEnv } from '@/config/sanity';
+import { getChatwootConfigFromEnv } from '@/config/chatwoot';
 
 export type PublicRuntimeConfig = {
   NEXT_PUBLIC_GOOGLE_CLIENT_ID: string;
@@ -13,6 +14,8 @@ export type PublicRuntimeConfig = {
   NEXT_PUBLIC_SANITY_DATASET: string;
   NEXT_PUBLIC_SANITY_API_VERSION: string;
   NEXT_PUBLIC_SANITY_READ_TOKEN: string;
+  NEXT_PUBLIC_CHATWOOT_BASE_URL: string;
+  NEXT_PUBLIC_CHATWOOT_WEBSITE_TOKEN: string;
 };
 
 let cachedConfig: PublicRuntimeConfig | null = null;
@@ -20,6 +23,7 @@ let cachedConfig: PublicRuntimeConfig | null = null;
 function readPublicRuntimeConfigFromEnv(): PublicRuntimeConfig {
   const apiBaseUrl = resolveApiBaseUrl();
   const sanityConfig = getSanityConfigFromEnv();
+  const chatwootConfig = getChatwootConfigFromEnv();
   return {
     NEXT_PUBLIC_GOOGLE_CLIENT_ID: process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID || '',
     NEXT_PUBLIC_GOOGLE_REDIRECT_URI:
@@ -34,6 +38,8 @@ function readPublicRuntimeConfigFromEnv(): PublicRuntimeConfig {
     NEXT_PUBLIC_SANITY_DATASET: sanityConfig.dataset,
     NEXT_PUBLIC_SANITY_API_VERSION: sanityConfig.apiVersion,
     NEXT_PUBLIC_SANITY_READ_TOKEN: sanityConfig.token,
+    NEXT_PUBLIC_CHATWOOT_BASE_URL: chatwootConfig.baseUrl,
+    NEXT_PUBLIC_CHATWOOT_WEBSITE_TOKEN: chatwootConfig.websiteToken,
   };
 }
 

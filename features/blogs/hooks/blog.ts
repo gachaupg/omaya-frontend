@@ -3,7 +3,6 @@ import { BlogPost } from "../types";
 import { useLiveBlog } from "./useLiveBlog";
 import { logger } from "@/lib/utils/logger";
 import { blogApi } from "../api";
-import { withBlogListFallback, withNewsListFallback } from "../utils/blogPosts";
 
 function transformBlogPosts(data: BlogPost[]): {
   allPosts: BlogPost[];
@@ -27,16 +26,14 @@ function transformBlogPosts(data: BlogPost[]): {
     author_name: blog.author_name || "Anonymous",
   }));
 
-  const allPosts = withBlogListFallback(transformed);
-  const blogPosts =
-    transformed.filter((b) => b.category === "blog").length > 0
-      ? transformed.filter((b) => b.category === "blog")
-      : allPosts;
-  const newsPosts = withNewsListFallback(
-    transformed.filter((b) => b.category === "news")
-  );
+  const blogPosts = transformed.filter((b) => b.category === "blog");
+  const newsPosts = transformed.filter((b) => b.category === "news");
 
-  return { allPosts, blogPosts, newsPosts };
+  return {
+    allPosts: transformed,
+    blogPosts: blogPosts.length > 0 ? blogPosts : transformed,
+    newsPosts,
+  };
 }
 
 /**
@@ -66,10 +63,9 @@ export const useBlog = () => {
       logger.debug("general", "Blogs loaded from API:", data.length);
     } catch (err) {
       logger.error("general", "Blog API fetch failed:", err);
-      const fallback = withBlogListFallback([]);
-      setBlogs(fallback);
-      setNews(withNewsListFallback([]));
-      setAllPostsFromApi(fallback);
+      setBlogs([]);
+      setNews([]);
+      setAllPostsFromApi([]);
       setError(null);
     } finally {
       setLoading(false);

@@ -2,8 +2,19 @@
 
 import React, { useState, useEffect, useRef } from "react";
 import { useRouter, usePathname } from "next/navigation";
+import { openChatwoot } from "@/lib/chatwoot/client";
 
 const socialLinks = [
+  {
+    name: "Live Chat",
+    isChatwoot: true,
+    color: "#1D8751",
+    icon: (
+      <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+        <path strokeLinecap="round" strokeLinejoin="round" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
+      </svg>
+    ),
+  },
   {
     name: "Contact Us",
     href: "/contactUs",
@@ -76,6 +87,15 @@ const FloatingChatButton = () => {
   const [showPulse, setShowPulse] = useState(true);
   const menuRef = useRef<HTMLDivElement>(null);
 
+  const handleOpenChatwoot = async () => {
+    setIsOpen(false);
+    try {
+      await openChatwoot();
+    } catch {
+      // Keep social links available if Chatwoot fails to load.
+    }
+  };
+
   const hiddenPaths = ["/live-chat", "/contactUs"];
   const isHidden = hiddenPaths.some((p) => pathname?.startsWith(p));
 
@@ -98,17 +118,21 @@ const FloatingChatButton = () => {
         <div className="bg-white dark:bg-[#1D1D23] border border-gray-200 dark:border-[#35353E] rounded-2xl shadow-2xl p-4 w-64 animate-in slide-in-from-bottom-4 fade-in duration-200">
           {/* Header */}
           <div className="flex items-center justify-between mb-3 pb-3 border-b border-gray-100 dark:border-[#2A2A35]">
-            <div className="flex items-center gap-2">
-              <div className="w-8 h-8 rounded-full bg-[#1D8751] flex items-center justify-center">
+            <button
+              type="button"
+              onClick={handleOpenChatwoot}
+              className="flex items-center gap-2 text-left flex-1 min-w-0 hover:opacity-90 transition-opacity"
+            >
+              <div className="w-8 h-8 rounded-full bg-[#1D8751] flex items-center justify-center shrink-0">
                 <svg className="w-4 h-4 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                   <path strokeLinecap="round" strokeLinejoin="round" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
                 </svg>
               </div>
-              <div>
+              <div className="min-w-0">
                 <p className="text-sm font-semibold text-gray-900 dark:text-white">Chat with us</p>
                 <p className="text-[11px] text-gray-500 dark:text-[#788099]">We typically reply instantly</p>
               </div>
-            </div>
+            </button>
             <button
               onClick={() => setIsOpen(false)}
               className="w-7 h-7 rounded-full flex items-center justify-center text-gray-400 hover:text-gray-600 dark:hover:text-white hover:bg-gray-100 dark:hover:bg-[#2A2A35] transition-colors"
@@ -139,6 +163,19 @@ const FloatingChatButton = () => {
                   </svg>
                 </div>
               );
+
+              if ("isChatwoot" in link && link.isChatwoot) {
+                return (
+                  <button
+                    key={link.name}
+                    type="button"
+                    onClick={handleOpenChatwoot}
+                    className="text-left w-full"
+                  >
+                    {content}
+                  </button>
+                );
+              }
 
               return link.isRoute ? (
                 <button

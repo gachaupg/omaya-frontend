@@ -1,10 +1,12 @@
 import { getApiBaseUrlFromEnv } from "@/config/api";
 import { getSanityConfigFromEnv } from "@/config/sanity";
+import { getChatwootConfigFromEnv } from "@/config/chatwoot";
 
 /** Inline script: expose server runtime env to the browser before app bundles load. */
 export function buildServerRuntimeConfigScript(): string {
   const apiBaseUrl = getApiBaseUrlFromEnv();
   const sanityConfig = getSanityConfigFromEnv();
+  const chatwootConfig = getChatwootConfigFromEnv();
 
   const sanityReadToken =
     process.env.NEXT_PUBLIC_SANITY_READ_TOKEN?.trim() || sanityConfig.token;
@@ -23,6 +25,8 @@ export function buildServerRuntimeConfigScript(): string {
     NEXT_PUBLIC_SANITY_DATASET: sanityConfig.dataset,
     NEXT_PUBLIC_SANITY_API_VERSION: sanityConfig.apiVersion,
     NEXT_PUBLIC_SANITY_READ_TOKEN: sanityReadToken,
+    NEXT_PUBLIC_CHATWOOT_BASE_URL: chatwootConfig.baseUrl,
+    NEXT_PUBLIC_CHATWOOT_WEBSITE_TOKEN: chatwootConfig.websiteToken,
   });
 
   return `(function(){try{window.__RUNTIME_CONFIG__=Object.assign(window.__RUNTIME_CONFIG__||{},${payload});}catch(e){}})();`;

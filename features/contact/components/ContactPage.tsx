@@ -1,7 +1,6 @@
 "use client";
 
 import React from "react";
-import { useRouter } from "next/navigation";
 import {
   Mail,
   Phone,
@@ -14,6 +13,7 @@ import {
 import ContactForm from "./ContactForm";
 import ContactFAQSection from "./ContactFAQSection";
 import { useContactI18n } from "@/lib/useContactI18n";
+import { openChatwoot } from "@/lib/chatwoot/client";
 
 const CARD_BORDER =
   "border-gray-200 dark:border-gray-600";
@@ -143,11 +143,10 @@ interface ContactPageProps {
 }
 
 const ContactPage: React.FC<ContactPageProps> = () => {
-  const router = useRouter();
   const { t } = useContactI18n();
 
   const handleConnectLiveChat = () => {
-    router.push("/live-chat");
+    void openChatwoot();
   };
 
   const handleCallNow = () => {
@@ -186,12 +185,22 @@ const ContactPage: React.FC<ContactPageProps> = () => {
           </h2>
           <ContactForm layout="marketing" />
           <div className="mt-5 pt-5 border-t border-gray-200 dark:border-gray-600">
+            {/* Connect with Live Chat — legacy in-app live chat route
             <button
               type="button"
               onClick={handleConnectLiveChat}
               className={`w-full py-3 rounded-xl border ${CARD_BORDER} text-gray-900 dark:text-white text-sm font-semibold hover:border-[#1D8751] hover:text-[#1D8751] transition-colors`}
             >
               {t("contact.liveChat", "Connect with Live Chat")}
+            </button>
+            */}
+            <button
+              type="button"
+              onClick={handleConnectLiveChat}
+              className="w-full py-3 rounded-xl bg-[#1D8751] text-white text-sm font-semibold hover:bg-[#166b42] transition-colors flex items-center justify-center gap-2"
+            >
+              <MessageCircle className="w-4 h-4" />
+              {t("contact.chatwoot", "Chat with us")}
             </button>
           </div>
         </div>

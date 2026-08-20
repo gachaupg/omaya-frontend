@@ -8,6 +8,7 @@ import Footer from "@/components/layout/Footer";
 import Providers from "./providers";
 import { Toaster } from "@/components/ui/Toast";
 import FloatingChatButton from "@/components/ui/FloatingChatButton";
+import ChatwootLoader from "@/components/chatwoot/ChatwootLoader";
 import P2PRejectionModalRoot from "@/components/P2PRejectionModalRoot";
 import NetworkOfflineRedirect from "@/components/NetworkOfflineRedirect";
 import { getServerLocale } from "@/lib/localePersistence.server";
@@ -119,6 +120,7 @@ export default async function RootLayout({
           <Navbar />
           {children}
           <Footer />
+          <ChatwootLoader />
           <FloatingChatButton />
           <Toaster />
         </Providers>

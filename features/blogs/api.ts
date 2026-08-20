@@ -1,16 +1,16 @@
 import { BlogPost } from "./types";
 import { logger } from "@/lib/utils/logger";
 import { fetchAllBlogsFromApi } from "./blogReadApi";
-import { withBlogListFallback, withNewsListFallback } from "./utils/blogPosts";
+import { filterRealBlogPosts } from "./utils/blogPosts";
 
 export const blogApi = {
   async fetchAllPosts(): Promise<BlogPost[]> {
     try {
       const blogs = await fetchAllBlogsFromApi();
-      return withBlogListFallback(blogs);
+      return filterRealBlogPosts(blogs);
     } catch (error) {
       logger.error("general", "Error fetching posts from blog API:", error);
-      return withBlogListFallback([]);
+      return [];
     }
   },
 
@@ -20,17 +20,16 @@ export const blogApi = {
       const blogPosts = allPosts.filter((blog) => blog.category === "blog");
       return blogPosts.length > 0 ? blogPosts : allPosts;
     } catch {
-      return withBlogListFallback([]);
+      return [];
     }
   },
 
   async fetchNews(): Promise<BlogPost[]> {
     try {
       const allPosts = await this.fetchAllPosts();
-      const newsPosts = allPosts.filter((blog) => blog.category === "news");
-      return withNewsListFallback(newsPosts);
+      return allPosts.filter((blog) => blog.category === "news");
     } catch {
-      return withNewsListFallback([]);
+      return [];
     }
   },
 };

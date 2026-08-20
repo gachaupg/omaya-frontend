@@ -1,10 +1,7 @@
 import { useEffect, useState } from "react";
 import { BlogPost } from "../types";
 import { fetchBlogsPaginatedFromApi } from "../blogReadApi";
-import {
-  filterRealBlogPosts,
-  withBlogListFallback,
-} from "../utils/blogPosts";
+import { filterRealBlogPosts } from "../utils/blogPosts";
 
 export interface UseBlogsPaginatedOptions {
   page: number;
@@ -20,7 +17,7 @@ export interface UseBlogsPaginatedResult {
 }
 
 /**
- * Paginated blogs via /api/blogs/read (server-side Sanity — works in live/production).
+ * Paginated blogs via /api/blogs/read (Sanity first, backend.omaya.io fallback).
  */
 export const useBlogsPaginated = ({
   page,
@@ -50,26 +47,12 @@ export const useBlogsPaginated = ({
         if (cancelled) return;
 
         const realPosts = filterRealBlogPosts(rawPosts);
-        if (realPosts.length > 0) {
-          setPosts(realPosts);
-          setTotalCount(count);
-          return;
-        }
-
-        if (searchTerm.trim()) {
-          setPosts([]);
-          setTotalCount(0);
-          return;
-        }
-
-        const fallback = withBlogListFallback([]);
-        setPosts(fallback);
-        setTotalCount(fallback.length);
+        setPosts(realPosts);
+        setTotalCount(realPosts.length > 0 ? count : 0);
       } catch (err) {
         if (!cancelled) {
-          const fallback = withBlogListFallback([]);
-          setPosts(fallback);
-          setTotalCount(fallback.length);
+          setPosts([]);
+          setTotalCount(0);
           setError(null);
         }
       } finally {

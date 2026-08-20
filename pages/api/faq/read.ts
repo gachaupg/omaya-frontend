@@ -1,6 +1,7 @@
 import { NextApiRequest, NextApiResponse } from "next";
 import { getSanityConfigFromEnv } from "@/config/sanity";
 import { fetchSanityGroq } from "@/lib/sanityQuery";
+import { fetchFaqsFromBackend } from "@/lib/utils/contentBackendFallback";
 
 export interface FAQ {
   _id: string;
@@ -40,20 +41,25 @@ export default async function handler(
     "public, s-maxage=60, stale-while-revalidate=120"
   );
 
+  const category =
+    typeof req.query.category === "string" ? req.query.category : undefined;
+
   try {
-    const { category } = req.query;
-    const faqs = await fetchFAQs(category as string);
-    res.status(200).json(faqs);
+    const faqs = await fetchFAQs(category);
+    if (faqs.length > 0) {
+      return res.status(200).json(faqs);
+    }
   } catch {
-    res.status(200).json([
-      {
-        _id: "fallback-faq-1",
-        title: "Service Temporarily Unavailable",
-        content:
-          "Our FAQ service is currently experiencing technical difficulties. Please try again later or contact support for assistance.",
-        category: (req.query.category as string) || "general",
-        createdAt: new Date().toISOString(),
-      },
-    ]);
+    // Sanity failed or returned nothing — try backend fallback below.
+  }
+
+  try {
+    const fallbackFaqs = await fetchFaqsFromBackend(category);
+    const filtered = category
+      ? fallbackFaqs.filter((faq) => faq.category === category)
+      : fallbackFaqs;
+    return res.status(200).json(filtered.length > 0 ? filtered : fallbackFaqs);
+  } catch {
+    return res.status(200).json([]);
   }
 }

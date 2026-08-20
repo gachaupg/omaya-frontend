@@ -2,7 +2,7 @@ import { useEffect, useState, useRef } from "react";
 import { BlogPost } from "../types";
 import { logger } from "@/lib/utils/logger";
 import { fetchAllBlogsFromApi } from "../blogReadApi";
-import { withBlogListFallback } from "../utils/blogPosts";
+import { filterRealBlogPosts } from "../utils/blogPosts";
 
 const REFRESH_INTERVAL_MS = 60_000;
 
@@ -29,12 +29,12 @@ export const useLiveBlog = () => {
         const data = await fetchAllBlogsFromApi(refresh);
         if (cancelled) return;
 
-        setBlogs(withBlogListFallback(data));
+        setBlogs(filterRealBlogPosts(data));
         logger.debug("general", "Blogs loaded from API:", data.length);
       } catch (err) {
         if (cancelled) return;
         logger.error("general", "Error fetching blogs from API:", err);
-        setBlogs(withBlogListFallback([]));
+        setBlogs([]);
         setError(null);
       } finally {
         if (!cancelled) {

@@ -2,7 +2,11 @@ import { NextApiRequest, NextApiResponse } from "next";
 import { getSanityConfigFromEnv, SANITY_BLOG_TYPE_FILTER } from "@/config/sanity";
 import { requestManager } from "@/lib/requestManager";
 import { fetchSanityGroq } from "@/lib/sanityQuery";
-import { filterRealBlogPosts, withBlogListFallback } from "@/features/blogs/utils/blogPosts";
+import { filterRealBlogPosts } from "@/features/blogs/utils/blogPosts";
+import {
+  fetchBlogsFromBackend,
+  paginateBackendBlogPosts,
+} from "@/lib/utils/contentBackendFallback";
 
 export interface Blog {
   _id: string;
@@ -47,65 +51,44 @@ const BASE_FILTER = SANITY_BLOG_TYPE_FILTER;
 /** Match mobile: order(createdAt desc) */
 const ORDER_CLAUSE = `order(createdAt desc)`;
 
-/** Fetch all blogs (no pagination) - for backward compatibility */
 const fetchBlogsFromSanity = async (): Promise<Blog[]> => {
-  try {
-    const query = `*[${BASE_FILTER}] | ${ORDER_CLAUSE} ${BLOG_FIELDS}`;
-    const data = await fetchSanityGroq<Blog[]>(query);
-    return withBlogListFallback(data || []);
-  } catch {
-    return withBlogListFallback([]);
-  }
+  const query = `*[${BASE_FILTER}] | ${ORDER_CLAUSE} ${BLOG_FIELDS}`;
+  const data = await fetchSanityGroq<Blog[]>(query);
+  return filterRealBlogPosts(data || []);
 };
+
 const fetchBlogsPaginatedFromSanity = async (
   page: number,
   limit: number,
   search?: string
 ): Promise<{ posts: Blog[]; totalCount: number }> => {
-  try {
-    const start = (page - 1) * limit;
-    const end = start + limit;
+  const start = (page - 1) * limit;
+  const end = start + limit;
 
-    const searchFilter = search && search.trim()
-      ? `&& (
+  const searchFilter = search && search.trim()
+    ? `&& (
           title match "*" + $search + "*" ||
           description match "*" + $search + "*" ||
           (author_name != null && author_name match "*" + $search + "*")
         )`
-      : "";
+    : "";
 
-    const filter = `${BASE_FILTER} ${searchFilter}`;
-    const params = search && search.trim() ? { search: search.trim() } : {};
+  const filter = `${BASE_FILTER} ${searchFilter}`;
+  const params = search && search.trim() ? { search: search.trim() } : {};
 
-    const [totalCount, posts] = await Promise.all([
-      fetchSanityGroq<number>(`count(*[${filter}])`, params),
-      fetchSanityGroq<Blog[]>(
-        `*[${filter}] | ${ORDER_CLAUSE} [${start}...${end}] ${BLOG_FIELDS}`,
-        params
-      ),
-    ]);
+  const [totalCount, posts] = await Promise.all([
+    fetchSanityGroq<number>(`count(*[${filter}])`, params),
+    fetchSanityGroq<Blog[]>(
+      `*[${filter}] | ${ORDER_CLAUSE} [${start}...${end}] ${BLOG_FIELDS}`,
+      params
+    ),
+  ]);
 
-    const realPosts = filterRealBlogPosts(posts || []);
-    if (realPosts.length > 0) {
-      return {
-        posts: realPosts,
-        totalCount: totalCount ?? realPosts.length,
-      };
-    }
-
-    if (search?.trim()) {
-      return { posts: [], totalCount: 0 };
-    }
-
-    const fallbackPosts = withBlogListFallback([]);
-    return {
-      posts: fallbackPosts,
-      totalCount: fallbackPosts.length,
-    };
-  } catch {
-    const fallbackPosts = withBlogListFallback([]);
-    return { posts: fallbackPosts, totalCount: fallbackPosts.length };
-  }
+  const realPosts = filterRealBlogPosts(posts || []);
+  return {
+    posts: realPosts,
+    totalCount: totalCount ?? realPosts.length,
+  };
 };
 
 export const fetchBlogs = async (bypassCache: boolean = false): Promise<Blog[]> => {
@@ -116,6 +99,57 @@ export const fetchBlogs = async (bypassCache: boolean = false): Promise<Blog[]> 
 
   return requestManager.executeRequest("blogs", fetchBlogsFromSanity, 15 * 1000);
 };
+
+async function loadAllBlogs(refresh: boolean): Promise<Blog[]> {
+  try {
+    const blogs = await fetchBlogs(refresh);
+    if (blogs.length > 0) {
+      return blogs;
+    }
+  } catch {
+    // Sanity failed — try backend fallback below.
+  }
+
+  try {
+    const { posts } = await fetchBlogsFromBackend();
+    return filterRealBlogPosts(posts as Blog[]);
+  } catch {
+    return [];
+  }
+}
+
+async function loadPaginatedBlogs(
+  page: number,
+  limit: number,
+  search?: string,
+  refresh = false
+): Promise<{ posts: Blog[]; totalCount: number }> {
+  try {
+    if (refresh) {
+      requestManager.clear("blogs");
+    }
+    const result = await fetchBlogsPaginatedFromSanity(page, limit, search);
+    if (result.posts.length > 0) {
+      return result;
+    }
+    if (search?.trim()) {
+      return { posts: [], totalCount: 0 };
+    }
+  } catch {
+    // Sanity failed — try backend fallback below.
+  }
+
+  try {
+    const { posts } = await fetchBlogsFromBackend();
+    const paginated = paginateBackendBlogPosts(posts, page, limit, search);
+    return {
+      posts: filterRealBlogPosts(paginated.posts as Blog[]),
+      totalCount: paginated.totalCount,
+    };
+  } catch {
+    return { posts: [], totalCount: 0 };
+  }
+}
 
 export const config = {
   api: {
@@ -185,17 +219,18 @@ export default async function handler(
             ? searchParam[0]?.trim() ?? ""
             : "";
 
-      const { posts, totalCount } = await fetchBlogsPaginatedFromSanity(
+      const { posts, totalCount } = await loadPaginatedBlogs(
         page,
         limit,
-        search || undefined
+        search || undefined,
+        refresh
       );
       return res.status(200).json({ posts, totalCount });
     }
 
-    const blogs = await fetchBlogs(refresh);
-    res.status(200).json(blogs);
+    const blogs = await loadAllBlogs(refresh);
+    return res.status(200).json(blogs);
   } catch {
-    res.status(200).json(withBlogListFallback([]));
+    return res.status(200).json([]);
   }
 }
