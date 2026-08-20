@@ -1696,14 +1696,12 @@ export default function MarketingPage() {
                 </button>
               </div>
             ) : filteredArticles.length === 0 ? (
-              // Empty state
-              <div className="col-span-full text-center py-12">
-                <p className="text-gray-400 text-lg">
-                  No posts available.
-                </p>
-                <p className="text-gray-500 text-sm mt-2">
-                  Please add some blog posts to your Sanity CMS.
-                </p>
+              <div className="col-span-full flex justify-center py-12">
+                <div className="w-full max-w-md rounded-2xl border border-gray-200 dark:border-[#30363D] bg-gray-50 dark:bg-[#161B22] px-8 py-10 text-center">
+                  <p className="text-gray-900 dark:text-white text-lg font-semibold">
+                    No blogs available.
+                  </p>
+                </div>
               </div>
             ) : (
               // Articles grid

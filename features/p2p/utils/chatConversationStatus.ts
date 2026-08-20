@@ -86,12 +86,21 @@ export const mergeConversationStatus = (
   const prev = normalizeChatStatusValue(previousStatus);
   const incoming = normalizeChatStatusValue(incomingStatus);
   if (!incoming) return prev;
-  if (isOpenChatStatus(incoming)) return incoming;
-  if (
-    isTerminalChatStatusValue(prev) &&
-    !isTerminalChatStatusValue(incoming)
-  ) {
-    return incoming;
+
+  const prevIsClosed =
+    prev === "closed" || isTerminalChatStatusValue(prev);
+
+  // Once closed/terminal, ignore stale non-terminal poll data (e.g. matched/pending).
+  if (prevIsClosed) {
+    if (incoming === "closed" || isTerminalChatStatusValue(incoming)) {
+      return incoming;
+    }
+    if (isOpenChatStatus(incoming)) {
+      return incoming;
+    }
+    return prev;
   }
+
+  if (isOpenChatStatus(incoming)) return incoming;
   return incoming || prev;
 };

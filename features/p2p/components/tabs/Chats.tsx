@@ -59,6 +59,7 @@ import {
   isOpenChatStatus,
   isTerminalChatStatusValue,
   mergeConversationStatus,
+  normalizeChatStatusValue,
   resolveReopenedChatStatus,
 } from "@/features/p2p/utils/chatConversationStatus";
 import { ChevronRight, Camera, Mic } from "lucide-react";
@@ -176,14 +177,16 @@ const ConversationItem: React.FC<ConversationItemProps> = ({
   };
 
   return (
-    <div
+    <button
+      type="button"
+      onClick={onSelect}
+      aria-label={`Open conversation with ${displayName}`}
       className={`group relative w-full flex items-center gap-3 rounded-2xl px-3 py-3 text-left transition-colors ${isActive
         ? "bg-[#1D8751]/10 dark:bg-[#1D8751]/15 border border-[#1D8751]/40"
         : "bg-transparent hover:bg-gray-50 dark:hover:bg-[#111827]/60 border border-transparent"
         }`}
     >
-      <button onClick={onSelect} className="absolute inset-0 z-0" aria-label="Open conversation" />
-      <div className="relative flex-shrink-0 z-[1]">
+      <div className="relative flex-shrink-0">
         <div className="w-11 h-11 rounded-full bg-[#1D8751] flex items-center justify-center text-xs font-bold text-white overflow-hidden relative">
           {photoUrl && !imageError ? (
             <>
@@ -216,7 +219,7 @@ const ConversationItem: React.FC<ConversationItemProps> = ({
           />
         )}
       </div>
-      <div className="flex-1 min-w-0 z-[1]">
+      <div className="flex-1 min-w-0">
         <div className="flex items-start gap-2 min-w-0">
           <div className="flex-1 min-w-0">
             <span className="block text-sm font-semibold text-gray-900 dark:text-white truncate">
@@ -246,7 +249,7 @@ const ConversationItem: React.FC<ConversationItemProps> = ({
           </div>
         </div>
       </div>
-    </div>
+    </button>
   );
 };
 
@@ -567,9 +570,22 @@ export const Chats: React.FC = () => {
             new Date(String(a?.timestamp || 0)).getTime()
         );
 
+        const override = statusOverridesByEntity.get(entityId);
+        const prevEffective = normalizeChatStatusValue(
+          override ?? existing?.status ?? existing?.trade_status ?? existing?.order_status
+        );
+        const incomingStatus = normalizeChatStatusValue(
+          g?.status ?? g?.trade_status ?? g?.order_status
+        );
+        const mergedStatus = mergeConversationStatus(
+          prevEffective,
+          incomingStatus
+        );
+
         byEntity.set(entityId, {
           ...existing,
           ...g,
+          status: mergedStatus,
           messages: mergedMessages,
         });
       }
@@ -580,7 +596,7 @@ export const Chats: React.FC = () => {
         return bTs - aTs;
       });
     });
-  }, [groupedUsers]);
+  }, [groupedUsers, statusOverridesByEntity, user?.email, user?.id]);
 
   const isValidTradeIdForMessages = isValidThreadId;
 
@@ -796,7 +812,7 @@ export const Chats: React.FC = () => {
         });
       } else {
         const normalized =
-          normalizeChatStatus(closedStatus || "resolved") || "resolved";
+          normalizeChatStatus(closedStatus || "closed") || "closed";
         setStatusOverridesByEntity((prev) => {
           const next = new Map(prev);
           next.set(trimmedId, normalized);
@@ -809,7 +825,7 @@ export const Chats: React.FC = () => {
         const nextStatus =
           lifecycle === "reopened"
             ? resolveReopenedChatStatus(prev.message_type)
-            : normalizeChatStatus(closedStatus || "resolved") || "resolved";
+            : normalizeChatStatus(closedStatus || "closed") || "closed";
         return { ...prev, status: nextStatus } as GroupedUser;
       });
 
@@ -819,7 +835,7 @@ export const Chats: React.FC = () => {
           const nextStatus =
             lifecycle === "reopened"
               ? resolveReopenedChatStatus(g.message_type)
-              : normalizeChatStatus(closedStatus || "resolved") || "resolved";
+              : normalizeChatStatus(closedStatus || "closed") || "closed";
           return { ...g, status: nextStatus } as GroupedUser;
         })
       );
@@ -899,7 +915,7 @@ export const Chats: React.FC = () => {
 
       setSelectedUser((prev) => {
         if (!prev) return prev;
-        const prevStatus = normalizeChatStatus((prev as any)?.status);
+        const prevStatus = getEffectiveChatStatus(prev);
         const mergedStatus = mergeConversationStatus(prevStatus, normalized);
         return {
           ...prev,
@@ -914,6 +930,7 @@ export const Chats: React.FC = () => {
       applyConversationLifecycle,
       resolvedTradeId,
       selectedUser?.entity_id,
+      getEffectiveChatStatus,
     ]
   );
 
@@ -1082,7 +1099,7 @@ export const Chats: React.FC = () => {
     applyConversationLifecycle(
       String(selectedUser.entity_id),
       lifecycle,
-      getEffectiveChatStatus(selectedUser)
+      lifecycle === "closed" ? "closed" : getEffectiveChatStatus(selectedUser)
     );
   }, [
     applyConversationLifecycle,
@@ -1286,13 +1303,11 @@ export const Chats: React.FC = () => {
           // Merge messages/status instead of replacing entire object
           setSelectedUser(prev => {
             if (!prev) return updatedUser;
-            const prevStatus = normalizeChatStatus((prev as any).status);
-            const incomingStatus =
-              nextStatus || (updatedUser as any).status || (prev as any).status;
-            const normalizedIncomingStatus = normalizeChatStatus(incomingStatus);
+            const prevStatus = getEffectiveChatStatus(prev);
+            const incomingStatus = getEffectiveChatStatus(updatedUser as GroupedUser);
             const mergedStatus = mergeConversationStatus(
               prevStatus,
-              normalizedIncomingStatus
+              incomingStatus
             );
             return {
               ...prev,
@@ -1396,14 +1411,14 @@ export const Chats: React.FC = () => {
         }
         setSelectedUser((prev) => {
           if (!prev) return prev;
-          const prevStatus = ctx.normalizeChatStatus((prev as any)?.status);
+          const prevStatus = getEffectiveChatStatus(prev);
           const mergedStatus = mergeConversationStatus(
             prevStatus,
             statusFromPayload
           );
           return {
             ...prev,
-            status: mergedStatus || (prev as any).status,
+            status: mergedStatus || prevStatus,
           } as GroupedUser;
         });
         if (
@@ -1833,6 +1848,21 @@ export const Chats: React.FC = () => {
       );
     });
   }, [conversations, searchTerm, getDisplayName]);
+
+  const selectConversation = useCallback(
+    (group: GroupedUser) => {
+      const latest =
+        liveGroupedUsers.find((g) => g.entity_id === group.entity_id) || group;
+      const threadId = resolveThreadIdFromGroup(latest);
+      if (threadId) {
+        setActiveThreadId(threadId);
+      }
+      lastLifecycleMessageIdRef.current = null;
+      setSelectedUser(latest);
+      setShowChatView(true);
+    },
+    [liveGroupedUsers]
+  );
 
   const getPhotoUrl = (userGroup: GroupedUser, latestMessage: any) => {
     if (userGroup.message_type === "p2p") {
@@ -2523,15 +2553,7 @@ export const Chats: React.FC = () => {
                   unreadCount={unreadCount}
                   currentUserId={user?.id}
                   currentUserEmail={user?.email}
-                  onSelect={() => {
-                    const latest =
-                      liveGroupedUsers.find(
-                        (g) => g.entity_id === group.entity_id
-                      ) || group;
-                    setSelectedUser(latest);
-                    // On mobile/tablet, show chat view when a conversation is selected
-                    setShowChatView(true);
-                  }}
+                  onSelect={() => selectConversation(group)}
                 />
               );
             })}

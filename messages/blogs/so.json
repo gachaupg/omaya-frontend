@@ -8,8 +8,7 @@
   "blogs.error.hint": "Fadlan hubi dejinta Sanity-gaaga ka dibna isku day mar kale.",
   "blogs.error.retry": "Isku day mar kale",
   "blogs.empty.search": "Qormooyin la mid ah raadintaada lama helin.",
-  "blogs.empty.none": "Qormooyinka {{tab}} lama heli karo.",
-  "blogs.empty.hint": "Fadlan ku dar qormooyin blog-ga ee Sanity CMS.",
+  "blogs.empty.none": "Ma jiraan blogyo la heli karo.",
   "blogs.byAuthor": "Qoray {{author}}",
   "blogs.readArticle": "Akhri Qormada"
 }
