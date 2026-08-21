@@ -47,6 +47,7 @@ import {
   clearPersistedDeviceSessionId,
   resetDeviceSessionTrackingForLogin,
 } from "@/features/settings/utils/deviceSessionStorage";
+import { clearProfilePhotoCache } from "@/lib/utils/profilePhotoCache";
 
 const CROSS_TAB_LOGOUT_FLAG = "__omayaCrossTabLogout";
 const KYC_STATUS_CACHE_TTL_MS = 5 * 60 * 1000;
@@ -601,13 +602,12 @@ const authSlice = createSlice({
         // Don't clear p2p_terms_accepted on logout - it should persist across sessions
         // Terms acceptance is user-specific and should remain accepted
         clearPersistedDeviceSessionId();
+        clearProfilePhotoCache();
 
         // Clear other account-specific data so it can't leak into the next
         // account that logs in on this browser (device/browser-level prefs
         // like theme, locale, device id, and p2p_act are intentionally kept).
         [
-          "profile_photo",
-          "p2p_profile_image",
           "sumsubData",
           "twoFA_enabled",
           "moneyx_transaction_data",

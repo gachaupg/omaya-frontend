@@ -24,6 +24,11 @@ import { useMatchedTradesWsConnected } from "@/features/p2p/components/MatchedTr
 import { logger } from "@/lib/utils/logger";
 import { checkKYCStatus } from "@/features/kyc/slices/kycSlice";
 import { formatUserDisplayName } from "@/lib/utils/userDisplayName";
+import {
+  getCachedProfilePhoto,
+  resolveProfilePhotoUserKey,
+  setCachedProfilePhoto as persistProfilePhotoCache,
+} from "@/lib/utils/profilePhotoCache";
 
 function UserCard() {
   const [showHelpSupport, setShowHelpSupport] = useState(false);
@@ -35,6 +40,7 @@ function UserCard() {
   const { user, isAuthenticated } = useSelector(
     (state: RootState) => state.auth
   );
+  const profilePhotoUserKey = resolveProfilePhotoUserKey(user);
   const pendingNotificationCount = useSelector(
     selectPendingMatchedTradeNotificationCount
   );
@@ -44,6 +50,21 @@ function UserCard() {
   const wsConnected = useMatchedTradesWsConnected();
 
   useEffect(() => {
+    if (!isAuthenticated || !profilePhotoUserKey) {
+      setProfileImage(null);
+      return;
+    }
+    setProfileImage(getCachedProfilePhoto(profilePhotoUserKey));
+  }, [isAuthenticated, profilePhotoUserKey]);
+
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    const onLogout = () => setProfileImage(null);
+    window.addEventListener("logoutTriggered", onLogout);
+    return () => window.removeEventListener("logoutTriggered", onLogout);
+  }, []);
+
+  useEffect(() => {
     if (isAuthenticated) {
       dispatch(fetchLatestMatchedTradesPage());
       dispatch(getP2PProfileThunk())
@@ -51,6 +72,9 @@ function UserCard() {
         .then((response) => {
           if (response?.profile?.photo) {
             setProfileImage(response.profile.photo);
+            if (profilePhotoUserKey) {
+              persistProfilePhotoCache(profilePhotoUserKey, response.profile.photo);
+            }
           }
         })
         .catch((error) => { });
@@ -58,7 +82,7 @@ function UserCard() {
       // Ensure KYC status (is_verified) is up to date
       dispatch(checkKYCStatus());
     }
-  }, [dispatch, isAuthenticated]);
+  }, [dispatch, isAuthenticated, profilePhotoUserKey]);
 
   // Listen for profile photo updates from other components
   useEffect(() => {
@@ -66,7 +90,15 @@ function UserCard() {
     
     const handleProfilePhotoUpdate = (event: CustomEvent) => {
       const newPhotoUrl = event.detail?.photoUrl;
-      if (newPhotoUrl) {
+      const eventUserId = event.detail?.userId;
+      if (
+        !newPhotoUrl ||
+        (eventUserId &&
+          profilePhotoUserKey &&
+          eventUserId !== profilePhotoUserKey)
+      ) {
+        return;
+      }
         // Add cache-busting parameter to force browser to reload the image
         const photoWithTimestamp = newPhotoUrl.includes('?') 
           ? `${newPhotoUrl}&t=${Date.now()}`
@@ -79,12 +111,17 @@ function UserCard() {
     
     // Also check localStorage in case profile was updated in another tab
     const handleStorageChange = (e: StorageEvent) => {
-      if (e.key === 'profile_photo' && e.newValue) {
-        const photoWithTimestamp = e.newValue.includes('?') 
-          ? `${e.newValue}&t=${Date.now()}`
-          : `${e.newValue}?t=${Date.now()}`;
-        setProfileImage(photoWithTimestamp);
+      if (
+        !profilePhotoUserKey ||
+        e.key !== `profile_photo_user_${profilePhotoUserKey}` ||
+        !e.newValue
+      ) {
+        return;
       }
+      const photoWithTimestamp = e.newValue.includes('?') 
+        ? `${e.newValue}&t=${Date.now()}`
+        : `${e.newValue}?t=${Date.now()}`;
+      setProfileImage(photoWithTimestamp);
     };
     
     window.addEventListener('storage', handleStorageChange);
@@ -93,7 +130,7 @@ function UserCard() {
       window.removeEventListener('profilePhotoUpdated', handleProfilePhotoUpdate as EventListener);
       window.removeEventListener('storage', handleStorageChange);
     };
-  }, []);
+  }, [profilePhotoUserKey]);
 
   const handleImageClick = () => {
     fileInputRef.current?.click();

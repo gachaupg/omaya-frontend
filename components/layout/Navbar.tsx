@@ -22,6 +22,12 @@ import { useLanguageOptional } from "@/context/language";
 import { useMarketingI18n } from "@/lib/useMarketingI18n";
 import { useTheme } from "@/context/theme";
 import FrozenAccountModal from "@/components/ui/FrozenAccountModal";
+import {
+  clearProfilePhotoCache,
+  getCachedProfilePhoto,
+  resolveProfilePhotoUserKey,
+  setCachedProfilePhoto as persistProfilePhotoCache,
+} from "@/lib/utils/profilePhotoCache";
 
 const DefaultProfileIcon = () => (
   <div className="w-10 h-10 rounded-full flex items-center justify-center bg-[#1D8751] border-2 border-white">
@@ -573,14 +579,7 @@ export default function Navbar() {
   ];
 
   const [profileImageError, setProfileImageError] = useState(false);
-  const [cachedProfilePhoto, setCachedProfilePhoto] = useState<string | null>(
-    () => {
-      if (typeof window !== "undefined") {
-        return localStorage.getItem("p2p_profile_image") || localStorage.getItem("profile_photo");
-      }
-      return null;
-    }
-  );
+  const [cachedProfilePhoto, setCachedProfilePhoto] = useState<string | null>(null);
 
   const {
     isAuthenticated,
@@ -600,6 +599,7 @@ export default function Navbar() {
   };
   const kycState = useSelector((state: RootState) => state.kyc);
   const p2pProfile = useSelector((state: RootState) => state.p2pMarket?.getP2PProfile);
+  const profilePhotoUserKey = resolveProfilePhotoUserKey(user);
   const dispatch = useDispatch<AppDispatch>();
   const depositDropdownRef = useRef<HTMLDivElement>(null);
   const profileModalRef = useRef<HTMLDivElement>(null);
@@ -625,14 +625,31 @@ export default function Navbar() {
     }
   }, [dispatch, isAuthenticated]);
 
-  // Load cached profile photo from localStorage on mount (same keys as UserCard)
+  // Navbar stays mounted across logout/login — reset photo when account changes.
   useEffect(() => {
-    if (typeof window !== "undefined") {
-      const cached = localStorage.getItem("profile_photo") || localStorage.getItem("p2p_profile_image");
-      if (cached) {
-        setCachedProfilePhoto(cached);
-      }
+    if (!isAuthenticated || !profilePhotoUserKey) {
+      setCachedProfilePhoto(null);
+      setProfileImageError(false);
+      return;
     }
+    setCachedProfilePhoto(getCachedProfilePhoto(profilePhotoUserKey));
+  }, [isAuthenticated, profilePhotoUserKey]);
+
+  useEffect(() => {
+    profileFetchRef.current.hasFetched = false;
+    profileFetchRef.current.lastFetch = 0;
+    p2pProfileFetchRef.current.hasFetched = false;
+    p2pProfileFetchRef.current.lastFetch = 0;
+  }, [profilePhotoUserKey]);
+
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    const onLogout = () => {
+      setCachedProfilePhoto(null);
+      setProfileImageError(false);
+    };
+    window.addEventListener("logoutTriggered", onLogout);
+    return () => window.removeEventListener("logoutTriggered", onLogout);
   }, []);
 
   // Listen for profile photo updates from other components (same as UserCard - no cache-busting to avoid reload flicker)
@@ -641,11 +658,19 @@ export default function Navbar() {
 
     const handleProfilePhotoUpdate = (event: CustomEvent) => {
       const newPhotoUrl = event.detail?.photoUrl;
+      const eventUserId = event.detail?.userId;
+      if (
+        !newPhotoUrl ||
+        (eventUserId &&
+          profilePhotoUserKey &&
+          eventUserId !== profilePhotoUserKey)
+      ) {
+        return;
+      }
       if (newPhotoUrl) {
         setCachedProfilePhoto(newPhotoUrl);
-        if (typeof window !== "undefined") {
-          localStorage.setItem("profile_photo", newPhotoUrl);
-          localStorage.setItem("p2p_profile_image", newPhotoUrl);
+        if (profilePhotoUserKey) {
+          persistProfilePhotoCache(profilePhotoUserKey, newPhotoUrl);
         }
         setProfileImageError(false);
         // Only refetch if not already fetching and not fetched recently (within 5 seconds)
@@ -665,7 +690,7 @@ export default function Navbar() {
     return () => {
       window.removeEventListener('profilePhotoUpdated', handleProfilePhotoUpdate as EventListener);
     };
-  }, [dispatch]);
+  }, [dispatch, profilePhotoUserKey]);
 
   // Reset fetch flags when user logs out
   useEffect(() => {
@@ -674,6 +699,7 @@ export default function Navbar() {
       profileFetchRef.current.lastFetch = 0;
       p2pProfileFetchRef.current.hasFetched = false;
       p2pProfileFetchRef.current.lastFetch = 0;
+      setCachedProfilePhoto(null);
     }
   }, [isAuthenticated]);
 
@@ -712,10 +738,9 @@ export default function Navbar() {
         dispatch(getP2PProfileThunk())
           .unwrap()
           .then((response) => {
-            if (response?.profile?.photo && typeof window !== "undefined") {
+            if (response?.profile?.photo && profilePhotoUserKey) {
               const photo = response.profile.photo;
-              localStorage.setItem("p2p_profile_image", photo);
-              localStorage.setItem("profile_photo", photo);
+              persistProfilePhotoCache(profilePhotoUserKey, photo);
               setCachedProfilePhoto(photo);
               setProfileImageError(false);
             }
@@ -730,34 +755,32 @@ export default function Navbar() {
     if (p2pProfile?.profile && !p2pProfileFetchRef.current.hasFetched) {
       p2pProfileFetchRef.current.hasFetched = true;
     }
-  }, [dispatch, isAuthenticated]); // Removed p2pProfile from deps to prevent loops
+  }, [dispatch, isAuthenticated, profilePhotoUserKey]); // Removed p2pProfile from deps to prevent loops
 
-  // Sync P2P profile photo from Redux (when UserCard or Navbar fetches it) to localStorage and cached state
+  // Sync P2P profile photo from Redux (when UserCard or Navbar fetches it) to cache and local state
   useEffect(() => {
     const photo = p2pProfile?.profile?.photo;
-    if (photo && typeof window !== "undefined") {
+    if (photo && profilePhotoUserKey) {
       const photoUrl = String(photo).trim();
       if (photoUrl && (photoUrl.startsWith('http://') || photoUrl.startsWith('https://') || photoUrl.startsWith('/') || photoUrl.startsWith('data:'))) {
-        localStorage.setItem("profile_photo", photoUrl);
-        localStorage.setItem("p2p_profile_image", photoUrl);
+        persistProfilePhotoCache(profilePhotoUserKey, photoUrl);
         setCachedProfilePhoto(photoUrl);
         setProfileImageError(false);
       }
     }
-  }, [p2pProfile?.profile?.photo]);
+  }, [p2pProfile?.profile?.photo, profilePhotoUserKey]);
 
-  // Cache auth profile photo in localStorage when it's available (sync both keys like UserCard)
+  // Cache auth profile photo when it's available
   useEffect(() => {
-    if (userProfile?.photo && typeof window !== "undefined") {
+    if (userProfile?.photo && profilePhotoUserKey) {
       const photoUrl = userProfile.photo.trim();
       if (photoUrl && (photoUrl.startsWith('http://') || photoUrl.startsWith('https://') || photoUrl.startsWith('/') || photoUrl.startsWith('data:'))) {
-        localStorage.setItem("profile_photo", photoUrl);
-        localStorage.setItem("p2p_profile_image", photoUrl);
+        persistProfilePhotoCache(profilePhotoUserKey, photoUrl);
         setCachedProfilePhoto(photoUrl);
         setProfileImageError(false);
       }
     }
-  }, [userProfile?.photo]);
+  }, [userProfile?.photo, profilePhotoUserKey]);
 
   // Reset image error when profile photo changes
   useEffect(() => {
@@ -767,17 +790,6 @@ export default function Navbar() {
       setProfileImageError(false);
     }
   }, [userProfile?.photo, cachedProfilePhoto]);
-
-  // Reload cached photo on route change (dashboard) - check both keys like UserCard
-  useEffect(() => {
-    if (isAuthenticated && pathname?.startsWith('/dashboard') && typeof window !== 'undefined') {
-      const cached = localStorage.getItem("profile_photo") || localStorage.getItem("p2p_profile_image");
-      if (cached && !cachedProfilePhoto) {
-        setCachedProfilePhoto(cached);
-        setProfileImageError(false);
-      }
-    }
-  }, [pathname, isAuthenticated, cachedProfilePhoto]);
 
   // Profile data available for rendering
 

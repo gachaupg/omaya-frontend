@@ -21,6 +21,11 @@ import { cookieUtils } from "@/lib/utils/cookieUtils";
 import VerifiedBadge from "@/components/ui/VerifiedBadge";
 import { checkKYCStatus } from "@/features/kyc/slices/kycSlice";
 import { formatUserDisplayName } from "@/lib/utils/userDisplayName";
+import {
+  getCachedProfilePhoto,
+  resolveProfilePhotoUserKey,
+  setCachedProfilePhoto as persistProfilePhotoCache,
+} from "@/lib/utils/profilePhotoCache";
 
 const UserCard = () => {
   const [showHelpSupport, setShowHelpSupport] = useState(false);
@@ -29,14 +34,7 @@ const UserCard = () => {
   const dispatch = useDispatch<AppDispatch>();
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  // Initialize profile image from localStorage or user photo
-  const [profileImage, setProfileImage] = React.useState<string | null>(() => {
-    if (typeof window !== "undefined") {
-      const cached = localStorage.getItem("p2p_profile_image");
-      if (cached) return cached;
-    }
-    return null;
-  });
+  const [profileImage, setProfileImage] = React.useState<string | null>(null);
 
   const matchedTrades = useSelector(
     (state: RootState) => state.matchedTrades.data
@@ -47,9 +45,25 @@ const UserCard = () => {
   const { user, isAuthenticated, profile } = useSelector(
     (state: RootState) => state.auth
   );
+  const profilePhotoUserKey = resolveProfilePhotoUserKey(user);
 
   // Use profile.photo as fallback if profileImage is not set
   const displayImage = profileImage || profile?.photo || null;
+
+  useEffect(() => {
+    if (!isAuthenticated || !profilePhotoUserKey) {
+      setProfileImage(null);
+      return;
+    }
+    setProfileImage(getCachedProfilePhoto(profilePhotoUserKey));
+  }, [isAuthenticated, profilePhotoUserKey]);
+
+  useEffect(() => {
+    if (typeof window === "undefined") return;
+    const onLogout = () => setProfileImage(null);
+    window.addEventListener("logoutTriggered", onLogout);
+    return () => window.removeEventListener("logoutTriggered", onLogout);
+  }, []);
 
   const kycState = useSelector((state: RootState) => state.kyc);
   // KYC verification status from central KYC slice, fallback to user.is_verified
@@ -76,10 +90,16 @@ const UserCard = () => {
         .then((response) => {
           if (response?.profile?.photo) {
             setProfileImage(response.profile.photo);
-            // Cache profile image to localStorage (sync both keys for Navbar)
-            if (typeof window !== "undefined") {
-              localStorage.setItem("p2p_profile_image", response.profile.photo);
-              localStorage.setItem("profile_photo", response.profile.photo);
+            if (profilePhotoUserKey) {
+              persistProfilePhotoCache(profilePhotoUserKey, response.profile.photo);
+              window.dispatchEvent(
+                new CustomEvent("profilePhotoUpdated", {
+                  detail: {
+                    photoUrl: response.profile.photo,
+                    userId: profilePhotoUserKey,
+                  },
+                })
+              );
             }
           }
         })
@@ -88,7 +108,7 @@ const UserCard = () => {
       // Ensure KYC status (is_verified) is up to date
       dispatch(checkKYCStatus());
     }
-  }, [dispatch, isAuthenticated]);
+  }, [dispatch, isAuthenticated, profilePhotoUserKey]);
 
   useEffect(() => {
     if (typeof window !== "undefined") {
@@ -169,12 +189,16 @@ const UserCard = () => {
           const response = await dispatch(getP2PProfileThunk()).unwrap();
           if (response?.profile?.photo) {
             setProfileImage(response.profile.photo);
-            // Cache the updated profile image (sync both keys for Navbar)
-            if (typeof window !== "undefined") {
-              localStorage.setItem("p2p_profile_image", response.profile.photo);
-              localStorage.setItem("profile_photo", response.profile.photo);
-              // Notify Navbar and other listeners to update immediately
-              window.dispatchEvent(new CustomEvent("profilePhotoUpdated", { detail: { photoUrl: response.profile.photo } }));
+            if (profilePhotoUserKey) {
+              persistProfilePhotoCache(profilePhotoUserKey, response.profile.photo);
+              window.dispatchEvent(
+                new CustomEvent("profilePhotoUpdated", {
+                  detail: {
+                    photoUrl: response.profile.photo,
+                    userId: profilePhotoUserKey,
+                  },
+                })
+              );
             }
           }
           // Also refresh main auth profile so navbar/other pages update without reload
