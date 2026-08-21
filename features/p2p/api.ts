@@ -1381,6 +1381,11 @@ export interface GroupedUser {
   sender_photo?: string | null;
   entity_id: string;
   message_type: string;
+  status?: string;
+  trade_status?: string;
+  order_status?: string;
+  conversation_status?: string;
+  is_closed?: boolean;
   peer_id?: number;
   peer_name?: string;
   peer_email?: string;

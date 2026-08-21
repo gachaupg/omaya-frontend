@@ -50,17 +50,24 @@ import {
   getMessageThreadId,
   isBucketEntityId,
   isValidThreadId,
+  resolveRecentMessageTargetEntityIds,
   resolveThreadIdFromGroup,
 } from "@/features/p2p/utils/chatThreadIds";
 import { resolveGroupedChatSenderDisplayName } from "@/features/p2p/utils/chatMessageDisplay";
 import {
   detectChatLifecycleFromText,
+  detectTerminalStatusFromText,
+  findLatestChatLifecycleInMessages,
   isClosedChatStatus,
+  isConversationUiClosed,
   isOpenChatStatus,
   isTerminalChatStatusValue,
   mergeConversationStatus,
   normalizeChatStatusValue,
+  resolveEffectiveConversationStatus,
+  resolveConversationStatusFromSources,
   resolveReopenedChatStatus,
+  resolveStatusFromRecentPayload,
 } from "@/features/p2p/utils/chatConversationStatus";
 import { ChevronRight, Camera, Mic } from "lucide-react";
 import { PresenceIndicator } from "@/features/p2p/components/ui/market/sections/UserStatusBadge";
@@ -258,7 +265,7 @@ export const Chats: React.FC = () => {
     (state: RootState) => state.auth
   );
 
-  const { groupedUsers, loading, error, refetch } = useGroupedMessages({
+  const { groupedUsers, entityGroupStatuses, loading, error, refetch } = useGroupedMessages({
     enabled: isAuthenticated,
     limit: 100,
     // Disable automatic polling so the page never reloads on a timer;
@@ -333,12 +340,24 @@ export const Chats: React.FC = () => {
   const messagesContainerRef = useRef<HTMLDivElement>(null);
   const prevSelectedUserIdRef = useRef<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
-  const closedEntityIdsRef = useRef<Set<string>>(new Set());
+  const applyConversationLifecycleRef = useRef<
+    (
+      entityId: string,
+      lifecycle: "reopened" | "closed",
+      closedStatus?: string
+    ) => void
+  >(() => {});
   const [tradeMessagesWsConnected, setTradeMessagesWsConnected] = useState(false);
   const [unreadWsConnected, setUnreadWsConnected] = useState(false);
   const tradeMessagesPollingRef = useRef<NodeJS.Timeout | null>(null);
   const unreadListPollingRef = useRef<NodeJS.Timeout | null>(null);
   const P2P_FALLBACK_POLL_MS = 1500;
+  const UNREAD_WS_REFETCH_MS = 400;
+
+  const selectedUserRef = useRef<GroupedUser | null>(null);
+  const liveGroupedUsersRef = useRef<GroupedUser[]>([]);
+  selectedUserRef.current = selectedUser;
+  liveGroupedUsersRef.current = liveGroupedUsers;
 
   const handleUnreadWsNewMessage = useCallback(() => {
     if (unreadRefetchTimeoutRef.current) {
@@ -346,27 +365,112 @@ export const Chats: React.FC = () => {
     }
     unreadRefetchTimeoutRef.current = setTimeout(() => {
       refetch();
-    }, 1200);
+    }, UNREAD_WS_REFETCH_MS);
   }, [refetch]);
+
+  const mergeRecentMessageIntoGroup = useCallback(
+    (group: GroupedUser, recent: RecentMessage) => {
+      const incomingMessage: any = {
+        id: String(recent.id),
+        content: String(recent.content ?? ""),
+        message: String(recent.content ?? ""),
+        sender_id: recent.sender_id,
+        sender_name: recent.sender_name,
+        sender_email: recent.sender_email,
+        timestamp: String(recent.timestamp ?? new Date().toISOString()),
+        images: Array.isArray(recent.images) ? recent.images : [],
+        audios: [],
+      };
+
+      const existingMessages = (
+        Array.isArray(group.messages) ? group.messages : []
+      ).filter((m: any) => !isTempMessageId(m?.id));
+
+      const alreadyPresent = existingMessages.some((m: any) => {
+        if (String(m?.id) === incomingMessage.id) return true;
+        return tradeMessagesAreDuplicates(
+          normalizeTradeMessageForDedupe(m),
+          normalizeTradeMessageForDedupe(incomingMessage),
+          user?.email,
+          60000,
+          user?.id
+        );
+      });
+      if (alreadyPresent) return group;
+
+      const mergedMessages = dedupeMixedChatMessages(
+        [incomingMessage, ...existingMessages],
+        user?.email,
+        user?.id
+      ).sort(
+        (a: any, b: any) =>
+          new Date(String(b?.timestamp || 0)).getTime() -
+          new Date(String(a?.timestamp || 0)).getTime()
+      );
+
+      return { ...group, messages: mergedMessages as any } as GroupedUser;
+    },
+    [user?.email, user?.id]
+  );
 
   const handleUnreadWsRecentMessages = useCallback(
     (messages: RecentMessage[]) => {
       if (!Array.isArray(messages) || messages.length === 0) return;
 
-      const latestByEntity = new Map<string, RecentMessage>();
-      for (const msg of messages) {
-        const entityId = String(msg?.entity_id ?? "").trim();
-        if (!entityId) continue;
-        const existing = latestByEntity.get(entityId);
-        if (
-          !existing ||
-          new Date(String(msg.timestamp || 0)).getTime() >
-            new Date(String(existing.timestamp || 0)).getTime()
-        ) {
-          latestByEntity.set(entityId, msg);
+      const groups = liveGroupedUsersRef.current;
+      const activeEntityId = String(selectedUserRef.current?.entity_id ?? "").trim();
+      const updatesByEntity = new Map<string, RecentMessage>();
+
+      for (const recent of messages) {
+        const targetIds = resolveRecentMessageTargetEntityIds(
+          recent,
+          groups,
+          activeEntityId
+        );
+        for (const entityId of targetIds) {
+          const existing = updatesByEntity.get(entityId);
+          if (
+            !existing ||
+            new Date(String(recent.timestamp || 0)).getTime() >
+              new Date(String(existing.timestamp || 0)).getTime()
+          ) {
+            updatesByEntity.set(entityId, recent);
+          }
         }
       }
-      if (latestByEntity.size === 0) return;
+
+      if (updatesByEntity.size === 0) return;
+
+      for (const [entityId, recent] of updatesByEntity) {
+        const lifecycle = detectChatLifecycleFromText(recent.content);
+        const statusFromPayload = resolveStatusFromRecentPayload(recent);
+
+        if (lifecycle) {
+          const closedStatus =
+            lifecycle === "closed"
+              ? detectTerminalStatusFromText(recent.content) ||
+                statusFromPayload ||
+                "closed"
+              : undefined;
+          applyConversationLifecycleRef.current(
+            entityId,
+            lifecycle,
+            closedStatus
+          );
+        } else if (
+          statusFromPayload &&
+          (isTerminalChatStatusValue(statusFromPayload) ||
+            statusFromPayload === "closed")
+        ) {
+          applyConversationLifecycleRef.current(
+            entityId,
+            "closed",
+            statusFromPayload
+          );
+        }
+      }
+
+      let nextSelectedUser: GroupedUser | null = null;
 
       setLiveGroupedUsers((prev) => {
         if (!prev || prev.length === 0) return prev;
@@ -374,57 +478,20 @@ export const Chats: React.FC = () => {
         let changed = false;
 
         for (let i = 0; i < next.length; i++) {
-          const group: any = next[i];
+          const group = next[i];
           const entityId = String(group?.entity_id ?? "").trim();
-          if (entityId && closedEntityIdsRef.current.has(entityId)) {
-            continue;
-          }
-          const recent = latestByEntity.get(entityId);
+          const recent = updatesByEntity.get(entityId);
           if (!recent) continue;
 
-          const incomingMessage: any = {
-            id: String(recent.id),
-            content: String(recent.content ?? ""),
-            message: String(recent.content ?? ""),
-            sender_id: recent.sender_id,
-            sender_name: recent.sender_name,
-            sender_email: recent.sender_email,
-            timestamp: String(recent.timestamp ?? new Date().toISOString()),
-            images: Array.isArray(recent.images) ? recent.images : [],
-            audios: [],
-          };
+          const mergedGroup = mergeRecentMessageIntoGroup(group, recent);
+          if (mergedGroup === group) continue;
 
-          const existingMessages = (
-            Array.isArray(group.messages) ? group.messages : []
-          ).filter((m: any) => !isTempMessageId(m?.id));
-
-          const alreadyPresent = existingMessages.some((m: any) => {
-            if (String(m?.id) === incomingMessage.id) return true;
-            return tradeMessagesAreDuplicates(
-              normalizeTradeMessageForDedupe(m),
-              normalizeTradeMessageForDedupe(incomingMessage),
-              user?.email,
-              60000,
-              user?.id
-            );
-          });
-          if (alreadyPresent) continue;
-
-          const mergedMessages = dedupeMixedChatMessages(
-            [incomingMessage, ...existingMessages],
-            user?.email,
-            user?.id
-          ).sort(
-            (a: any, b: any) =>
-              new Date(String(b?.timestamp || 0)).getTime() -
-              new Date(String(a?.timestamp || 0)).getTime()
-          );
-
-          next[i] = {
-            ...group,
-            messages: mergedMessages,
-          } as GroupedUser;
+          next[i] = mergedGroup;
           changed = true;
+
+          if (activeEntityId && entityId === activeEntityId) {
+            nextSelectedUser = mergedGroup;
+          }
         }
 
         if (!changed) return prev;
@@ -440,8 +507,12 @@ export const Chats: React.FC = () => {
         });
         return next;
       });
+
+      if (nextSelectedUser) {
+        setSelectedUser(nextSelectedUser);
+      }
     },
-    [user?.email, user?.id]
+    [mergeRecentMessageIntoGroup]
   );
 
   useUnreadMessagesWebSocket({
@@ -522,23 +593,18 @@ export const Chats: React.FC = () => {
 
   useEffect(() => {
     setLiveGroupedUsers((prev) => {
-      const incoming = expandBucketGroupedUsers(groupedUsers).filter((g: any) => {
-        const entityId = String(g?.entity_id ?? "").trim();
-        return !entityId || !closedEntityIdsRef.current.has(entityId);
-      });
+      const incoming = expandBucketGroupedUsers(groupedUsers, entityGroupStatuses);
       if (!prev || prev.length === 0) return incoming;
 
       const byEntity = new Map<string, any>();
       for (const p of prev as any[]) {
         const entityId = String(p?.entity_id ?? "").trim();
-        if (entityId && closedEntityIdsRef.current.has(entityId)) continue;
-        byEntity.set(entityId, p);
+        if (entityId) byEntity.set(entityId, p);
       }
 
       for (const g of incoming as any[]) {
         const entityId = String(g?.entity_id ?? "").trim();
         if (!entityId) continue;
-        if (closedEntityIdsRef.current.has(entityId)) continue;
         const existing = byEntity.get(entityId);
         if (!existing) {
           byEntity.set(entityId, g);
@@ -575,7 +641,11 @@ export const Chats: React.FC = () => {
           override ?? existing?.status ?? existing?.trade_status ?? existing?.order_status
         );
         const incomingStatus = normalizeChatStatusValue(
-          g?.status ?? g?.trade_status ?? g?.order_status
+          g?.status ??
+            g?.trade_status ??
+            g?.order_status ??
+            g?.conversation_status ??
+            (g?.is_closed === true ? "closed" : "")
         );
         const mergedStatus = mergeConversationStatus(
           prevEffective,
@@ -596,7 +666,7 @@ export const Chats: React.FC = () => {
         return bTs - aTs;
       });
     });
-  }, [groupedUsers, statusOverridesByEntity, user?.email, user?.id]);
+  }, [groupedUsers, entityGroupStatuses, statusOverridesByEntity, user?.email, user?.id]);
 
   const isValidTradeIdForMessages = isValidThreadId;
 
@@ -624,21 +694,6 @@ export const Chats: React.FC = () => {
     return resolveThreadIdFromGroup(selectedUser);
   }, [selectedUser, resolvedTradeId]);
 
-  const isOwnChatMessage = useCallback(
-    (msg: any) => {
-      if (!user) return false;
-      if (user.id != null && msg?.sender_id != null && msg.sender_id === user.id) {
-        return true;
-      }
-      const userEmail = String(user.email ?? "").trim().toLowerCase();
-      const senderEmail = String(msg?.sender_email ?? "").trim().toLowerCase();
-      if (userEmail && senderEmail && userEmail === senderEmail) return true;
-      const senderName = String(msg?.sender_name ?? "").trim().toLowerCase();
-      return Boolean(userEmail && senderName && senderName === userEmail);
-    },
-    [user]
-  );
-
   const enrichMessageForActiveThread = useCallback(
     (msg: any, messageType: string, threadId: string) => {
       if (!threadId || !msg) return msg;
@@ -649,12 +704,10 @@ export const Chats: React.FC = () => {
       // Support/appeal rows from grouped API often omit thread ids on admin/counterparty messages.
       if (type === "support") return { ...msg, support_request_id: threadId };
       if (type === "appeal") return { ...msg, appeal_id: threadId };
-      if (type === "p2p" && isOwnChatMessage(msg)) {
-        return { ...msg, trade_id: threadId };
-      }
+      if (type === "p2p") return { ...msg, trade_id: threadId };
       return msg;
     },
-    [getMessageThreadId, isOwnChatMessage]
+    [getMessageThreadId]
   );
 
   useEffect(() => {
@@ -693,10 +746,8 @@ export const Chats: React.FC = () => {
         !isBucketEntityId(selectedUser.entity_id) &&
         String(selectedUser.entity_id).trim() === activeId
       ) {
-        return prepared.filter((msg) => {
-          const threadId = getMessageThreadId(msg, messageType);
-          return !threadId || threadId === activeId;
-        });
+        // Conversation entity is already this trade — show all rows in the group.
+        return prepared;
       }
 
       if (messageType !== "support" && messageType !== "appeal") {
@@ -826,7 +877,21 @@ export const Chats: React.FC = () => {
           lifecycle === "reopened"
             ? resolveReopenedChatStatus(prev.message_type)
             : normalizeChatStatus(closedStatus || "closed") || "closed";
-        return { ...prev, status: nextStatus } as GroupedUser;
+        return {
+          ...prev,
+          status: nextStatus,
+          ...(lifecycle === "reopened"
+            ? {
+                trade_status: nextStatus,
+                order_status: nextStatus,
+                conversation_status: nextStatus,
+              }
+            : {
+                trade_status: nextStatus,
+                order_status: nextStatus,
+                conversation_status: nextStatus,
+              }),
+        } as GroupedUser;
       });
 
       setLiveGroupedUsers((prev) =>
@@ -836,30 +901,61 @@ export const Chats: React.FC = () => {
             lifecycle === "reopened"
               ? resolveReopenedChatStatus(g.message_type)
               : normalizeChatStatus(closedStatus || "closed") || "closed";
-          return { ...g, status: nextStatus } as GroupedUser;
+          return {
+            ...g,
+            status: nextStatus,
+            trade_status: nextStatus,
+            order_status: nextStatus,
+            conversation_status: nextStatus,
+          } as GroupedUser;
         })
       );
     },
     [liveGroupedUsers, normalizeChatStatus, selectedUser]
   );
+  applyConversationLifecycleRef.current = applyConversationLifecycle;
+
+  useEffect(() => {
+    if (!selectedUser?.entity_id) return;
+    const entityId = String(selectedUser.entity_id).trim();
+    const userRecord = selectedUser as GroupedUser & { is_closed?: boolean };
+
+    if (userRecord.is_closed === true) {
+      applyConversationLifecycleRef.current(entityId, "closed", "closed");
+      return;
+    }
+
+    const terminalStatus = resolveConversationStatusFromSources(
+      entityGroupStatuses,
+      entityId,
+      userRecord.status,
+      userRecord.conversation_status,
+      userRecord.trade_status,
+      userRecord.order_status
+    );
+
+    if (
+      !terminalStatus ||
+      (!isTerminalChatStatusValue(terminalStatus) && terminalStatus !== "closed")
+    ) {
+      return;
+    }
+
+    applyConversationLifecycleRef.current(
+      entityId,
+      "closed",
+      terminalStatus
+    );
+  }, [entityGroupStatuses, selectedUser]);
 
   const getEffectiveChatStatus = useCallback(
     (userObj: GroupedUser | null | undefined): string => {
       if (!userObj) return "";
       const entityId = String((userObj as any)?.entity_id || "").trim();
       const override = entityId ? statusOverridesByEntity.get(entityId) : undefined;
-      const base =
-        override ??
-        (userObj as any)?.status ??
-        (userObj as any)?.trade_status ??
-        (userObj as any)?.order_status ??
-        (Array.isArray((userObj as any)?.messages) &&
-        (userObj as any).messages.length > 0
-          ? (userObj as any).messages[0]?.status ??
-            (userObj as any).messages[0]?.trade_status ??
-            (userObj as any).messages[0]?.order_status
-          : "");
-      return normalizeChatStatus(base);
+      return normalizeChatStatus(
+        resolveEffectiveConversationStatus(userObj, override)
+      );
     },
     [normalizeChatStatus, statusOverridesByEntity]
   );
@@ -908,7 +1004,7 @@ export const Chats: React.FC = () => {
       }
 
       if (currentEntityId && isTerminalChatStatus(normalized)) {
-        closeConversationInstantly(currentEntityId, normalized);
+        applyConversationLifecycle(currentEntityId, "closed", normalized);
       } else if (currentEntityId && isOpenChatStatus(normalized)) {
         applyConversationLifecycle(currentEntityId, "reopened");
       }
@@ -966,20 +1062,7 @@ export const Chats: React.FC = () => {
     }
   }, [selectedUser, showEmojiPicker]);
 
-  // Compute if chat is closed (trade completed/cancelled, or support thread closed)
-  const isChatClosed = useMemo(() => {
-    const normalizedStatus = getEffectiveChatStatus(selectedUser);
-    return isClosedChatStatus(normalizedStatus, selectedUser?.message_type);
-  }, [getEffectiveChatStatus, selectedUser]);
-
-  const lastLifecycleMessageIdRef = useRef<string | null>(null);
-
-  // Close emoji picker when chat becomes closed
-  useEffect(() => {
-    if (isChatClosed && showEmojiPicker) {
-      setShowEmojiPicker(false);
-    }
-  }, [isChatClosed, showEmojiPicker]);
+  const lastLifecycleSyncKeyRef = useRef<string | null>(null);
 
   // Common emojis
   const commonEmojis = [
@@ -1023,7 +1106,7 @@ export const Chats: React.FC = () => {
     if (!threadId) return;
 
     const match = liveGroupedUsers.find((g) => g.entity_id === threadId);
-    const next = match ?? expandBucketGroupedUsers([selectedUser])[0];
+    const next = match ?? expandBucketGroupedUsers([selectedUser], entityGroupStatuses)[0];
     if (next && next.entity_id !== selectedUser.entity_id) {
       setSelectedUser(next);
       setActiveThreadId(threadId);
@@ -1079,34 +1162,51 @@ export const Chats: React.FC = () => {
   ]);
 
   useEffect(() => {
-    lastLifecycleMessageIdRef.current = null;
+    lastLifecycleSyncKeyRef.current = null;
   }, [selectedUser?.entity_id]);
 
   // Auto open/close UI when support/system messages announce lifecycle changes.
   useEffect(() => {
     if (!selectedUser?.entity_id || displayedMessages.length === 0) return;
 
-    const latest = displayedMessages[displayedMessages.length - 1];
-    const messageId = String(latest?.id ?? "").trim();
-    if (!messageId || messageId === lastLifecycleMessageIdRef.current) return;
+    const latestLifecycle = findLatestChatLifecycleInMessages(displayedMessages);
+    if (!latestLifecycle) return;
 
-    const lifecycle = detectChatLifecycleFromText(
-      (latest as any)?.content ?? (latest as any)?.message
-    );
-    if (!lifecycle) return;
+    const syncKey = `${selectedUser.entity_id}:${latestLifecycle.messageId}:${latestLifecycle.lifecycle}:${latestLifecycle.timestamp}`;
+    if (syncKey === lastLifecycleSyncKeyRef.current) return;
 
-    lastLifecycleMessageIdRef.current = messageId;
+    lastLifecycleSyncKeyRef.current = syncKey;
+
+    const closedLifecycleMessage = displayedMessages.find(
+      (m: any) => String(m?.id ?? "") === latestLifecycle.messageId
+    ) as any;
+    const closedStatus =
+      latestLifecycle.lifecycle === "closed"
+        ? detectTerminalStatusFromText(
+            closedLifecycleMessage?.content ?? closedLifecycleMessage?.message
+          ) || "closed"
+        : undefined;
+
     applyConversationLifecycle(
       String(selectedUser.entity_id),
-      lifecycle,
-      lifecycle === "closed" ? "closed" : getEffectiveChatStatus(selectedUser)
+      latestLifecycle.lifecycle,
+      closedStatus
     );
-  }, [
-    applyConversationLifecycle,
-    displayedMessages,
-    getEffectiveChatStatus,
-    selectedUser,
-  ]);
+  }, [applyConversationLifecycle, displayedMessages, selectedUser?.entity_id]);
+
+  // Compute if chat is closed (trade completed/cancelled, or support thread closed)
+  const isChatClosed = useMemo(() => {
+    const entityId = String(selectedUser?.entity_id ?? "").trim();
+    const override = entityId ? statusOverridesByEntity.get(entityId) : undefined;
+    return isConversationUiClosed(selectedUser, displayedMessages, override);
+  }, [displayedMessages, selectedUser, statusOverridesByEntity]);
+
+  // Close emoji picker when chat becomes closed
+  useEffect(() => {
+    if (isChatClosed && showEmojiPicker) {
+      setShowEmojiPicker(false);
+    }
+  }, [isChatClosed, showEmojiPicker]);
 
   const isAdminUser = useMemo(() => {
     const raw =
@@ -1426,7 +1526,11 @@ export const Chats: React.FC = () => {
           ctx.isTerminalChatStatus(statusFromPayload) &&
           !isOpenChatStatus(statusFromPayload)
         ) {
-          ctx.closeConversationInstantly(currentEntityId, statusFromPayload);
+          ctx.applyConversationLifecycle(
+            currentEntityId,
+            "closed",
+            statusFromPayload
+          );
         } else if (
           currentEntityId &&
           isOpenChatStatus(statusFromPayload)
@@ -1857,9 +1961,21 @@ export const Chats: React.FC = () => {
       if (threadId) {
         setActiveThreadId(threadId);
       }
-      lastLifecycleMessageIdRef.current = null;
+      lastLifecycleSyncKeyRef.current = null;
       setSelectedUser(latest);
       setShowChatView(true);
+
+      const entityId = String(latest.entity_id ?? "").trim();
+      const lifecycle = findLatestChatLifecycleInMessages(
+        Array.isArray(latest.messages) ? latest.messages : []
+      );
+      if (entityId && lifecycle) {
+        applyConversationLifecycleRef.current(
+          entityId,
+          lifecycle.lifecycle,
+          lifecycle.lifecycle === "closed" ? "closed" : undefined
+        );
+      }
     },
     [liveGroupedUsers]
   );
@@ -2445,7 +2561,13 @@ export const Chats: React.FC = () => {
                 <h3 className="text-sm font-semibold text-gray-900 dark:text-white mb-1">Chat Closed</h3>
                 <p className="text-xs text-gray-600 dark:text-gray-500 leading-relaxed">
                   {isSupportLike
-                    ? "This support conversation is currently closed."
+                    ? normalizedStatus === "resolved"
+                      ? "This support conversation has been resolved."
+                      : normalizedStatus === "completed"
+                        ? "This support conversation has been completed."
+                        : normalizedStatus === "cancelled"
+                          ? "This support conversation has been cancelled."
+                          : "This support conversation is currently closed."
                     : `This chat is now closed as the trade has been ${normalizedStatus === "cancelled" ? "cancelled" : normalizedStatus === "resolved" ? "resolved" : "completed"}.`}
                 </p>
                 {!isSupportLike && (

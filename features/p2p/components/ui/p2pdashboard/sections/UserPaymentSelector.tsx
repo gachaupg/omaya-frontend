@@ -20,6 +20,7 @@ export interface UserPaymentDetail {
   logo?: string;
   logo_url?: string;
   wallet_address?: string | null;
+  allow_auto_send?: boolean;
   status?: string;
   /** Admin provided message when rejected/blocked */
   rejection_reason?: string | null;

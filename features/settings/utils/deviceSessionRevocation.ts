@@ -18,6 +18,45 @@ export function sanitizeDeviceSessions(
   return sessions.filter(isValidDeviceSession);
 }
 
+/** Normalize device session list from API / thunk payloads. */
+export function parseDeviceSessionsResponse(raw: unknown): DeviceSession[] {
+  if (Array.isArray(raw)) {
+    return sanitizeDeviceSessions(raw as DeviceSession[]);
+  }
+  if (!raw || typeof raw !== "object") return [];
+
+  const record = raw as Record<string, unknown>;
+  for (const key of ["data", "results", "sessions", "devices"] as const) {
+    const nested = record[key];
+    if (Array.isArray(nested)) {
+      return sanitizeDeviceSessions(nested as DeviceSession[]);
+    }
+  }
+  return [];
+}
+
+/** Some backends return 404/400 when no sessions remain after logout-all. */
+export function isBenignEmptySessionsFetchError(error: unknown): boolean {
+  const err = error as {
+    response?: { status?: number; data?: Record<string, unknown> };
+  };
+  const status = err?.response?.status;
+  if (status === 404 || status === 204) return true;
+
+  const data = err?.response?.data;
+  const message = String(
+    data?.message ?? data?.detail ?? data?.error ?? ""
+  ).toLowerCase();
+  if (!message) return false;
+
+  return (
+    message.includes("no session") ||
+    message.includes("no device") ||
+    message.includes("not found") ||
+    message.includes("no active")
+  );
+}
+
 export function pickCurrentDeviceSession(
   sessions: DeviceSession[]
 ): DeviceSession | undefined {

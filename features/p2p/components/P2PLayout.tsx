@@ -49,7 +49,7 @@ const P2PLayout = () => {
   useGroupedMessages({
     enabled: isAuthenticated,
     limit: 100,
-    refetchInterval: activeTab === "chats" ? 60000 : 30000, // 60s for chats, 30s for others
+    refetchInterval: activeTab === "chats" ? 15000 : 30000,
   });
 
   // Update active tab when query parameter changes; expired trade links open Market

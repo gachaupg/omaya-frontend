@@ -261,16 +261,43 @@ const GradientLineChart = React.memo(
 
     const formatChartAmount = (value: number) => formatCurrency(value, "USD");
 
+    const tooltipStyle = React.useMemo((): React.CSSProperties => {
+      if (hoverIndex == null || hoverIndex < 0 || hoverIndex >= pointCount) {
+        return {};
+      }
+
+      const hoverX =
+        points1[hoverIndex]?.x ??
+        points2[hoverIndex]?.x ??
+        chartDimensions.left;
+      const hoverPercent = (hoverX / chartDimensions.baseWidth) * 100;
+
+      if (hoverPercent >= 72) {
+        return { right: 8, left: "auto", top: 8, transform: "none" };
+      }
+      if (hoverPercent <= 28) {
+        return { left: 8, top: 8, transform: "none" };
+      }
+      return {
+        left: `${hoverPercent}%`,
+        top: 8,
+        transform: "translateX(-50%)",
+      };
+    }, [
+      chartDimensions.baseWidth,
+      chartDimensions.left,
+      hoverIndex,
+      pointCount,
+      points1,
+      points2,
+    ]);
+
     return (
-      <div className="w-full overflow-x-auto scrollbar-thin relative">
+      <div className="w-full overflow-visible relative">
         {hoverIndex != null && hoverIndex >= 0 && hoverIndex < pointCount && (
           <div
-            className="pointer-events-none absolute z-20 rounded-lg border px-3 py-2 text-xs shadow-lg dark:bg-[#18181D] dark:border-[#35353E] dark:text-white bg-white border-gray-200 text-gray-900"
-            style={{
-              left: `clamp(8px, ${((points1[hoverIndex]?.x ?? points2[hoverIndex]?.x ?? chartDimensions.left) / chartDimensions.baseWidth) * 100}%, calc(100% - 8px))`,
-              top: 8,
-              transform: "translateX(-50%)",
-            }}
+            className="pointer-events-none absolute z-20 max-w-[calc(100%-16px)] rounded-lg border px-3 py-2 text-xs shadow-lg dark:bg-[#18181D] dark:border-[#35353E] dark:text-white bg-white border-gray-200 text-gray-900"
+            style={tooltipStyle}
           >
             <p className="font-semibold mb-1">{safeLabels[hoverIndex] ?? ""}</p>
             <p style={{ color: color1 }}>
@@ -673,7 +700,7 @@ const Card = ({
 
   return (
     <div
-      className={`bg-card shadow-md w-full overflow-hidden ${className}`}
+      className={`bg-card shadow-md w-full overflow-visible ${className}`}
       style={{ minHeight: dimensions.minHeight, padding: dimensions.padding }}
     >
       {children}
@@ -807,7 +834,7 @@ function OverviewLineChartCard({
           />
         </div>
       </div>
-      <div className="w-full min-h-[200px] sm:min-h-[240px] flex items-center justify-center">
+      <div className="w-full min-h-[200px] sm:min-h-[240px] flex items-center justify-center overflow-visible">
         {loading ? (
           <span className="text-sm text-gray-500 dark:text-[#788099]">
             Loading...

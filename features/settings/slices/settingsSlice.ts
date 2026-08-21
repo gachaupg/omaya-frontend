@@ -23,7 +23,7 @@ import { updateUser } from "@/features/auth/slices/authSlice";
 import { RootState } from "@/store/rootReducer";
 
 import { logger } from '@/lib/utils/logger';
-import { sanitizeDeviceSessions } from "../utils/deviceSessionRevocation";
+import { sanitizeDeviceSessions, parseDeviceSessionsResponse, isBenignEmptySessionsFetchError } from "../utils/deviceSessionRevocation";
 
 /** Avoid showing raw "Request failed with status code 400" etc. on the UI. */
 function normalizeApiErrorMessage(error: any, fallback: string): string {
@@ -495,9 +495,11 @@ export const fetchDeviceSessions = createAsyncThunk(
   async (_, { rejectWithValue }) => {
     try {
       const response = await settingsApi.getDeviceSessions();
-      // The API returns the sessions directly as an array
-      return response.data || response;
+      return parseDeviceSessionsResponse(response?.data ?? response);
     } catch (error: any) {
+      if (isBenignEmptySessionsFetchError(error)) {
+        return [];
+      }
       return rejectWithValue(
         normalizeApiErrorMessage(error, "Unable to load device sessions")
       );
@@ -885,6 +887,7 @@ const settingsSlice = createSlice({
       })
       .addCase(fetchDeviceSessions.fulfilled, (state, action) => {
         state.deviceSessionsLoading = false;
+        state.deviceSessionsError = null;
         logger.debug('dashboard', 
           "Redux: fetchDeviceSessions.fulfilled payload:",
           action.payload
@@ -903,6 +906,7 @@ const settingsSlice = createSlice({
         state.deviceSessions = sanitizeDeviceSessions(state.deviceSessions).filter(
           (session) => session.session_id !== action.payload.sessionId
         );
+        state.deviceSessionsError = null;
         state.success = "Device logged out successfully";
       })
       .addCase(logoutAllDevices.fulfilled, (state) => {

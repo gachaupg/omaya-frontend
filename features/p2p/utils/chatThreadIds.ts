@@ -1,4 +1,9 @@
 import type { GroupedUser } from "@/features/p2p/api";
+import {
+  isLikelyConversationStatusValue,
+  normalizeChatStatusValue,
+  resolveConversationStatusFromSources,
+} from "@/features/p2p/utils/chatConversationStatus";
 
 const BUCKET_ENTITY_IDS = new Set(["support", "appeal"]);
 
@@ -99,12 +104,32 @@ export const resolveThreadIdFromGroup = (group: GroupedUser | null): string => {
   return candidates[0] ?? "";
 };
 
+const pickStatusFromMessages = (messages: unknown[]): string => {
+  for (const message of messages) {
+    if (!message || typeof message !== "object") continue;
+    const record = message as Record<string, unknown>;
+    for (const key of [
+      "status",
+      "conversation_status",
+      "thread_status",
+      "support_status",
+    ] as const) {
+      const normalized = normalizeChatStatusValue(record[key]);
+      if (normalized && isLikelyConversationStatusValue(normalized)) {
+        return normalized;
+      }
+    }
+  }
+  return "";
+};
+
 /**
  * API groups all support under entity_id "support" and appeals under "appeal".
  * Expand into one sidebar conversation per real thread id.
  */
 export const expandBucketGroupedUsers = (
-  users: GroupedUser[] | null | undefined
+  users: GroupedUser[] | null | undefined,
+  entityGroupStatuses?: Record<string, string> | null
 ): GroupedUser[] => {
   if (!Array.isArray(users)) return [];
 
@@ -115,18 +140,32 @@ export const expandBucketGroupedUsers = (
       .trim()
       .toLowerCase();
     const entityId = String(group.entity_id ?? "").trim();
+    const rawGroupStatus = (group as { status?: string }).status;
+    const groupStatus = resolveConversationStatusFromSources(
+      entityGroupStatuses,
+      entityId,
+      rawGroupStatus
+    );
 
     if (
       !isBucketEntityId(entityId) ||
       (messageType !== "support" && messageType !== "appeal")
     ) {
-      expanded.push(group);
+      expanded.push(
+        groupStatus
+          ? ({ ...group, status: groupStatus } as GroupedUser)
+          : group
+      );
       continue;
     }
 
     const messages = Array.isArray(group.messages) ? group.messages : [];
     if (messages.length === 0) {
-      expanded.push(group);
+      expanded.push(
+        groupStatus
+          ? ({ ...group, status: groupStatus } as GroupedUser)
+          : group
+      );
       continue;
     }
 
@@ -140,7 +179,11 @@ export const expandBucketGroupedUsers = (
     }
 
     if (byThread.size === 0) {
-      expanded.push(group);
+      expanded.push(
+        groupStatus
+          ? ({ ...group, status: groupStatus } as GroupedUser)
+          : group
+      );
       continue;
     }
 
@@ -151,10 +194,20 @@ export const expandBucketGroupedUsers = (
           new Date(String(a?.timestamp || 0)).getTime()
       );
 
+      const threadMessageStatus = pickStatusFromMessages(sorted);
+      const threadStatus = resolveConversationStatusFromSources(
+        entityGroupStatuses,
+        threadId,
+        threadMessageStatus,
+        rawGroupStatus,
+        groupStatus
+      );
+
       expanded.push({
         ...group,
         entity_id: threadId,
         messages: sorted,
+        ...(threadStatus ? { status: threadStatus } : {}),
         ...(messageType === "support"
           ? { support_request_id: threadId }
           : { appeal_id: threadId }),
@@ -167,4 +220,70 @@ export const expandBucketGroupedUsers = (
     const bTs = new Date(String(b?.messages?.[0]?.timestamp || 0)).getTime();
     return bTs - aTs;
   });
+};
+
+/** Map unread-WS rows to expanded sidebar entity ids (support bucket vs thread uuid). */
+export const resolveRecentMessageTargetEntityIds = (
+  recent: {
+    entity_id?: unknown;
+    message_type?: unknown;
+    type?: unknown;
+    support_request_id?: unknown;
+    appeal_id?: unknown;
+    trade_id?: unknown;
+  },
+  groups: GroupedUser[],
+  activeEntityId?: string
+): string[] => {
+  const wsEntityId = String(recent.entity_id ?? "").trim();
+  const messageType = String(recent.message_type ?? recent.type ?? "")
+    .trim()
+    .toLowerCase();
+  const recentThreadId = String(
+    recent.support_request_id ?? recent.appeal_id ?? recent.trade_id ?? ""
+  ).trim();
+  const targets = new Set<string>();
+
+  if (wsEntityId) {
+    const direct = groups.find(
+      (g) => String(g.entity_id ?? "").trim() === wsEntityId
+    );
+    if (direct) targets.add(String(direct.entity_id).trim());
+  }
+
+  for (const group of groups) {
+    const groupEntityId = String(group.entity_id ?? "").trim();
+    const groupType = String(group.message_type ?? "").trim().toLowerCase();
+    if (!groupEntityId) continue;
+    if (messageType && groupType && messageType !== groupType) continue;
+
+    if (recentThreadId && groupEntityId === recentThreadId) {
+      targets.add(groupEntityId);
+      continue;
+    }
+
+    if (isBucketEntityId(wsEntityId) && groupType === messageType) {
+      const threadId = resolveThreadIdFromGroup(group);
+      if (recentThreadId && threadId === recentThreadId) {
+        targets.add(groupEntityId);
+      }
+    }
+  }
+
+  const activeId = String(activeEntityId ?? "").trim();
+  if (targets.size === 0 && activeId) {
+    const active = groups.find((g) => String(g.entity_id ?? "").trim() === activeId);
+    if (active) {
+      const activeType = String(active.message_type ?? "").trim().toLowerCase();
+      if (!messageType || activeType === messageType) {
+        targets.add(activeId);
+      }
+    }
+  }
+
+  if (targets.size === 0 && wsEntityId && !isBucketEntityId(wsEntityId)) {
+    targets.add(wsEntityId);
+  }
+
+  return Array.from(targets);
 };

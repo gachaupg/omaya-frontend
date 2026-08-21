@@ -21,7 +21,7 @@ export const useGroupedMessages = (
 ) => {
   const { enabled = true, limit = 100, refetchInterval } = options;
   const dispatch = useDispatch<AppDispatch>();
-  const { groupedUsers, groupedMessagesLoading, groupedMessagesError } = useSelector(
+  const { groupedUsers, groupedMessagesLoading, groupedMessagesError, entityGroupStatuses } = useSelector(
     (state: RootState) => state.unreadMessages
   );
 
@@ -51,6 +51,7 @@ export const useGroupedMessages = (
 
   return {
     groupedUsers,
+    entityGroupStatuses,
     loading: groupedMessagesLoading,
     error: groupedMessagesError,
     refetch: () => dispatch(fetchGroupedMessages({ limit })),

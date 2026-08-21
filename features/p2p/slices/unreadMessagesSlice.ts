@@ -1,4 +1,5 @@
 import { createSlice, createAsyncThunk, PayloadAction } from "@reduxjs/toolkit";
+import { applyEntityGroupStatuses } from "../utils/chatConversationStatus";
 import { getUnreadMessages, markMessageAsRead, getGroupedMessages, GroupedUser } from "../api";
 import { logger } from "@/lib/utils/logger";
 import { RecentMessage } from "../services/unreadMessagesWebSocket";
@@ -35,6 +36,7 @@ interface UnreadMessagesState {
   totalUnreadCount: number;
   recentMessages: RecentMessage[];
   groupedUsers: GroupedUser[];
+  entityGroupStatuses: Record<string, string>;
   groupedMessagesLoading: boolean;
   groupedMessagesError: string | null;
 }
@@ -52,6 +54,7 @@ const initialState: UnreadMessagesState = {
   totalUnreadCount: 0,
   recentMessages: [],
   groupedUsers: [],
+  entityGroupStatuses: {},
   groupedMessagesLoading: false,
   groupedMessagesError: null,
 };
@@ -127,7 +130,7 @@ export const markAllAsRead = createAsyncThunk<
 
 // Async thunk to fetch grouped messages
 export const fetchGroupedMessages = createAsyncThunk<
-  GroupedUser[],
+  { users: GroupedUser[]; entityGroupStatuses: Record<string, string> },
   { limit?: number },
   { rejectValue: string }
 >(
@@ -136,11 +139,17 @@ export const fetchGroupedMessages = createAsyncThunk<
     try {
       logger.debug("p2p", "Fetching grouped messages:", { limit });
       const response = await getGroupedMessages(limit);
+      const entityGroupStatuses = response.data.summary?.entity_groups ?? {};
+      const users = applyEntityGroupStatuses(
+        response.data.users,
+        entityGroupStatuses
+      );
       logger.debug("p2p", "Grouped messages fetched successfully:", {
-        usersCount: response.data.users.length,
+        usersCount: users.length,
         totalMessages: response.data.summary.total_messages,
+        entityGroupStatusCount: Object.keys(entityGroupStatuses).length,
       });
-      return response.data.users;
+      return { users, entityGroupStatuses };
     } catch (error) {
       logger.error("p2p", "Error fetching grouped messages:", error);
       return rejectWithValue(
@@ -235,10 +244,10 @@ const unreadMessagesSlice = createSlice({
       })
       .addCase(fetchGroupedMessages.fulfilled, (state, action) => {
         state.groupedMessagesLoading = false;
-        state.groupedUsers = action.payload;
+        state.groupedUsers = action.payload.users;
+        state.entityGroupStatuses = action.payload.entityGroupStatuses;
         state.groupedMessagesError = null;
-        // Calculate total unread count from grouped messages
-        const totalMessages = action.payload.reduce(
+        const totalMessages = action.payload.users.reduce(
           (sum, user) => sum + user.messages.length,
           0
         );

@@ -451,6 +451,12 @@ const PrivacySecurity = () => {
       }
 
       showToast.success("All other devices logged out successfully");
+      dispatch(clearDeviceSessionsError());
+      try {
+        await dispatch(fetchDeviceSessions()).unwrap();
+      } catch {
+        dispatch(clearDeviceSessionsError());
+      }
     } catch (error) {
             showToast.error("Failed to logout some devices");
     } finally {
@@ -520,7 +526,12 @@ const PrivacySecurity = () => {
     try {
       await dispatch(logoutDevice(sessionToDelete.session_id)).unwrap();
       showToast.success("Device session removed successfully");
-      dispatch(fetchDeviceSessions());
+      dispatch(clearDeviceSessionsError());
+      try {
+        await dispatch(fetchDeviceSessions()).unwrap();
+      } catch {
+        dispatch(clearDeviceSessionsError());
+      }
       router.push("/dashboard/account/?tab=privacy");
     } catch (error: any) {
             const msg = error?.message || "";
@@ -664,10 +675,17 @@ const PrivacySecurity = () => {
   const displaySessionError =
     !isRedirectingAfterLogoutAllRef.current &&
     deviceSessionsError &&
+    !(
+      allSessions.length === 0 &&
+      !deviceSessionsLoading &&
+      deviceSessionsError === "Unable to load device sessions"
+    ) &&
     !/request failed with status code \d+/i.test(deviceSessionsError) &&
     !/status code \d+/i.test(deviceSessionsError)
       ? deviceSessionsError
-      : deviceSessionsError && !isRedirectingAfterLogoutAllRef.current
+      : deviceSessionsError &&
+          !isRedirectingAfterLogoutAllRef.current &&
+          allSessions.length > 0
         ? "Unable to load device sessions"
         : null;
 

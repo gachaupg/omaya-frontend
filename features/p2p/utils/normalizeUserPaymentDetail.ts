@@ -1,4 +1,6 @@
 /** Normalize REST / WS user payment detail payloads into one shape for P2P UI. */
+import { parseAllowAutoSend } from "@/features/p2p/utils/paymentAutoSend";
+
 export type NormalizedUserPaymentDetail = {
   id: number | string;
   user_payment_detail_id?: string;
@@ -7,6 +9,7 @@ export type NormalizedUserPaymentDetail = {
   account_name: string;
   account_number: string;
   wallet_address?: string | null;
+  allow_auto_send?: boolean;
   provider_logo?: string | null;
   logo?: string;
   logo_url?: string;
@@ -68,6 +71,7 @@ export function normalizeUserPaymentDetail(
     account_number: String(item.account_number ?? ""),
     wallet_address:
       item.wallet_address != null ? String(item.wallet_address) : null,
+    allow_auto_send: parseAllowAutoSend(item.allow_auto_send),
     provider_logo:
       (item.provider_logo as string | null | undefined) ??
       (provider?.logo as string | null | undefined) ??
