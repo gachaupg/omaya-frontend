@@ -99,12 +99,10 @@ function UserCard() {
       ) {
         return;
       }
-        // Add cache-busting parameter to force browser to reload the image
-        const photoWithTimestamp = newPhotoUrl.includes('?') 
-          ? `${newPhotoUrl}&t=${Date.now()}`
-          : `${newPhotoUrl}?t=${Date.now()}`;
-        setProfileImage(photoWithTimestamp);
-      }
+      const photoWithTimestamp = newPhotoUrl.includes('?') 
+        ? `${newPhotoUrl}&t=${Date.now()}`
+        : `${newPhotoUrl}?t=${Date.now()}`;
+      setProfileImage(photoWithTimestamp);
     };
     
     window.addEventListener('profilePhotoUpdated', handleProfilePhotoUpdate as EventListener);
