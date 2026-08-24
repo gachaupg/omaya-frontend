@@ -244,6 +244,9 @@ const PrivacySecurity = () => {
   }, [security?.two_factor_enabled, isInitialized]);
 
   const handleTwoFactorToggle = async (enabled: boolean) => {
+    if (enabled && twoFA) return;
+    if (!enabled && !twoFA) return;
+
     if (enabled) {
       try {
         setVerifyError(null);
@@ -1057,12 +1060,15 @@ const PrivacySecurity = () => {
           </div>
           <div className="flex gap-3 mb-2">
             <button
-              className={`flex-1 flex items-center justify-center gap-2 py-2 rounded-xl text-sm font-semibold border transition-all ${twoFA
-                ? "bg-[#1D8751] text-white border-[#1D8751]"
-                : "bg-transparent dark:text-[#808080] text-gray-600 dark:border-[#35353E] border-gray-300 hover:bg-[#1D8751]/10 hover:border-[#1D8751] hover:text-[#1D8751] dark:hover:text-[#1D8751]"
-                }`}
+              type="button"
+              className={`flex-1 flex items-center justify-center gap-2 py-2 rounded-xl text-sm font-semibold border transition-all disabled:cursor-not-allowed ${
+                twoFA
+                  ? "bg-[#1D8751] text-white border-[#1D8751] disabled:opacity-100"
+                  : "bg-[#1D8751] text-white border-[#1D8751] hover:bg-[#166b3e] hover:border-[#166b3e]"
+              }`}
               onClick={() => handleTwoFactorToggle(true)}
-              disabled={updating}
+              disabled={twoFA || updating || verifyLoading}
+              aria-pressed={twoFA}
             >
               <span>
                 <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
@@ -1070,12 +1076,12 @@ const PrivacySecurity = () => {
                     cx="12"
                     cy="12"
                     r="10"
-                    stroke={twoFA ? "#fff" : "currentColor"}
+                    stroke="#fff"
                     strokeWidth="2"
                   />
                   <path
                     d="M9 12l2 2 4-4"
-                    stroke={twoFA ? "#fff" : "currentColor"}
+                    stroke="#fff"
                     strokeWidth="2"
                     fill="none"
                   />
@@ -1084,12 +1090,15 @@ const PrivacySecurity = () => {
               Yes
             </button>
             <button
-              className={`flex-1 flex items-center justify-center gap-2 py-2 rounded-xl text-sm font-semibold border transition-all ${!twoFA
-                ? "bg-[#E23D3A] text-white border-[#E23D3A]"
-                : "bg-transparent dark:text-[#808080] text-gray-600 dark:border-[#35353E] border-gray-300 hover:bg-[#E23D3A]/10 hover:border-[#E23D3A] hover:text-[#E23D3A] dark:hover:text-[#E23D3A]"
-                }`}
+              type="button"
+              className={`flex-1 flex items-center justify-center gap-2 py-2 rounded-xl text-sm font-semibold border transition-all disabled:cursor-not-allowed ${
+                !twoFA
+                  ? "bg-[#E23D3A] text-white border-[#E23D3A] disabled:opacity-100"
+                  : "bg-transparent dark:text-[#808080] text-gray-600 dark:border-[#35353E] border-gray-300 hover:bg-[#E23D3A]/10 hover:border-[#E23D3A] hover:text-[#E23D3A] dark:hover:text-[#E23D3A] disabled:opacity-50"
+              }`}
               onClick={() => handleTwoFactorToggle(false)}
-              disabled={updating}
+              disabled={!twoFA || updating || disableLoading}
+              aria-pressed={!twoFA}
             >
               <span>
                 <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
