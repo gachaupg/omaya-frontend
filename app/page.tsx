@@ -1230,10 +1230,10 @@ export default function MarketingPage() {
               {/* Phone Image */}
               <div className="relative z-10">
                 <Image
-                  src="/assets/iPhone_13_Mockup_1_wnbmqk.png"
-                  alt="OMAYA.io Mobile App"
-                  width={350}
-                  height={700}
+                  src="/assets/omaya-mobile-app-dashboard.png"
+                  alt="OMAYA.io Mobile App Dashboard"
+                  width={390}
+                  height={844}
                   priority
                   className="
               w-[220px] sm:w-[240px] md:w-[260px] lg:w-[280px]
