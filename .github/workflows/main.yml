@@ -7,24 +7,37 @@ on:
 
 env:
   AWS_REGION: eu-central-1
+
+  # ECR
   ECR_REPOSITORY: omaya-frontend-service
 
+  # ECS
   ECS_CLUSTER: omaya-prod
   ECS_SERVICE: omaya-frontend-service
   ECS_TASK_DEFINITION: omaya-production-omaya-frontend
   CONTAINER_NAME: omaya-frontend
+
+  # IMPORTANT: ECS runs Linux/ARM64
+  DOCKER_DEFAULT_PLATFORM: linux/arm64
 
 permissions:
   contents: read
 
 jobs:
   deploy:
+    name: Build ARM64 and Deploy
     runs-on: ubuntu-latest
 
     steps:
+      # --------------------------------------------------
+      # 1. Checkout source code
+      # --------------------------------------------------
       - name: Checkout
         uses: actions/checkout@v5
 
+      # --------------------------------------------------
+      # 2. Configure AWS credentials
+      # --------------------------------------------------
       - name: Configure AWS credentials
         uses: aws-actions/configure-aws-credentials@v6
         with:
@@ -32,37 +45,102 @@ jobs:
           aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
           aws-region: ${{ env.AWS_REGION }}
 
+      # --------------------------------------------------
+      # 3. Verify AWS authentication
+      # --------------------------------------------------
+      - name: Verify AWS identity
+        run: |
+          aws sts get-caller-identity
+
+      # --------------------------------------------------
+      # 4. Login to Amazon ECR
+      # --------------------------------------------------
       - name: Login to Amazon ECR
         id: ecr-login
         uses: aws-actions/amazon-ecr-login@v2
 
-      - name: Build image
+      # --------------------------------------------------
+      # 5. Enable ARM64 emulation
+      # GitHub ubuntu-latest is normally AMD64.
+      # QEMU allows it to build ARM64 images.
+      # --------------------------------------------------
+      - name: Set up QEMU for ARM64
+        uses: docker/setup-qemu-action@v3
+        with:
+          platforms: arm64
+
+      # --------------------------------------------------
+      # 6. Build ARM64 Docker image
+      # --------------------------------------------------
+      - name: Build ARM64 Docker image
         env:
           ECR_REGISTRY: ${{ steps.ecr-login.outputs.registry }}
           IMAGE_TAG: ${{ github.sha }}
+          DOCKER_DEFAULT_PLATFORM: linux/arm64
         run: |
+          echo "Building Linux/ARM64 Docker image..."
+
           chmod +x scripts/docker-build-with-env.sh
-          ./scripts/docker-build-with-env.sh omaya-frontend-service
+
+          DOCKER_DEFAULT_PLATFORM=linux/arm64 \
+            ./scripts/docker-build-with-env.sh \
+            ${{ env.ECR_REPOSITORY }}
+
+          echo "Tagging image with Git commit SHA..."
 
           docker tag \
             ${{ env.ECR_REPOSITORY }}:latest \
             $ECR_REGISTRY/${{ env.ECR_REPOSITORY }}:$IMAGE_TAG
 
+          echo "Tagging image as latest..."
+
           docker tag \
             ${{ env.ECR_REPOSITORY }}:latest \
             $ECR_REGISTRY/${{ env.ECR_REPOSITORY }}:latest
 
-      - name: Push image to ECR
+      # --------------------------------------------------
+      # 7. Verify Docker image architecture
+      # --------------------------------------------------
+      - name: Verify image architecture
+        run: |
+          echo "Docker image architecture:"
+
+          docker image inspect \
+            ${{ env.ECR_REPOSITORY }}:latest \
+            --format 'OS={{.Os}} Architecture={{.Architecture}}'
+
+          ARCH=$(docker image inspect \
+            ${{ env.ECR_REPOSITORY }}:latest \
+            --format '{{.Architecture}}')
+
+          if [ "$ARCH" != "arm64" ]; then
+            echo "ERROR: Expected ARM64 image but built $ARCH"
+            exit 1
+          fi
+
+          echo "ARM64 architecture verified successfully."
+
+      # --------------------------------------------------
+      # 8. Push images to ECR
+      # --------------------------------------------------
+      - name: Push Docker image to ECR
         env:
           ECR_REGISTRY: ${{ steps.ecr-login.outputs.registry }}
           IMAGE_TAG: ${{ github.sha }}
         run: |
+          echo "Pushing SHA tagged image..."
+
           docker push \
             $ECR_REGISTRY/${{ env.ECR_REPOSITORY }}:$IMAGE_TAG
+
+          echo "Pushing latest image..."
 
           docker push \
             $ECR_REGISTRY/${{ env.ECR_REPOSITORY }}:latest
 
+      # --------------------------------------------------
+      # 9. Download current ECS task definition
+      # --------------------------------------------------
       - name: Download current task definition
         run: |
           aws ecs describe-task-definition \
@@ -70,7 +148,12 @@ jobs:
             --query taskDefinition \
             > task-definition.json
 
-      - name: Render new task definition with new image
+          echo "Task definition downloaded."
+
+      # --------------------------------------------------
+      # 10. Render task definition with new image
+      # --------------------------------------------------
+      - name: Render new task definition
         id: render-task-def
         uses: aws-actions/amazon-ecs-render-task-definition@v1
         with:
@@ -78,10 +161,29 @@ jobs:
           container-name: ${{ env.CONTAINER_NAME }}
           image: ${{ steps.ecr-login.outputs.registry }}/${{ env.ECR_REPOSITORY }}:${{ github.sha }}
 
-      - name: Deploy to ECS
+      # --------------------------------------------------
+      # 11. Deploy new task definition to ECS
+      # --------------------------------------------------
+      - name: Deploy to Amazon ECS
         uses: aws-actions/amazon-ecs-deploy-task-definition@v2
         with:
           task-definition: ${{ steps.render-task-def.outputs.task-definition }}
           service: ${{ env.ECS_SERVICE }}
           cluster: ${{ env.ECS_CLUSTER }}
           wait-for-service-stability: true
+
+      # --------------------------------------------------
+      # 12. Verify ECS service after deployment
+      # --------------------------------------------------
+      - name: Verify ECS deployment
+        run: |
+          aws ecs describe-services \
+            --cluster ${{ env.ECS_CLUSTER }} \
+            --services ${{ env.ECS_SERVICE }} \
+            --query 'services[0].{
+              Status:status,
+              Running:runningCount,
+              Desired:desiredCount,
+              Pending:pendingCount,
+              TaskDefinition:taskDefinition
+            }'
