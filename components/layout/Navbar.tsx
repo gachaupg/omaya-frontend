@@ -519,7 +519,7 @@ export default function Navbar() {
       title: (
         <span className="flex items-center font-bold uppercase leading-none">
           E
-          <span className="inline-flex shrink-0 items-center">
+          <span className="inline-flex shrink-0 items-center translate-y-0.5">
             <img
               src="/images/Group_9_momvgo.png"
               alt="XCHANGE"

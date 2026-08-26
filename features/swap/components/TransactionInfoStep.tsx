@@ -28,6 +28,18 @@ import {
   swapAssetTriggerClass,
   swapAmountValueClass,
 } from "./swapFieldStyles";
+import ExpressSubmitAlertBanner from "@/features/express/components/ExpressSubmitAlertBanner";
+import ScamFlagSubmitBanner from "@/features/express/components/ScamFlagSubmitBanner";
+import { isScamFlagUserMessage } from "@/lib/utils/scamFlagError";
+import { FROZEN_ACCOUNT_MESSAGE } from "@/features/express/utils/paymentAccountStatus";
+
+const resolveSubmitAlertTitle = (message: string): string => {
+  if (isScamFlagUserMessage(message)) return "Account On Hold";
+  if (message === FROZEN_ACCOUNT_MESSAGE || /frozen/i.test(message)) {
+    return "Account Frozen";
+  }
+  return "Unable to continue";
+};
 
 interface TransactionInfoStepProps {
   fromAsset: SupportedAsset | null;
@@ -636,6 +648,17 @@ const TransactionInfoStep: React.FC<TransactionInfoStepProps> = (props) => {
           Minimum swap value is {minSwapUsd} USD/USDT. Smaller amounts can disappear due to fees.
         </p>
       )}
+      {isScamFlagUserMessage(localSwapError) ? (
+        <ScamFlagSubmitBanner message={localSwapError} className="mb-3" />
+      ) : null}
+      {localSwapError && !isScamFlagUserMessage(localSwapError) ? (
+        <ExpressSubmitAlertBanner
+          title={resolveSubmitAlertTitle(localSwapError)}
+          message={localSwapError}
+          className="mb-3"
+          showSupportLink={false}
+        />
+      ) : null}
       {!hideContinueButton && (
         <button
           type="button"
@@ -650,7 +673,8 @@ const TransactionInfoStep: React.FC<TransactionInfoStepProps> = (props) => {
             swapLoading ||
             estimateErrorBlocksSubmit ||
             !meetsMinimumAmount ||
-            sameCoinBlocksSubmit
+            sameCoinBlocksSubmit ||
+            isScamFlagUserMessage(localSwapError)
           }
           className={`w-full text-white text-sm sm:text-base font-medium py-3 sm:py-2.5 rounded-3xl flex items-center justify-center gap-2 transition-colors min-h-[48px] mb-2 ${!fromAsset ||
             !toAsset ||
@@ -661,7 +685,8 @@ const TransactionInfoStep: React.FC<TransactionInfoStepProps> = (props) => {
             swapLoading ||
             estimateErrorBlocksSubmit ||
             !meetsMinimumAmount ||
-            sameCoinBlocksSubmit
+            sameCoinBlocksSubmit ||
+            isScamFlagUserMessage(localSwapError)
             ? "bg-gray-500 cursor-not-allowed"
             : "bg-[#1D8751] hover:bg-[#147043]"
             }`}
@@ -677,12 +702,6 @@ const TransactionInfoStep: React.FC<TransactionInfoStepProps> = (props) => {
         </button>
       )}
 
-      {localSwapError && (
-        <div className="mt-4 bg-red-500/10 dark:bg-red-500/10 border border-red-500 rounded-2xl p-3 sm:p-4 dark:text-red-200 text-red-700">
-          <h3 className="font-semibold mb-1 text-sm sm:text-base">{t("swap.error.genericTitle", "Error")}</h3>
-          <p className="text-xs sm:text-sm break-words">{localSwapError}</p>
-        </div>
-      )}
     </div>
   );
 };

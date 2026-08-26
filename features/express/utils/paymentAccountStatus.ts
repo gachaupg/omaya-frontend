@@ -46,6 +46,14 @@ export const isRejectedPaymentStatus = (status?: string | null) => {
   );
 };
 
+export const isFlaggedPaymentStatus = (status?: string | null) => {
+  const normalized = normalizePaymentStatus(status);
+  return normalized.includes("flag");
+};
+
+export const isRestrictedPaymentStatus = (status?: string | null) =>
+  !!status && !isApprovedPaymentStatus(status);
+
 export const getPaymentRejectionReason = (
   detail?: PaymentAccountLike | null
 ): string | null => {
@@ -68,6 +76,9 @@ export const getPaymentRestrictionMessage = (
   if (isFrozenPaymentStatus(status)) {
     return FROZEN_ACCOUNT_MESSAGE;
   }
+  if (isFlaggedPaymentStatus(status)) {
+    return "This payment account has been flagged. Please contact Customer Support or add a new account.";
+  }
   if (isRejectedPaymentStatus(status)) {
     const reason = rejectionReason?.trim();
     return reason
@@ -78,19 +89,25 @@ export const getPaymentRestrictionMessage = (
 };
 
 export const getPaymentStatusShortLabel = (status?: string | null) => {
+  if (isFlaggedPaymentStatus(status)) return "Flagged";
   if (isFrozenPaymentStatus(status)) return "Frozen";
   if (isRejectedPaymentStatus(status)) return "Rejected";
   return "Pending";
 };
 
 export const getPaymentStatusBannerTitle = (status?: string | null) => {
+  if (isFlaggedPaymentStatus(status)) return "Account Flagged";
   if (isFrozenPaymentStatus(status)) return "Account Frozen";
   if (isRejectedPaymentStatus(status)) return "Account Rejected";
   return "Account Pending Approval";
 };
 
 export const getPaymentStatusBannerStyle = (status?: string | null) => {
-  if (isRejectedPaymentStatus(status)) {
+  if (
+    isRejectedPaymentStatus(status) ||
+    isFrozenPaymentStatus(status) ||
+    isFlaggedPaymentStatus(status)
+  ) {
     return {
       container: "bg-[#E23D3A]/10 border border-[#E23D3A]/40",
       accent: "text-[#E23D3A]",
@@ -112,6 +129,12 @@ export const getPaymentStatusBannerLines = (
     return {
       beforeLink: "is frozen. Please ",
       afterLink: "for assistance.",
+    };
+  }
+  if (isFlaggedPaymentStatus(status)) {
+    return {
+      beforeLink: "has been flagged. Please ",
+      afterLink: "or add a new payment method.",
     };
   }
   if (isRejectedPaymentStatus(status)) {

@@ -20,12 +20,14 @@ import { useScrollAppToTopWhen } from "@/hooks/useScrollAppToTopWhen";
 import HowToSendDialBlock from "@/components/ui/HowToSendDialBlock";
 import { resolveFormattedForexDepositHowToSend } from "@/features/moneyX/utils/howToSend";
 import { encodeQrScanData } from "@/lib/utils/ussdDial";
-import type { AdminPaymentInfo } from "@/features/express/types/forex";
+import type { AdminPaymentInfo, ForexExchangeResponse } from "@/features/express/types/forex";
 import {
   forexExchangeMatchesId,
   mapForexStatusToUiStep,
   normalizeForexExchange,
+  resolveForexRejectionReason,
 } from "@/features/express/utils/normalizeForexExchange";
+import { resolveExpressTransactionFailureMessage } from "@/lib/utils/websocketUtils";
 
 const FXP_LOGO = "/assets/FXPRIMUS-logo_2_k8ikwb.png";
 const BANK_LOGO_FALLBACK = "/assets/image_7_jijlik.png";
@@ -114,32 +116,40 @@ function ForexStatusContent() {
 
   const [copySuccess, setCopySuccess] = useState(false);
   const initialFetchAttemptedRef = useRef(false);
+  const currentExchangeRef = useRef<ForexExchangeResponse | null>(null);
   const [failureModal, setFailureModal] = useState<{
     isOpen: boolean;
     status: string;
     message?: string;
   }>({ isOpen: false, status: "", message: undefined });
 
-  const extractFailureReason = (message: any): string | undefined => {
-    const m = message || {};
-    const d = m.data || {};
-    const reason =
-      d.reason ||
-      d.rejection_reason ||
-      d.message ||
-      m.message ||
-      "";
-    const normalized = String(reason || "").trim();
-    if (!normalized || normalized.toLowerCase() === "no reason provided") {
-      return undefined;
-    }
-    return normalized;
+  const resolveForexFailureMessage = (
+    exchange?: Record<string, unknown> | null,
+    wsMessage?: unknown
+  ): string | undefined => {
+    const fromExchange = exchange ? resolveForexRejectionReason(exchange) : null;
+    const fromWs = wsMessage
+      ? resolveExpressTransactionFailureMessage(wsMessage)
+      : undefined;
+    return fromExchange || fromWs || undefined;
   };
 
   const persistForexExchange = (payload: Record<string, unknown>) => {
-    const normalized = normalizeForexExchange(payload, transactionId || undefined);
+    const existingReason = resolveForexRejectionReason(currentExchangeRef.current);
+    const incomingReason = resolveForexRejectionReason(payload);
+    const normalized = normalizeForexExchange(
+      {
+        ...(currentExchangeRef.current || {}),
+        ...payload,
+        ...(incomingReason || existingReason
+          ? { rejection_reason: incomingReason || existingReason }
+          : {}),
+      },
+      transactionId || undefined
+    );
     dispatch(setForexExchangeFromCache(normalized));
     localStorage.setItem("currentForexExchange", JSON.stringify(normalized));
+    currentExchangeRef.current = normalized;
     return normalized;
   };
 
@@ -150,17 +160,24 @@ function ForexStatusContent() {
       payload?.status || message?.status || message?.data?.status || ""
     ).trim();
     const stages = payload?.stages || message?.stages || message?.data?.stages;
+    const failureMessage = resolveForexFailureMessage(payload, message);
 
     if (payload) {
-      persistForexExchange(payload);
+      persistForexExchange({
+        ...payload,
+        ...(failureMessage && !resolveForexRejectionReason(payload)
+          ? { rejection_reason: failureMessage }
+          : {}),
+      });
       return status;
     }
 
-    if (status || stages) {
+    if (status || stages || failureMessage) {
       dispatch(
         patchForexExchangeFromWs({
           ...(status ? { status } : {}),
           ...(stages ? { stages } : {}),
+          ...(failureMessage ? { rejection_reason: failureMessage } : {}),
           ...(message?.status_display
             ? { status_display: message.status_display }
             : {}),
@@ -173,6 +190,10 @@ function ForexStatusContent() {
 
     return status;
   };
+
+  useEffect(() => {
+    currentExchangeRef.current = currentExchange ?? null;
+  }, [currentExchange]);
 
   // Fetch exchange details once when the page loads with a transactionId.
   useEffect(() => {
@@ -243,13 +264,43 @@ function ForexStatusContent() {
         message.type === "initial_status" ||
         message.type === "status_update"
       ) {
+        const payload =
+          message?.data && typeof message.data === "object"
+            ? (message.data as Record<string, unknown>)
+            : null;
         const status = applyForexStatusMessage(message);
-        if (["rejected", "failed", "stopped"].includes(status.toLowerCase())) {
+        const normalizedStatus = status.toLowerCase();
+
+        if (["rejected", "failed", "stopped"].includes(normalizedStatus)) {
+          const failureMessage = resolveForexFailureMessage(payload, message);
           setFailureModal({
             isOpen: true,
-            status: status.toLowerCase(),
-            message: extractFailureReason(message),
+            status: normalizedStatus,
+            message: failureMessage || undefined,
           });
+
+          // Backend often emits rejected status before populating rejection_reason on WS.
+          if (!failureMessage && transactionId) {
+            withTimeout(
+              dispatch(fetchForexExchangeThunk(transactionId)).unwrap(),
+              15_000
+            )
+              .then((data) => {
+                const apiReason = resolveForexRejectionReason(data);
+                if (!apiReason) return;
+                dispatch(setForexExchangeFromCache(data));
+                localStorage.setItem(
+                  "currentForexExchange",
+                  JSON.stringify(data)
+                );
+                setFailureModal({
+                  isOpen: true,
+                  status: normalizedStatus,
+                  message: apiReason,
+                });
+              })
+              .catch(() => {});
+          }
         }
       }
     });
@@ -336,17 +387,25 @@ function ForexStatusContent() {
   useEffect(() => {
     const status = String(currentExchange?.status || "").toLowerCase();
     if (!status || !["rejected", "failed", "stopped"].includes(status)) return;
-    const fallbackReason = String(
-      currentExchange?.rejection_reason ||
-        currentExchange?.admin_notes ||
-        ""
-    ).trim();
+
+    const failureMessage = resolveForexFailureMessage(
+      currentExchange as Record<string, unknown>
+    );
     setFailureModal({
       isOpen: true,
       status,
-      message: fallbackReason || undefined,
+      message: failureMessage || undefined,
     });
-  }, [currentExchange?.status, currentExchange?.rejection_reason, currentExchange?.admin_notes]);
+  }, [currentExchange]);
+
+  const terminalFailureStatus = String(currentExchange?.status || "")
+    .toLowerCase();
+  const isTerminalFailure = ["rejected", "failed", "stopped"].includes(
+    terminalFailureStatus
+  );
+  const visibleRejectionReason = currentExchange
+    ? resolveForexRejectionReason(currentExchange as Record<string, unknown>)
+    : failureModal.message || null;
 
   if (isChecking) {
     return (
@@ -460,6 +519,30 @@ function ForexStatusContent() {
   return (
     <>
     <div className={`container mx-auto px-4 sm:px-6 md:px-8 min-h-screen flex flex-col items-center pt-2 overflow-x-hidden ${isDark ? 'bg-transparent' : 'bg-transparent'}`}>
+      {isTerminalFailure && visibleRejectionReason ? (
+        <div
+          className={`w-full max-w-4xl mb-4 rounded-2xl border-2 border-red-500/40 px-4 py-3 ${
+            isDark ? "bg-red-500/10" : "bg-red-50"
+          }`}
+        >
+          <p
+            className={`text-sm font-semibold ${
+              isDark ? "text-red-300" : "text-red-700"
+            }`}
+          >
+            {terminalFailureStatus === "rejected"
+              ? "Transaction rejected"
+              : "Transaction failed"}
+          </p>
+          <p
+            className={`mt-1 text-sm whitespace-pre-line break-words ${
+              isDark ? "text-white" : "text-gray-900"
+            }`}
+          >
+            <span className="font-semibold">Reason:</span> {visibleRejectionReason}
+          </p>
+        </div>
+      ) : null}
       {/* Top Card - Transaction Summary */}
       <div
         className={`flex flex-col md:flex-row justify-between items-stretch ${isDark

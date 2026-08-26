@@ -6,6 +6,9 @@ import { useValidateAddress } from "@/hooks/useValidateAddress";
 import { SupportedAsset } from "../types";
 import { useBookmarkedAddresses } from "@/features/express/hooks/useBookmarkedAddresses";
 import { BookmarkDropdown } from "@/features/express/components/forms/BookmarkDropdown";
+import ScamFlagSubmitBanner from "@/features/express/components/ScamFlagSubmitBanner";
+import ExpressSubmitAlertBanner from "@/features/express/components/ExpressSubmitAlertBanner";
+import { isScamFlagUserMessage } from "@/lib/utils/scamFlagError";
 
 interface WalletAddressStepProps {
   walletAddress: string;
@@ -179,7 +182,8 @@ const WalletAddressStep: React.FC<WalletAddressStepProps> = ({
     isLoading ||
     !!walletError ||
     shouldBlockForInvalidAddress ||
-    shouldBlockWhileValidating;
+    shouldBlockWhileValidating ||
+    isScamFlagUserMessage(createSwapError);
 
   return (
     <div className="w-full flex flex-col px-1 sm:px-0">
@@ -608,14 +612,27 @@ const WalletAddressStep: React.FC<WalletAddressStepProps> = ({
           </div>
         )}
 
-        {/* Create swap error - amount too small */}
-        {createSwapError === "Amount you entered is too small" && (
+        {/* Create swap error — shown above Submit (wallet step is where create runs) */}
+        <ScamFlagSubmitBanner message={createSwapError} className="mt-4" />
+        {createSwapError &&
+          !isScamFlagUserMessage(createSwapError) &&
+          createSwapError === "Amount you entered is too small" && (
           <div className="mt-4 mb-2 bg-red-500/10 border border-red-500/30 rounded-xl p-3 flex items-start gap-2">
             <span className="text-red-500 text-xs font-bold flex-shrink-0">!</span>
             <p className="text-red-600 dark:text-red-400 text-xs sm:text-sm">
               Amount you entered is too small
             </p>
           </div>
+        )}
+        {createSwapError &&
+          !isScamFlagUserMessage(createSwapError) &&
+          createSwapError !== "Amount you entered is too small" && (
+          <ExpressSubmitAlertBanner
+            title="Unable to continue"
+            message={createSwapError}
+            className="mt-4"
+            showSupportLink={false}
+          />
         )}
 
         {/* Submit Button */}

@@ -33,7 +33,9 @@ import {
   isExpressBelowMinAmountError,
   normalizeExpressApiErrorMessage,
   resolveExpressMinAmountDisplayError,
+  resolveScamFlagDisplayError,
 } from "@/lib/utils/expressMinAmount";
+import ScamFlagSubmitBanner from "@/features/express/components/ScamFlagSubmitBanner";
 import { resolveExpressDepositFormUsdNetReceive } from "@/features/express/utils/successAmountDisplay";
 import { reportAssetLoadIssue } from "@/lib/utils/assetLoadNotice";
 import { useExpressI18n } from "@/lib/useExpressI18n";
@@ -811,6 +813,9 @@ export default function DepositForm({
     setCommissionRefreshSeed((prev) => prev + 1);
   }, [selectedAsset?.asset_id, selectedAsset?.ticker, selectedAsset?.symbol, selectedAsset?.network]);
   const [validationErrors, setValidationErrors] = useState<string[]>([]);
+  const [accountHoldMessage, setAccountHoldMessage] = useState<string | null>(
+    null
+  );
   const normalizeProviderName = (name: string) =>
     (name || "")
       .split(" - ")[0]
@@ -3289,6 +3294,17 @@ export default function DepositForm({
           error
         );
 
+        const scamMsg = resolveScamFlagDisplayError(
+          error,
+          error?.response?.data,
+          errorMessage
+        );
+        if (scamMsg) {
+          setAccountHoldMessage(scamMsg);
+          setValidationErrors([]);
+          return;
+        }
+
         if (
           !applyExpressAmountSubmitError(
             error,
@@ -3301,6 +3317,7 @@ export default function DepositForm({
             setValidationErrors
           )
         ) {
+          setAccountHoldMessage(null);
           showToast.error(errorMessage);
           setValidationErrors([errorMessage]);
         }
@@ -3847,6 +3864,17 @@ export default function DepositForm({
         error
       );
 
+      const scamMsg = resolveScamFlagDisplayError(
+        error,
+        error?.response?.data,
+        errorMessage
+      );
+      if (scamMsg) {
+        setAccountHoldMessage(scamMsg);
+        setValidationErrors([]);
+        return;
+      }
+
       if (
         !applyExpressAmountSubmitError(
           error,
@@ -3859,6 +3887,7 @@ export default function DepositForm({
           setValidationErrors
         )
       ) {
+        setAccountHoldMessage(null);
         showToast.error(errorMessage);
         setValidationErrors([errorMessage]);
       }
@@ -3890,12 +3919,14 @@ export default function DepositForm({
     requiresLoginRedirect
       ? (isOtcPopupAsset(selectedAsset) && payAmount >= 15000) ||
         exceedsDecimalPrecisionLimit ||
-        isAmountBelowMin
+        isAmountBelowMin ||
+        !!accountHoldMessage
       : isSubmitting ||
         !selectedAsset ||
         (walletAddress.trim() && !!walletError) ||
         exceedsDecimalPrecisionLimit ||
         isAmountBelowMin ||
+        !!accountHoldMessage ||
         (selectedAsset &&
           !isSimpleCalculationAsset(selectedAsset) &&
           !isForexAsset(selectedAsset) &&
@@ -4495,7 +4526,8 @@ export default function DepositForm({
 
         {/* Submit Button for First Card */}
         {!isFirstCardSubmitted && !showForexForm && (
-          <div className="relative">
+          <div className="relative flex flex-col gap-3">
+            <ScamFlagSubmitBanner message={accountHoldMessage} />
             <button
               type="button"
               className={`w-full text-base font-medium py-1.5 rounded-full flex items-center justify-center gap-2 transition-colors text-white ${isFirstCardSubmitDisabled

@@ -47,6 +47,8 @@ import {
   resolvePaymentStatusBannerAccountForSelection,
 } from "@/features/express/utils/paymentAccountStatus";
 import PaymentAccountStatusBanner from "@/features/express/components/PaymentAccountStatusBanner";
+import ScamFlagSubmitBanner from "@/features/express/components/ScamFlagSubmitBanner";
+import { resolveScamFlagDisplayError } from "@/lib/utils/scamFlagError";
 import {
   createExpressWithdrawal,
   fetchCommissionDetails,
@@ -791,6 +793,9 @@ const RatesCalculator = ({ activeTab = 'crypto' }: RatesCalculatorProps) => {
     }
   }, [isPaymentModalOpen]);
   const [paymentMethodError, setPaymentMethodError] = useState<string | null>(null);
+  const [accountHoldMessage, setAccountHoldMessage] = useState<string | null>(
+    null
+  );
   const [isFieldsSwapped, setIsFieldsSwapped] = useState(false); // Track if payment method and asset positions are swapped
   const [amount, setAmount] = useState("100");
   const [receiveAmount, setReceiveAmount] = useState("98");
@@ -4121,13 +4126,22 @@ const RatesCalculator = ({ activeTab = 'crypto' }: RatesCalculatorProps) => {
       if (isVerificationError) {
         dispatch(openKYCModal());
       } else {
-        showToast.error(
-          normalizeExpressApiErrorMessage(
-            errorMessage,
-            error?.response?.data,
-            error
-          )
+        const normalizedError = normalizeExpressApiErrorMessage(
+          errorMessage,
+          error?.response?.data,
+          error
         );
+        const scamMsg = resolveScamFlagDisplayError(
+          error,
+          error?.response?.data,
+          normalizedError
+        );
+        if (scamMsg) {
+          setAccountHoldMessage(scamMsg);
+        } else {
+          setAccountHoldMessage(null);
+          showToast.error(normalizedError);
+        }
       }
     } finally {
       setIsSubmitting(false);
@@ -4713,10 +4727,6 @@ const RatesCalculator = ({ activeTab = 'crypto' }: RatesCalculatorProps) => {
                                 triggerClassName={ratesSelectTriggerClass(isDark)}
                                 className="w-full min-w-0"
                               />
-                              <PaymentAccountStatusBanner
-                                account={paymentStatusBannerAccount}
-                                className="mt-2"
-                              />
                             </div>
                           );
                         } else if (hasAnyAccounts) {
@@ -5151,10 +5161,6 @@ const RatesCalculator = ({ activeTab = 'crypto' }: RatesCalculatorProps) => {
                               triggerClassName={ratesSelectTriggerClass(isDark)}
                               className="w-full"
                             />
-                            <PaymentAccountStatusBanner
-                              account={paymentStatusBannerAccount}
-                              className="mt-2"
-                            />
                             </>
                           );
                         }
@@ -5266,7 +5272,12 @@ const RatesCalculator = ({ activeTab = 'crypto' }: RatesCalculatorProps) => {
       </div>
 
       {!isFirstCardSubmitted && (
-        <button
+        <div className="flex flex-col gap-3">
+          {!isDepositMode ? (
+            <PaymentAccountStatusBanner account={paymentStatusBannerAccount} />
+          ) : null}
+          <ScamFlagSubmitBanner message={accountHoldMessage} />
+          <button
           onClick={handleSubmit}
           disabled={
             isSubmitting ||
@@ -5275,10 +5286,12 @@ const RatesCalculator = ({ activeTab = 'crypto' }: RatesCalculatorProps) => {
             hasDecimalPlacesError ||
             isAmountTooLargeForCalculation ||
             isAmountTooBigToProcess ||
-            isRegisteredAccountMissing
+            isRegisteredAccountMissing ||
+            isSelectedPaymentRestricted ||
+            !!accountHoldMessage
           }
           className={`w-full py-3 px-4 rounded-xl font-semibold text-white transition-colors ${
-            isSubmitting || isRegisteredAccountMissing
+            isSubmitting || isRegisteredAccountMissing || isSelectedPaymentRestricted || !!accountHoldMessage
               ? "bg-gray-500 cursor-not-allowed opacity-70"
               : "bg-[#1D8751] hover:bg-[#0f8f4d]"
           } disabled:opacity-50 disabled:cursor-not-allowed`}
@@ -5287,6 +5300,7 @@ const RatesCalculator = ({ activeTab = 'crypto' }: RatesCalculatorProps) => {
             ? t("rates.processing", "Processing...")
             : "Submit"}
         </button>
+        </div>
       )}
 
       {/* Expanded Pages - shown after first card submission */}

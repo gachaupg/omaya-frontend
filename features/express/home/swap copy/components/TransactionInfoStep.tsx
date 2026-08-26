@@ -26,6 +26,18 @@ import {
 import {
   swapAmountFieldClass,
 } from "@/features/swap/components/swapFieldStyles";
+import ExpressSubmitAlertBanner from "@/features/express/components/ExpressSubmitAlertBanner";
+import ScamFlagSubmitBanner from "@/features/express/components/ScamFlagSubmitBanner";
+import { isScamFlagUserMessage } from "@/lib/utils/scamFlagError";
+import { FROZEN_ACCOUNT_MESSAGE } from "@/features/express/utils/paymentAccountStatus";
+
+const resolveSubmitAlertTitle = (message: string): string => {
+  if (isScamFlagUserMessage(message)) return "Account On Hold";
+  if (message === FROZEN_ACCOUNT_MESSAGE || /frozen/i.test(message)) {
+    return "Account Frozen";
+  }
+  return "Unable to continue";
+};
 
 const ZERO_AMOUNT_INVALID_MSG =
   "0 is not a valid amount input. Enter an amount greater than zero.";
@@ -424,6 +436,18 @@ const TransactionInfoStep: React.FC<TransactionInfoStepProps> = ({
           </p>
         )}
 
+        {isScamFlagUserMessage(localSwapError) ? (
+          <ScamFlagSubmitBanner message={localSwapError} className="mb-3" />
+        ) : null}
+        {localSwapError && !isScamFlagUserMessage(localSwapError) ? (
+          <ExpressSubmitAlertBanner
+            title={resolveSubmitAlertTitle(localSwapError)}
+            message={localSwapError}
+            className="mb-3"
+            showSupportLink={false}
+          />
+        ) : null}
+
         {/* Submit Button */}
         {!hideContinueButton && (
           <div className="mt-4">
@@ -437,7 +461,8 @@ const TransactionInfoStep: React.FC<TransactionInfoStepProps> = ({
                   estimateLoading ||
                   swapLoading ||
                   estimateErrorBlocksSubmit ||
-                  sameCoinBlocksSubmit
+                  sameCoinBlocksSubmit ||
+                  isScamFlagUserMessage(localSwapError)
                   ? "bg-gray-500 cursor-not-allowed"
                   : "bg-[#1D8751] hover:bg-[#1D8751]/80"
                 }`}
@@ -452,7 +477,8 @@ const TransactionInfoStep: React.FC<TransactionInfoStepProps> = ({
                 estimateLoading ||
                 swapLoading ||
                 estimateErrorBlocksSubmit ||
-                sameCoinBlocksSubmit
+                sameCoinBlocksSubmit ||
+                isScamFlagUserMessage(localSwapError)
               }
             >
               {swapLoading ? (
@@ -466,14 +492,6 @@ const TransactionInfoStep: React.FC<TransactionInfoStepProps> = ({
                 </span>
               )}
             </button>
-          </div>
-        )}
-
-        {/* Error Display */}
-        {localSwapError && (
-          <div className="mt-4 bg-red-500/10 border border-red-500 rounded-2xl p-3 sm:p-4">
-            <h3 className="text-red-500 font-semibold mb-2">Error</h3>
-            <p className="text-red-400 text-sm">{localSwapError}</p>
           </div>
         )}
       </div>

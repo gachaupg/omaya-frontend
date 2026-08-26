@@ -23,7 +23,9 @@ import { buildMoneyXTransactionPayload } from "@/features/moneyX/utils/buildMone
 import { useTheme } from "@/context/theme";
 import { showToast } from "@/lib/utils/toast";
 import { normalizeExpressApiErrorMessage } from "@/lib/utils/expressMinAmount";
-import { resolveScamFlagDisplayError } from "@/lib/utils/scamFlagError";
+import { resolveScamFlagDisplayError, isScamFlagUserMessage } from "@/lib/utils/scamFlagError";
+import ScamFlagSubmitBanner from "@/features/express/components/ScamFlagSubmitBanner";
+import ExpressSubmitAlertBanner from "@/features/express/components/ExpressSubmitAlertBanner";
 import { scrollAppToTop } from "@/lib/utils/scrollAppToTop";
 import { usePaymentMethodsDisplay } from "@/features/express/hooks/useDataDisplay";
 import { useMoneyXPaymentMethodLists } from "@/features/express/hooks/useMoneyXPaymentMethodLists";
@@ -1395,11 +1397,17 @@ const MoneyXRates = ({
           <div className="flex flex-col gap-3">
             {(actionError || moneyXError || validationErrors.length > 0) && (
               <div className="text-center px-1">
-                {(actionError || moneyXError) && (
-                  <p className="text-red-500 text-sm font-medium">
-                    {normalizeExpressApiErrorMessage(actionError || moneyXError)}
-                  </p>
-                )}
+                <ScamFlagSubmitBanner message={actionError || moneyXError} />
+                {(actionError || moneyXError) &&
+                !isScamFlagUserMessage(actionError || moneyXError) ? (
+                  <ExpressSubmitAlertBanner
+                    title="Unable to continue"
+                    message={normalizeExpressApiErrorMessage(
+                      actionError || moneyXError
+                    )}
+                    showSupportLink={false}
+                  />
+                ) : null}
                 {!actionError &&
                   !moneyXError &&
                   validationErrors.map((error, index) => (
@@ -1727,11 +1735,15 @@ const MoneyXRates = ({
 
             {/* Final Submit Button */}
             <div className="flex flex-col gap-3 w-full">
-              {(actionError || moneyXError) && (
-                <p className="text-red-500 text-sm font-medium text-center px-1">
-                  {normalizeExpressApiErrorMessage(actionError || moneyXError)}
-                </p>
-              )}
+              <ScamFlagSubmitBanner message={actionError || moneyXError} />
+              {(actionError || moneyXError) &&
+              !isScamFlagUserMessage(actionError || moneyXError) ? (
+                <ExpressSubmitAlertBanner
+                  title="Unable to continue"
+                  message={normalizeExpressApiErrorMessage(actionError || moneyXError)}
+                  showSupportLink={false}
+                />
+              ) : null}
               <button
               className={`w-full text-base font-medium py-3 rounded-xl flex items-center justify-center gap-2 transition-colors text-white ${!bankAccountAddress.trim() ||
                 bankAddressError ||

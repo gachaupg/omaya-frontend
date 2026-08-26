@@ -1,8 +1,13 @@
 import { resolveChatwootConfig, isChatwootConfigured } from "@/config/chatwoot";
 import { CHATWOOT_SETTINGS } from "./config";
+import { identifyChatwootUser } from "./identifyUser";
 import "./types";
 
 let loadPromise: Promise<void> | null = null;
+
+function configureChatwootWidget(): void {
+  identifyChatwootUser();
+}
 
 function waitForChatwootReady(timeoutMs = 8000): Promise<void> {
   return new Promise((resolve, reject) => {
@@ -36,6 +41,7 @@ export function loadChatwoot(): Promise<void> {
   }
 
   if (window.$chatwoot) {
+    configureChatwootWidget();
     return Promise.resolve();
   }
 
@@ -53,7 +59,10 @@ export function loadChatwoot(): Promise<void> {
     );
     if (existing) {
       waitForChatwootReady()
-        .then(resolve)
+        .then(() => {
+          configureChatwootWidget();
+          resolve();
+        })
         .catch(reject);
       return;
     }
@@ -68,7 +77,10 @@ export function loadChatwoot(): Promise<void> {
         baseUrl,
       });
       waitForChatwootReady()
-        .then(resolve)
+        .then(() => {
+          configureChatwootWidget();
+          resolve();
+        })
         .catch(reject);
     };
     script.onerror = () => {
@@ -90,5 +102,6 @@ export function loadChatwoot(): Promise<void> {
 /** Open the Chatwoot widget. */
 export async function openChatwoot(): Promise<void> {
   await loadChatwoot();
+  configureChatwootWidget();
   window.$chatwoot?.toggle("open");
 }

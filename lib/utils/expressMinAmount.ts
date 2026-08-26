@@ -3,8 +3,10 @@
 import { resolveScamFlagDisplayError } from "@/lib/utils/scamFlagError";
 
 export {
+  SCAM_FLAG_BANNER_TITLE,
   SCAM_FLAG_USER_MESSAGE,
   isScamFlagConfirmedError,
+  isScamFlagUserMessage,
   resolveScamFlagDisplayError,
   showScamFlagToastIfNeeded,
 } from "@/lib/utils/scamFlagError";

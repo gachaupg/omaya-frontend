@@ -47,6 +47,8 @@ import {
   resolveSwapCreateErrorMessage,
   SWAP_SAME_COIN_MESSAGE,
 } from "@/lib/utils/swapAssetValidation";
+import { resolveScamFlagDisplayError } from "@/lib/utils/scamFlagError";
+import { resolveSwapCreateFailureMessage } from "../api";
 import {
   setSwapLegalReturnState,
   peekSwapLegalReturnState,
@@ -704,11 +706,15 @@ const SwapWidget = () => {
     dispatch,
   ]);
 
-  // Handle swap errors (inline only — no toasts)
+  // Handle swap errors (inline banner — no toasts)
   useEffect(() => {
     if (swapError) {
-            setLocalSwapError(
-        typeof swapError === "string" ? swapError : "Swap failed. Please try again."
+      const scamMsg = resolveScamFlagDisplayError(swapError);
+      setLocalSwapError(
+        scamMsg ||
+          (typeof swapError === "string"
+            ? swapError
+            : "Swap failed. Please try again.")
       );
     }
   }, [swapError]);
@@ -868,15 +874,7 @@ const SwapWidget = () => {
       });
       setCurrentStep("copy-address");
     } catch (error: any) {
-            const sameCoinMsg = resolveSwapCreateErrorMessage(error);
-      const msg =
-        sameCoinMsg ||
-        error?.response?.data?.message ||
-        error?.message ||
-        "Could not create swap. Please try again.";
-      setLocalSwapError(
-        typeof msg === "string" ? msg : "Could not create swap. Please try again."
-      );
+            setLocalSwapError(resolveSwapCreateFailureMessage(error));
     }
   };
 
@@ -1053,6 +1051,7 @@ const SwapWidget = () => {
               onHasAcceptedTermsChange={setHasAcceptedTerms}
               onBeforeLegalNavigate={handleBeforeLegalNavigate}
               defaultExpandedTerms={Boolean(legalReturnState?.expandedTerms)}
+              createSwapError={localSwapError || null}
             />
           )}
         </>

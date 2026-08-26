@@ -3,6 +3,9 @@ import Link from "next/link";
 
 import { logger } from "@/lib/utils/logger";
 import { useValidateAddress } from "@/hooks/useValidateAddress";
+import ScamFlagSubmitBanner from "@/features/express/components/ScamFlagSubmitBanner";
+import ExpressSubmitAlertBanner from "@/features/express/components/ExpressSubmitAlertBanner";
+import { isScamFlagUserMessage } from "@/lib/utils/scamFlagError";
 import { useBookmarkedAddresses } from "@/features/express/hooks/useBookmarkedAddresses";
 import { BookmarkDropdown } from "@/features/express/components/forms/BookmarkDropdown";
 import { useTheme } from "@/context/theme";
@@ -201,7 +204,8 @@ const WalletAddressStep: React.FC<WalletAddressStepProps> = ({
     isLoading ||
     !!walletError ||
     shouldBlockForInvalidAddress ||
-    shouldBlockWhileValidating;
+    shouldBlockWhileValidating ||
+    isScamFlagUserMessage(createSwapError);
 
   return (
     <div className="w-full flex flex-col gap-2 sm:gap-4">
@@ -621,17 +625,35 @@ const WalletAddressStep: React.FC<WalletAddressStepProps> = ({
           </div>
         </div>
 
-        {/* Create swap error - amount too small (ChangeNOW 400 / Failed to create transaction) */}
+        {/* Create swap error — shown above Submit (wallet step is where create runs) */}
+        <ScamFlagSubmitBanner message={createSwapError} className="mt-3" />
         {createSwapError &&
+          !isScamFlagUserMessage(createSwapError) &&
           (createSwapError === "Amount you entered is too small" ||
             (createSwapError.toLowerCase().includes("failed to create transaction") &&
-              (createSwapError.includes("400") || createSwapError.toLowerCase().includes("changenow")))) && (
+              (createSwapError.includes("400") ||
+                createSwapError.toLowerCase().includes("changenow")))) && (
           <div className="mt-3 mb-2 bg-red-500/10 border border-red-500/30 rounded-xl p-2 sm:p-3 flex items-start gap-2">
             <span className="text-red-500 text-xs font-bold flex-shrink-0">!</span>
             <p className="text-red-600 dark:text-red-400 text-xs sm:text-sm">
               Amount is too small
             </p>
           </div>
+        )}
+        {createSwapError &&
+          !isScamFlagUserMessage(createSwapError) &&
+          createSwapError !== "Amount you entered is too small" &&
+          !(
+            createSwapError.toLowerCase().includes("failed to create transaction") &&
+            (createSwapError.includes("400") ||
+              createSwapError.toLowerCase().includes("changenow"))
+          ) && (
+          <ExpressSubmitAlertBanner
+            title="Unable to continue"
+            message={createSwapError}
+            className="mt-3"
+            showSupportLink={false}
+          />
         )}
 
         {/* Navigation Buttons */}

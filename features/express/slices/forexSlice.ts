@@ -6,7 +6,7 @@ import {
   ForexExchangeResponse,
   ForexState,
 } from "../types/forex";
-import { normalizeForexExchange } from "../utils/normalizeForexExchange";
+import { normalizeForexExchange, resolveForexRejectionReason } from "../utils/normalizeForexExchange";
 
 const initialState: ForexState = {
   currentExchange: null,
@@ -104,10 +104,17 @@ const forexSlice = createSlice({
       }
     ) => {
       if (!state.currentExchange) return;
+      const existingReason = resolveForexRejectionReason(
+        state.currentExchange as Record<string, unknown>
+      );
+      const incomingReason = resolveForexRejectionReason(action.payload);
       state.currentExchange = normalizeForexExchange(
         {
           ...state.currentExchange,
           ...action.payload,
+          ...(incomingReason || existingReason
+            ? { rejection_reason: incomingReason || existingReason }
+            : {}),
         },
         state.currentExchange.forex_transaction_id ||
           state.currentExchange.transaction_id

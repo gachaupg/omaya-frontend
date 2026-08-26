@@ -7,6 +7,7 @@ import { withRetry } from "@/lib/utils/retry";
 import { API_CONFIG } from "@/lib/appConfig";
 import { logger } from '@/lib/utils/logger';
 import { resolveSwapCreateErrorMessage } from "@/lib/utils/swapAssetValidation";
+import { resolveScamFlagDisplayError } from "@/lib/utils/scamFlagError";
 import {
   clearSupportedTokensCachesOnReload,
   shouldBypassSupportedTokensCache,
@@ -389,6 +390,34 @@ const extractErrorMessage = (errorData: any): string => {
   return "";
 };
 
+/** User-visible create-swap failure line (preserves scam-flag / API `error` field). */
+export function resolveSwapCreateFailureMessage(error: unknown): string {
+  if (typeof error === "string" && error.trim()) {
+    const trimmed = error.trim();
+    return (
+      resolveScamFlagDisplayError(trimmed) ||
+      resolveSwapCreateErrorMessage({ message: trimmed }) ||
+      trimmed
+    );
+  }
+
+  const e = error as {
+    response?: { data?: unknown; status?: number };
+    message?: string;
+  };
+  const data = e?.response?.data;
+  const raw =
+    extractErrorMessage(data) ||
+    (typeof e?.message === "string" ? e.message.trim() : "") ||
+    "Failed to create swap transaction";
+
+  return (
+    resolveScamFlagDisplayError(error, data, raw) ||
+    resolveSwapCreateErrorMessage({ message: raw }) ||
+    raw
+  );
+};
+
 export const isSwapBelowMinAmountError = (text: string): boolean =>
   /deposit_too_small|too_small|below minimum|out of min amount/i.test(
     String(text || "")
@@ -677,44 +706,8 @@ export const createSwap = async (
       logger.debug('swap', "Swap response:", response.data);
       return response.data;
     } catch (error: any) {
-                        // Provide user-friendly error messages for different status codes
-      if (error.response?.status === 500) {
-        throw new Error(
-          "Server Error: Unable to create swap. Please try again later."
-        );
-      } else if (error.response?.status === 400) {
-        const rawMessage =
-          extractErrorMessage(error.response?.data) ||
-          (typeof error.response?.data?.message === "string"
-            ? error.response.data.message
-            : "") ||
-          "Invalid swap request. Please check your input.";
-        const errorMessage =
-          resolveSwapCreateErrorMessage({ message: rawMessage }) || rawMessage;
-        throw new Error(errorMessage);
-      } else if (error.response?.status === 401) {
-        throw new Error("Authentication required. Please log in to continue.");
-      } else if (error.response?.status === 403) {
-        throw new Error(
-          "Access denied. You don't have permission to perform this action."
-        );
-      } else if (error.response?.status === 429) {
-        throw new Error(
-          "Too many requests. Please wait a moment before trying again."
-        );
-      } else if (error.response?.status === 422) {
-        const errorMessage =
-          error.response?.data?.message || "Invalid transaction data.";
-        throw new Error(`Validation Error: ${errorMessage}`);
-      } else if (!error.response) {
-        throw new Error(
-          "Network error. Please check your connection and try again."
-        );
-      } else {
-        const errorMessage =
-          error.response?.data?.message || "An unexpected error occurred.";
-        throw new Error(`Error ${error.response.status}: ${errorMessage}`);
-      }
+      const failureMessage = resolveSwapCreateFailureMessage(error);
+      throw new Error(failureMessage);
     }
   });
 };

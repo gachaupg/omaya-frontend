@@ -132,6 +132,12 @@ import {
   resolvePaymentStatusBannerAccountForSelection,
 } from "@/features/express/utils/paymentAccountStatus";
 import PaymentAccountStatusBanner from "@/features/express/components/PaymentAccountStatusBanner";
+import ScamFlagSubmitBanner from "@/features/express/components/ScamFlagSubmitBanner";
+import {
+  isScamFlagUserMessage,
+  resolveScamFlagDisplayError,
+  SCAM_FLAG_USER_MESSAGE,
+} from "@/lib/utils/scamFlagError";
 
 type UserPaymentDetail = RegisteredAccountDetail;
 
@@ -840,6 +846,9 @@ export default function WithdrawalForm({
   const [selectedPaymentDetail, setSelectedPaymentDetail] = useState<any>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [validationErrors, setValidationErrors] = useState<string[]>([]);
+  const [accountHoldMessage, setAccountHoldMessage] = useState<string | null>(
+    null
+  );
   // Add state for payment method validation error
   const [paymentMethodError, setPaymentMethodError] = useState<string | null>(null);
   // Add state for wallet address copy feedback
@@ -2350,14 +2359,16 @@ export default function WithdrawalForm({
       ? (isOtcPopupAsset(selectedAsset) &&
           (payAmount >= 15000 || getAmount >= 15000)) ||
         isSelectedPaymentPending ||
-        hasBlockingValidationError
+        hasBlockingValidationError ||
+        !!accountHoldMessage
       : isSubmitting ||
         isTransactionSubmitted ||
         isInfoModalOpen ||
         (isOtcPopupAsset(selectedAsset) && (payAmount >= 15000 || getAmount >= 15000)) ||
         isSelectedPaymentPending ||
         isRegisteredAccountMissing ||
-        hasBlockingValidationError;
+        hasBlockingValidationError ||
+        !!accountHoldMessage;
 
   const isSecondCardSubmitDisabled =
     isSubmitting ||
@@ -2366,7 +2377,8 @@ export default function WithdrawalForm({
     !isTermsAccepted ||
     isSelectedPaymentPending ||
     isRegisteredAccountMissing ||
-    hasBlockingValidationError;
+    hasBlockingValidationError ||
+    !!accountHoldMessage;
 
   // Manual estimate trigger for non-direct assets (avoids blocking navigation on every keystroke)
   useEffect(() => {
@@ -3804,6 +3816,17 @@ export default function WithdrawalForm({
           "Failed to submit withdrawal request"
         );
 
+        const normalizedError = normalizeExpressApiErrorMessage(
+          errorMessage,
+          error?.response?.data,
+          error
+        );
+        const scamMsg = resolveScamFlagDisplayError(
+          error,
+          error?.response?.data,
+          normalizedError
+        );
+
         const amountInline =
           resolveExpressAmountInlineError(error) ||
           resolveExpressAmountInlineError(errorMessage);
@@ -3811,11 +3834,17 @@ export default function WithdrawalForm({
           setApiValidationError(amountInline);
           setReceiveAmountError(amountInline);
           setValidationErrors([]);
-          return;
+          setAccountHoldMessage(null);
+        } else if (scamMsg) {
+          setAccountHoldMessage(scamMsg);
+          setValidationErrors([]);
+          setApiValidationError(null);
+          setReceiveAmountError(null);
+        } else {
+          setAccountHoldMessage(null);
+          showToast.error(normalizedError);
+          setValidationErrors([normalizedError]);
         }
-
-        showToast.error(errorMessage);
-        setValidationErrors([errorMessage]);
         setIsTransactionSubmitted(false);
       } finally {
         // Always stop loading state
@@ -4131,6 +4160,17 @@ export default function WithdrawalForm({
         `Failed to submit ${mode} request`
       );
 
+      const normalizedError = normalizeExpressApiErrorMessage(
+        errorMessage,
+        error?.response?.data,
+        error
+      );
+      const scamMsg = resolveScamFlagDisplayError(
+        error,
+        error?.response?.data,
+        normalizedError
+      );
+
       const amountInline =
         resolveExpressAmountInlineError(error) ||
         resolveExpressAmountInlineError(errorMessage);
@@ -4138,9 +4178,16 @@ export default function WithdrawalForm({
         setApiValidationError(amountInline);
         setReceiveAmountError(amountInline);
         setValidationErrors([]);
+        setAccountHoldMessage(null);
+      } else if (scamMsg) {
+        setAccountHoldMessage(scamMsg);
+        setValidationErrors([]);
+        setApiValidationError(null);
+        setReceiveAmountError(null);
       } else {
-        showToast.error(errorMessage);
-        setValidationErrors([errorMessage]);
+        setAccountHoldMessage(null);
+        showToast.error(normalizedError);
+        setValidationErrors([normalizedError]);
       }
       // Reset transaction state on error
       setIsTransactionSubmitted(false);
@@ -5070,10 +5117,6 @@ export default function WithdrawalForm({
                                   searchable={true}
                                   className="w-full min-w-0"
                                 />
-                                <PaymentAccountStatusBanner
-                                  account={paymentStatusBannerAccount}
-                                  className="mt-2"
-                                />
                               </div>
                               </>
                             )}
@@ -5128,7 +5171,11 @@ export default function WithdrawalForm({
 
             {/* Submit Button for First Card */}
             {!isTransactionSubmitted && !showForexWithdrawalForm && (
-              <div className="relative">
+              <div className="relative flex flex-col gap-3">
+                <PaymentAccountStatusBanner
+                  account={paymentStatusBannerAccount}
+                />
+                <ScamFlagSubmitBanner message={accountHoldMessage} />
                 <button
                   type="button"
                   className={`w-full text-base font-medium py-1.5 rounded-full flex items-center justify-center gap-2 transition-colors ${isFirstCardSubmitDisabled
@@ -5431,6 +5478,8 @@ export default function WithdrawalForm({
                     </span>
                   </div>
                 )}
+                <PaymentAccountStatusBanner account={paymentStatusBannerAccount} />
+                <ScamFlagSubmitBanner message={accountHoldMessage} />
                 <button
                   className={`w-full text-white text-base font-medium py-2 rounded-2xl flex items-center justify-center gap-2 transition-colors ${isSecondCardSubmitDisabled
                     ? "bg-gray-500 cursor-not-allowed"

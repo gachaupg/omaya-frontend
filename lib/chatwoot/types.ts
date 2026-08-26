@@ -3,6 +3,17 @@ export type ChatwootSettings = {
   position?: "left" | "right";
   type?: "standard" | "expanded_bubble";
   launcherTitle?: string;
+  defaultPhoneCountryCode?: string;
+  defaultPhoneDialCode?: string;
+};
+
+export type ChatwootSetUserPayload = {
+  email?: string;
+  name?: string;
+  avatar_url?: string;
+  phone_number?: string;
+  country_code?: string;
+  identifier_hash?: string;
 };
 
 declare global {
@@ -13,6 +24,7 @@ declare global {
     };
     $chatwoot?: {
       toggle: (state?: "open" | "close") => void;
+      setUser: (identifier: string, user: ChatwootSetUserPayload) => void;
     };
   }
 }

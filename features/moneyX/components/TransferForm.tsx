@@ -22,10 +22,12 @@ import { buildMoneyXTransactionPayload } from "../utils/buildMoneyXTransactionPa
 import { useTheme } from "@/context/theme";
 import CustomSelect from "@/components/ui/CustomSelect";
 import { showToast } from "../../../lib/utils/toast";
-import { normalizeExpressApiErrorMessage } from "@/lib/utils/expressMinAmount";
 import {
-  resolveScamFlagDisplayError,
-} from "@/lib/utils/scamFlagError";
+  normalizeExpressApiErrorMessage,
+} from "@/lib/utils/expressMinAmount";
+import { resolveScamFlagDisplayError, isScamFlagUserMessage } from "@/lib/utils/scamFlagError";
+import ScamFlagSubmitBanner from "@/features/express/components/ScamFlagSubmitBanner";
+import ExpressSubmitAlertBanner from "@/features/express/components/ExpressSubmitAlertBanner";
 import { scrollAppToTop } from "@/lib/utils/scrollAppToTop";
 import { useBookmarkedAddresses } from "@/features/express/hooks/useBookmarkedAddresses";
 import { BookmarkDropdown } from "@/features/express/components/forms/BookmarkDropdown";
@@ -1166,11 +1168,15 @@ export default function TransferForm({ onTransfer, initialState, commissionType 
         {/* Submit Button for First Card */}
         {!isFirstCardSubmitted && (
           <div className="mt-4 relative flex flex-col gap-3">
-            {(actionError || moneyXError) && (
-              <p className="text-red-500 text-sm font-medium text-center px-1">
-                {normalizeExpressApiErrorMessage(actionError || moneyXError)}
-              </p>
-            )}
+            <ScamFlagSubmitBanner message={actionError || moneyXError} />
+            {(actionError || moneyXError) &&
+            !isScamFlagUserMessage(actionError || moneyXError) ? (
+              <ExpressSubmitAlertBanner
+                title="Unable to continue"
+                message={normalizeExpressApiErrorMessage(actionError || moneyXError)}
+                showSupportLink={false}
+              />
+            ) : null}
             <button
               className={`w-full text-white dark:text-white text-sm sm:text-base font-medium py-3 sm:py-2 rounded-xl sm:rounded-2xl flex items-center justify-center gap-2 transition-colors min-h-[44px] sm:min-h-0 ${isTransferDisabled
                 ? "bg-gray-500 cursor-not-allowed"
@@ -1480,11 +1486,15 @@ export default function TransferForm({ onTransfer, initialState, commissionType 
 
           {/* Final Submit Button */}
           <div className="flex flex-col gap-3 w-full px-2">
-            {(actionError || moneyXError) && (
-              <p className="text-red-500 text-sm font-medium text-center px-1">
-                {normalizeExpressApiErrorMessage(actionError || moneyXError)}
-              </p>
-            )}
+            <ScamFlagSubmitBanner message={actionError || moneyXError} />
+            {(actionError || moneyXError) &&
+            !isScamFlagUserMessage(actionError || moneyXError) ? (
+              <ExpressSubmitAlertBanner
+                title="Unable to continue"
+                message={normalizeExpressApiErrorMessage(actionError || moneyXError)}
+                showSupportLink={false}
+              />
+            ) : null}
             <button
               className={`w-full text-white dark:text-white text-sm sm:text-base font-medium py-3 sm:py-2 rounded-xl sm:rounded-2xl flex items-center justify-center gap-2 transition-colors min-h-[44px] sm:min-h-0 ${!bankAccountAddress.trim() || bankAddressError || !isAddressConfirmed
                 ? "bg-gray-500 cursor-not-allowed"

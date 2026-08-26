@@ -17,6 +17,7 @@ import {
   buildSwapEstimateDisplayMessage,
   formatSwapMinAmountMessage,
   isSwapBelowMinAmountError,
+  resolveSwapCreateFailureMessage,
 } from "../api";
 import {
   isExpressBelowMinAmountError,
@@ -363,11 +364,7 @@ export const createSwapTransaction = createAsyncThunk(
       const response = await createSwap(swapData);
       return response;
     } catch (error) {
-            return rejectWithValue(
-        error instanceof Error
-          ? error.message
-          : "Failed to create swap transaction"
-      );
+            return rejectWithValue(resolveSwapCreateFailureMessage(error));
     }
   }
 );
@@ -571,9 +568,12 @@ const swapSlice = createSlice({
       })
       .addCase(createSwapTransaction.rejected, (state, action) => {
         state.swapLoading = false;
+        const payload = action.payload;
         state.swapError =
-          action.error.message || "Failed to create swap transaction";
-        state.hasShownErrorToast = true; // Mark that error toast has been shown
+          typeof payload === "string" && payload.trim()
+            ? payload
+            : action.error.message || "Failed to create swap transaction";
+        state.hasShownErrorToast = true;
       });
   },
 });

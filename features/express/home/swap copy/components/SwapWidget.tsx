@@ -55,9 +55,9 @@ import {
 } from "@/lib/utils/swapAmountInput";
 import {
   isSameSwapAssetPair,
-  resolveSwapCreateErrorMessage,
   SWAP_SAME_COIN_MESSAGE,
 } from "@/lib/utils/swapAssetValidation";
+import { resolveSwapCreateFailureMessage } from "@/features/swap/api";
 
 const findMatchingSwapAsset = (
   supportedAssets: SupportedAsset[],
@@ -579,16 +579,16 @@ const SwapWidget: React.FC<SwapWidgetProps> = ({ usePublicApi = false }) => {
     dispatch,
   ]);
 
-  // Handle swap errors
+  // Handle swap errors (Redux + API payloads)
   useEffect(() => {
-    if (!swapError) return;
+    if (swapError == null || swapError === "") return;
     const desc =
       typeof swapError === "string"
         ? swapError
         : (swapError as { message?: string })?.message != null
           ? String((swapError as { message?: string }).message)
           : "Swap failed";
-        setLocalSwapError(desc);
+    setLocalSwapError(desc);
   }, [swapError]);
 
   // Handle next step validation - first button
@@ -837,15 +837,7 @@ const SwapWidget: React.FC<SwapWidgetProps> = ({ usePublicApi = false }) => {
 
       setCurrentStep("copy-address");
     } catch (error: any) {
-            const sameCoinMsg = resolveSwapCreateErrorMessage(error);
-      const msg =
-        sameCoinMsg ||
-        error?.response?.data?.message ||
-        error?.message ||
-        "Could not create swap. Please try again.";
-      setLocalSwapError(
-        typeof msg === "string" ? msg : "Could not create swap. Please try again."
-      );
+      setLocalSwapError(resolveSwapCreateFailureMessage(error));
     }
   };
 
@@ -1049,6 +1041,7 @@ const SwapWidget: React.FC<SwapWidgetProps> = ({ usePublicApi = false }) => {
               fromAsset={fromAsset}
               toAsset={toAsset}
               isLoading={swapLoading}
+              createSwapError={localSwapError || null}
               hasAcceptedTerms={hasAcceptedTerms}
               onHasAcceptedTermsChange={setHasAcceptedTerms}
               onBeforeLegalNavigate={handleBeforeLegalNavigate}

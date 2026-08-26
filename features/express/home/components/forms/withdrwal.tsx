@@ -131,6 +131,12 @@ import {
   resolvePaymentStatusBannerAccountForSelection,
 } from "@/features/express/utils/paymentAccountStatus";
 import PaymentAccountStatusBanner from "@/features/express/components/PaymentAccountStatusBanner";
+import ScamFlagSubmitBanner from "@/features/express/components/ScamFlagSubmitBanner";
+import {
+  isScamFlagUserMessage,
+  resolveScamFlagDisplayError,
+  SCAM_FLAG_USER_MESSAGE,
+} from "@/lib/utils/scamFlagError";
 
 const MISSING_USDT_USD_RATE_ERROR =
   "No exchange rate configured for USDT to USD";
@@ -849,6 +855,9 @@ export default function WithdrawalForm({
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [commissionRefreshSeed, setCommissionRefreshSeed] = useState(0);
   const [validationErrors, setValidationErrors] = useState<string[]>([]);
+  const [accountHoldMessage, setAccountHoldMessage] = useState<string | null>(
+    null
+  );
   // Add state for payment method validation error
   const [paymentMethodError, setPaymentMethodError] = useState<string | null>(null);
   // Add state for wallet address copy feedback
@@ -2285,6 +2294,18 @@ export default function WithdrawalForm({
     (message: string) => {
       const msg = String(message || "").trim();
       if (!msg) return;
+      if (isScamFlagUserMessage(msg)) {
+        setAccountHoldMessage(SCAM_FLAG_USER_MESSAGE);
+        submitAmountErrorRef.current = SCAM_FLAG_USER_MESSAGE;
+        setApiValidationError(null);
+        setReceiveAmountError(null);
+        setValidationErrors([]);
+        setEstimateLoading(false);
+        setIsCalculating(false);
+        setIsCalculatingReceive(false);
+        return;
+      }
+      setAccountHoldMessage(null);
       submitAmountErrorRef.current = msg;
       setApiValidationError(msg);
       setReceiveAmountError(msg);
@@ -2293,7 +2314,6 @@ export default function WithdrawalForm({
       setIsCalculatingReceive(false);
       if (isHomePage) {
         setValidationErrors([msg]);
-        showToast.error(msg);
       } else {
         setValidationErrors([]);
       }
@@ -2352,14 +2372,16 @@ export default function WithdrawalForm({
     requiresLoginRedirect
       ? (isOtcPopupAsset(selectedAsset) && payAmount >= 15000) ||
         isSelectedPaymentPending ||
-        hasBlockingValidationError
+        hasBlockingValidationError ||
+        !!accountHoldMessage
       : isSubmitting ||
         isTransactionSubmitted ||
         isInfoModalOpen ||
         (isOtcPopupAsset(selectedAsset) && payAmount >= 15000) ||
         isSelectedPaymentPending ||
         isRegisteredAccountMissing ||
-        hasBlockingValidationError;
+        hasBlockingValidationError ||
+        !!accountHoldMessage;
 
   const isSecondCardSubmitDisabled =
     isSubmitting ||
@@ -2368,7 +2390,8 @@ export default function WithdrawalForm({
     !isTermsAccepted ||
     isSelectedPaymentPending ||
     isRegisteredAccountMissing ||
-    hasBlockingValidationError;
+    hasBlockingValidationError ||
+    !!accountHoldMessage;
 
   // Fetch estimate for non-direct assets with debouncing for better performance
   useEffect(() => {
@@ -4113,13 +4136,40 @@ export default function WithdrawalForm({
           "Failed to submit withdrawal request"
         );
 
+        const normalizedError = normalizeExpressApiErrorMessage(
+          errorMessage,
+          error?.response?.data,
+          error
+        );
+        const scamMsg = resolveScamFlagDisplayError(
+          error,
+          error?.response?.data,
+          normalizedError
+        );
+
         const amountInline =
           resolveExpressAmountInlineError(error) ||
           resolveExpressAmountInlineError(errorMessage);
-        const displayError = (amountInline || errorMessage).trim();
-        persistSubmitAmountError(displayError);
-        if (!isHomePage && !amountInline) {
-          showToast.error(errorMessage);
+
+        if (amountInline) {
+          persistSubmitAmountError(amountInline);
+        } else if (scamMsg) {
+          setAccountHoldMessage(scamMsg);
+          submitAmountErrorRef.current = SCAM_FLAG_USER_MESSAGE;
+          setApiValidationError(null);
+          setReceiveAmountError(null);
+          setValidationErrors([]);
+          setEstimateLoading(false);
+          setIsCalculating(false);
+          setIsCalculatingReceive(false);
+        } else {
+          persistSubmitAmountError(normalizedError);
+          if (
+            !isHomePage &&
+            !isScamFlagUserMessage(normalizedError)
+          ) {
+            showToast.error(normalizedError);
+          }
         }
         setIsTransactionSubmitted(false);
       } finally {
@@ -4440,7 +4490,11 @@ export default function WithdrawalForm({
         resolveExpressAmountInlineError(errorMessage);
       const displayError = (amountInline || errorMessage).trim();
       persistSubmitAmountError(displayError);
-      if (!isHomePage && !amountInline) {
+      if (
+        !isHomePage &&
+        !amountInline &&
+        !isScamFlagUserMessage(displayError)
+      ) {
         showToast.error(errorMessage);
         setValidationErrors([errorMessage]);
       }
@@ -5382,9 +5436,6 @@ export default function WithdrawalForm({
                                     dropdownMatchTriggerWidth={true}
                                   />
 
-                                  <PaymentAccountStatusBanner
-                                    account={paymentStatusBannerAccount}
-                                  />
                                 </div>
                               )}
                             </>
@@ -5440,7 +5491,11 @@ export default function WithdrawalForm({
 
             {/* Submit Button for First Card */}
             {!isTransactionSubmitted && !showForexWithdrawalForm && (
-              <div className="relative">
+              <div className="relative flex flex-col gap-3">
+                <PaymentAccountStatusBanner
+                  account={paymentStatusBannerAccount}
+                />
+                <ScamFlagSubmitBanner message={accountHoldMessage} />
                 <button
                   type="button"
                   className={`w-full text-base font-medium py-1.5 rounded-full flex items-center justify-center gap-2 transition-colors ${isFirstCardSubmitDisabled
@@ -5742,6 +5797,8 @@ export default function WithdrawalForm({
                     </span>
                   </div>
                 )}
+                <PaymentAccountStatusBanner account={paymentStatusBannerAccount} />
+                <ScamFlagSubmitBanner message={accountHoldMessage} />
                 <button
                   className={`w-full text-[#35353e] dark:text-[#788099] text-base font-medium py-2 rounded-2xl flex items-center justify-center gap-2 transition-colors ${isSecondCardSubmitDisabled
                     ? "bg-gray-500 cursor-not-allowed"

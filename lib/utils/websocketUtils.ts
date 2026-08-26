@@ -176,6 +176,8 @@ export function resolveExpressTransactionFailureMessage(raw: unknown): string | 
       layer.reason,
       (layer as { rejected_reason?: unknown }).rejected_reason,
       (layer as { rejectionReason?: unknown }).rejectionReason,
+      layer.admin_notes,
+      (layer as { admin_note?: unknown }).admin_note,
     ];
     const messageCandidates: unknown[] = [
       layer.message,

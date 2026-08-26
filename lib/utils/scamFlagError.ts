@@ -5,10 +5,13 @@
  * MoneyX / exchange often return Django DEBUG HTML IntegrityError pages, e.g.:
  *   null value in column "scam_flag_confirmed" of relation "moneyx_moneyxtransaction"
  */
-import { showToast } from "@/lib/utils/toast";
 
-/** User-facing message when an account is scam-flagged. */
 export const SCAM_FLAG_USER_MESSAGE =
+  "Your account has been flagged and is on hold. You cannot create new transactions until this is resolved by an admin.";
+
+export const SCAM_FLAG_BANNER_TITLE = "Account On Hold";
+
+const LEGACY_SCAM_FLAG_USER_MESSAGE =
   "Your account has been flagged for suspected scam activity.";
 
 function getResponseData(error: unknown): unknown {
@@ -77,6 +80,10 @@ export function isScamFlagConfirmedError(...sources: unknown[]): boolean {
   // Exact Django IntegrityError column / relation (MoneyX + exchange)
   if (text.includes("scam_flag_confirmed")) return true;
   if (/scam[_\s-]?flag/i.test(text)) return true;
+  if (/flagged and is on hold/i.test(text)) return true;
+  if (/cannot create new transactions until this is resolved/i.test(text)) {
+    return true;
+  }
 
   // P2P trade create — backend masks scam blocks as generic create / amount errors
   if (/failed to create trade\.?\s*please try again/i.test(text)) return true;
@@ -120,13 +127,20 @@ export function resolveScamFlagDisplayError(
   return isScamFlagConfirmedError(...sources) ? SCAM_FLAG_USER_MESSAGE : null;
 }
 
+/** True when a normalized/submitted error should show the on-hold banner. */
+export function isScamFlagUserMessage(message: unknown): boolean {
+  const text = String(message ?? "").trim();
+  if (!text) return false;
+  if (text === SCAM_FLAG_USER_MESSAGE || text === LEGACY_SCAM_FLAG_USER_MESSAGE) {
+    return true;
+  }
+  return isScamFlagConfirmedError(text);
+}
+
 /**
- * If the error is a scam flag, show the shared toast and return `true`.
- * Call from catch blocks when you want toast handling in one place.
+ * If the error is a scam flag, return the shared user message.
+ * Prefer showing {@link ScamFlagSubmitBanner} above submit — not a toast.
  */
 export function showScamFlagToastIfNeeded(...sources: unknown[]): boolean {
-  const message = resolveScamFlagDisplayError(...sources);
-  if (!message) return false;
-  showToast.error(message, undefined, { duration: 6000 });
-  return true;
+  return isScamFlagConfirmedError(...sources);
 }
