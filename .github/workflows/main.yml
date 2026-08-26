@@ -5,6 +5,11 @@ on:
     branches:
       - main
 
+# Prevent two production deployments from running at the same time
+concurrency:
+  group: omaya-frontend-production
+  cancel-in-progress: false
+
 env:
   AWS_REGION: eu-central-1
 
@@ -17,9 +22,6 @@ env:
   ECS_TASK_DEFINITION: omaya-production-omaya-frontend
   CONTAINER_NAME: omaya-frontend
 
-  # IMPORTANT: ECS runs Linux/ARM64
-  DOCKER_DEFAULT_PLATFORM: linux/arm64
-
 permissions:
   contents: read
 
@@ -29,11 +31,13 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
+
       # --------------------------------------------------
       # 1. Checkout source code
       # --------------------------------------------------
-      - name: Checkout
+      - name: Checkout repository
         uses: actions/checkout@v5
+
 
       # --------------------------------------------------
       # 2. Configure AWS credentials
@@ -45,12 +49,15 @@ jobs:
           aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
           aws-region: ${{ env.AWS_REGION }}
 
+
       # --------------------------------------------------
       # 3. Verify AWS authentication
       # --------------------------------------------------
       - name: Verify AWS identity
         run: |
+          echo "Checking AWS authentication..."
           aws sts get-caller-identity
+
 
       # --------------------------------------------------
       # 4. Login to Amazon ECR
@@ -59,15 +66,21 @@ jobs:
         id: ecr-login
         uses: aws-actions/amazon-ecr-login@v2
 
+
       # --------------------------------------------------
-      # 5. Enable ARM64 emulation
-      # GitHub ubuntu-latest is normally AMD64.
-      # QEMU allows it to build ARM64 images.
+      # 5. Configure QEMU
+      #
+      # GitHub runner is normally AMD64.
+      # QEMU allows us to build Linux/ARM64 images.
+      #
+      # IMPORTANT:
+      # DOCKER_DEFAULT_PLATFORM is NOT set before this step.
       # --------------------------------------------------
       - name: Set up QEMU for ARM64
         uses: docker/setup-qemu-action@v3
         with:
           platforms: arm64
+
 
       # --------------------------------------------------
       # 6. Build ARM64 Docker image
@@ -76,14 +89,15 @@ jobs:
         env:
           ECR_REGISTRY: ${{ steps.ecr-login.outputs.registry }}
           IMAGE_TAG: ${{ github.sha }}
-          DOCKER_DEFAULT_PLATFORM: linux/arm64
         run: |
-          echo "Building Linux/ARM64 Docker image..."
+          echo "Building Linux/ARM64 image..."
 
           chmod +x scripts/docker-build-with-env.sh
 
-          DOCKER_DEFAULT_PLATFORM=linux/arm64 \
-            ./scripts/docker-build-with-env.sh \
+          # Force ARM64 ONLY during our application build
+          export DOCKER_DEFAULT_PLATFORM=linux/arm64
+
+          ./scripts/docker-build-with-env.sh \
             ${{ env.ECR_REPOSITORY }}
 
           echo "Tagging image with Git commit SHA..."
@@ -98,12 +112,13 @@ jobs:
             ${{ env.ECR_REPOSITORY }}:latest \
             $ECR_REGISTRY/${{ env.ECR_REPOSITORY }}:latest
 
+
       # --------------------------------------------------
-      # 7. Verify Docker image architecture
+      # 7. Verify image architecture BEFORE pushing
       # --------------------------------------------------
-      - name: Verify image architecture
+      - name: Verify Docker image architecture
         run: |
-          echo "Docker image architecture:"
+          echo "Inspecting Docker image..."
 
           docker image inspect \
             ${{ env.ECR_REPOSITORY }}:latest \
@@ -113,22 +128,35 @@ jobs:
             ${{ env.ECR_REPOSITORY }}:latest \
             --format '{{.Architecture}}')
 
-          if [ "$ARCH" != "arm64" ]; then
-            echo "ERROR: Expected ARM64 image but built $ARCH"
+          OS=$(docker image inspect \
+            ${{ env.ECR_REPOSITORY }}:latest \
+            --format '{{.Os}}')
+
+          echo "Detected OS: $OS"
+          echo "Detected architecture: $ARCH"
+
+          if [ "$OS" != "linux" ]; then
+            echo "ERROR: Expected Linux image but got $OS"
             exit 1
           fi
 
-          echo "ARM64 architecture verified successfully."
+          if [ "$ARCH" != "arm64" ]; then
+            echo "ERROR: Expected ARM64 image but got $ARCH"
+            exit 1
+          fi
+
+          echo "Linux/ARM64 image verified successfully."
+
 
       # --------------------------------------------------
-      # 8. Push images to ECR
+      # 8. Push Docker images to ECR
       # --------------------------------------------------
-      - name: Push Docker image to ECR
+      - name: Push Docker image to Amazon ECR
         env:
           ECR_REGISTRY: ${{ steps.ecr-login.outputs.registry }}
           IMAGE_TAG: ${{ github.sha }}
         run: |
-          echo "Pushing SHA tagged image..."
+          echo "Pushing SHA-tagged image..."
 
           docker push \
             $ECR_REGISTRY/${{ env.ECR_REPOSITORY }}:$IMAGE_TAG
@@ -138,22 +166,26 @@ jobs:
           docker push \
             $ECR_REGISTRY/${{ env.ECR_REPOSITORY }}:latest
 
+
       # --------------------------------------------------
       # 9. Download current ECS task definition
       # --------------------------------------------------
-      - name: Download current task definition
+      - name: Download current ECS task definition
         run: |
+          echo "Downloading task definition..."
+
           aws ecs describe-task-definition \
             --task-definition ${{ env.ECS_TASK_DEFINITION }} \
             --query taskDefinition \
             > task-definition.json
 
-          echo "Task definition downloaded."
+          echo "Task definition downloaded successfully."
+
 
       # --------------------------------------------------
-      # 10. Render task definition with new image
+      # 10. Replace old image with new SHA-tagged image
       # --------------------------------------------------
-      - name: Render new task definition
+      - name: Render new ECS task definition
         id: render-task-def
         uses: aws-actions/amazon-ecs-render-task-definition@v1
         with:
@@ -161,8 +193,9 @@ jobs:
           container-name: ${{ env.CONTAINER_NAME }}
           image: ${{ steps.ecr-login.outputs.registry }}/${{ env.ECR_REPOSITORY }}:${{ github.sha }}
 
+
       # --------------------------------------------------
-      # 11. Deploy new task definition to ECS
+      # 11. Deploy new task definition
       # --------------------------------------------------
       - name: Deploy to Amazon ECS
         uses: aws-actions/amazon-ecs-deploy-task-definition@v2
@@ -172,11 +205,14 @@ jobs:
           cluster: ${{ env.ECS_CLUSTER }}
           wait-for-service-stability: true
 
+
       # --------------------------------------------------
-      # 12. Verify ECS service after deployment
+      # 12. Verify service
       # --------------------------------------------------
       - name: Verify ECS deployment
         run: |
+          echo "Checking ECS service..."
+
           aws ecs describe-services \
             --cluster ${{ env.ECS_CLUSTER }} \
             --services ${{ env.ECS_SERVICE }} \
@@ -187,3 +223,52 @@ jobs:
               Pending:pendingCount,
               TaskDefinition:taskDefinition
             }'
+
+
+      # --------------------------------------------------
+      # 13. Show useful ECS information if deployment fails
+      # --------------------------------------------------
+      - name: Show ECS failure details
+        if: failure()
+        run: |
+          echo "=========================================="
+          echo "Recent ECS service events"
+          echo "=========================================="
+
+          aws ecs describe-services \
+            --cluster ${{ env.ECS_CLUSTER }} \
+            --services ${{ env.ECS_SERVICE }} \
+            --query 'services[0].events[0:15].[createdAt,message]' \
+            --output table
+
+          echo ""
+          echo "=========================================="
+          echo "Recently stopped ECS tasks"
+          echo "=========================================="
+
+          TASKS=$(aws ecs list-tasks \
+            --cluster ${{ env.ECS_CLUSTER }} \
+            --service-name ${{ env.ECS_SERVICE }} \
+            --desired-status STOPPED \
+            --query 'taskArns[0:5]' \
+            --output text)
+
+          if [ -n "$TASKS" ]; then
+            aws ecs describe-tasks \
+              --cluster ${{ env.ECS_CLUSTER }} \
+              --tasks $TASKS \
+              --query 'tasks[].{
+                Task:taskArn,
+                StopCode:stopCode,
+                StoppedReason:stoppedReason,
+                Containers:containers[].{
+                  Name:name,
+                  ExitCode:exitCode,
+                  Reason:reason,
+                  Image:image
+                }
+              }' \
+              --output json
+          else
+            echo "No stopped tasks found."
+          fi
