@@ -2,14 +2,17 @@ name: Deploy Omaya Frontend to ECS
 
 on:
   push:
-    branches: [main]
+    branches:
+      - main
 
 env:
   AWS_REGION: eu-central-1
   ECR_REPOSITORY: omaya-frontend-service
+
   ECS_CLUSTER: omaya-prod
   ECS_SERVICE: omaya-frontend-service
-  CONTAINER_NAME: omaya-production-omaya-frontend
+  ECS_TASK_DEFINITION: omaya-production-omaya-frontend
+  CONTAINER_NAME: omaya-frontend
 
 permissions:
   contents: read
@@ -20,10 +23,10 @@ jobs:
 
     steps:
       - name: Checkout
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
 
       - name: Configure AWS credentials
-        uses: aws-actions/configure-aws-credentials@v4
+        uses: aws-actions/configure-aws-credentials@v6
         with:
           aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
           aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
@@ -40,21 +43,30 @@ jobs:
         run: |
           chmod +x scripts/docker-build-with-env.sh
           ./scripts/docker-build-with-env.sh omaya-frontend-service
-          docker tag ${{ env.ECR_REPOSITORY }}:latest $ECR_REGISTRY/${{ env.ECR_REPOSITORY }}:$IMAGE_TAG
-          docker tag ${{ env.ECR_REPOSITORY }}:latest $ECR_REGISTRY/${{ env.ECR_REPOSITORY }}:latest
+
+          docker tag \
+            ${{ env.ECR_REPOSITORY }}:latest \
+            $ECR_REGISTRY/${{ env.ECR_REPOSITORY }}:$IMAGE_TAG
+
+          docker tag \
+            ${{ env.ECR_REPOSITORY }}:latest \
+            $ECR_REGISTRY/${{ env.ECR_REPOSITORY }}:latest
 
       - name: Push image to ECR
         env:
           ECR_REGISTRY: ${{ steps.ecr-login.outputs.registry }}
           IMAGE_TAG: ${{ github.sha }}
         run: |
-          docker push $ECR_REGISTRY/${{ env.ECR_REPOSITORY }}:$IMAGE_TAG
-          docker push $ECR_REGISTRY/${{ env.ECR_REPOSITORY }}:latest
+          docker push \
+            $ECR_REGISTRY/${{ env.ECR_REPOSITORY }}:$IMAGE_TAG
+
+          docker push \
+            $ECR_REGISTRY/${{ env.ECR_REPOSITORY }}:latest
 
       - name: Download current task definition
         run: |
           aws ecs describe-task-definition \
-            --task-definition ${{ env.ECS_SERVICE }} \
+            --task-definition ${{ env.ECS_TASK_DEFINITION }} \
             --query taskDefinition \
             > task-definition.json
 
