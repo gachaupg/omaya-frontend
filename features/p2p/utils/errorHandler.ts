@@ -76,3 +76,38 @@ export const getErrorMessage = (error: unknown): string => {
   }
   return "An unexpected error occurred";
 };
+
+/** User-visible P2P deposit/withdraw submit failure line. */
+export function extractP2pSubmitApiError(error: unknown, fallback: string): string {
+  const err = error as {
+    response?: { data?: unknown };
+    message?: string;
+  };
+  const data = err?.response?.data;
+
+  if (typeof data === "string" && data.trim()) {
+    return data.trim();
+  }
+
+  if (data && typeof data === "object") {
+    const record = data as Record<string, unknown>;
+    const msg = record.error ?? record.message ?? record.detail;
+    if (typeof msg === "string" && msg.trim()) {
+      return msg.trim();
+    }
+    if (Array.isArray(msg) && typeof msg[0] === "string") {
+      return msg[0];
+    }
+  }
+
+  const raw = String(err?.message || "").trim();
+  if (
+    raw &&
+    !/request failed with status code \d+/i.test(raw) &&
+    !/status code \d+/i.test(raw)
+  ) {
+    return raw;
+  }
+
+  return fallback;
+}

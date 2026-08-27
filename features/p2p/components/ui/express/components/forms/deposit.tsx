@@ -35,7 +35,18 @@ import {
   reportAssetLoadIssue,
   shouldSkipAssetFetchError,
 } from "@/lib/utils/assetLoadNotice";
-import { createExpressDeposit, fetchCommission, getCommissionApiAsset, fetchDepositStatus } from "../../api";
+import { extractP2pSubmitApiError } from "@/features/p2p/utils/errorHandler";
+import ScamFlagSubmitBanner from "@/features/express/components/ScamFlagSubmitBanner";
+import {
+  isScamFlagUserMessage,
+  resolveScamFlagDisplayError,
+} from "@/lib/utils/scamFlagError";
+import {
+  createExpressDeposit,
+  fetchCommission,
+  getCommissionApiAsset,
+  fetchDepositStatus,
+} from "../../api";
 import { ExpressDepositResponse } from "../../types";
 
 import { logger } from '@/lib/utils/logger';
@@ -199,6 +210,9 @@ export default function DepositForm({
   const [forceUpdate, setForceUpdate] = useState(0);
   const [selectedPaymentDetail, setSelectedPaymentDetail] = useState<any>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [accountHoldMessage, setAccountHoldMessage] = useState<string | null>(
+    null
+  );
   const [validationErrors, setValidationErrors] = useState<string[]>([]);
   const [confirmPayment, setConfirmPayment] = useState(false);
 
@@ -807,7 +821,20 @@ export default function DepositForm({
         router.push('/dashboard/express-exchange');
       }
     } catch (error: any) {
-            showToast.error(`Failed to create deposit: ${error.message || error}`);
+      const msg = extractP2pSubmitApiError(error, "Failed to create deposit");
+      const scamMsg = resolveScamFlagDisplayError(
+        error,
+        error?.response?.data,
+        msg
+      );
+      if (scamMsg) {
+        setAccountHoldMessage(scamMsg);
+        setValidationErrors([]);
+        return;
+      }
+      setAccountHoldMessage(null);
+      showToast.error(msg);
+      setValidationErrors([msg]);
     } finally {
       setIsSubmitting(false);
     }
@@ -2970,6 +2997,7 @@ export default function DepositForm({
         {/* Submit Button for First Card - only show when user has checked "I confirm I sent payment" */}
         {!isFirstCardSubmitted && (
           <div className="mx-auto w-full px-2 mt-4 sm:mt-6">
+            <ScamFlagSubmitBanner message={accountHoldMessage} className="mb-3" />
             <div className="flex flex-col sm:flex-row gap-3">
               {onCancel && (
                 <button
@@ -2982,12 +3010,12 @@ export default function DepositForm({
               )}
               <button
                 type="button"
-                className={`w-full text-white text-sm sm:text-base font-medium py-3 sm:py-3 rounded-xl sm:rounded-2xl flex items-center justify-center gap-2 transition-colors min-h-[44px] sm:min-h-0 ${isSubmitting || !user?.is_verified || !confirmPayment
+                className={`w-full text-white text-sm sm:text-base font-medium py-3 sm:py-3 rounded-xl sm:rounded-2xl flex items-center justify-center gap-2 transition-colors min-h-[44px] sm:min-h-0 ${isSubmitting || !!accountHoldMessage || !user?.is_verified || !confirmPayment
                   ? "bg-gray-500 cursor-not-allowed"
                   : "bg-[#1D8751] hover:bg-[#166b3e]"
                   }`}
                 onClick={handleSubmit}
-                disabled={isSubmitting || !selectedAsset || !selectedNetwork || !user?.is_verified}
+                disabled={isSubmitting || !!accountHoldMessage || !selectedAsset || !selectedNetwork || !user?.is_verified}
               >
                 {isSubmitting ? (
                   <div className="flex items-center gap-2">

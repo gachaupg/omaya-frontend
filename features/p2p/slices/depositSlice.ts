@@ -1,6 +1,7 @@
 import { createSlice, createAsyncThunk } from "@reduxjs/toolkit";
 import { P2PDeposit, CreateP2PDepositRequest, DepositAddress } from "../types";
 import * as api from "../api";
+import { extractP2pSubmitApiError } from "../utils/errorHandler";
 
 interface DepositState {
   deposits: P2PDeposit[];
@@ -31,16 +32,22 @@ export const fetchDeposits = createAsyncThunk(
 
 export const createDeposit = createAsyncThunk(
   "deposits/createDeposit",
-  async (data: CreateP2PDepositRequest) => {
-    const formData = new FormData();
-    formData.append("amount", data.amount.toString());
-    formData.append("currency", data.currency);
-    formData.append("network", data.network);
-    formData.append("wallet_type", data.wallet_type);
-    formData.append("document", data.document);
+  async (data: CreateP2PDepositRequest, { rejectWithValue }) => {
+    try {
+      const formData = new FormData();
+      formData.append("amount", data.amount.toString());
+      formData.append("currency", data.currency);
+      formData.append("network", data.network);
+      formData.append("wallet_type", data.wallet_type);
+      formData.append("document", data.document);
 
-    const response = await api.createDeposit(formData);
-    return response;
+      const response = await api.createDeposit(formData);
+      return response;
+    } catch (error: unknown) {
+      return rejectWithValue(
+        extractP2pSubmitApiError(error, "Failed to submit deposit")
+      );
+    }
   }
 );
 
@@ -95,7 +102,10 @@ const depositSlice = createSlice({
       })
       .addCase(createDeposit.rejected, (state, action) => {
         state.loading = false;
-        state.error = action.error.message || "Failed to create deposit";
+        state.error =
+          (typeof action.payload === "string" && action.payload) ||
+          action.error.message ||
+          "Failed to create deposit";
       })
       // Update Deposit
       .addCase(updateDeposit.pending, (state) => {

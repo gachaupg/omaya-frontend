@@ -26,6 +26,11 @@ import { useRouter } from "next/navigation";
 import { FinancialCalculator } from "@/lib/utils/financial";
 import { useTransactionValidation } from "@/features/p2p/hooks/useTransactionValidation";
 import { AlertCircle } from "lucide-react";
+import ScamFlagSubmitBanner from "@/features/express/components/ScamFlagSubmitBanner";
+import {
+  isScamFlagUserMessage,
+  resolveScamFlagDisplayError,
+} from "@/lib/utils/scamFlagError";
 
 const Deposit: React.FC = () => {
   const router = useRouter();
@@ -44,6 +49,9 @@ const Deposit: React.FC = () => {
   const [confirmPayment, setConfirmPayment] = useState(false);
   const [selectedAssetId, setSelectedAssetId] = useState("");
   const [selectedNetworkId, setSelectedNetworkId] = useState("");
+  const [accountHoldMessage, setAccountHoldMessage] = useState<string | null>(
+    null
+  );
   const { validateTransaction } = useTransactionValidation();
 
   /* ------------------------------ effects ------------------------------- */
@@ -106,8 +114,20 @@ const Deposit: React.FC = () => {
       };
 
       const res = await dispatch(createDeposit(payload));
-      if (createDeposit.rejected.match(res))
-        throw new Error(res.error.message || "Failed to submit deposit");
+      if (createDeposit.rejected.match(res)) {
+        const msg =
+          (typeof res.payload === "string" && res.payload) ||
+          "Failed to submit deposit";
+        const scamMsg = resolveScamFlagDisplayError(msg);
+        if (scamMsg) {
+          setAccountHoldMessage(scamMsg);
+          setErrors([]);
+          return;
+        }
+        setAccountHoldMessage(null);
+        setErrors([{ field: "submit", message: msg }]);
+        return;
+      }
 
       const result = res.payload as {
         id: string;
@@ -143,12 +163,21 @@ const Deposit: React.FC = () => {
       setSelectedFile(null);
       setConfirmPayment(false);
       setErrors([]);
+      setAccountHoldMessage(null);
       router.push(`/dashboard/p2p/deposit/status?id=${result.id}`);
     } catch (err) {
+      const msg = err instanceof Error ? err.message : "An error occurred";
+      const scamMsg = resolveScamFlagDisplayError(err, msg);
+      if (scamMsg) {
+        setAccountHoldMessage(scamMsg);
+        setErrors([]);
+        return;
+      }
+      setAccountHoldMessage(null);
       setErrors([
         {
           field: "submit",
-          message: err instanceof Error ? err.message : "An error occurred",
+          message: msg,
         },
       ]);
     }
@@ -381,7 +410,9 @@ const Deposit: React.FC = () => {
           </div>
 
           {/* -------------------- General error ------------------- */}
-          {getFieldError("submit", errors) && (
+          <ScamFlagSubmitBanner message={accountHoldMessage} className="mb-4" />
+          {getFieldError("submit", errors) &&
+            !isScamFlagUserMessage(getFieldError("submit", errors)) && (
             <div className="text-red-500 text-sm mb-4">
               {getFieldError("submit", errors)}
             </div>
@@ -406,7 +437,7 @@ const Deposit: React.FC = () => {
               variant="primary"
               className="w-full sm:flex-1"
               height={45}
-              disabled={isSubmitting}
+              disabled={isSubmitting || !!accountHoldMessage}
             >
               {isSubmitting ? (
                 <>

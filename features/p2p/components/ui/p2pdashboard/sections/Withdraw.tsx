@@ -27,6 +27,11 @@ import { useTransactionValidation } from "@/features/p2p/hooks/useTransactionVal
 import OTPModal from "./otpModal";
 import { Copy, HelpCircle } from "lucide-react";
 import { useAvailableBalance, usePendingTotal } from "@/utils/pending";
+import ScamFlagSubmitBanner from "@/features/express/components/ScamFlagSubmitBanner";
+import {
+  isScamFlagUserMessage,
+  resolveScamFlagDisplayError,
+} from "@/lib/utils/scamFlagError";
 
 const Withdraw: React.FC = () => {
   /* --------------------------------------------------------------------- */
@@ -58,6 +63,9 @@ const Withdraw: React.FC = () => {
   const [withdrawalId, setWithdrawalId] = useState("");
   const [showInfoDropdown, setShowInfoDropdown] = useState(false);
   const [hasAttemptedSubmit, setHasAttemptedSubmit] = useState(false);
+  const [accountHoldMessage, setAccountHoldMessage] = useState<string | null>(
+    null
+  );
 
   /* --------------------------------------------------------------------- */
   /*                                Effects                                */
@@ -170,7 +178,18 @@ const Withdraw: React.FC = () => {
 
       const res = await dispatch(createWithdrawal(payload));
       if (createWithdrawal.rejected.match(res)) {
-        throw new Error(res.error.message || "Failed to submit withdrawal");
+        const msg =
+          (typeof res.payload === "string" && res.payload) ||
+          "Failed to submit withdrawal";
+        const scamMsg = resolveScamFlagDisplayError(msg);
+        if (scamMsg) {
+          setAccountHoldMessage(scamMsg);
+          setErrors([]);
+          return;
+        }
+        setAccountHoldMessage(null);
+        setErrors([{ field: "submit", message: msg }]);
+        return;
       }
 
       showToast.success("Withdrawal request submitted successfully!");
@@ -183,11 +202,20 @@ const Withdraw: React.FC = () => {
       setUsdtAddress("");
       setConfirmPayment(false);
       setErrors([]);
+      setAccountHoldMessage(null);
     } catch (err) {
+      const msg = err instanceof Error ? err.message : "An error occurred";
+      const scamMsg = resolveScamFlagDisplayError(err, msg);
+      if (scamMsg) {
+        setAccountHoldMessage(scamMsg);
+        setErrors([]);
+        return;
+      }
+      setAccountHoldMessage(null);
       setErrors([
         {
           field: "submit",
-          message: err instanceof Error ? err.message : "An error occurred",
+          message: msg,
         },
       ]);
     }
@@ -341,7 +369,6 @@ const Withdraw: React.FC = () => {
                   <span className="font-semibold text-[#1D8751]">{availableBalance.toFixed(3)} USDT</span>
                   <span className="text-[10px] text-gray-400">(Available)</span>
                 </span>
-                dgdgydydy
               </div>
               {hasAttemptedSubmit && getFieldError("amount", errors) && (
                 <span className="text-red-500 text-sm mt-1">
@@ -483,7 +510,9 @@ const Withdraw: React.FC = () => {
           </div>
 
           {/* General submit error */}
-          {getFieldError("submit", errors) && (
+          <ScamFlagSubmitBanner message={accountHoldMessage} className="mb-4" />
+          {getFieldError("submit", errors) &&
+            !isScamFlagUserMessage(getFieldError("submit", errors)) && (
             <div className="text-red-500 text-sm mb-4">
               {getFieldError("submit", errors)}
             </div>
@@ -516,7 +545,7 @@ const Withdraw: React.FC = () => {
               variant="secondary"
               className="w-full sm:flex-1"
               height={45}
-              disabled={isSubmitting}
+              disabled={isSubmitting || !!accountHoldMessage}
             >
               {isSubmitting ? (
                 <>

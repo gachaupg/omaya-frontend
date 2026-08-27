@@ -45,6 +45,12 @@ import { scrollAppToTop } from "@/lib/utils/scrollAppToTop";
 import { useBookmarkedAddresses } from "@/features/express/hooks/useBookmarkedAddresses";
 import { BookmarkDropdown } from "@/features/express/components/forms/BookmarkDropdown";
 import { pickPreferredPaymentAccountForAutoSelect } from "@/features/express/utils/paymentAccountStatus";
+import { extractP2pSubmitApiError } from "@/features/p2p/utils/errorHandler";
+import ScamFlagSubmitBanner from "@/features/express/components/ScamFlagSubmitBanner";
+import {
+  isScamFlagUserMessage,
+  resolveScamFlagDisplayError,
+} from "@/lib/utils/scamFlagError";
 
 const formatUnknownError = (error: unknown): string => {
   if (!error) return "Unknown error";
@@ -412,6 +418,9 @@ export default function WithdrawalForm({
   const networkDropdownRef = useRef<HTMLDivElement>(null);
   const [forceUpdate, setForceUpdate] = useState(0);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [accountHoldMessage, setAccountHoldMessage] = useState<string | null>(
+    null
+  );
   const [validationErrors, setValidationErrors] = useState<string[]>([]);
   // Add state for API response data
   const [withdrawalAddress, setWithdrawalAddress] = useState<string>("");
@@ -2321,25 +2330,23 @@ export default function WithdrawalForm({
           transactionId,
         });
       } catch (error: any) {
-                let errorMessage = "Failed to submit withdrawal request";
-
-        if (error.response?.data) {
-          const responseData = error.response.data;
-          if (responseData.message) {
-            errorMessage = responseData.message;
-          } else if (responseData.error) {
-            errorMessage = responseData.error;
-          } else if (responseData.details) {
-            errorMessage = responseData.details;
-          } else if (typeof responseData === "string") {
-            errorMessage = responseData;
-          }
-        } else if (error.message) {
-          errorMessage = error.message;
+        const msg = extractP2pSubmitApiError(
+          error,
+          "Failed to submit withdrawal request"
+        );
+        const scamMsg = resolveScamFlagDisplayError(
+          error,
+          error?.response?.data,
+          msg
+        );
+        if (scamMsg) {
+          setAccountHoldMessage(scamMsg);
+          setValidationErrors([]);
+        } else {
+          setAccountHoldMessage(null);
+          showToast.error(msg);
+          setValidationErrors([msg]);
         }
-
-        showToast.error(errorMessage);
-        setValidationErrors([errorMessage]);
         setIsTransactionSubmitted(false);
       } finally {
         // Always stop loading state
@@ -2527,28 +2534,23 @@ export default function WithdrawalForm({
         }
       }
     } catch (error: any) {
-      logger.debug('p2p', error);
-
-      let errorMessage = `Failed to submit ${mode} request`;
-
-      if (error.response?.data) {
-        // Try to extract specific error message from response
-        const responseData = error.response.data;
-        if (responseData.message) {
-          errorMessage = responseData.message;
-        } else if (responseData.error) {
-          errorMessage = responseData.error;
-        } else if (responseData.details) {
-          errorMessage = responseData.details;
-        } else if (typeof responseData === "string") {
-          errorMessage = responseData;
-        }
-      } else if (error.message) {
-        errorMessage = error.message;
+      const msg = extractP2pSubmitApiError(
+        error,
+        `Failed to submit ${mode} request`
+      );
+      const scamMsg = resolveScamFlagDisplayError(
+        error,
+        error?.response?.data,
+        msg
+      );
+      if (scamMsg) {
+        setAccountHoldMessage(scamMsg);
+        setValidationErrors([]);
+      } else {
+        setAccountHoldMessage(null);
+        showToast.error(msg);
+        setValidationErrors([msg]);
       }
-
-      showToast.error(errorMessage);
-      setValidationErrors([errorMessage]);
       // Reset transaction state on error
       setIsTransactionSubmitted(false);
       setWithdrawalAddress("");
@@ -3275,6 +3277,7 @@ export default function WithdrawalForm({
 
         {/* Submit Button for First Card */}
         <div className="mt-3 sm:mt-4">
+          <ScamFlagSubmitBanner message={accountHoldMessage} className="mb-3" />
           {isTransactionSubmitted ? (
             ""
           ) : (
@@ -3296,6 +3299,7 @@ export default function WithdrawalForm({
                   getAmount > 15000 ||
                   payAmount <= 0 ||
                   !!balanceError ||
+                  !!accountHoldMessage ||
                   !isTermsAccepted
                   ? "bg-gray-500 cursor-not-allowed"
                   : "bg-[#1D8751] hover:bg-[#166b3e]"
@@ -3308,6 +3312,7 @@ export default function WithdrawalForm({
                   getAmount > 15000 ||
                   payAmount <= 0 ||
                   !!balanceError ||
+                  !!accountHoldMessage ||
                   !isTermsAccepted
                 }
               >

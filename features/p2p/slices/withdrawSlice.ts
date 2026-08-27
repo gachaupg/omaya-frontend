@@ -1,6 +1,7 @@
 import { createSlice, createAsyncThunk } from "@reduxjs/toolkit";
 import { P2PWithdraw, CreateP2PWithdrawRequest } from "../types";
 import * as api from "../api";
+import { extractP2pSubmitApiError } from "../utils/errorHandler";
 
 interface WithdrawState {
   withdrawals: P2PWithdraw[];
@@ -17,29 +18,7 @@ const initialState: WithdrawState = {
 };
 
 function extractWithdrawApiError(error: any, fallback: string): string {
-  let message = fallback;
-  const data = error?.response?.data;
-
-  if (typeof data === "string" && data.trim()) {
-    message = data.trim();
-  } else if (data && typeof data === "object") {
-    const msg = data.error ?? data.message ?? data.detail;
-    if (typeof msg === "string" && msg.trim()) {
-      message = msg.trim();
-    } else if (Array.isArray(msg) && typeof msg[0] === "string") {
-      message = msg[0];
-    }
-  } else {
-    const raw = String(error?.message || "").trim();
-    if (
-      raw &&
-      !/request failed with status code \d+/i.test(raw) &&
-      !/status code \d+/i.test(raw)
-    ) {
-      message = raw;
-    }
-  }
-
+  const message = extractP2pSubmitApiError(error, fallback);
   if (/invalid otp/i.test(message)) return "Invalid OTP";
   return message;
 }
@@ -60,25 +39,9 @@ export const createWithdrawal = createAsyncThunk(
       const response = await api.createWithdrawal(data);
       return response;
     } catch (error: any) {
-      // Parse error response to get user-friendly message
-      let errorMessage = "Failed to submit withdrawal";
-      
-      if (error.response?.data) {
-        const responseData = error.response.data;
-        if (responseData.error) {
-          errorMessage = responseData.error;
-        } else if (responseData.message) {
-          errorMessage = responseData.message;
-        } else if (responseData.detail) {
-          errorMessage = responseData.detail;
-        } else if (typeof responseData === "string") {
-          errorMessage = responseData;
-        }
-      } else if (error.message) {
-        errorMessage = error.message;
-      }
-      
-      return rejectWithValue(errorMessage);
+      return rejectWithValue(
+        extractWithdrawApiError(error, "Failed to submit withdrawal")
+      );
     }
   }
 );
