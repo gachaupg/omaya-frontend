@@ -45,12 +45,10 @@ import { scrollAppToTop } from "@/lib/utils/scrollAppToTop";
 import { useBookmarkedAddresses } from "@/features/express/hooks/useBookmarkedAddresses";
 import { BookmarkDropdown } from "@/features/express/components/forms/BookmarkDropdown";
 import { pickPreferredPaymentAccountForAutoSelect } from "@/features/express/utils/paymentAccountStatus";
-import { extractP2pSubmitApiError } from "@/features/p2p/utils/errorHandler";
+import { resolveP2pAccountHoldMessage } from "@/features/p2p/utils/errorHandler";
 import ScamFlagSubmitBanner from "@/features/express/components/ScamFlagSubmitBanner";
-import {
-  isScamFlagUserMessage,
-  resolveScamFlagDisplayError,
-} from "@/lib/utils/scamFlagError";
+import { isScamFlagUserMessage } from "@/lib/utils/scamFlagError";
+import { useAssetsDisplay } from "@/features/express/hooks/useDataDisplay";
 
 const formatUnknownError = (error: unknown): string => {
   if (!error) return "Unknown error";
@@ -321,13 +319,15 @@ export default function WithdrawalForm({
     error: swapAssetsError,
   } = useSelector((state: any) => state.swap);
 
-  // Debug logging for assets
-  logger.debug('p2p', "DEBUG: Swap assets state:", {
+  const assetsDisplay = useAssetsDisplay(
+    assets?.assets,
     swapAssets,
+    assetsLoading,
     swapAssetsLoading,
-    swapAssetsError,
-    assetsLength: swapAssets?.length || 0,
-  });
+    null,
+    swapAssetsError
+  );
+  const displayAssets = assetsDisplay.displayData;
 
   // Debug function to test asset fetching
   const handleDebugAssets = async () => {
@@ -756,56 +756,12 @@ export default function WithdrawalForm({
     };
   }, []);
 
-  useEffect(() => {
-    dispatch(fetchAssets())
-      .unwrap()
-      .catch((error: unknown) => {
-        // Redux Toolkit condition aborts are expected; don't show as errors.
-        if (isConditionAbortError(error)) return;
-        reportAssetLoadIssue("p2p-express-withdrawal:exchange-assets", error);
-      });
-  }, [dispatch]);
-
-  // Fetch user payment details
-  useEffect(() => {
-    // Try to fetch from cache first, then API if needed
-    dispatch(fetchUserPaymentDetails(false)) // false = don't force refresh
-      .unwrap()
-      .catch((error: unknown) => {
-        showToast.error(
-          `Failed to fetch user payment details: ${formatUnknownError(error)}`
-        );
-      });
-  }, [dispatch]);
-
-  // Fetch swap assets
-  useEffect(() => {
-    logger.debug('p2p', "DEBUG: Starting to fetch swap assets...");
-    dispatch(fetchSupportedAssets({ forceRefresh: false, feature: "exchange" }))
-      .unwrap()
-      .then((data) => {
-        logger.debug('p2p', "DEBUG: Swap assets fetched successfully:", data);
-        logger.debug('p2p', "DEBUG: Number of assets:", data?.length || 0);
-      })
-      .catch((error: unknown) => {
-                // Only show error if it's a network issue, not cache issues
-        if (
-          error instanceof Error &&
-          (error.message.includes("Network") ||
-            error.message.includes("Server"))
-        ) {
-          reportAssetLoadIssue("p2p-express-withdrawal:swap-assets", error, {
-            title: "Could not load swap assets",
-          });
-        }
-      });
-  }, [dispatch]);
-
+  // Assets + payment methods preload via MarketDataProvider
   // Auto-select USDT Tether on BSC when assets are loaded
   useEffect(() => {
-    if (swapAssets && swapAssets.length > 0 && !selectedAsset) {
+    if (displayAssets && displayAssets.length > 0 && !selectedAsset) {
       // Find USDT Tether (we'll force BSC network regardless of original network)
-      const usdtTetherAsset = swapAssets.find((asset: SupportedAsset) => {
+      const usdtTetherAsset = displayAssets.find((asset: SupportedAsset) => {
         const ticker = (asset.ticker || asset.symbol || "")
           .toString()
           .toUpperCase();
@@ -840,7 +796,7 @@ export default function WithdrawalForm({
         }
       }
     }
-  }, [swapAssets, selectedAsset, isUserModifiedAmount]);
+  }, [displayAssets, selectedAsset, isUserModifiedAmount]);
 
   // Recalculate when asset changes
   useEffect(() => {
@@ -2222,6 +2178,7 @@ export default function WithdrawalForm({
     if (validateFirstCard()) {
       setIsSubmitting(true);
       setIsTransactionSubmitted(false);
+      setAccountHoldMessage(null);
 
       try {
         // Create withdrawal payload for P2P API
@@ -2322,6 +2279,7 @@ export default function WithdrawalForm({
           transactionId,
           withdrawal_id: responseData.withdrawal_id || responseData.id,
         });
+        setAccountHoldMessage(null);
         setIsOTPModalOpen(true);
 
         logger.debug('p2p', "Withdrawal addresses generated successfully:", {
@@ -2329,23 +2287,18 @@ export default function WithdrawalForm({
           payoutAddress,
           transactionId,
         });
-      } catch (error: any) {
-        const msg = extractP2pSubmitApiError(
+      } catch (error: unknown) {
+        const { holdMessage, userMessage } = resolveP2pAccountHoldMessage(
           error,
           "Failed to submit withdrawal request"
         );
-        const scamMsg = resolveScamFlagDisplayError(
-          error,
-          error?.response?.data,
-          msg
-        );
-        if (scamMsg) {
-          setAccountHoldMessage(scamMsg);
+        if (holdMessage) {
+          setAccountHoldMessage(holdMessage);
           setValidationErrors([]);
         } else {
           setAccountHoldMessage(null);
-          showToast.error(msg);
-          setValidationErrors([msg]);
+          showToast.error(userMessage);
+          setValidationErrors([userMessage]);
         }
         setIsTransactionSubmitted(false);
       } finally {
@@ -2397,6 +2350,7 @@ export default function WithdrawalForm({
   const handleSubmit = async () => {
     // Clear previous errors
     setValidationErrors([]);
+    setAccountHoldMessage(null);
 
     // Validate form
     const errors = validateForm();
@@ -2533,23 +2487,18 @@ export default function WithdrawalForm({
           onExchange(transactionData);
         }
       }
-    } catch (error: any) {
-      const msg = extractP2pSubmitApiError(
+    } catch (error: unknown) {
+      const { holdMessage, userMessage } = resolveP2pAccountHoldMessage(
         error,
         `Failed to submit ${mode} request`
       );
-      const scamMsg = resolveScamFlagDisplayError(
-        error,
-        error?.response?.data,
-        msg
-      );
-      if (scamMsg) {
-        setAccountHoldMessage(scamMsg);
+      if (holdMessage) {
+        setAccountHoldMessage(holdMessage);
         setValidationErrors([]);
       } else {
         setAccountHoldMessage(null);
-        showToast.error(msg);
-        setValidationErrors([msg]);
+        showToast.error(userMessage);
+        setValidationErrors([userMessage]);
       }
       // Reset transaction state on error
       setIsTransactionSubmitted(false);
@@ -2631,7 +2580,7 @@ export default function WithdrawalForm({
                           className="w-6 h-6"
                         />
                         <span className="text-[#7e7e8f] dark:text-[#788099]">
-                          {swapAssetsLoading
+                          {assetsDisplay.isLoading
                             ? "Loading assets..."
                             : "USDT Tether"}
                         </span>
@@ -3552,16 +3501,19 @@ export default function WithdrawalForm({
       )}
 
       {/* Validation Errors Display */}
-      {validationErrors.length > 0 && (
+      {validationErrors.filter((error) => !isScamFlagUserMessage(error)).length >
+        0 && (
         <div className="w-full px-2 mb-4">
           <div className="bg-[#23232b] dark:bg-[#35353E] border border-[#1D8751] rounded-2xl p-4">
             <h3 className="text-[#1D8751] font-semibold mb-2">
               Please fix the following errors:
             </h3>
             <ul className="list-disc list-inside text-[#1D8751] space-y-1">
-              {validationErrors.map((error, index) => (
-                <li key={index}>{error}</li>
-              ))}
+              {validationErrors
+                .filter((error) => !isScamFlagUserMessage(error))
+                .map((error, index) => (
+                  <li key={index}>{error}</li>
+                ))}
             </ul>
           </div>
         </div>

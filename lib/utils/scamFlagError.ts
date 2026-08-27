@@ -124,7 +124,11 @@ export function isScamFlagConfirmedError(...sources: unknown[]): boolean {
 export function resolveScamFlagDisplayError(
   ...sources: unknown[]
 ): string | null {
-  return isScamFlagConfirmedError(...sources) ? SCAM_FLAG_USER_MESSAGE : null;
+  if (isScamFlagConfirmedError(...sources)) return SCAM_FLAG_USER_MESSAGE;
+  for (const source of sources) {
+    if (isScamFlagUserMessage(source)) return SCAM_FLAG_USER_MESSAGE;
+  }
+  return null;
 }
 
 /** True when a normalized/submitted error should show the on-hold banner. */

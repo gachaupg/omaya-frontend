@@ -1,4 +1,5 @@
 import { createSlice, createAsyncThunk } from "@reduxjs/toolkit";
+import { sliceCache } from "@/lib/utils/sliceCache";
 import {
   getAdminPaymentDetails,
   addUserPaymentDetail,
@@ -57,6 +58,17 @@ export const fetchPublicPaymentMethods = createAsyncThunk<
     const forceRefresh = (arg as { forceRefresh?: boolean } | undefined)?.forceRefresh ?? false;
 
     // ── 1. Return from cache if still fresh ──────────────────────────────────
+    if (!forceRefresh) {
+      const persisted = await sliceCache.get<any>(
+        "paymentMethods",
+        "fetchPublicPaymentMethods"
+      );
+      if (persisted != null) {
+        _publicPMCache = { data: persisted, fetchedAt: Date.now() };
+        return persisted;
+      }
+    }
+
     if (
       !forceRefresh &&
       _publicPMCache &&
@@ -81,8 +93,15 @@ export const fetchPublicPaymentMethods = createAsyncThunk<
 
     try {
       const data = await _publicPMInFlight;
-      // Store in in-memory cache
+      // Store in in-memory + IndexedDB cache
       _publicPMCache = { data, fetchedAt: Date.now() };
+      await sliceCache.set(
+        "paymentMethods",
+        "fetchPublicPaymentMethods",
+        data,
+        undefined,
+        PUBLIC_PM_TTL
+      );
       return data;
     } catch (err: any) {
       return rejectWithValue(err.message || "Failed to fetch public payment methods");
@@ -94,6 +113,7 @@ export const fetchPublicPaymentMethods = createAsyncThunk<
 export const invalidatePublicPaymentMethodsCache = () => {
   _publicPMCache = null;
   _publicPMInFlight = null;
+  void sliceCache.delete("paymentMethods", "fetchPublicPaymentMethods");
 };
 
 const extractPaymentDetailError = (error: any): string => {

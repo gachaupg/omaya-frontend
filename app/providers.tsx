@@ -27,6 +27,7 @@ import { clearExpiredMoneyXTransactionCache } from "@/lib/utils/clearExpiredTran
 import GlobalSessionManager from "@/components/GlobalSessionManager";
 import { WebPushProvider } from "@/features/notifications/components/WebPushProvider";
 import { suppressKnownConsoleNoise } from "@/lib/utils/suppressKnownConsoleNoise";
+import MarketDataProvider from "@/features/market/components/MarketDataProvider";
 
 declare global {
   interface Window {
@@ -288,7 +289,9 @@ export default function Providers({
                   "419397388040-pho892dc9oj407o844h8af1leh9cnvpq.apps.googleusercontent.com"
                 }
               >
-                <WebPushProvider>{children}</WebPushProvider>
+                <WebPushProvider>
+                  <MarketDataProvider>{children}</MarketDataProvider>
+                </WebPushProvider>
             </GoogleOAuthProvider>
             </LanguageProvider>
           </ThemeProvider>

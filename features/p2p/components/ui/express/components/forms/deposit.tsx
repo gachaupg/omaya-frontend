@@ -35,12 +35,9 @@ import {
   reportAssetLoadIssue,
   shouldSkipAssetFetchError,
 } from "@/lib/utils/assetLoadNotice";
-import { extractP2pSubmitApiError } from "@/features/p2p/utils/errorHandler";
+import { resolveP2pAccountHoldMessage } from "@/features/p2p/utils/errorHandler";
 import ScamFlagSubmitBanner from "@/features/express/components/ScamFlagSubmitBanner";
-import {
-  isScamFlagUserMessage,
-  resolveScamFlagDisplayError,
-} from "@/lib/utils/scamFlagError";
+import { isScamFlagUserMessage } from "@/lib/utils/scamFlagError";
 import {
   createExpressDeposit,
   fetchCommission,
@@ -124,7 +121,6 @@ export default function DepositForm({
     (state: any) => state.exchange
   );
 
-  // Add swap assets state
   const { supportedAssets: swapAssets, loading: swapAssetsLoading } =
     useSelector((state: any) => state.swap);
   const { isDark } = useTheme();
@@ -743,6 +739,7 @@ export default function DepositForm({
   const handleSubmit = async () => {
     // Clear previous errors
     setValidationErrors([]);
+    setAccountHoldMessage(null);
 
     // Validate form
     const errors = validateForm();
@@ -813,6 +810,7 @@ export default function DepositForm({
       localStorage.setItem('express_transaction_data', JSON.stringify(transactionData));
 
       showToast.success("Deposit request created successfully!");
+      setAccountHoldMessage(null);
 
       // Navigate to exchanging page
       if (onExchange) {
@@ -820,68 +818,25 @@ export default function DepositForm({
       } else {
         router.push('/dashboard/express-exchange');
       }
-    } catch (error: any) {
-      const msg = extractP2pSubmitApiError(error, "Failed to create deposit");
-      const scamMsg = resolveScamFlagDisplayError(
+    } catch (error: unknown) {
+      const { holdMessage, userMessage } = resolveP2pAccountHoldMessage(
         error,
-        error?.response?.data,
-        msg
+        "Failed to create deposit"
       );
-      if (scamMsg) {
-        setAccountHoldMessage(scamMsg);
+      if (holdMessage) {
+        setAccountHoldMessage(holdMessage);
         setValidationErrors([]);
         return;
       }
       setAccountHoldMessage(null);
-      showToast.error(msg);
-      setValidationErrors([msg]);
+      showToast.error(userMessage);
+      setValidationErrors([userMessage]);
     } finally {
       setIsSubmitting(false);
     }
   };
 
-  useEffect(() => {
-    // Try to fetch from cache first, then API if needed
-    dispatch(fetchAdminPaymentDetails(false)) // false = don't force refresh
-      .unwrap()
-      .catch((error: unknown) => {
-        showToast.error(`Failed to fetch admin payment details: ${error}`);
-      });
-  }, [dispatch]);
-
-  useEffect(() => {
-    withTimeout(dispatch(fetchAssets(false)).unwrap(), 15_000)
-      .then((data) => {
-        logger.debug('p2p', "DEBUG: Exchange assets loaded:", {
-          hasAssets: !!data?.assets,
-          assetsLength: data?.assets?.length || 0,
-          totalBalance: data?.total_wallet_balance
-        });
-        if (!data?.assets || data.assets.length === 0) {
-          logger.debug('p2p', "🔄 No assets in cache, forcing refresh...");
-          return withTimeout(dispatch(fetchAssets(true)).unwrap(), 15_000);
-        }
-        return data;
-      })
-      .catch((error: unknown) => {
-        if (shouldSkipAssetFetchError(error)) return;
-        return withTimeout(dispatch(fetchAssets(true)).unwrap(), 15_000).catch(
-          (refreshError: unknown) => {
-            if (shouldSkipAssetFetchError(refreshError)) return;
-            reportAssetLoadIssue("p2p-express-deposit:exchange-assets", refreshError);
-            throw refreshError;
-          }
-        );
-      });
-  }, [dispatch]);
-
-  useEffect(() => {
-    withTimeout(dispatch(fetchUserPaymentDetails()).unwrap(), 15_000).catch((error: unknown) => {
-      showToast.error(`Failed to fetch user payment details: ${error}`);
-    });
-  }, [dispatch]);
-
-  // Fetch deposit address when asset and network are available
+  // Deposit address is form-specific; assets + payment methods preload via MarketDataProvider
   useEffect(() => {
     if (selectedAsset && selectedNetwork) {
       const asset = selectedAsset.ticker || selectedAsset.symbol;
@@ -906,74 +861,6 @@ export default function DepositForm({
                   });
     }
   }, [dispatch, selectedAsset, selectedNetwork]);
-
-  useEffect(() => {
-    withTimeout(
-      dispatch(
-        fetchSupportedAssets({ forceRefresh: false, feature: "exchange" })
-      ).unwrap(),
-      15_000
-    )
-      .then((data) => {
-        logger.debug('p2p', "DEBUG: Swap assets loaded:", {
-          hasAssets: !!data,
-          assetsLength: data?.length || 0
-        });
-        if (!data || data.length === 0) {
-          logger.debug('p2p', "🔄 No swap assets in cache, forcing refresh...");
-          return withTimeout(
-            dispatch(
-              fetchSupportedAssets({ forceRefresh: true, feature: "exchange" })
-            ).unwrap(),
-            15_000
-          );
-        }
-        return data;
-      })
-      .catch((error: unknown) => {
-                return withTimeout(
-          dispatch(
-            fetchSupportedAssets({ forceRefresh: true, feature: "exchange" })
-          ).unwrap(),
-          15_000
-        ).catch(
-          (refreshError: unknown) => {
-                        // Only show error if it's a network issue, not cache issues
-            if (refreshError instanceof Error) {
-              if (refreshError.message.includes("Network Error") || refreshError.message.includes("Network connection issue")) {
-                showToast.warning("Network issue", "Asset list may be incomplete. You can still continue if options appear.");
-              } else if (!refreshError.message.includes("Cache")) {
-                reportAssetLoadIssue("p2p-express-deposit:swap-assets", refreshError, {
-                  title: "Could not load swap assets",
-                });
-              }
-            }
-
-            // Set fallback assets so the form can still work - only USDT Tether
-            const fallbackAssets = [
-              {
-                ticker: "USDT",
-                symbol: "USDT",
-                name: "Tether USD",
-                network: "BSC",
-                range_commissions: [{ commission: "2" }],
-                commission: "2",
-                fee_rate: "2",
-                image_url: "/images/tether.svg",
-                asset_id: "usdt-tether-bsc"
-              }
-            ];
-
-            // Update the Redux store with fallback assets
-            dispatch({
-              type: "swap/fetchSupportedAssets/fulfilled",
-              payload: fallbackAssets
-            });
-
-            throw refreshError;
-          });
-      });
-  }, [dispatch]);
 
   // Auto-select USDT Tether asset - always ensure USDT is available and selected
   useEffect(() => {
@@ -2817,16 +2704,19 @@ export default function DepositForm({
               </div>
 
               {/* Validation Errors Display */}
-              {validationErrors.length > 0 && (
+              {validationErrors.filter((error) => !isScamFlagUserMessage(error))
+                .length > 0 && (
                 <div className="w-full px-2 mb-3 sm:mb-4">
                   <div className="dark:bg-[var(--card-color)] border border-[#1D8751] rounded-xl sm:rounded-2xl p-3 sm:p-4">
                     <h3 className="text-[#1D8751] font-semibold mb-2 text-sm sm:text-base">
                       Please fix the following errors:
                     </h3>
                     <ul className="list-disc list-inside text-[#1D8751] space-y-1">
-                      {validationErrors.map((error, index) => (
-                        <li key={index}>{error}</li>
-                      ))}
+                      {validationErrors
+                        .filter((error) => !isScamFlagUserMessage(error))
+                        .map((error, index) => (
+                          <li key={index}>{error}</li>
+                        ))}
                     </ul>
                   </div>
                 </div>
@@ -3015,7 +2905,14 @@ export default function DepositForm({
                   : "bg-[#1D8751] hover:bg-[#166b3e]"
                   }`}
                 onClick={handleSubmit}
-                disabled={isSubmitting || !!accountHoldMessage || !selectedAsset || !selectedNetwork || !user?.is_verified}
+                disabled={
+                  isSubmitting ||
+                  !!accountHoldMessage ||
+                  !selectedAsset ||
+                  !selectedNetwork ||
+                  !user?.is_verified ||
+                  !confirmPayment
+                }
               >
                 {isSubmitting ? (
                   <div className="flex items-center gap-2">

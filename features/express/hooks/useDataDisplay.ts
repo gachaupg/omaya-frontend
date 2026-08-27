@@ -4,6 +4,7 @@ import { useDispatch } from 'react-redux';
 import { AppDispatch } from '@/store';
 import { REAL_ASSETS_CACHE_TTL_MS } from '@/lib/constants/realAssetsCache';
 import { logger } from '@/lib/utils/logger';
+import { hydratePaymentCacheFromIndexedDB } from '@/lib/utils/hydrateMarketDataCache';
 import {
   clearSupportedTokensCachesOnReload,
   shouldForceSupportedTokensRefetch,
@@ -322,6 +323,21 @@ export function usePaymentMethodsDisplay(
   loading: boolean,
   error: string | null
 ) {
+  const dispatch = useDispatch<AppDispatch>();
+  const [hydrated, setHydrated] = useState(false);
+
+  // One-time IndexedDB hydration so payment selects render instantly on repeat visits
+  useEffect(() => {
+    if (hydrated) return;
+    if (typeof window === "undefined") return;
+    if (paymentMethods && paymentMethods.length > 0) {
+      setHydrated(true);
+      return;
+    }
+    setHydrated(true);
+    void hydratePaymentCacheFromIndexedDB(dispatch);
+  }, [dispatch, hydrated, paymentMethods?.length]);
+
   // Common fallback payment methods - empty array to avoid showing fake data
   const fallbackPaymentMethods = useMemo(() => [], []);
 

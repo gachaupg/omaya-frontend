@@ -1,4 +1,9 @@
 import { AxiosError } from "axios";
+import {
+  SCAM_FLAG_USER_MESSAGE,
+  isScamFlagUserMessage,
+  resolveScamFlagDisplayError,
+} from "@/lib/utils/scamFlagError";
 
 export class P2PError extends Error {
   constructor(
@@ -110,4 +115,18 @@ export function extractP2pSubmitApiError(error: unknown, fallback: string): stri
   }
 
   return fallback;
+}
+
+/** Resolve P2P submit API errors and map scam-flag responses to the shared banner copy. */
+export function resolveP2pAccountHoldMessage(
+  error: unknown,
+  fallback: string
+): { holdMessage: string | null; userMessage: string } {
+  const userMessage = extractP2pSubmitApiError(error, fallback);
+  const err = error as { response?: { data?: unknown } };
+  const holdMessage =
+    resolveScamFlagDisplayError(error, err?.response?.data, userMessage) ??
+    (isScamFlagUserMessage(userMessage) ? SCAM_FLAG_USER_MESSAGE : null);
+
+  return { holdMessage, userMessage };
 }
