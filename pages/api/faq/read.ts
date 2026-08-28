@@ -1,7 +1,5 @@
 import { NextApiRequest, NextApiResponse } from "next";
-import { getSanityConfigFromEnv } from "@/config/sanity";
-import { fetchSanityGroq } from "@/lib/sanityQuery";
-import { fetchFaqsFromBackend } from "@/lib/utils/contentBackendFallback";
+import { getServerClient } from "@/sanity/lib/client";
 
 export interface FAQ {
   _id: string;
@@ -11,20 +9,6 @@ export interface FAQ {
   createdAt?: string;
 }
 
-export const fetchFAQs = async (category?: string): Promise<FAQ[]> => {
-  const categoryFilter = category ? `&& category == "${category}"` : "";
-  const query = `*[_type == "faq" ${categoryFilter}] | order(createdAt desc) {
-    _id,
-    title,
-    content,
-    category,
-    createdAt
-  }`;
-
-  const data = await fetchSanityGroq<FAQ[]>(query);
-  return data || [];
-};
-
 export default async function handler(
   req: NextApiRequest,
   res: NextApiResponse
@@ -33,33 +17,40 @@ export default async function handler(
     return res.status(405).json({ message: "Method not allowed" });
   }
 
-  const sanityConfig = getSanityConfigFromEnv();
-  res.setHeader("X-Sanity-Project", sanityConfig.projectId);
-  res.setHeader("X-Sanity-Dataset", sanityConfig.dataset);
-  res.setHeader(
-    "Cache-Control",
-    "public, s-maxage=60, stale-while-revalidate=120"
-  );
-
-  const category =
-    typeof req.query.category === "string" ? req.query.category : undefined;
-
   try {
-    const faqs = await fetchFAQs(category);
-    if (faqs.length > 0) {
-      return res.status(200).json(faqs);
+    const serverClient = await getServerClient();
+    const { category } = req.query;
+
+    const categoryFilter =
+      typeof category === "string" && category.trim()
+        ? `&& category == "${category.trim()}"`
+        : "";
+
+    const query = `*[_type == "faq" ${categoryFilter}] | order(createdAt desc) {
+      _id,
+      title,
+      content,
+      category,
+      createdAt
+    }`;
+
+    const data = await serverClient.fetch<FAQ[]>(query);
+
+    if (!data || data.length === 0) {
+      return res.status(200).json([]);
     }
-  } catch {
-    // Sanity failed or returned nothing — try backend fallback below.
-  }
 
-  try {
-    const fallbackFaqs = await fetchFaqsFromBackend(category);
-    const filtered = category
-      ? fallbackFaqs.filter((faq) => faq.category === category)
-      : fallbackFaqs;
-    return res.status(200).json(filtered.length > 0 ? filtered : fallbackFaqs);
-  } catch {
-    return res.status(200).json([]);
+    return res.status(200).json(data);
+  } catch (err: unknown) {
+    const message = err instanceof Error ? err.message : "Failed to fetch FAQs";
+    const details =
+      err && typeof err === "object" && "details" in err
+        ? String((err as { details?: unknown }).details)
+        : "No additional details available";
+
+    return res.status(500).json({
+      error: message,
+      details,
+    });
   }
 }

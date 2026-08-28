@@ -17,7 +17,7 @@ export interface UseBlogsPaginatedResult {
 }
 
 /**
- * Paginated blogs via /api/blogs/read (Sanity first, backend.omaya.io fallback).
+ * Paginated blogs via /api/blogs/read (Sanity only — same as admin).
  */
 export const useBlogsPaginated = ({
   page,

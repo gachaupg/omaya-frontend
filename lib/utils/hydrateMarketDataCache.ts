@@ -2,11 +2,16 @@ import type { AppDispatch } from "@/store";
 import { sliceCache } from "@/lib/utils/sliceCache";
 import { logger } from "@/lib/utils/logger";
 
-const ACTIVE_PAYMENT_FILTER = (p: { is_active?: unknown }) =>
-  p.is_active === undefined ||
-  p.is_active === null ||
-  p.is_active === true ||
-  p.is_active === "true";
+function isActivePayment(p: unknown): boolean {
+  if (p == null || typeof p !== "object") return false;
+  const is_active = (p as { is_active?: unknown }).is_active;
+  return (
+    is_active === undefined ||
+    is_active === null ||
+    is_active === true ||
+    is_active === "true"
+  );
+}
 
 /**
  * Instantly hydrate Redux payment slices from IndexedDB so selects render
@@ -28,7 +33,7 @@ export async function hydratePaymentCacheFromIndexedDB(
         payload: cachedAdmin,
       });
       logger.debug("market-data", "Hydrated admin payment details from cache", {
-        count: cachedAdmin.filter(ACTIVE_PAYMENT_FILTER).length,
+        count: cachedAdmin.filter(isActivePayment).length,
       });
     }
 

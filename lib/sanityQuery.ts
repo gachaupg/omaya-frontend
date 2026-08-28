@@ -9,10 +9,13 @@ export async function fetchSanityGroq<T>(
   groqQuery: string,
   params: Record<string, unknown> = {}
 ): Promise<T> {
-  const config =
-    typeof window === "undefined"
-      ? getSanityConfigFromEnv()
-      : resolveSanityConfig();
+  if (typeof window === "undefined") {
+    const { getServerClient } = await import("@/sanity/lib/client");
+    const client = await getServerClient();
+    return client.fetch<T>(groqQuery, params);
+  }
+
+  const config = resolveSanityConfig();
   return fetchSanityGroqWithConfig<T>(config, groqQuery, params);
 }
 
@@ -51,4 +54,19 @@ export async function fetchSanityGroqWithConfig<T>(
 
   const data = (await response.json()) as { result?: T };
   return (data.result ?? []) as T;
+}
+
+/** Server-only: resolved Sanity project/dataset for response headers. */
+export async function getServerSanityMeta(): Promise<{
+  projectId: string;
+  dataset: string;
+}> {
+  if (typeof window !== "undefined") {
+    const config = getSanityConfigFromEnv();
+    return { projectId: config.projectId, dataset: config.dataset };
+  }
+
+  const { loadSanitySecrets } = await import("@/sanity/lib/loadSanitySecrets");
+  const secrets = await loadSanitySecrets();
+  return { projectId: secrets.projectId, dataset: secrets.dataset };
 }

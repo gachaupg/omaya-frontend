@@ -1,12 +1,8 @@
 import { NextApiRequest, NextApiResponse } from "next";
-import { getSanityConfigFromEnv, SANITY_BLOG_TYPE_FILTER } from "@/config/sanity";
+import { getServerClient } from "@/sanity/lib/client";
 import { requestManager } from "@/lib/requestManager";
-import { fetchSanityGroq } from "@/lib/sanityQuery";
+import { getServerSanityMeta } from "@/lib/sanityQuery";
 import { filterRealBlogPosts } from "@/features/blogs/utils/blogPosts";
-import {
-  fetchBlogsFromBackend,
-  paginateBackendBlogPosts,
-} from "@/lib/utils/contentBackendFallback";
 
 export interface Blog {
   _id: string;
@@ -21,6 +17,9 @@ export interface Blog {
   requestedReviewAt?: string;
   publishedAt?: string;
 }
+
+/** Public site — published blogs only (admin can pass ?status= for drafts). */
+const PUBLIC_BLOG_FILTER = `_type == "blog" && coalesce(status, "published") == "published"`;
 
 const BLOG_FIELDS = `{
   _id, 
@@ -47,13 +46,12 @@ const BLOG_FIELDS = `{
   }
 }`;
 
-const BASE_FILTER = SANITY_BLOG_TYPE_FILTER;
-/** Match mobile: order(createdAt desc) */
 const ORDER_CLAUSE = `order(createdAt desc)`;
 
 const fetchBlogsFromSanity = async (): Promise<Blog[]> => {
-  const query = `*[${BASE_FILTER}] | ${ORDER_CLAUSE} ${BLOG_FIELDS}`;
-  const data = await fetchSanityGroq<Blog[]>(query);
+  const serverClient = await getServerClient();
+  const query = `*[${PUBLIC_BLOG_FILTER}] | ${ORDER_CLAUSE} ${BLOG_FIELDS}`;
+  const data = await serverClient.fetch<Blog[]>(query);
   return filterRealBlogPosts(data || []);
 };
 
@@ -65,7 +63,7 @@ const fetchBlogsPaginatedFromSanity = async (
   const start = (page - 1) * limit;
   const end = start + limit;
 
-  const searchFilter = search && search.trim()
+  const searchFilter = search?.trim()
     ? `&& (
           title match "*" + $search + "*" ||
           description match "*" + $search + "*" ||
@@ -73,12 +71,13 @@ const fetchBlogsPaginatedFromSanity = async (
         )`
     : "";
 
-  const filter = `${BASE_FILTER} ${searchFilter}`;
-  const params = search && search.trim() ? { search: search.trim() } : {};
+  const filter = `${PUBLIC_BLOG_FILTER} ${searchFilter}`;
+  const params = search?.trim() ? { search: search.trim() } : {};
 
+  const serverClient = await getServerClient();
   const [totalCount, posts] = await Promise.all([
-    fetchSanityGroq<number>(`count(*[${filter}])`, params),
-    fetchSanityGroq<Blog[]>(
+    serverClient.fetch<number>(`count(*[${filter}])`, params),
+    serverClient.fetch<Blog[]>(
       `*[${filter}] | ${ORDER_CLAUSE} [${start}...${end}] ${BLOG_FIELDS}`,
       params
     ),
@@ -99,57 +98,6 @@ export const fetchBlogs = async (bypassCache: boolean = false): Promise<Blog[]> 
 
   return requestManager.executeRequest("blogs", fetchBlogsFromSanity, 15 * 1000);
 };
-
-async function loadAllBlogs(refresh: boolean): Promise<Blog[]> {
-  try {
-    const blogs = await fetchBlogs(refresh);
-    if (blogs.length > 0) {
-      return blogs;
-    }
-  } catch {
-    // Sanity failed — try backend fallback below.
-  }
-
-  try {
-    const { posts } = await fetchBlogsFromBackend();
-    return filterRealBlogPosts(posts as Blog[]);
-  } catch {
-    return [];
-  }
-}
-
-async function loadPaginatedBlogs(
-  page: number,
-  limit: number,
-  search?: string,
-  refresh = false
-): Promise<{ posts: Blog[]; totalCount: number }> {
-  try {
-    if (refresh) {
-      requestManager.clear("blogs");
-    }
-    const result = await fetchBlogsPaginatedFromSanity(page, limit, search);
-    if (result.posts.length > 0) {
-      return result;
-    }
-    if (search?.trim()) {
-      return { posts: [], totalCount: 0 };
-    }
-  } catch {
-    // Sanity failed — try backend fallback below.
-  }
-
-  try {
-    const { posts } = await fetchBlogsFromBackend();
-    const paginated = paginateBackendBlogPosts(posts, page, limit, search);
-    return {
-      posts: filterRealBlogPosts(paginated.posts as Blog[]),
-      totalCount: paginated.totalCount,
-    };
-  } catch {
-    return { posts: [], totalCount: 0 };
-  }
-}
 
 export const config = {
   api: {
@@ -176,26 +124,26 @@ export default async function handler(
     requestManager.clear("blogs");
   }
 
-  const sanityConfig = getSanityConfigFromEnv();
-  res.setHeader("X-Sanity-Project", sanityConfig.projectId);
-  res.setHeader("X-Sanity-Dataset", sanityConfig.dataset);
-
-  if (refresh) {
-    res.setHeader(
-      "Cache-Control",
-      "no-store, no-cache, must-revalidate, proxy-revalidate, max-age=0"
-    );
-    res.setHeader("Pragma", "no-cache");
-    res.setHeader("Expires", "0");
-  } else {
-    res.setHeader(
-      "Cache-Control",
-      "public, s-maxage=15, stale-while-revalidate=30"
-    );
-  }
-  res.setHeader("X-Content-Type-Options", "nosniff");
-
   try {
+    const sanityMeta = await getServerSanityMeta();
+    res.setHeader("X-Sanity-Project", sanityMeta.projectId);
+    res.setHeader("X-Sanity-Dataset", sanityMeta.dataset);
+
+    if (refresh) {
+      res.setHeader(
+        "Cache-Control",
+        "no-store, no-cache, must-revalidate, proxy-revalidate, max-age=0"
+      );
+      res.setHeader("Pragma", "no-cache");
+      res.setHeader("Expires", "0");
+    } else {
+      res.setHeader(
+        "Cache-Control",
+        "public, s-maxage=15, stale-while-revalidate=30"
+      );
+    }
+    res.setHeader("X-Content-Type-Options", "nosniff");
+
     const pageParam = req.query.page;
     const limitParam = req.query.limit;
     const searchParam = req.query.search;
@@ -219,18 +167,27 @@ export default async function handler(
             ? searchParam[0]?.trim() ?? ""
             : "";
 
-      const { posts, totalCount } = await loadPaginatedBlogs(
+      const { posts, totalCount } = await fetchBlogsPaginatedFromSanity(
         page,
         limit,
-        search || undefined,
-        refresh
+        search || undefined
       );
       return res.status(200).json({ posts, totalCount });
     }
 
-    const blogs = await loadAllBlogs(refresh);
+    const blogs = await fetchBlogs(refresh);
     return res.status(200).json(blogs);
-  } catch {
-    return res.status(200).json([]);
+  } catch (err: unknown) {
+    console.error("Failed to fetch blogs:", err);
+    const message = err instanceof Error ? err.message : "Failed to fetch blogs";
+    const details =
+      err && typeof err === "object" && "details" in err
+        ? String((err as { details?: unknown }).details)
+        : "No additional details available";
+
+    return res.status(500).json({
+      error: message,
+      details,
+    });
   }
 }

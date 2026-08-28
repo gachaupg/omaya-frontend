@@ -1,6 +1,6 @@
-import { resolveApiBaseUrl } from '@/config/api';
-import { getSanityConfigFromEnv } from '@/config/sanity';
-import { getChatwootConfigFromEnv } from '@/config/chatwoot';
+import { resolveApiBaseUrl } from "@/config/api";
+import { getChatwootConfigFromEnv } from "@/config/chatwoot";
+import { loadServerPublicRuntimeConfig } from "@/lib/serverRuntimeConfigScript";
 
 export type PublicRuntimeConfig = {
   NEXT_PUBLIC_GOOGLE_CLIENT_ID: string;
@@ -20,55 +20,48 @@ export type PublicRuntimeConfig = {
 
 let cachedConfig: PublicRuntimeConfig | null = null;
 
-function readPublicRuntimeConfigFromEnv(): PublicRuntimeConfig {
-  const apiBaseUrl = resolveApiBaseUrl();
-  const sanityConfig = getSanityConfigFromEnv();
-  const chatwootConfig = getChatwootConfigFromEnv();
-  return {
-    NEXT_PUBLIC_GOOGLE_CLIENT_ID: process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID || '',
-    NEXT_PUBLIC_GOOGLE_REDIRECT_URI:
-      process.env.NEXT_PUBLIC_GOOGLE_REDIRECT_URI || '',
-    NEXT_PUBLIC_BASE_URL: apiBaseUrl,
-    VITE_BASE_URL: apiBaseUrl,
-    NEXT_PUBLIC_APP_URL: process.env.NEXT_PUBLIC_APP_URL || '',
-    NEXT_PUBLIC_FACEBOOK_APP_ID: process.env.NEXT_PUBLIC_FACEBOOK_APP_ID || '',
-    NEXT_PUBLIC_FACEBOOK_REDIRECT_URI:
-      process.env.NEXT_PUBLIC_FACEBOOK_REDIRECT_URI || '',
-    NEXT_PUBLIC_SANITY_PROJECT_ID: sanityConfig.projectId,
-    NEXT_PUBLIC_SANITY_DATASET: sanityConfig.dataset,
-    NEXT_PUBLIC_SANITY_API_VERSION: sanityConfig.apiVersion,
-    NEXT_PUBLIC_SANITY_READ_TOKEN: sanityConfig.token,
-    NEXT_PUBLIC_CHATWOOT_BASE_URL: chatwootConfig.baseUrl,
-    NEXT_PUBLIC_CHATWOOT_WEBSITE_TOKEN: chatwootConfig.websiteToken,
-  };
-}
-
 export async function loadRuntimeConfig(): Promise<PublicRuntimeConfig> {
-  if (typeof window === 'undefined') {
-    return readPublicRuntimeConfigFromEnv();
+  if (typeof window === "undefined") {
+    return loadServerPublicRuntimeConfig();
   }
 
   if (cachedConfig) return cachedConfig;
 
-  const res = await fetch('/api/runtime-config', { cache: 'no-store' });
+  const res = await fetch("/api/runtime-config", { cache: "no-store" });
   if (!res.ok) {
-    cachedConfig = readPublicRuntimeConfigFromEnv();
-    return cachedConfig;
+    throw new Error(`Failed to load runtime config (${res.status})`);
   }
   cachedConfig = (await res.json()) as PublicRuntimeConfig;
   try {
-    (window as any).__RUNTIME_CONFIG__ = cachedConfig;
-  } catch {}
+    (window as unknown as { __RUNTIME_CONFIG__?: PublicRuntimeConfig }).__RUNTIME_CONFIG__ =
+      cachedConfig;
+  } catch {
+    // ignore
+  }
   return cachedConfig;
 }
 
 export function getRuntimeConfigSync(): PublicRuntimeConfig {
-  if (typeof window === 'undefined') {
-    return readPublicRuntimeConfigFromEnv();
+  if (typeof window === "undefined") {
+    throw new Error("getRuntimeConfigSync() is client-only; use loadRuntimeConfig() on the server");
   }
   return (
     cachedConfig ||
-    (typeof window !== 'undefined' && (window as any).__RUNTIME_CONFIG__) ||
-    readPublicRuntimeConfigFromEnv()
+    (window as unknown as { __RUNTIME_CONFIG__?: PublicRuntimeConfig })
+      .__RUNTIME_CONFIG__ || {
+      NEXT_PUBLIC_GOOGLE_CLIENT_ID: "",
+      NEXT_PUBLIC_GOOGLE_REDIRECT_URI: "",
+      NEXT_PUBLIC_BASE_URL: "",
+      VITE_BASE_URL: "",
+      NEXT_PUBLIC_APP_URL: "",
+      NEXT_PUBLIC_FACEBOOK_APP_ID: "",
+      NEXT_PUBLIC_FACEBOOK_REDIRECT_URI: "",
+      NEXT_PUBLIC_SANITY_PROJECT_ID: "",
+      NEXT_PUBLIC_SANITY_DATASET: "",
+      NEXT_PUBLIC_SANITY_API_VERSION: "",
+      NEXT_PUBLIC_SANITY_READ_TOKEN: "",
+      NEXT_PUBLIC_CHATWOOT_BASE_URL: "",
+      NEXT_PUBLIC_CHATWOOT_WEBSITE_TOKEN: "",
+    }
   );
 }

@@ -21,8 +21,8 @@ export const useFAQ = (category?: string) => {
         setError(null);
 
         const path = category
-          ? `/api/faq/read/?category=${encodeURIComponent(category)}`
-          : "/api/faq/read/";
+          ? `/api/faq/read?category=${encodeURIComponent(category)}`
+          : "/api/faq/read";
 
         const response = await fetchContentReadApi(path);
         if (!response.ok) {

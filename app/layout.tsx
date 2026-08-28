@@ -74,7 +74,7 @@ export default async function RootLayout({
   children: React.ReactNode;
 }) {
   const initialLocale = await getServerLocale();
-  const runtimeConfigScript = buildServerRuntimeConfigScript();
+  const runtimeConfigScript = await buildServerRuntimeConfigScript();
 
   return (
     <html lang={initialLocale} suppressHydrationWarning>

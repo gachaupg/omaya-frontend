@@ -13,6 +13,7 @@
     "download-assets": "node scripts/download-cloudinary-assets.mjs"
   },
   "dependencies": {
+    "@aws-sdk/client-secrets-manager": "^3.1120.0",
     "@faceio/fiojs": "^1.1.0",
     "@headlessui/react": "^2.2.4",
     "@react-oauth/google": "^0.12.2",

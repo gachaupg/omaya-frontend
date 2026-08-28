@@ -50,6 +50,12 @@ async function querySanity<T>(
   groqQuery: string,
   params: Record<string, unknown> = {}
 ): Promise<T> {
+  if (typeof window === "undefined") {
+    const { getServerClient } = await import("@/sanity/lib/client");
+    const client = await getServerClient();
+    return client.fetch<T>(groqQuery, params);
+  }
+
   const config = resolveSanityConfig();
   return fetchSanityGroqWithConfig<T>(config, groqQuery, params);
 }
