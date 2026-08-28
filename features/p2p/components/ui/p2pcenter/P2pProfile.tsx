@@ -295,7 +295,7 @@ const P2pProfile = ({
                 onClick={() => router.push("/p2p/merchant")}
                 className="bg-[#1D8751] text-white text-xs sm:text-sm font-semibold rounded-full px-4 sm:px-5 py-2 hover:bg-[#176e43] transition-colors"
               >
-                {merchantStatus?.status === 'rejected' ? 'Reapply as Merchant' : 'Become Merchant PRO'}
+                {merchantStatus?.status === 'rejected' ? 'Reapply as Merchant' : 'Become Merchant Pro'}
               </button>
             )}
           </div>
