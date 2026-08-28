@@ -8,7 +8,7 @@ export type SanitySecrets = {
 };
 
 const DEFAULT_API_VERSION = "2025-07-04";
-/** Omaya Sanity project uses `production` (no `development` dataset on jhuegccg). */
+/** Omaya Sanity project `jhuegccg` — production dataset (development does not exist on this project). */
 const DEFAULT_DATASET = "production";
 
 /**

@@ -1,5 +1,5 @@
 import { NextApiRequest, NextApiResponse } from "next";
-import { getServerClient } from "@/sanity/lib/client";
+import { fetchPublicFaqsFromSanity, getPublicSanityContentMeta } from "@/lib/content/sanityPublicContent";
 
 export interface FAQ {
   _id: string;
@@ -18,29 +18,20 @@ export default async function handler(
   }
 
   try {
-    const serverClient = await getServerClient();
-    const { category } = req.query;
+    const sanityMeta = await getPublicSanityContentMeta();
+    res.setHeader("X-Sanity-Project", sanityMeta.projectId);
+    res.setHeader("X-Sanity-Dataset", sanityMeta.dataset);
+    res.setHeader("X-Content-Source", "sanity");
+    res.setHeader(
+      "Cache-Control",
+      "public, s-maxage=60, stale-while-revalidate=120"
+    );
 
-    const categoryFilter =
-      typeof category === "string" && category.trim()
-        ? `&& category == "${category.trim()}"`
-        : "";
+    const category =
+      typeof req.query.category === "string" ? req.query.category : undefined;
 
-    const query = `*[_type == "faq" ${categoryFilter}] | order(createdAt desc) {
-      _id,
-      title,
-      content,
-      category,
-      createdAt
-    }`;
-
-    const data = await serverClient.fetch<FAQ[]>(query);
-
-    if (!data || data.length === 0) {
-      return res.status(200).json([]);
-    }
-
-    return res.status(200).json(data);
+    const data = await fetchPublicFaqsFromSanity(category);
+    return res.status(200).json(data || []);
   } catch (err: unknown) {
     const message = err instanceof Error ? err.message : "Failed to fetch FAQs";
     const details =

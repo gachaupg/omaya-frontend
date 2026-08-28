@@ -1,56 +1,54 @@
 import { useEffect, useState } from "react";
 
 import { logger } from "@/lib/utils/logger";
-import { fetchContentReadApi } from "@/lib/utils/contentReadApiUrl";
 import {
   isSystemFallbackFaqItem,
   type FAQItem,
 } from "@/features/faq/utils/faqFallback";
+import { fetchPublicFaqsAction } from "@/features/faq/server/fetchFaqsAction";
 
 export type { FAQItem };
 
+/** FAQs via Server Action → Sanity (getServerClient), same path as admin. */
 export const useFAQ = (category?: string) => {
   const [faqs, setFaqs] = useState<FAQItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    const fetchFAQs = async () => {
+    let cancelled = false;
+
+    const load = async () => {
       try {
         setLoading(true);
         setError(null);
 
-        const path = category
-          ? `/api/faq/read?category=${encodeURIComponent(category)}`
-          : "/api/faq/read";
+        const data = await fetchPublicFaqsAction(category);
 
-        const response = await fetchContentReadApi(path);
-        if (!response.ok) {
-          throw new Error(`HTTP error! status: ${response.status}`);
-        }
+        if (cancelled) return;
 
-        const data = await response.json();
-
-        const transformedFaqs = (Array.isArray(data) ? data : []).map(
-          (faq: FAQItem, index: number) => ({
-            ...faq,
-            id: index + 1,
-            question: faq.title,
-            answer: faq.content,
-          })
-        );
+        const transformedFaqs = data.map((faq, index) => ({
+          ...faq,
+          id: index + 1,
+          question: faq.title,
+          answer: faq.content,
+        }));
 
         setFaqs(transformedFaqs);
       } catch (err) {
+        if (cancelled) return;
         logger.error("general", "Error fetching FAQs:", err);
         setFaqs([]);
-        setError(null);
+        setError(err instanceof Error ? err.message : "Failed to load FAQs");
       } finally {
-        setLoading(false);
+        if (!cancelled) setLoading(false);
       }
     };
 
-    fetchFAQs();
+    load();
+    return () => {
+      cancelled = true;
+    };
   }, [category]);
 
   return {

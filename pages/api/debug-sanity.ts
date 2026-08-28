@@ -47,7 +47,7 @@ export default async function handler(
       config: secretsSummary,
       envPresent,
       hint:
-        "Session not found = Sanity rejected the API token. In AWS SM, confirm SANITY_TOKEN is a valid sk… token. ECS must inject SANITY_PROJECT_ID, SANITY_DATASET=production, and SANITY_TOKEN (or SANITY_SECRET_NAME). Same secret as admin.",
+        "Session not found = Sanity rejected the API token. Dataset not found = wrong SANITY_DATASET (use production for jhuegccg). ECS must inject SANITY_PROJECT_ID, SANITY_DATASET=production, and SANITY_TOKEN (or SANITY_SECRET_NAME). Same secret as admin.",
     });
   }
 }
