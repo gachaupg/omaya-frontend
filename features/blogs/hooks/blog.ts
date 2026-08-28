@@ -37,7 +37,7 @@ function transformBlogPosts(data: BlogPost[]): {
 }
 
 /**
- * Blog hook — reads via /api/blogs/read (server-side Sanity), with periodic refresh.
+ * Blog hook — same-origin API first, direct Sanity fallback, with periodic refresh.
  */
 export const useBlog = () => {
   const [blogs, setBlogs] = useState<BlogPost[]>([]);

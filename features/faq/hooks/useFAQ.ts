@@ -1,15 +1,17 @@
 import { useEffect, useState } from "react";
 
 import { logger } from "@/lib/utils/logger";
+import { fetchPublicFaqsWithFallback } from "@/lib/content/publicContentFetch";
 import {
   isSystemFallbackFaqItem,
   type FAQItem,
 } from "@/features/faq/utils/faqFallback";
-import { fetchPublicFaqsAction } from "@/features/faq/server/fetchFaqsAction";
 
 export type { FAQItem };
 
-/** FAQs via Server Action → Sanity (getServerClient), same path as admin. */
+/**
+ * FAQs: same-origin `/api/faq/read/` first, then direct Sanity (mobile path).
+ */
 export const useFAQ = (category?: string) => {
   const [faqs, setFaqs] = useState<FAQItem[]>([]);
   const [loading, setLoading] = useState(true);
@@ -23,7 +25,7 @@ export const useFAQ = (category?: string) => {
         setLoading(true);
         setError(null);
 
-        const data = await fetchPublicFaqsAction(category);
+        const data = await fetchPublicFaqsWithFallback(category);
 
         if (cancelled) return;
 

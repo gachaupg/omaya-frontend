@@ -2,6 +2,7 @@ import { getServerClient } from "@/sanity/lib/client";
 import { requestManager } from "@/lib/requestManager";
 import { getServerSanityMeta } from "@/lib/sanityQuery";
 import { filterRealBlogPosts } from "@/features/blogs/utils/blogPosts";
+import type { BlogPost } from "@/features/blogs/types";
 
 export type PublicFaq = {
   _id: string;
@@ -11,22 +12,25 @@ export type PublicFaq = {
   createdAt?: string;
 };
 
-export type PublicBlog = {
-  _id: string;
-  title: string;
-  description: string;
-  category: string;
-  image?: unknown;
-  author_name?: string;
-  createdAt?: string;
-  status?: string;
-  statusChangedAt?: string;
-  requestedReviewAt?: string;
-  publishedAt?: string;
-};
+export type PublicBlog = Pick<
+  BlogPost,
+  | "_id"
+  | "title"
+  | "description"
+  | "category"
+  | "image"
+  | "author_name"
+  | "createdAt"
+  | "status"
+  | "statusChangedAt"
+  | "requestedReviewAt"
+  | "publishedAt"
+>;
 
 const PUBLIC_BLOG_FILTER =
   `_type == "blog" && coalesce(status, "published") == "published"`;
+
+export const PUBLIC_BLOG_GROQ_FILTER = PUBLIC_BLOG_FILTER;
 
 const BLOG_FIELDS = `{
   _id,
@@ -55,21 +59,57 @@ const BLOG_FIELDS = `{
 
 const BLOG_ORDER = "order(createdAt desc)";
 
-/** Public FAQs from Sanity — same GROQ as admin /api/faq/read. */
-export async function fetchPublicFaqsFromSanity(
-  category?: string
-): Promise<PublicFaq[]> {
-  const serverClient = await getServerClient();
+export const PUBLIC_BLOG_GROQ_FIELDS = BLOG_FIELDS;
+export const PUBLIC_BLOG_GROQ_ORDER = BLOG_ORDER;
+
+export function buildPublicFaqGroqQuery(category?: string): string {
   const categoryFilter =
     category && category.trim() ? `&& category == "${category.trim()}"` : "";
-
-  const query = `*[_type == "faq" ${categoryFilter}] | order(createdAt desc) {
+  return `*[_type == "faq" ${categoryFilter}] | order(createdAt desc) {
     _id,
     title,
     content,
     category,
     createdAt
   }`;
+}
+
+export function buildAllPublicBlogsGroqQuery(): string {
+  return `*[${PUBLIC_BLOG_FILTER}] | ${BLOG_ORDER} ${BLOG_FIELDS}`;
+}
+
+export function buildPublicBlogsPaginatedGroq(
+  page: number,
+  limit: number,
+  search?: string
+): { countQuery: string; postsQuery: string; params: Record<string, unknown> } {
+  const start = (page - 1) * limit;
+  const end = start + limit;
+
+  const searchFilter = search?.trim()
+    ? `&& (
+          title match "*" + $search + "*" ||
+          description match "*" + $search + "*" ||
+          (author_name != null && author_name match "*" + $search + "*")
+        )`
+    : "";
+
+  const filter = `${PUBLIC_BLOG_FILTER} ${searchFilter}`;
+  const params = search?.trim() ? { search: search.trim() } : {};
+
+  return {
+    countQuery: `count(*[${filter}])`,
+    postsQuery: `*[${filter}] | ${BLOG_ORDER} [${start}...${end}] ${BLOG_FIELDS}`,
+    params,
+  };
+}
+
+/** Public FAQs from Sanity — same GROQ as admin /api/faq/read. */
+export async function fetchPublicFaqsFromSanity(
+  category?: string
+): Promise<PublicFaq[]> {
+  const serverClient = await getServerClient();
+  const query = buildPublicFaqGroqQuery(category);
 
   const data = await serverClient.fetch<PublicFaq[]>(query);
   return data || [];
@@ -77,9 +117,9 @@ export async function fetchPublicFaqsFromSanity(
 
 async function fetchAllPublicBlogsFromSanity(): Promise<PublicBlog[]> {
   const serverClient = await getServerClient();
-  const query = `*[${PUBLIC_BLOG_FILTER}] | ${BLOG_ORDER} ${BLOG_FIELDS}`;
+  const query = buildAllPublicBlogsGroqQuery();
   const data = await serverClient.fetch<PublicBlog[]>(query);
-  return filterRealBlogPosts(data || []) as PublicBlog[];
+  return filterRealBlogPosts(data || []);
 }
 
 export async function fetchPublicBlogsFromSanity(
@@ -101,30 +141,19 @@ export async function fetchPublicBlogsPaginatedFromSanity(
   limit: number,
   search?: string
 ): Promise<{ posts: PublicBlog[]; totalCount: number }> {
-  const start = (page - 1) * limit;
-  const end = start + limit;
-
-  const searchFilter = search?.trim()
-    ? `&& (
-          title match "*" + $search + "*" ||
-          description match "*" + $search + "*" ||
-          (author_name != null && author_name match "*" + $search + "*")
-        )`
-    : "";
-
-  const filter = `${PUBLIC_BLOG_FILTER} ${searchFilter}`;
-  const params = search?.trim() ? { search: search.trim() } : {};
+  const { countQuery, postsQuery, params } = buildPublicBlogsPaginatedGroq(
+    page,
+    limit,
+    search
+  );
 
   const serverClient = await getServerClient();
   const [totalCount, posts] = await Promise.all([
-    serverClient.fetch<number>(`count(*[${filter}])`, params),
-    serverClient.fetch<PublicBlog[]>(
-      `*[${filter}] | ${BLOG_ORDER} [${start}...${end}] ${BLOG_FIELDS}`,
-      params
-    ),
+    serverClient.fetch<number>(countQuery, params),
+    serverClient.fetch<PublicBlog[]>(postsQuery, params),
   ]);
 
-  const realPosts = filterRealBlogPosts(posts || []) as PublicBlog[];
+  const realPosts = filterRealBlogPosts(posts || []);
 
   return {
     posts: realPosts,

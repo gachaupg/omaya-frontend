@@ -17,7 +17,7 @@ export interface UseBlogsPaginatedResult {
 }
 
 /**
- * Paginated blogs via /api/blogs/read (Sanity only — same as admin).
+ * Paginated blogs: same-origin API first, then direct Sanity fallback.
  */
 export const useBlogsPaginated = ({
   page,

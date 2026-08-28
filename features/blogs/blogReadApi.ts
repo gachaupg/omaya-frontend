@@ -1,9 +1,9 @@
 import { BlogPost } from "./types";
 import { filterRealBlogPosts } from "./utils/blogPosts";
 import {
-  fetchPublicBlogsAction,
-  fetchPublicBlogsPaginatedAction,
-} from "./server/fetchBlogsAction";
+  fetchPublicBlogsPaginatedWithFallback,
+  fetchPublicBlogsWithFallback,
+} from "@/lib/content/publicContentFetch";
 
 function transformBlogPost(blog: BlogPost, index: number): BlogPost {
   return {
@@ -24,11 +24,14 @@ function transformBlogPost(blog: BlogPost, index: number): BlogPost {
   };
 }
 
-/** Blogs via Server Action → Sanity (getServerClient), same path as admin. */
+/**
+ * Blogs: same-origin `/api/blogs/read/` first, then direct Sanity (mobile path).
+ * Sanity creds: `.env` locally; AWS Secrets Manager → runtime config in production.
+ */
 export async function fetchAllBlogsFromApi(
   refresh = false
 ): Promise<BlogPost[]> {
-  const data = await fetchPublicBlogsAction(refresh);
+  const data = await fetchPublicBlogsWithFallback(refresh);
   const realPosts = filterRealBlogPosts(data as BlogPost[]);
   return realPosts.map(transformBlogPost);
 }
@@ -39,7 +42,7 @@ export async function fetchBlogsPaginatedFromApi(
   search?: string,
   refresh = false
 ): Promise<{ posts: BlogPost[]; totalCount: number }> {
-  const data = await fetchPublicBlogsPaginatedAction(
+  const data = await fetchPublicBlogsPaginatedWithFallback(
     page,
     limit,
     search,
