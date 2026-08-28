@@ -36,9 +36,7 @@ function transformBlogPosts(data: BlogPost[]): {
   };
 }
 
-/**
- * Blog hook — same-origin API first, direct Sanity fallback, with periodic refresh.
- */
+/** Blog hook — direct Sanity API with periodic refresh. */
 export const useBlog = () => {
   const [blogs, setBlogs] = useState<BlogPost[]>([]);
   const [news, setNews] = useState<BlogPost[]>([]);

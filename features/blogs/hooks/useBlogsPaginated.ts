@@ -16,9 +16,7 @@ export interface UseBlogsPaginatedResult {
   error: string | null;
 }
 
-/**
- * Paginated blogs: same-origin API first, then direct Sanity fallback.
- */
+/** Paginated blogs via direct Sanity API. */
 export const useBlogsPaginated = ({
   page,
   limit,

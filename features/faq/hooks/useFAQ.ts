@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 
 import { logger } from "@/lib/utils/logger";
-import { fetchPublicFaqsWithFallback } from "@/lib/content/publicContentFetch";
+import { fetchPublicFaqsDirect } from "@/lib/content/publicContentFetch";
 import {
   isSystemFallbackFaqItem,
   type FAQItem,
@@ -9,9 +9,7 @@ import {
 
 export type { FAQItem };
 
-/**
- * FAQs: same-origin `/api/faq/read/` first, then direct Sanity (mobile path).
- */
+/** FAQs via direct Sanity API only (mobile path). */
 export const useFAQ = (category?: string) => {
   const [faqs, setFaqs] = useState<FAQItem[]>([]);
   const [loading, setLoading] = useState(true);
@@ -25,7 +23,7 @@ export const useFAQ = (category?: string) => {
         setLoading(true);
         setError(null);
 
-        const data = await fetchPublicFaqsWithFallback(category);
+        const data = await fetchPublicFaqsDirect(category);
 
         if (cancelled) return;
 

@@ -6,9 +6,7 @@ import { filterRealBlogPosts } from "../utils/blogPosts";
 
 const REFRESH_INTERVAL_MS = 60_000;
 
-/**
- * Loads blogs via same-origin API, then direct Sanity fallback; refreshes periodically.
- */
+/** Loads blogs via direct Sanity API; refreshes periodically. */
 export const useLiveBlog = () => {
   const [blogs, setBlogs] = useState<BlogPost[]>([]);
   const [loading, setLoading] = useState(true);
