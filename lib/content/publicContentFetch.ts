@@ -28,11 +28,6 @@ async function querySanityDirect<T>(
   if (!config.projectId || !config.dataset) {
     throw new Error("Sanity project/dataset not configured");
   }
-  if (!config.token?.startsWith("sk")) {
-    throw new Error(
-      "Sanity read token missing — set SANITY_TOKEN locally or in AWS Secrets Manager"
-    );
-  }
   return fetchSanityGroqWithConfig<T>(config, groqQuery, params);
 }
 

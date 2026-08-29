@@ -3,6 +3,45 @@ import {
   resolveSanityConfig,
   type SanityRuntimeConfig,
 } from "@/config/sanity";
+import { isValidSanityToken } from "@/sanity/lib/loadSanitySecrets";
+
+function isSessionNotFoundResponse(status: number, body: string): boolean {
+  if (status !== 401) return false;
+  return /session not found/i.test(body) || /SIO-401-ANF/i.test(body);
+}
+
+function sanityQueryHeaders(token: string | undefined, withAuth: boolean): HeadersInit {
+  const headers: Record<string, string> = {
+    "Content-Type": "application/json",
+  };
+  if (withAuth && isValidSanityToken(token)) {
+    headers.Authorization = `Bearer ${token!.trim()}`;
+  }
+  return headers;
+}
+
+async function executeSanityQueryFetch(
+  url: string,
+  token: string | undefined
+): Promise<Response> {
+  const withAuth = isValidSanityToken(token);
+  let response = await fetch(url, {
+    headers: sanityQueryHeaders(token, withAuth),
+    cache: "no-store",
+  });
+
+  if (!response.ok && withAuth) {
+    const body = await response.clone().text().catch(() => "");
+    if (isSessionNotFoundResponse(response.status, body)) {
+      response = await fetch(url, {
+        headers: sanityQueryHeaders(token, false),
+        cache: "no-store",
+      });
+    }
+  }
+
+  return response;
+}
 
 /** Same HTTP query path as OmayaExchangeMobile `SanityService.query`. */
 export async function fetchSanityGroq<T>(
@@ -37,13 +76,7 @@ export async function fetchSanityGroqWithConfig<T>(
     url += `&$${encodeURIComponent(key)}=${encodeURIComponent(JSON.stringify(value))}`;
   }
 
-  const response = await fetch(url, {
-    headers: {
-      Authorization: `Bearer ${token}`,
-      "Content-Type": "application/json",
-    },
-    cache: "no-store",
-  });
+  const response = await executeSanityQueryFetch(url, token);
 
   if (!response.ok) {
     const body = await response.text().catch(() => "");

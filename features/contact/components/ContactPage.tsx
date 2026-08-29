@@ -156,8 +156,8 @@ const ContactPage: React.FC<ContactPageProps> = () => {
   return (
     <div className="w-full text-gray-900 dark:text-white">
       {/* Hero */}
-      <header className="text-center max-w-3xl mx-auto mb-6 sm:mb-8">
-        <p className="inline-flex items-center gap-2 text-sm font-medium text-[#1D8751] mb-2">
+      <header className="text-center max-w-3xl mx-auto mb-6 sm:mb-8 scroll-mt-24">
+        <p className="inline-flex items-center justify-center gap-2 text-sm font-medium text-[#1D8751] mb-2 px-1">
           <MessageCircle className="w-4 h-4" />
           {t("contact.hero.badge", "We're Here to Help")}
         </p>
