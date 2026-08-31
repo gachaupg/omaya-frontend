@@ -72,7 +72,7 @@ export function getKycManualIdNumberHint(country: string): string {
   const countryName = normalizeCountry(country);
 
   if (countryName.includes("kenya")) {
-    return "Enter the 8-digit ID Number from your card (labelled “ID NUMBER”, e.g. 35407835).";
+    return "Enter the 8-digit ID Number from your card (labelled “ID NUMBER”, e.g. 39935744).";
   }
   if (countryName.includes("somalia")) {
     return "Enter the 11-digit Identity Number from your card (labelled “Identity Number”, e.g. 23654789221).";
@@ -106,7 +106,7 @@ export function getKycDocumentNumberPlaceholder(
   if (type === "passport") return "Enter your passport number manually";
 
   if (countryName.includes("kenya")) {
-    return "Enter ID Number (8 digits, e.g. 35407835)";
+    return "Enter ID Number (8 digits, e.g. 39935744)";
   }
   if (countryName.includes("somalia")) {
     return "Enter Identity Number (11 digits, e.g. 23654789221)";

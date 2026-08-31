@@ -1,11 +1,12 @@
 import type { IdDocumentDetails } from "./types";
 import { extractSexFromText } from "./extractSex";
+import { isKenyaNationalIdText } from "./parseKenyaIdText";
 
 const clean = (value: string) => value.replace(/\s+/g, " ").trim();
 const upperClean = (value: string) => clean(value).toUpperCase();
 
 const PASSPORT_MARKERS =
-  /PASSPORT|BAASABOOR|جواز|P<[A-Z]{3}|JAMHURI YA KENYA|REPUBLIQUE DE KENYA/i;
+  /PASSPORT|BAASABOOR|جواز|P<[A-Z]{3}|REPUBLIQUE DE KENYA/i;
 
 /** TD3 passport numbers: letter + digits (e.g. P01447848, AK1067169). Strips MRZ check digit when OCR merges it. */
 export function normalizePassportNumber(raw: string): string {
@@ -36,12 +37,20 @@ export function isNationalIdNumberFormat(value: string): boolean {
 }
 
 export function isNationalIdDocumentText(text: string): boolean {
-  return /(?:IDENTITY CARD|NATIONAL ID(?:ENTITY)?|KAADHKA|KAARKA AQOONSIGA|AQOONSIGA|KITAMBULISHO|TIRSIGA AQOONSIGA|LAMBAR(?:KA)?\s*AQOONSIGA|KAARKA|ENTTY)/i.test(
-    text
-  ) || /\bAQOONS/i.test(text);
+  return (
+    /(?:IDENTITY CARD|NATIONAL ID(?:ENTITY)?|KAADHKA|KAARKA AQOONSIGA|AQOONSIGA|KITAMBULISHO|TIRSIGA AQOONSIGA|LAMBAR(?:KA)?\s*AQOONSIGA|KAARKA|ENTTY|MAISHA|FULL NAMES?|SERIAL NUMBER)/i.test(
+      text
+    ) ||
+    /\bAQOONS/i.test(text) ||
+    (/\bJAMHURI YA KENYA\b/i.test(text) && /\bID NUMBER\b/i.test(text))
+  );
 }
 
 export function isPassportDocumentText(text: string): boolean {
+  if (isKenyaNationalIdText(text)) {
+    return false;
+  }
+
   if (isNationalIdDocumentText(text)) {
     return false;
   }

@@ -23,9 +23,11 @@ import {
 } from "@/features/kyc/utils/kycDocumentUtils";
 import { runIdDocumentOcr } from "@/lib/ocr/runIdDocumentOcr";
 import { EMPTY_ID_DOCUMENT_DETAILS } from "@/lib/ocr/types";
+import type { IdDocumentDetails } from "@/lib/ocr/types";
 import {
   buildKycUserDetails,
   getKycOcrDisplayRows,
+  KYC_OCR_READONLY_FIELDS,
 } from "@/features/kyc/utils/kycOcrDisplay";
 import { checkKycDocumentTypeMatch } from "@/features/kyc/utils/kycDocumentTypeMatch";
 import { prefetchDeviceLocation } from "@/lib/utils/deviceInfo";
@@ -502,6 +504,23 @@ const KYCVerificationModal: React.FC = () => {
         documentNumber: value,
         document_number: value,
       }));
+    }
+  };
+
+  const handleOcrDetailChange = (key: keyof IdDocumentDetails, value: string) => {
+    setUserDetails((prev) => {
+      const next = { ...prev, [key]: value };
+      if (key === "fullName" && value.trim()) {
+        const parts = value.trim().split(/\s+/);
+        if (parts.length > 1) {
+          next.surname = parts[parts.length - 1];
+          next.givenNames = parts.slice(0, -1).join(" ");
+        }
+      }
+      return next;
+    });
+    if (key === "documentNumber") {
+      handleInputChange("documentNumber", value);
     }
   };
 
@@ -1758,13 +1777,27 @@ const KYCVerificationModal: React.FC = () => {
                   <div className="divide-y divide-[#35353E]/60">
                     {ocrDisplayRows.map((row) => (
                       <div
-                        key={row.label}
+                        key={row.key}
                         className="flex items-start justify-between gap-3 px-3 py-2 text-xs sm:text-sm"
                       >
-                        <span className="text-gray-500 dark:text-gray-400 shrink-0">{row.label}</span>
-                        <span className="text-gray-900 dark:text-white text-right break-all font-medium">
-                          {row.value}
+                        <span className="text-gray-500 dark:text-gray-400 shrink-0 pt-2">
+                          {row.label}
                         </span>
+                        {KYC_OCR_READONLY_FIELDS.has(row.key) ? (
+                          <span className="text-gray-900 dark:text-white text-right break-all font-medium pt-2">
+                            {row.value}
+                          </span>
+                        ) : (
+                          <input
+                            type="text"
+                            value={String(userDetails[row.key] ?? row.value)}
+                            onChange={(e) =>
+                              handleOcrDetailChange(row.key, e.target.value)
+                            }
+                            className={`${KYC_INPUT_CLASS} text-right max-w-[65%] min-w-[120px] py-1.5 text-xs sm:text-sm`}
+                            aria-label={row.label}
+                          />
+                        )}
                       </div>
                     ))}
                   </div>

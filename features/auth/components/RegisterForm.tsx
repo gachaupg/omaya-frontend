@@ -1668,7 +1668,7 @@ export default function RegistrationPage() {
                   >
                     {renderRegisterTermsText(
                       t(
-                        "auth.register.terms",
+                      "auth.register.terms",
                         "By clicking Register, you agree to our Terms of Services and that you have read our Data Use Policy, including our Cookie Use"
                       ),
                       persistBeforeLegalNavigation

@@ -48,7 +48,7 @@ function formatDisplayValue(key: keyof IdDocumentDetails, value: string): string
 
 export function getKycOcrDisplayRows(
   details: Record<string, unknown>
-): Array<{ label: string; value: string }> {
+): Array<{ key: keyof IdDocumentDetails; label: string; value: string }> {
   const country = String(details.country ?? "");
   const documentType = String(
     details.selected_document_type ?? details.documentType ?? ""
@@ -59,6 +59,7 @@ export function getKycOcrDisplayRows(
   );
 
   return KYC_OCR_ROW_FIELDS.map(({ key, label }) => ({
+    key,
     label: key === "documentNumber" ? documentNumberLabel : label,
     value: formatDisplayValue(
       key,
@@ -66,3 +67,7 @@ export function getKycOcrDisplayRows(
     ),
   })).filter((row) => row.value.length > 0);
 }
+
+export const KYC_OCR_READONLY_FIELDS = new Set<keyof IdDocumentDetails>([
+  "documentType",
+]);
