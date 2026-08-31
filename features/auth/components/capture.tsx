@@ -41,8 +41,8 @@ interface DragFitCaptchaProps {
 
 export default function DragFitCaptcha({
   imgSrc,
-  width = 280,
-  height = 140,
+  width = 360,
+  height = 180,
   onSuccess = () => {},
   tolerance = 8,
   darkMode = false,
@@ -52,14 +52,39 @@ export default function DragFitCaptcha({
   const containerRef = useRef<HTMLDivElement>(null);
 
   const [loaded, setLoaded] = useState<boolean>(false);
+  const [loadError, setLoadError] = useState<boolean>(false);
   const [success, setSuccess] = useState<boolean>(false);
+  const [canvasWidth, setCanvasWidth] = useState(width);
+  const [canvasHeight, setCanvasHeight] = useState(height);
   const imgRef = useRef<HTMLImageElement>(new Image());
   const [target, setTarget] = useState<{ x: number; y: number }>({ x: 0, y: 0 });
-  const [piecePosition, setPiecePosition] = useState<number>(0); // Current drag position
+  const [piecePosition, setPiecePosition] = useState<number>(0);
   const [dragging, setDragging] = useState<boolean>(false);
   const startXRef = useRef<number>(0);
   const pieceStartXRef = useRef<number>(0);
-  const pieceSize = Math.round(Math.min(width, height) / 4);
+  const pieceSize = Math.round(Math.min(canvasWidth, canvasHeight) / 4);
+
+  useEffect(() => {
+    setCanvasWidth(width);
+    setCanvasHeight(height);
+  }, [width, height]);
+
+  // Fit puzzle to modal width on small screens
+  useEffect(() => {
+    const parent = containerRef.current?.parentElement;
+    if (!parent) return;
+
+    const updateSize = () => {
+      const available = Math.max(280, Math.min(width, parent.clientWidth));
+      setCanvasWidth(available);
+      setCanvasHeight(Math.round(available * (height / width)));
+    };
+
+    updateSize();
+    const observer = new ResizeObserver(updateSize);
+    observer.observe(parent);
+    return () => observer.disconnect();
+  }, [width, height]);
 
   // draw puzzle shape path helper
   const puzzlePath = useCallback((ctx: CanvasRenderingContext2D, x: number, y: number, size: number) => {
@@ -84,26 +109,35 @@ export default function DragFitCaptcha({
     ctx.closePath();
   }, []);
 
-  // initialize image and random target
   useEffect(() => {
     const img = imgRef.current;
-    img.crossOrigin = "anonymous";
+    setLoaded(false);
+    setLoadError(false);
+    setSuccess(false);
+
+    if (imgSrc.startsWith("http://") || imgSrc.startsWith("https://")) {
+      img.crossOrigin = "anonymous";
+    } else {
+      img.removeAttribute("crossorigin");
+    }
+
     img.onload = () => {
       setLoaded(true);
-      // pick random target within safe bounds
-      const maxX = width - pieceSize - 10;
-      const maxY = height - pieceSize - 10;
+      setLoadError(false);
+      const maxX = canvasWidth - pieceSize - 10;
+      const maxY = canvasHeight - pieceSize - 10;
       const tx = Math.floor(Math.random() * (maxX * 0.6)) + Math.floor(maxX * 0.3);
       const ty = Math.floor(Math.random() * (maxY - 10)) + 5;
       setTarget({ x: tx, y: ty });
-      // initial piece position: left outside area
       setPiecePosition(10);
       setSuccess(false);
     };
     img.onerror = () => {
-          };
+      setLoaded(false);
+      setLoadError(true);
+    };
     img.src = imgSrc;
-  }, [imgSrc, width, height, pieceSize]);
+  }, [imgSrc, canvasWidth, canvasHeight, pieceSize]);
 
   // Calculate the actual visual position of the piece
   const getPieceVisualX = useCallback(() => {
@@ -130,8 +164,8 @@ export default function DragFitCaptcha({
     // Draw background with cutout
     const bctx = bg.getContext("2d");
     if (!bctx) return;
-    bctx.clearRect(0, 0, width, height);
-    bctx.drawImage(img, 0, 0, width, height);
+    bctx.clearRect(0, 0, canvasWidth, canvasHeight);
+    bctx.drawImage(img, 0, 0, canvasWidth, canvasHeight);
 
     // Create cutout in background
     bctx.save();
@@ -151,13 +185,13 @@ export default function DragFitCaptcha({
     // Draw movable piece
     const pctx = piece.getContext("2d");
     if (!pctx) return;
-    pctx.clearRect(0, 0, width, height);
+    pctx.clearRect(0, 0, canvasWidth, canvasHeight);
     
     // Draw the piece image at its current position
     pctx.save();
     puzzlePath(pctx, visualX, target.y, pieceSize);
     pctx.clip();
-      pctx.drawImage(img, 0, 0, width, height);
+      pctx.drawImage(img, 0, 0, canvasWidth, canvasHeight);
     pctx.restore();
 
      // Draw piece border
@@ -177,7 +211,7 @@ export default function DragFitCaptcha({
       pctx.fill();
       pctx.restore();
     }
-  }, [loaded, getPieceVisualX, checkFit, width, height, puzzlePath, target, pieceSize]);
+  }, [loaded, getPieceVisualX, checkFit, canvasWidth, canvasHeight, puzzlePath, target, pieceSize, darkMode]);
 
   // Redraw when piece moves or target changes
   useEffect(() => {
@@ -206,7 +240,7 @@ export default function DragFitCaptcha({
       
       // Constrain movement within bounds
       const minX = 10;
-      const maxX = width - pieceSize - 10;
+      const maxX = canvasWidth - pieceSize - 10;
       newPosition = Math.max(minX, Math.min(newPosition, maxX));
       
       setPiecePosition(Math.round(newPosition));
@@ -268,28 +302,34 @@ export default function DragFitCaptcha({
       window.removeEventListener("touchmove", onPointerMove);
       window.removeEventListener("touchend", onPointerUp);
     };
-  }, [dragging, piecePosition, success, target, width, pieceSize, checkFit, onSuccess]);
+  }, [dragging, piecePosition, success, target, canvasWidth, pieceSize, checkFit, onSuccess]);
 
   const reset = () => {
-    const maxX = width - pieceSize - 10;
-    const maxY = height - pieceSize - 10;
+    setLoadError(false);
+    setLoaded(false);
+    const maxX = canvasWidth - pieceSize - 10;
+    const maxY = canvasHeight - pieceSize - 10;
     const tx = Math.floor(Math.random() * (maxX * 0.6)) + Math.floor(maxX * 0.3);
     const ty = Math.floor(Math.random() * (maxY - 10)) + 5;
     setTarget({ x: tx, y: ty });
     setPiecePosition(10);
     setSuccess(false);
+    const img = imgRef.current;
+    if (img.complete && img.naturalWidth > 0) {
+      setLoaded(true);
+    } else {
+      img.src = imgSrc;
+    }
   };
-
-  const visualX = getPieceVisualX();
-  const sliderPosition = ((visualX - 10) / (width - pieceSize - 20)) * 100;
 
   return (
     <div
       ref={containerRef}
       style={{
         position: "relative",
-      width,
-        height: height + 50, // Reduced space for control bar
+        width: "100%",
+        maxWidth: canvasWidth,
+        height: canvasHeight + 56,
         border: success ? "2px solid #4CAF50" : darkMode ? "1px solid #333" : "1px solid #e3e3e3",
         borderRadius: 8,
         overflow: "hidden",
@@ -301,22 +341,58 @@ export default function DragFitCaptcha({
       aria-label="drag captcha container"
     >
       {/* Main puzzle area */}
-      <div style={{ position: "relative", width, height }}>
+      <div style={{ position: "relative", width: canvasWidth, height: canvasHeight, margin: "0 auto" }}>
+      {!loaded && !loadError && (
+        <div
+          style={{
+            position: "absolute",
+            inset: 0,
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            fontSize: 13,
+            color: darkMode ? "#ccc" : "#666",
+            zIndex: 2,
+          }}
+        >
+          Loading puzzle...
+        </div>
+      )}
+      {loadError && (
+        <div
+          style={{
+            position: "absolute",
+            inset: 0,
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            padding: 12,
+            textAlign: "center",
+            fontSize: 13,
+            color: darkMode ? "#fca5a5" : "#b91c1c",
+            zIndex: 2,
+          }}
+        >
+          Could not load verification image. Tap Reset to try again.
+        </div>
+      )}
       <canvas
           ref={bgRef}
-        width={width}
-        height={height}
-          style={{ display: "block", position: "absolute", left: 0, top: 0 }}
+        width={canvasWidth}
+        height={canvasHeight}
+          style={{ display: "block", position: "absolute", left: 0, top: 0, width: "100%", height: "100%" }}
       />
       <canvas
         ref={pieceRef}
-        width={width}
-        height={height}
+        width={canvasWidth}
+        height={canvasHeight}
         style={{
             display: "block",
           position: "absolute",
             left: 0,
             top: 0,
+            width: "100%",
+            height: "100%",
             pointerEvents: "none",
           }}
         />
