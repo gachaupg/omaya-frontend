@@ -72,26 +72,30 @@ export function getKycManualIdNumberHint(country: string): string {
   const countryName = normalizeCountry(country);
 
   if (countryName.includes("kenya")) {
-    return "Enter the 8-digit ID Number from your card (labelled “ID NUMBER”, e.g. 39935744).";
+    return "Enter the 8-digit ID Number from your card (labelled “ID NUMBER”).";
   }
   if (countryName.includes("somalia")) {
-    return "Enter the 11-digit Identity Number from your card (labelled “Identity Number”, e.g. 23654789221).";
+    return "Enter the 11-digit Identity Number from your card (labelled “Identity Number”).";
   }
   return "Enter the number shown on your ID card.";
 }
 
 export function getKycManualFallbackMessage(
   country: string,
-  documentType: string
+  documentType: string,
+  lowConfidenceFields?: string[]
 ): string {
   const type = documentType.trim().toLowerCase();
   const fieldLabel = getKycDocumentNumberFieldLabel(country, documentType);
 
   if (type === "passport") {
-    return "Enter your passport number below to continue, or upload a clearer photo if you prefer.";
+    if (lowConfidenceFields && lowConfidenceFields.length > 0) {
+      return "Some passport details couldn't be read reliably. Review the fields below, fill in any blanks, and correct anything that looks wrong before submitting.";
+    }
+    return "Enter your passport number below to continue, or upload a clearer photo with the MRZ lines visible at the bottom.";
   }
 
-  return `We couldn't read your ${fieldLabel} reliably. ${getKycManualIdNumberHint(country)} You can also upload a clearer photo.`;
+  return `We couldn't read your document reliably. Please fill in all the fields below manually. You can also upload a clearer photo.`;
 }
 
 export function getKycDocumentNumberPlaceholder(
@@ -106,10 +110,10 @@ export function getKycDocumentNumberPlaceholder(
   if (type === "passport") return "Enter your passport number manually";
 
   if (countryName.includes("kenya")) {
-    return "Enter ID Number (8 digits, e.g. 39935744)";
+    return "Enter ID Number (8 digits)";
   }
   if (countryName.includes("somalia")) {
-    return "Enter Identity Number (11 digits, e.g. 23654789221)";
+    return "Enter Identity Number (11 digits)";
   }
   return "Enter your ID number manually";
 }

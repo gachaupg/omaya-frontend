@@ -1,6 +1,7 @@
 import type { IdDocumentDetails, IdDocumentType } from "@/lib/ocr/types";
 import { isKenyaNationalIdText } from "@/lib/ocr/parseKenyaIdText";
 import { isSomaliaNationalIdText } from "@/lib/ocr/parseSomaliaIdText";
+import { isNationalIdDocumentText } from "@/lib/ocr/parsePassportText";
 
 export type KycDocumentKind =
   | "passport"
@@ -37,36 +38,32 @@ function detectDocumentKind(
   const upper = rawText.toUpperCase();
   const compact = upper.replace(/\s+/g, "");
 
-  // Passport — MRZ or clear passport booklet wording
+  // Passport — MRZ or clear passport booklet wording (not bare OCR noise)
   if (/P<[A-Z]{3}/.test(compact)) {
     return { kind: "passport", confidence: "high" };
   }
   if (
-    upper.includes("<<") &&
-    /[A-Z0-9<]{28,}/.test(compact) &&
-    /\d{6}/.test(compact)
+    /<<\s*/.test(upper) &&
+    /P<[A-Z]{3}/.test(compact) &&
+    /[A-Z0-9<]{28,}/.test(compact)
   ) {
     return { kind: "passport", confidence: "high" };
   }
   if (
-    /PASSPORT/i.test(upper) &&
+    /\bPASSPORT\b/i.test(upper) &&
     /(?:NATIONALITY|DATE OF BIRTH|DATE OF ISSUE|AUTHORITY)/i.test(upper)
   ) {
     return { kind: "passport", confidence: "high" };
   }
 
-  // National ID — strong regional / layout markers
+  // National ID — strong regional / layout markers (before soft passport signals)
   if (isKenyaNationalIdText(rawText)) {
     return { kind: "national_id", confidence: "high" };
   }
   if (isSomaliaNationalIdText(rawText)) {
     return { kind: "national_id", confidence: "high" };
   }
-  if (
-    /(?:NATIONAL IDENTITY|IDENTITY CARD|NATIONAL ID CARD|ID CARD|KITAMBULISHO|MAISHA CARD|KAARKA AQOONSIGA|AQOONSIGA)/i.test(
-      upper
-    )
-  ) {
+  if (isNationalIdDocumentText(rawText)) {
     return { kind: "national_id", confidence: "high" };
   }
 
@@ -129,7 +126,7 @@ export function checkKycDocumentTypeMatch(
     mismatch: true,
     detected,
     confidence,
-    message: `This photo looks like a ${KIND_LABELS[detected]}, not the ${KIND_LABELS[selected]} you selected. Please re-upload the correct document, or go back and change the document type.`,
+    message: `We detected this might be a ${KIND_LABELS[detected]}, but you selected ${KIND_LABELS[selected]}. If your selection is correct, review the extracted details below and continue.`,
   };
 }
 

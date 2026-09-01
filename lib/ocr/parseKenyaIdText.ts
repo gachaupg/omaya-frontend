@@ -3,9 +3,12 @@ import type { IdDocumentDetails } from "./types";
 const clean = (value: string) => value.replace(/\s+/g, " ").trim().toUpperCase();
 
 const KENYA_MARKERS =
-  /KITAMBULISHO|JAMHURI YA KENYA|REPUBLIC OF KENYA|MAISHA/i;
+  /KITAMBULISHO|JAMHURI YA KENYA|REPUBLIC OF KENYA|MAISHA|DISTRICT OF BIRTH|SERIAL NUMBER|FULL NAMES?/i;
 
 export function isKenyaNationalIdText(text: string): boolean {
+  if (/\bPASSPORT\b|\bBAASABOOR\b|P<[A-Z]{3}/i.test(text)) {
+    return false;
+  }
   if (
     /SOMALILAND|SOOMAALIYA|FEDERAL REPUBLIC OF SOMALIA|KAADHKA|KAARKA AQOONSIGA|TIRSIGA AQOONSIGA|AQOONSIGA MUWAADINKA/i.test(
       text
@@ -13,7 +16,19 @@ export function isKenyaNationalIdText(text: string): boolean {
   ) {
     return false;
   }
-  return KENYA_MARKERS.test(text);
+  if (KENYA_MARKERS.test(text)) return true;
+  if (/\bJAMHURI\b/i.test(text) && /\bKENYA\b/i.test(text)) return true;
+  if (/\bID\s*NUMBER\b/i.test(text) && /\b(?:DATE OF BIRTH|DATE OF ISSUE|BIRTH)\b/i.test(text)) {
+    return true;
+  }
+  if (
+    /\b\d{9,10}\b/.test(text) &&
+    /\b\d{7,8}\b/.test(text) &&
+    /\b(?:FEMALE|MALE|KEN\b|HOLDER'?S?\s*SIGN)/i.test(text)
+  ) {
+    return true;
+  }
+  return false;
 }
 
 /** Kenya national ID: 7–8 digits. Excludes 9+ digit serial numbers. */
@@ -121,7 +136,7 @@ function fixOcrTypos(value: string) {
     .replace(/\bJAMNURI\b/g, "JAMHURI")
     .replace(/\bJAMNURIYA\b/g, "JAMHURI YA")
     .replace(/\bSR\s+NM\b/g, "HDM")
-    .replace(/\s+/g, " ")
+    .replace(/[ \t]+/g, " ")
     .trim();
 }
 
@@ -185,9 +200,12 @@ function collectExcludedIdNumbers(lines: string[]): Set<string> {
 
   for (let i = 0; i < lines.length; i += 1) {
     const upper = lines[i].toUpperCase();
-    if (!/\bSERIAL\s*(?:NO\.?|NUMBER)?\b/.test(upper)) continue;
+    const isSerialLine =
+      /\bSERIAL\s*(?:NO\.?|NUMBER)?\b/.test(upper) || /\b\d{9,10}\b/.test(lines[i]);
 
-    const inline = lines[i].match(/\bSERIAL\s*(?:NO\.?|NUMBER)?\b[:\s./-]*(\d{8,10})\b/i);
+    if (!isSerialLine) continue;
+
+    const inline = lines[i].match(/\b(\d{8,10})\b/);
     if (inline?.[1]) excluded.add(normalizeKenyaIdNumber(inline[1]));
 
     for (let j = i + 1; j <= i + 2 && j < lines.length; j += 1) {
@@ -296,7 +314,7 @@ function extractIdNumbers(text: string, lines: string[]) {
   if (fromLines) return fromLines;
 
   const labeled = text.match(
-    /\bID\s*NUMBER\b[:\s./-]*([0-9OIlSB$|ZzBbQ]{6,10})/i
+    /\b(?:ID\s*NUMBER|ONSEN|UTAMBULISHO)\b[:\s./-]*([0-9OIlSB$|ZzBbQ]{6,10})/i
   );
   if (labeled?.[1]) {
     const normalized = normalizeKenyaIdNumber(labeled[1]);
@@ -322,8 +340,9 @@ function extractIdNumbers(text: string, lines: string[]) {
 
   for (let i = 0; i < lines.length; i += 1) {
     const upper = lines[i].toUpperCase();
-    const onSerialLine = /\bSERIAL\b/.test(upper);
-    const nearIdLabel = /\bID\s*NUMBER\b|\bID\s*NO\.?\b|NAMBARI\s*YA\s*UTAMBULISHO/i.test(upper);
+    if (/\bSERIAL\b/.test(upper) || /\b\d{9,10}\b/.test(lines[i])) continue;
+    const onSerialLine = false;
+    const nearIdLabel = /\bID\s*NUMBER\b|\bID\s*NO\.?\b|NAMBARI\s*YA\s*UTAMBULISHO|ONSEN|UTAMBULISHO/i.test(upper);
     const context = { excluded, nearIdLabel, onSerialLine };
 
     for (const match of lines[i].matchAll(/\b(\d{7,8})\b/g)) {
@@ -457,6 +476,16 @@ function extractNameFromTextScan(text: string): string {
   return ranked[0]?.[0] ?? "";
 }
 
+function scoreKenyaNameLine(name: string, lineIndex: number, lines: string[]): number {
+  let score = name.split(/\s+/).length * 10 + name.length;
+  const prev = lines[lineIndex - 1] ?? "";
+  const next = lines[lineIndex + 1] ?? "";
+  if (/\b\d{7,8}\b/.test(prev) && !/\b\d{9,10}\b/.test(prev)) score += 40;
+  if (/\b(?:DATE OF BIRTH|BIRTH|DOB)\b/i.test(next)) score += 40;
+  if (/\b(?:FULL NAMES?|SURNAME|GIVEN NAME)\b/i.test(prev)) score += 30;
+  return score;
+}
+
 function extractKenyaNames(_text: string, lines: string[]) {
   const fullNameFromLabel = extractLabelValue(lines, [
     "FULL NAMES",
@@ -464,7 +493,8 @@ function extractKenyaNames(_text: string, lines: string[]) {
     "FULLNAME",
   ]);
   if (fullNameFromLabel && !isInvalidKenyaPersonName(fullNameFromLabel)) {
-    return splitKenyaFullName(fullNameFromLabel);
+    const parsed = parsePersonNameLine(fullNameFromLabel);
+    if (parsed) return splitKenyaFullName(parsed);
   }
 
   const surnameFromLabel = extractLabelValue(lines, ["SURNAME", "FAMILY NAME"]);
@@ -475,30 +505,33 @@ function extractKenyaNames(_text: string, lines: string[]) {
     "FIRST NAME",
   ]);
 
-  if (process.env.DEBUG_KENYA_NAMES === "1") {
-    console.log({ fullNameFromLabel, surnameFromLabel, givenFromLabel });
-    console.log("near", extractNameNearIdNumber(lines));
-    console.log("beforeBirth", extractNameBeforeBirth(lines));
-    console.log("scan", extractNameFromTextScan(_text));
-  }
-
   if (surnameFromLabel || givenFromLabel) {
-    const surname = clean(surnameFromLabel);
-    const givenNames = clean(givenFromLabel);
-    const validSurname = !isInvalidKenyaPersonName(surname);
-    const validGiven = !isInvalidKenyaPersonName(givenNames);
+    const surname = parsePersonNameLine(surnameFromLabel) || clean(surnameFromLabel);
+    const givenNames = parsePersonNameLine(givenFromLabel) || clean(givenFromLabel);
+    const validSurname = surname && !isInvalidKenyaPersonName(surname);
+    const validGiven = givenNames && !isInvalidKenyaPersonName(givenNames);
     const combinedName = clean(
       [validGiven ? givenNames : "", validSurname ? surname : ""]
         .filter(Boolean)
         .join(" ")
     );
-    if (combinedName) {
-      return {
-        surname: validSurname ? surname : "",
-        givenNames: validGiven ? givenNames : "",
-        fullName: combinedName,
-      };
+    if (combinedName.split(/\s+/).length >= 2) {
+      const split = splitKenyaFullName(combinedName);
+      if (split.fullName) return split;
     }
+  }
+
+  const fullNameCandidates = new Map<string, number>();
+  for (let i = 0; i < lines.length; i += 1) {
+    const name = parsePersonNameLine(lines[i]);
+    if (!name) continue;
+    const score = scoreKenyaNameLine(name, i, lines);
+    fullNameCandidates.set(name, Math.max(fullNameCandidates.get(name) ?? 0, score));
+  }
+
+  const bestFullName = pickBestCandidate(fullNameCandidates);
+  if (bestFullName) {
+    return splitKenyaFullName(bestFullName);
   }
 
   const positionalName =
@@ -507,19 +540,6 @@ function extractKenyaNames(_text: string, lines: string[]) {
     extractNameFromTextScan(_text);
   if (positionalName) {
     return splitKenyaFullName(positionalName);
-  }
-
-  const fullNameCandidates = new Map<string, number>();
-  for (const line of lines) {
-    const name = parsePersonNameLine(line);
-    if (!name) continue;
-    const score = name.split(/\s+/).length * 8 + name.length;
-    fullNameCandidates.set(name, Math.max(fullNameCandidates.get(name) ?? 0, score));
-  }
-
-  const bestFullName = pickBestCandidate(fullNameCandidates);
-  if (bestFullName) {
-    return splitKenyaFullName(bestFullName);
   }
 
   return { surname: "", givenNames: "", fullName: "" };

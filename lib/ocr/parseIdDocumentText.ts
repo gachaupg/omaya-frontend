@@ -14,6 +14,8 @@ import {
   parsePassportVisualText,
 } from "./parsePassportText";
 import { normalizeSex, resolveDocumentSex } from "./extractSex";
+import { validateTd3Mrz, normalizeMrzLine } from "./mrzValidation";
+import { sanitizePassportDetails } from "./sanitizePassportDetails";
 
 const clean = (value: string) => value.replace(/\s+/g, " ").trim();
 
@@ -26,7 +28,7 @@ const formatMrzDate = (value: string) => {
   return `${fullYear}-${month}-${day}`;
 };
 
-const normalizeMrzLine = (line: string) =>
+const normalizeMrzLineLegacy = (line: string) =>
   line.toUpperCase().replace(/\s+/g, "").replace(/[^A-Z0-9<]/g, "");
 
 const parseMrzName = (segment: string) => {
@@ -41,7 +43,7 @@ const parseMrzName = (segment: string) => {
 function findMrzLines(rawText: string): { line1: string; line2: string } | null {
   const lines = rawText
     .split(/\r?\n/)
-    .map((line) => normalizeMrzLine(line))
+    .map((line) => normalizeMrzLineLegacy(line))
     .filter((line) => line.length >= 30);
 
   let line1 = lines.find((line) => line.startsWith("P<") && line.includes("<<"));
@@ -57,7 +59,7 @@ function findMrzLines(rawText: string): { line1: string; line2: string } | null 
     return { line1, line2 };
   }
 
-  const compact = normalizeMrzLine(rawText);
+  const compact = normalizeMrzLineLegacy(rawText);
   const blockMatch = compact.match(
     /(P<[A-Z]{3}[A-Z<]{5,}<<[A-Z<]{5,})([A-Z0-9<]{30,})/
   );
@@ -74,24 +76,30 @@ function parseMrz(rawText: string): Partial<IdDocumentDetails> | null {
   const mrzLines = findMrzLines(rawText);
   if (!mrzLines) return null;
 
-  const { line1, line2 } = mrzLines;
+  const validation = validateTd3Mrz(mrzLines.line1, mrzLines.line2);
+  if (!validation.valid) return null;
+
+  const { line1, line2 } = validation;
   const nameSegment = line1.slice(5);
   const { surname, givenNames, fullName } = parseMrzName(nameSegment);
 
+  const normalizedLine2 = normalizeMrzLine(line2);
   const documentNumber = normalizePassportNumber(
-    line2.slice(0, 10).replace(/</g, "")
+    normalizedLine2.slice(0, 9).replace(/</g, "")
   );
-  const nationality = line2.slice(10, 13).replace(/</g, "").trim();
-  const dateOfBirth = formatMrzDate(line2.slice(13, 19));
-  const sex = normalizeSex(line2.slice(20, 21).replace(/</g, ""));
-  const expiryDate = formatMrzDate(line2.slice(21, 27));
+  const nationality = normalizedLine2.slice(10, 13).replace(/</g, "").trim();
+  const dateOfBirth = formatMrzDate(normalizedLine2.slice(13, 19));
+  const sex = normalizeSex(normalizedLine2.slice(20, 21).replace(/</g, ""));
+  const expiryDate = formatMrzDate(normalizedLine2.slice(21, 27));
 
   return {
     documentType: "passport",
     fullName,
     givenNames,
     surname,
-    documentNumber: isPassportNumberFormat(documentNumber) ? documentNumber : "",
+    documentNumber: isPassportNumberFormat(documentNumber, { fromMrz: true })
+      ? documentNumber
+      : "",
     nationality,
     dateOfBirth,
     sex,
@@ -120,7 +128,8 @@ function resolvePassportDocumentNumber(
   const add = (raw: string | undefined, score: number) => {
     if (!raw) return;
     const normalized = normalizePassportNumber(raw);
-    if (isPassportNumberFormat(normalized)) {
+    const fromMrz = score >= 70;
+    if (isPassportNumberFormat(normalized, { fromMrz })) {
       scored.push({ value: normalized, score });
     }
   };
@@ -131,7 +140,12 @@ function resolvePassportDocumentNumber(
   add(merged.documentNumber, 30);
 
   const ranked = scored.sort((a, b) => b.score - a.score);
-  if (ranked[0]) return ranked[0].value;
+  if (ranked[0]) {
+    const fromMrz = ranked[0].score >= 70;
+    if (isPassportNumberFormat(ranked[0].value, { fromMrz })) {
+      return ranked[0].value;
+    }
+  }
 
   if (
     merged.documentNumber &&
@@ -266,20 +280,78 @@ function preferNonEmpty(
 }
 
 export function parseIdDocumentText(rawText: string): IdDocumentDetails {
-  const raw = rawText.trim();
-  if (!raw) return { ...EMPTY_ID_DOCUMENT_DETAILS };
+  return parseIdDocumentTextWithMeta(rawText).details;
+}
 
-  const isPassport = isPassportDocumentText(raw);
-  const mrz = parseMrz(raw);
-  const kenyaParsed =
-    !isPassport && isKenyaNationalIdText(raw)
-      ? parseKenyaNationalIdText(raw)
-      : {};
+export type IdDocumentParseMeta = {
+  details: IdDocumentDetails;
+  lowConfidenceFields: string[];
+  mrzUsed: boolean;
+};
+
+export function parseIdDocumentTextWithMeta(rawText: string): IdDocumentParseMeta {
+  const raw = rawText.trim();
+  if (!raw) {
+    return {
+      details: { ...EMPTY_ID_DOCUMENT_DETAILS },
+      lowConfidenceFields: [],
+      mrzUsed: false,
+    };
+  }
+
+  const isKenya = isKenyaNationalIdText(raw);
+  const isSomalia = isSomaliaNationalIdText(raw);
+  const isPassport =
+    !isKenya && !isSomalia && isPassportDocumentText(raw);
+
+  if (isPassport) {
+    const mrz = parseMrz(raw);
+    const mrzLines = findMrzLines(raw);
+    const mrzValidation = mrzLines
+      ? validateTd3Mrz(mrzLines.line1, mrzLines.line2)
+      : null;
+    const passportVisual = parsePassportVisualText(raw);
+
+    const mergedRaw: Partial<IdDocumentDetails> = {
+      ...EMPTY_ID_DOCUMENT_DETAILS,
+      ...passportVisual,
+      ...(mrz ?? {}),
+      rawText: raw,
+      documentType: "passport",
+    };
+
+    if (!mergedRaw.fullName && mergedRaw.givenNames && mergedRaw.surname) {
+      mergedRaw.fullName = `${mergedRaw.givenNames} ${mergedRaw.surname}`.trim();
+    }
+
+    mergedRaw.documentNumber = resolvePassportDocumentNumber(mergedRaw, {
+      mrz,
+      passportVisual,
+      generic: {},
+    });
+
+    mergedRaw.sex = resolveDocumentSex(raw, [
+      { sex: mrz?.sex, score: 70 },
+      { sex: passportVisual.sex, score: 55 },
+    ], { allowStandaloneSex: false });
+
+    const sanitized = sanitizePassportDetails(mergedRaw, {
+      mrzFullyValid: Boolean(mrzValidation?.fullyValid),
+      mrzFields: mrz ?? undefined,
+    });
+
+    return {
+      details: sanitized.details,
+      lowConfidenceFields: sanitized.lowConfidenceFields,
+      mrzUsed: sanitized.mrzUsed,
+    };
+  }
+
+  const mrz = null;
+  const kenyaParsed = isKenya ? parseKenyaNationalIdText(raw) : {};
   const somaliaParsed =
-    !isPassport && !kenyaParsed.documentType && isSomaliaNationalIdText(raw)
-      ? parseSomaliaNationalIdText(raw)
-      : {};
-  const passportVisual = isPassport ? parsePassportVisualText(raw) : {};
+    !isKenya && isSomalia ? parseSomaliaNationalIdText(raw) : {};
+  const passportVisual = {};
   const generic = parseGenericId(raw);
 
   const merged: IdDocumentDetails = {
@@ -292,14 +364,12 @@ export function parseIdDocumentText(rawText: string): IdDocumentDetails {
     rawText: raw,
   };
 
-  if (mrz?.documentType === "passport") {
-    merged.documentType = "passport";
-  } else if (somaliaParsed.documentType) {
+  if (somaliaParsed.documentType) {
     merged.documentType = somaliaParsed.documentType;
   } else if (kenyaParsed.documentType) {
     merged.documentType = kenyaParsed.documentType;
-  } else if (passportVisual.documentType) {
-    merged.documentType = passportVisual.documentType;
+  } else if (generic.documentType && generic.documentType !== "unknown") {
+    merged.documentType = generic.documentType;
   }
 
   if (!merged.fullName && merged.givenNames && merged.surname) {
@@ -313,28 +383,16 @@ export function parseIdDocumentText(rawText: string): IdDocumentDetails {
       parts.length > 1 ? parts.slice(0, -1).join(" ") : merged.fullName;
   }
 
-  if (
-    !isNationalIdDocumentText(raw) &&
-    somaliaParsed.documentType !== "national_id" &&
-    kenyaParsed.documentType !== "national_id" &&
-    (merged.documentType === "passport" || isPassport || mrz?.documentType === "passport")
-  ) {
-    merged.documentType = "passport";
-    merged.documentNumber = resolvePassportDocumentNumber(merged, {
-      mrz,
-      passportVisual,
-      generic,
-    });
-  }
-
   merged.sex = resolveDocumentSex(raw, [
-    { sex: mrz?.sex, score: 70 },
-    { sex: passportVisual.sex, score: 60 },
     { sex: somaliaParsed.sex, score: 55 },
     { sex: kenyaParsed.sex, score: 55 },
     { sex: generic.sex, score: 40 },
     { sex: merged.sex, score: 30 },
   ]);
 
-  return merged;
+  return {
+    details: merged,
+    lowConfidenceFields: [],
+    mrzUsed: false,
+  };
 }

@@ -1,4 +1,3 @@
-import { parseIdDocumentText } from "./parseIdDocumentText";
 import { parseKenyaNationalIdText } from "./parseKenyaIdText";
 
 const liveOcr = `
@@ -19,5 +18,6 @@ DATE OF ISSUE
 26.07.2021
 `;
 
-console.log("Kenya:", parseKenyaNationalIdText(liveOcr));
-console.log("Merge:", parseIdDocumentText(liveOcr));
+const result = parseKenyaNationalIdText(liveOcr);
+console.log(JSON.stringify(result, null, 2));
+console.log("fullName empty?", result.fullName === "");

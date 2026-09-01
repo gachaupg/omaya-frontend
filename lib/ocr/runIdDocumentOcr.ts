@@ -2,11 +2,16 @@
 
 
 
-import { parseIdDocumentText } from "./parseIdDocumentText";
+import { parseIdDocumentTextWithMeta } from "./parseIdDocumentText";
 
 import { preprocessIdImageForOcr } from "./preprocessIdImage";
 
 import type { IdDocumentDetails } from "./types";
+
+export type IdDocumentOcrResult = IdDocumentDetails & {
+  ocrLowConfidenceFields: string[];
+  ocrMrzUsed: boolean;
+};
 
 
 
@@ -86,7 +91,7 @@ export async function runIdDocumentOcr(
 
   options: RunIdDocumentOcrOptions = {}
 
-): Promise<IdDocumentDetails> {
+): Promise<IdDocumentOcrResult> {
 
   const { createWorker, PSM } = await import("tesseract.js");
 
@@ -165,8 +170,13 @@ export async function runIdDocumentOcr(
     }
 
     const combinedText = pickBestOcrText(texts);
+    const parsed = parseIdDocumentTextWithMeta(combinedText);
 
-    return parseIdDocumentText(combinedText);
+    return {
+      ...parsed.details,
+      ocrLowConfidenceFields: parsed.lowConfidenceFields,
+      ocrMrzUsed: parsed.mrzUsed,
+    };
 
   } finally {
 

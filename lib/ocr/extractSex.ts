@@ -65,7 +65,8 @@ export function extractSexFromText(text: string, lines?: string[]): string {
 
 export function resolveDocumentSex(
   rawText: string,
-  sources: Array<{ sex?: string; score: number }>
+  sources: Array<{ sex?: string; score: number }>,
+  options?: { allowStandaloneSex?: boolean }
 ): string {
   const scored: Array<{ value: string; score: number }> = [];
 
@@ -74,8 +75,10 @@ export function resolveDocumentSex(
     if (sex) scored.push({ value: sex, score: source.score });
   }
 
-  const fromText = extractSexFromText(rawText);
-  if (fromText) scored.push({ value: fromText, score: 45 });
+  if (options?.allowStandaloneSex !== false) {
+    const fromText = extractSexFromText(rawText);
+    if (fromText) scored.push({ value: fromText, score: 45 });
+  }
 
   const ranked = scored.sort((a, b) => b.score - a.score);
   return ranked[0]?.value ?? "";

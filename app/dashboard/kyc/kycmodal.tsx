@@ -553,6 +553,13 @@ const KYCVerificationModal: React.FC = () => {
           setOcrProgress(progress);
         },
       });
+      const {
+        ocrLowConfidenceFields: ocrLowConfidenceFromExtract,
+        ocrMrzUsed: ocrMrzUsedFromExtract,
+        ...documentDetails
+      } = extracted;
+      const lowConfidenceFields = ocrLowConfidenceFromExtract ?? [];
+      const mrzUsed = ocrMrzUsedFromExtract ?? false;
       const detectedCountry = detectKycIdDocumentCountry(extracted.rawText, {
         nationality: extracted.nationality,
       });
@@ -567,7 +574,7 @@ const KYCVerificationModal: React.FC = () => {
         verificationData.documentType,
         extracted
       );
-      const detailsPayload = buildKycUserDetails(extracted, {
+      const detailsPayload = buildKycUserDetails(documentDetails, {
         country: effectiveCountry,
         documentType: verificationData.documentType,
       });
@@ -584,18 +591,17 @@ const KYCVerificationModal: React.FC = () => {
       detailsPayload.detected_document_kind = typeMatch.detected;
       detailsPayload.detected_document_confidence = typeMatch.confidence;
       detailsPayload.document_type_mismatch = typeMatch.mismatch;
+      detailsPayload.ocr_low_confidence_fields = lowConfidenceFields;
+      detailsPayload.ocr_mrz_used = mrzUsed;
       setUserDetails(detailsPayload);
 
       if (typeMatch.mismatch && typeMatch.message) {
         setOcrTypeMismatchMessage(typeMatch.message);
         setOcrManualFallback(true);
-        handleInputChange("documentNumber", "");
-        setOcrStatus("");
-        showToast.error("Wrong document type", typeMatch.message);
-        return;
+      } else {
+        setOcrTypeMismatchMessage(null);
       }
 
-      setOcrTypeMismatchMessage(null);
       const trustedDocumentNumber = isTrustedOcrDocumentNumber(
         verificationData.documentType,
         effectiveCountry,
@@ -606,9 +612,16 @@ const KYCVerificationModal: React.FC = () => {
 
       if (trustedDocumentNumber) {
         handleInputChange("documentNumber", trustedDocumentNumber);
-        setOcrManualFallback(false);
         setOcrForceReupload(null);
         setOcrStatus("Done");
+        if (
+          isPassportDocumentType(verificationData.documentType) &&
+          (lowConfidenceFields.length > 0 || !mrzUsed)
+        ) {
+          setOcrManualFallback(true);
+        } else {
+          setOcrManualFallback(false);
+        }
       } else {
         const photoAssessment = assessKycDocumentPhoto(extracted);
         const enrichedDetails = {
@@ -636,8 +649,15 @@ const KYCVerificationModal: React.FC = () => {
         setError(null);
       }
     } catch {
+      setUserDetails(
+        buildKycUserDetails(EMPTY_ID_DOCUMENT_DETAILS, {
+          country: verificationData.country,
+          documentType: verificationData.documentType,
+        })
+      );
       setOcrForceReupload(null);
       setOcrManualFallback(true);
+      handleInputChange("documentNumber", "");
       setOcrStatus("");
       setError(null);
     } finally {
@@ -664,9 +684,23 @@ const KYCVerificationModal: React.FC = () => {
     documentFrontInputRef.current?.click();
   };
 
+  const ocrManualEntryActive =
+    ocrManualFallback && Boolean(documentFrontImage) && !ocrLoading && !ocrForceReupload;
+
   const ocrDisplayRows = useMemo(
-    () => getKycOcrDisplayRows(userDetails),
-    [userDetails]
+    () =>
+      getKycOcrDisplayRows(userDetails, {
+        manualEntryMode: ocrManualEntryActive,
+        selectedDocumentType: verificationData.documentType,
+        lowConfidenceFields: Array.isArray(userDetails.ocr_low_confidence_fields)
+          ? (userDetails.ocr_low_confidence_fields as string[])
+          : [],
+      }),
+    [
+      userDetails,
+      ocrManualEntryActive,
+      verificationData.documentType,
+    ]
   );
   const ocrEffectiveCountry = useMemo(
     () =>
@@ -1726,7 +1760,10 @@ const KYCVerificationModal: React.FC = () => {
                   <p>
                     {getKycManualFallbackMessage(
                       ocrEffectiveCountry,
-                      verificationData.documentType
+                      verificationData.documentType,
+                      Array.isArray(userDetails.ocr_low_confidence_fields)
+                        ? (userDetails.ocr_low_confidence_fields as string[])
+                        : undefined
                     )}
                   </p>
                   <button
@@ -1754,25 +1791,39 @@ const KYCVerificationModal: React.FC = () => {
               )}
 
               {ocrTypeMismatchMessage && documentFrontImage && !ocrLoading && !ocrForceReupload && (
-                <div className="rounded-lg border border-red-500/40 bg-red-500/10 px-3 py-2.5 text-xs text-red-900 dark:text-red-200">
-                  <p className="font-semibold mb-1">Wrong document type</p>
+                <div className="rounded-lg border border-amber-500/40 bg-amber-500/10 px-3 py-2.5 text-xs text-amber-950 dark:text-amber-100">
+                  <p className="font-semibold mb-1">Document type check</p>
                   <p>{ocrTypeMismatchMessage}</p>
-                  <button
-                    type="button"
-                    onClick={triggerDocumentFrontReupload}
-                    className="inline-block mt-2 text-[#1D8751] font-semibold underline cursor-pointer"
-                  >
-                    Re-upload the correct document
-                  </button>
+                  <div className="mt-2 flex flex-wrap gap-3">
+                    <button
+                      type="button"
+                      onClick={() => setOcrTypeMismatchMessage(null)}
+                      className="text-[#1D8751] font-semibold underline cursor-pointer"
+                    >
+                      Continue with my selection
+                    </button>
+                    <button
+                      type="button"
+                      onClick={triggerDocumentFrontReupload}
+                      className="text-gray-600 dark:text-gray-300 font-semibold underline cursor-pointer"
+                    >
+                      Upload a different photo
+                    </button>
+                  </div>
                 </div>
               )}
 
-              {ocrDisplayRows.length > 0 && !ocrLoading && !ocrTypeMismatchMessage && !ocrForceReupload && (
+              {(ocrDisplayRows.length > 0 || ocrManualEntryActive) && !ocrLoading && !ocrForceReupload && (
                 <div className="rounded-lg border border-[#35353E] overflow-hidden">
                   <div className="px-3 py-2 bg-[#1D8751]/10 border-b border-[#35353E]">
                     <p className="text-xs font-semibold text-gray-900 dark:text-white">
-                      Extracted document details
+                      Document details
                     </p>
+                    {ocrManualEntryActive && (
+                      <p className="text-[11px] text-amber-800 dark:text-amber-200 mt-0.5">
+                        Fill in all fields below manually — only verified values are pre-filled.
+                      </p>
+                    )}
                   </div>
                   <div className="divide-y divide-[#35353E]/60">
                     {ocrDisplayRows.map((row) => (
@@ -1790,11 +1841,22 @@ const KYCVerificationModal: React.FC = () => {
                         ) : (
                           <input
                             type="text"
-                            value={String(userDetails[row.key] ?? row.value)}
+                            value={String(
+                              row.key === "documentNumber"
+                                ? verificationData.documentNumber ||
+                                  userDetails[row.key] ||
+                                  row.value
+                                : userDetails[row.key] ?? row.value
+                            )}
                             onChange={(e) =>
                               handleOcrDetailChange(row.key, e.target.value)
                             }
-                            className={`${KYC_INPUT_CLASS} text-right max-w-[65%] min-w-[120px] py-1.5 text-xs sm:text-sm`}
+                            placeholder={row.placeholder}
+                            className={`${KYC_INPUT_CLASS} text-right max-w-[65%] min-w-[120px] py-1.5 text-xs sm:text-sm${
+                              row.needsManualEntry
+                                ? " border-amber-400/60 dark:border-amber-500/40"
+                                : ""
+                            }`}
                             aria-label={row.label}
                           />
                         )}
@@ -1804,7 +1866,7 @@ const KYCVerificationModal: React.FC = () => {
                 </div>
               )}
 
-              {documentFrontImage && (
+              {documentFrontImage && !ocrManualEntryActive && (
                 <div>
                   <label className="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1.5">
                     {getKycDocumentNumberFieldLabel(

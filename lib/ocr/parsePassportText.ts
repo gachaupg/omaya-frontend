@@ -27,9 +27,21 @@ export function normalizePassportNumber(raw: string): string {
   return value.slice(0, 9);
 }
 
-export function isPassportNumberFormat(value: string): boolean {
-  const normalized = normalizePassportNumber(value);
-  return /^[A-Z]\d{6,9}$/.test(normalized);
+export function isPassportNumberFormat(
+  value: string,
+  options?: { fromMrz?: boolean }
+): boolean {
+  const normalized = normalizePassportNumber(value).replace(/</g, "");
+  if (!/^[A-Z0-9]{6,9}$/.test(normalized)) return false;
+  if (!/[A-Z]/.test(normalized) || !/\d/.test(normalized)) return false;
+
+  const digitCount = (normalized.match(/\d/g) ?? []).length;
+  if (options?.fromMrz) {
+    return digitCount >= 5;
+  }
+
+  // Visual OCR: require letter prefix + mostly digits (e.g. AK1067169, P12345678)
+  return /^[A-Z]{1,2}\d{6,8}$/.test(normalized);
 }
 
 export function isNationalIdNumberFormat(value: string): boolean {
@@ -59,7 +71,7 @@ export function isPassportDocumentText(text: string): boolean {
   return (
     PASSPORT_MARKERS.test(text) ||
     /P<[A-Z]{3}/.test(compact) ||
-    (text.includes("<<") && /[A-Z0-9<]{28,}/.test(compact))
+    (/\bPASSPORT\b/i.test(text) && text.includes("<<"))
   );
 }
 
@@ -234,7 +246,8 @@ function addPassportCandidate(
   score: number
 ) {
   const normalized = normalizePassportNumber(raw);
-  if (!isPassportNumberFormat(normalized)) return;
+  const fromMrz = score >= 65;
+  if (!isPassportNumberFormat(normalized, { fromMrz })) return;
   candidates.set(normalized, Math.max(candidates.get(normalized) ?? 0, score));
 }
 
@@ -357,33 +370,30 @@ function extractPassportNames(text: string, lines: string[]) {
   return { fullName: "", givenNames: "", surname: "" };
 }
 
+function extractLabeledDate(text: string, labels: RegExp): string {
+  const match = text.match(labels);
+  if (!match?.[1]) return "";
+  const value = match[1].trim();
+  if (/^\d{1,2}[-/.]\d{1,2}[-/.]\d{4}$/.test(value)) return value;
+  if (/^\d{1,2}\s+[A-Z]{3,9}\s+\d{4}$/i.test(value)) return value.toUpperCase();
+  return "";
+}
+
 function extractPassportDates(text: string) {
-  const monthDate =
-    /(\d{1,2})\s+(JAN|FEB|MAR|APR|MAY|JUN|JUL|AUG|SEP|OCT|NOV|DEC)[A-Z]*\s+(\d{4})/gi;
-  const dashDate = /(\d{1,2})[-/.](\d{1,2})[-/.](\d{4})/g;
+  const dateOfBirth = extractLabeledDate(
+    text,
+    /(?:DOB|D\.O\.B|DATE\s*OF\s*BIRTH|BIRTH\s*DATE|TAARIIKHDA\s*DHALASHADA)[:\s-]*(\d{1,2}[-/.]\d{1,2}[-/.]\d{4}|\d{1,2}\s+[A-Z]{3,9}\s+\d{4})/i
+  );
+  const expiryDate = extractLabeledDate(
+    text,
+    /(?:EXP(?:IRY)?|EXPIRES|DATE\s*OF\s*EXPIRY|TAARIIKHDA\s*UU\s*DHACAYO)[:\s-]*(\d{1,2}[-/.]\d{1,2}[-/.]\d{4}|\d{1,2}\s+[A-Z]{3,9}\s+\d{4})/i
+  );
+  const issueDate = extractLabeledDate(
+    text,
+    /(?:ISS(?:UE)?|DATE\s*OF\s*ISSUE|TAARIIKHDA\s*LA\s*BIXIYAY)[:\s-]*(\d{1,2}[-/.]\d{1,2}[-/.]\d{4}|\d{1,2}\s+[A-Z]{3,9}\s+\d{4})/i
+  );
 
-  const parsed: Array<{ formatted: string; year: number }> = [];
-
-  for (const match of text.matchAll(monthDate)) {
-    parsed.push({
-      formatted: `${match[1].padStart(2, "0")} ${match[2].slice(0, 3).toUpperCase()} ${match[3]}`,
-      year: Number(match[3]),
-    });
-  }
-
-  for (const match of text.matchAll(dashDate)) {
-    parsed.push({
-      formatted: `${match[1].padStart(2, "0")}-${match[2].padStart(2, "0")}-${match[3]}`,
-      year: Number(match[3]),
-    });
-  }
-
-  parsed.sort((a, b) => a.year - b.year);
-  return {
-    dateOfBirth: parsed[0]?.formatted ?? "",
-    expiryDate: parsed.length > 1 ? parsed[parsed.length - 1]?.formatted ?? "" : "",
-    issueDate: parsed.length > 2 ? parsed[1]?.formatted ?? "" : "",
-  };
+  return { dateOfBirth, expiryDate, issueDate };
 }
 
 export function parsePassportVisualText(text: string): Partial<IdDocumentDetails> {
