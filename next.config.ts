@@ -14,8 +14,10 @@ if (process.env.NODE_ENV === 'production') {
   }
 }
 
+const isNetlifyBuild = process.env.NETLIFY === "true";
+
 const nextConfig: NextConfig = {
-  output: 'standalone',
+  ...(isNetlifyBuild ? {} : { output: "standalone" }),
   trailingSlash: true,
   reactStrictMode: true,
   compiler: {
